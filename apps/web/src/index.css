@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/* Optional app-wide globals */
+:root {
+  color-scheme: light dark;
+}
+body {
+  margin: 100;
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background: #f9fafb;
+  color: #111827;
+}

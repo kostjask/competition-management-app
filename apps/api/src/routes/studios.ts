@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "../../generated/prisma";
+import { PrismaClient, Prisma } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
+import { IdSchema } from "../../../../packages/schemas/src";
 
 export function studiosRouter(prisma: PrismaClient) {
   const router = Router();
@@ -16,7 +17,13 @@ export function studiosRouter(prisma: PrismaClient) {
       },
     });
 
-    if (!studio) return { studio: null, isRep: false, status: null, canEditDuringReview: false };
+    if (!studio)
+      return {
+        studio: null,
+        isRep: false,
+        status: null,
+        canEditDuringReview: false,
+      };
 
     const isRep = studio.representatives.some(
       (r) => r.userId === userId && r.active,
@@ -38,7 +45,7 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("studio.manage", { eventParam: "eventId" }),
     async (req, res) => {
       const auth = req.auth!;
-      const { eventId } = req.params;
+      const eventId = IdSchema.parse(req.params.eventId);
       const {
         name,
         country,
@@ -71,11 +78,15 @@ export function studiosRouter(prisma: PrismaClient) {
         });
 
         if (!event || !isActionAllowed(event.stage, "studio.register")) {
-          return res.status(403).json({ error: "Registration not allowed in current event stage" });
+          return res
+            .status(403)
+            .json({ error: "Registration not allowed in current event stage" });
         }
 
         if (!representativeName?.trim() || !representativeEmail?.trim()) {
-          return res.status(400).json({ error: "Representative name and email are required" });
+          return res
+            .status(400)
+            .json({ error: "Representative name and email are required" });
         }
       }
 
@@ -89,7 +100,7 @@ export function studiosRouter(prisma: PrismaClient) {
             city: city?.trim(),
             directorName: directorName?.trim(),
             directorPhone: directorPhone?.trim(),
-            invoiceDetails,
+            invoiceDetails: invoiceDetails as Prisma.InputJsonValue | undefined,
             registrations: {
               create: { eventId, status: "APPROVED" },
             },
@@ -109,7 +120,7 @@ export function studiosRouter(prisma: PrismaClient) {
           city: city?.trim(),
           directorName: directorName?.trim(),
           directorPhone: directorPhone?.trim(),
-          invoiceDetails,
+          invoiceDetails: invoiceDetails as Prisma.InputJsonValue | undefined,
           representatives: {
             create: {
               userId: auth.userId,
@@ -128,13 +139,51 @@ export function studiosRouter(prisma: PrismaClient) {
     },
   );
 
+  // GET all studio
+  router.get("/", async (_req, res) => {
+    const studios = await prisma.studio.findMany({
+      where: { deletedAt: null },
+      include: { registrations: true, representatives: true },
+      orderBy: { name: "asc" },
+    });
+    res.json(studios);
+  });
+
+  // List of all available studios
+  router.get("/s", requirePermission("studio.manage"), async (req, res) => {
+    const auth = req.auth!;
+
+    console.log("studios");
+
+    if (auth.isAdmin) {
+      const studios = await prisma.studio.findMany({
+        where: { deletedAt: null },
+        include: { registrations: true, representatives: true },
+        orderBy: { name: "asc" },
+      });
+      return res.json(studios);
+    }
+
+    const studios = await prisma.studio.findMany({
+      where: {
+        deletedAt: null,
+        representatives: {
+          some: { userId: auth.userId, active: true },
+        },
+      },
+      include: { registrations: true, representatives: true },
+      orderBy: { name: "asc" },
+    });
+  });
+
+  //todo: move to events router
   // List studios for an event (Admin sees all, reps only approved own)
   router.get(
     "/events/:eventId/studios",
     requirePermission("studio.manage", { eventParam: "eventId" }),
     async (req, res) => {
       const auth = req.auth!;
-      const { eventId } = req.params;
+      const eventId = IdSchema.parse(req.params.eventId);
 
       if (auth.isAdmin) {
         const studios = await prisma.studio.findMany({
@@ -167,7 +216,7 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { studioId } = req.params;
+      const studioId = IdSchema.parse(req.params.studioId);
 
       if (auth.isAdmin) {
         const studio = await prisma.studio.findFirst({
@@ -195,7 +244,7 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { studioId } = req.params;
+      const studioId = IdSchema.parse(req.params.studioId);
       const {
         name,
         country,
@@ -212,6 +261,10 @@ export function studiosRouter(prisma: PrismaClient) {
         invoiceDetails?: unknown;
       };
 
+      const invoiceDetailsJson = invoiceDetails as
+        | Prisma.InputJsonValue
+        | undefined;
+
       if (!auth.isAdmin) {
         const { studio, isRep, status } = await requireStudioAccess(
           auth.userId,
@@ -223,7 +276,9 @@ export function studiosRouter(prisma: PrismaClient) {
 
         // Check stage
         if (!isActionAllowed(studio.event.stage, "studio.edit")) {
-          return res.status(403).json({ error: "Studio edits not allowed in current event stage" });
+          return res
+            .status(403)
+            .json({ error: "Studio edits not allowed in current event stage" });
         }
       }
 
@@ -235,7 +290,7 @@ export function studiosRouter(prisma: PrismaClient) {
           city: city?.trim() ?? undefined,
           directorName: directorName?.trim() ?? undefined,
           directorPhone: directorPhone?.trim() ?? undefined,
-          invoiceDetails,
+          invoiceDetails: invoiceDetailsJson,
         },
         include: { representatives: true, registrations: true },
       });
@@ -250,9 +305,9 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
+      const studioId = IdSchema.parse(req.params.studioId);
       if (!auth.isAdmin) return res.sendStatus(403);
 
-      const { studioId } = req.params;
       const deleted = await prisma.studio.update({
         where: { id: studioId },
         data: { deletedAt: new Date() },
@@ -268,9 +323,8 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("event.register", { eventParam: "eventId" }),
     async (req, res) => {
       const auth = req.auth!;
-      if (!auth.isAdmin) return res.sendStatus(403);
-
-      const { eventId, studioId } = req.params;
+      const eventId = IdSchema.parse(req.params.eventId);
+      const studioId = IdSchema.parse(req.params.studioId);
       const { status, canEditDuringReview } = req.body as {
         status?: "PENDING" | "APPROVED" | "REJECTED";
         canEditDuringReview?: boolean;
@@ -280,13 +334,13 @@ export function studiosRouter(prisma: PrismaClient) {
 
       const updated = await prisma.studioEventRegistration.upsert({
         where: { studioId_eventId: { studioId, eventId } },
-        update: { 
+        update: {
           status,
           canEditDuringReview: canEditDuringReview ?? undefined,
         },
-        create: { 
-          studioId, 
-          eventId, 
+        create: {
+          studioId,
+          eventId,
           status,
           canEditDuringReview: canEditDuringReview ?? false,
         },
@@ -302,7 +356,8 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("event.register", { eventParam: "eventId" }),
     async (req, res) => {
       const auth = req.auth!;
-      const { eventId, studioId } = req.params;
+      const eventId = IdSchema.parse(req.params.eventId);
+      const studioId = IdSchema.parse(req.params.studioId);
 
       if (!auth.isAdmin) {
         const { studio, isRep, status } = await requireStudioAccess(
@@ -335,7 +390,8 @@ export function studiosRouter(prisma: PrismaClient) {
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { studioId, representativeId } = req.params;
+      const studioId = IdSchema.parse(req.params.studioId);
+      const representativeId = IdSchema.parse(req.params.representativeId);
       const { name, email } = req.body as { name?: string; email?: string };
 
       const rep = await prisma.studioRepresentative.findUnique({

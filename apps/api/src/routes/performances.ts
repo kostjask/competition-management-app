@@ -1,20 +1,16 @@
 import { Router } from "express";
-import { z } from "zod";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
+import {
+  ParamsWithStudioIdSchema,
+  ParamsWithStudioAndPerformanceIdSchema,
+  CreatePerformanceBodySchema,
+  UpdatePerformanceBodySchema,
+} from "../../../../packages/schemas/src";
 
 export const performancesRouter = (prisma: PrismaClient) => {
   const router = Router();
-
-  const ParamsWithStudioId = z.object({
-    studioId: z.string().min(1),
-  });
-
-  const ParamsWithStudioAndPerformanceId = z.object({
-    studioId: z.string().min(1),
-    performanceId: z.string().min(1),
-  });
 
   async function requireApprovedStudioAccess(userId: string, studioId: string) {
     const studio = await prisma.studio.findFirst({
@@ -43,38 +39,18 @@ export const performancesRouter = (prisma: PrismaClient) => {
     return { studio, approved, isRep, canEditDuringReview };
   }
 
-  const CreatePerformanceBody = z.object({
-    title: z.string().min(1),
-    durationSec: z.number().int().positive(),
-    orderOnStage: z.number().int().positive(),
-    categoryId: z.string().min(1),
-    ageGroupId: z.string().min(1),
-    formatId: z.string().min(1),
-    dancerIds: z.array(z.string().min(1)).min(1),
-  });
-
-  const UpdatePerformanceBody = z.object({
-    title: z.string().min(1).optional(),
-    durationSec: z.number().int().positive().optional(),
-    orderOnStage: z.number().int().positive().optional(),
-    categoryId: z.string().min(1).optional(),
-    ageGroupId: z.string().min(1).optional(),
-    formatId: z.string().min(1).optional(),
-    dancerIds: z.array(z.string().min(1)).min(1).optional(),
-  });
-
   // Create performance (Admin or approved representative with stage check)
   router.post(
     "/studios/:studioId/performances",
     requirePermission("performance.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const params = ParamsWithStudioId.safeParse(req.params);
+      const params = ParamsWithStudioIdSchema.safeParse(req.params);
       if (!params.success) return res.status(400).json(params.error);
-      
+
       const { studioId } = params.data;
 
-      const body = CreatePerformanceBody.safeParse(req.body);
+      const body = CreatePerformanceBodySchema.safeParse(req.body);
       if (!body.success) return res.status(400).json(body.error);
 
       if (!auth.isAdmin) {
@@ -159,7 +135,7 @@ export const performancesRouter = (prisma: PrismaClient) => {
     requirePermission("performance.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const params = ParamsWithStudioId.safeParse(req.params);
+      const params = ParamsWithStudioIdSchema.safeParse(req.params);
       if (!params.success) return res.status(400).json(params.error);
 
       const { studioId } = params.data;
@@ -199,12 +175,12 @@ export const performancesRouter = (prisma: PrismaClient) => {
     requirePermission("performance.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const params = ParamsWithStudioAndPerformanceId.safeParse(req.params);
+      const params = ParamsWithStudioAndPerformanceIdSchema.safeParse(req.params);
       if (!params.success) return res.status(400).json(params.error);
 
       const { studioId, performanceId } = params.data;
 
-      const body = UpdatePerformanceBody.safeParse(req.body);
+      const body = UpdatePerformanceBodySchema.safeParse(req.body);
       if (!body.success) return res.status(400).json(body.error);
 
       const performance = await prisma.performance.findUnique({
@@ -286,7 +262,7 @@ export const performancesRouter = (prisma: PrismaClient) => {
     requirePermission("performance.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const params = ParamsWithStudioAndPerformanceId.safeParse(req.params);
+      const params = ParamsWithStudioAndPerformanceIdSchema.safeParse(req.params);
       if (!params.success) return res.status(400).json(params.error);
 
       const { studioId, performanceId } = params.data;

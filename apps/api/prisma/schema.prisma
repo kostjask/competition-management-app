@@ -79,6 +79,8 @@ model Studio {
   event           Event                     @relation(fields: [eventId], references: [id])
   representatives StudioRepresentative[]
   registrations   StudioEventRegistration[]
+
+  @@unique([name])
 }
 
 model StudioRepresentative {

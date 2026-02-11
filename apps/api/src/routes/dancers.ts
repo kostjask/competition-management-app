@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { PrismaClient } from "../../generated/prisma";
+import { PrismaClient } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
+import { IdSchema } from "../../../../packages/schemas/src";
 
 export function dancersRouter(prisma: PrismaClient) {
   const router = Router();
@@ -39,7 +40,7 @@ export function dancersRouter(prisma: PrismaClient) {
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { studioId } = req.params;
+      const studioId = IdSchema.parse(req.params.studioId);
       const { firstName, lastName, birthDate } = req.body as {
         firstName?: string;
         lastName?: string;
@@ -81,7 +82,7 @@ export function dancersRouter(prisma: PrismaClient) {
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { studioId } = req.params;
+      const studioId = IdSchema.parse(req.params.studioId);
 
       if (!auth.isAdmin) {
         const { approved, isRep } = await requireApprovedStudioAccess(
@@ -106,7 +107,7 @@ export function dancersRouter(prisma: PrismaClient) {
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { dancerId } = req.params;
+      const dancerId = IdSchema.parse(req.params.dancerId);
       const { firstName, lastName, birthDate } = req.body as {
         firstName?: string;
         lastName?: string;
@@ -150,7 +151,7 @@ export function dancersRouter(prisma: PrismaClient) {
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const { dancerId } = req.params;
+      const dancerId = IdSchema.parse(req.params.dancerId);
 
       const dancer = await prisma.dancer.findFirst({
         where: { id: dancerId, deletedAt: null },

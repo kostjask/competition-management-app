@@ -1,99 +1,109 @@
 import { Router } from "express";
-import { z } from "zod";
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
+import * as bcrypt from "bcrypt";
+import * as jwt from "jsonwebtoken";
 import type { PrismaClient } from "../../generated/prisma/client";
+import { RegisterSchema, LoginSchema } from "../../../../packages/schemas/src";
+import { ZodError } from "zod";
+import type { Response } from "express";
 
 export const authRouter = (prisma: PrismaClient) => {
   const router = Router();
-
-  const RegisterBody = z.object({
-    email: z.string().email(),
-    password: z.string().min(6),
-    name: z.string().min(1),
-  });
-
-  const LoginBody = z.object({
-    email: z.string().email(),
-    password: z.string(),
-  });
 
   const JWT_SECRET = process.env.JWT_SECRET;
   if (!JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined");
   }
 
+  const sendError = (
+    res: Response,
+    statusCode: number,
+    error: string,
+    details?: object
+  ) => res.status(statusCode).json({ error, statusCode, ...(details ? { details } : {}) });
+
   // Register new user
-  router.post("/register", async (req, res) => {
-    const body = RegisterBody.safeParse(req.body);
-    if (!body.success) return res.status(400).json(body.error);
+  router.post("/register", async (req, res, next) => {
+    try {
+      const body = RegisterSchema.parse(req.body);
 
-    const existing = await prisma.user.findUnique({
-      where: { email: body.data.email },
-    });
+      const existing = await prisma.user.findUnique({
+        where: { email: body.email },
+      });
 
-    if (existing) {
-      return res.status(409).json({ error: "Email already registered" });
+      if (existing) {
+        return sendError(res, 409, "Email already registered");
+      }
+
+      const hashedPassword = await bcrypt.hash(body.password, 10);
+
+      const user = await prisma.user.create({
+        data: {
+          email: body.email,
+          name: body.name,
+          password: hashedPassword,
+        },
+      });
+
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+        expiresIn: "7d",
+      });
+      res
+        .status(201)
+        .json({
+          token,
+          tokenType: "Bearer",
+          user: { id: user.id, email: user.email, name: user.name },
+        });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return sendError(res, 400, "Validation error", { issues: err.issues });
+      }
+      return next(err);
     }
-
-    const hashedPassword = await bcrypt.hash(body.data.password, 10);
-
-    const user = await prisma.user.create({
-      data: {
-        email: body.data.email,
-        name: body.data.name,
-        password: hashedPassword,
-      },
-    });
-
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res.status(201).json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    });
   });
 
   // Login
-  router.post("/login", async (req, res) => {
-    const body = LoginBody.safeParse(req.body);
-    if (!body.success) return res.status(400).json(body.error);
+  router.post("/login", async (req, res, next) => {
+    try {
+      const body = LoginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
-      where: { email: body.data.email },
-    });
+      const user = await prisma.user.findUnique({
+        where: { email: body.email },
+      });
 
-    if (!user || !user.password) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      if (!user || !user.password) {
+        return sendError(res, 401, "Invalid credentials");
+      }
+
+      const valid = await bcrypt.compare(body.password, user.password);
+
+      if (!valid) {
+        return sendError(res, 401, "Invalid credentials");
+      }
+
+      if (!user.active) {
+        return sendError(res, 403, "Account is disabled");
+      }
+
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+        expiresIn: "7d",
+      });
+
+      res.json({
+        token,
+        tokenType: "Bearer",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return sendError(res, 400, "Validation error", { issues: err.issues });
+      }
+      return next(err);
     }
-
-    const valid = await bcrypt.compare(body.data.password, user.password);
-    if (!valid) {
-      return res.status(401).json({ error: "Invalid credentials" });
-    }
-
-    if (!user.active) {
-      return res.status(403).json({ error: "Account is disabled" });
-    }
-
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res.json({
-      token,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
-    });
   });
 
   // Get current user (requires auth)

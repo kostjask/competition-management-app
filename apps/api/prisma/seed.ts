@@ -1,4 +1,5 @@
 import { prisma } from "../src/db/prisma";
+import * as jwt from "jsonwebtoken";
 
 async function main() {
   console.log("🌱 Seeding database...\n");
@@ -173,6 +174,15 @@ async function main() {
     },
   });
   console.log("✅ Created 3 test users\n");
+
+  const makeToken = (userId: string) =>
+    jwt.sign({ userId }, process.env.JWT_SECRET ?? "dev-secret", {
+      expiresIn: "30d",
+    });
+
+  const adminToken = makeToken(adminUser.id);
+  const repToken = makeToken(repUser.id);
+  const judgeToken = makeToken(judgeUser.id);
 
   // 5. Assign roles to users
   console.log("Assigning roles to users...");
@@ -379,12 +389,15 @@ async function main() {
   console.log(`Admin User:`);
   console.log(`  ID:    ${adminUser.id}`);
   console.log(`  Email: ${adminUser.email}\n`);
+  console.log(`  Token: ${adminToken}\n`);
   console.log(`Representative User:`);
   console.log(`  ID:    ${repUser.id}`);
   console.log(`  Email: ${repUser.email}\n`);
+  console.log(`  Token: ${repToken}\n`);
   console.log(`Judge User:`);
   console.log(`  ID:    ${judgeUser.id}`);
   console.log(`  Email: ${judgeUser.email}\n`);
+  console.log(`  Token: ${judgeToken}\n`);
   console.log(`Event:`);
   console.log(`  ID:   ${event.id}`);
   console.log(`  Name: ${event.name}`);
