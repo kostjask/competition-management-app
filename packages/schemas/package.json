@@ -1,0 +1,12 @@
+{
+  "name": "@dance/schemas",
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@dance/types": "workspace:*",
+    "zod": "^4.3.6"
+  },
+  "scripts": {
+    "build": "tsc -b"
+  }
+}

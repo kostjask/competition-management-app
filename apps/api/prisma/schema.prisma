@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EventStage {
+  PRE_REGISTRATION
+  REGISTRATION_OPEN
+  DATA_REVIEW
+  FINALIZED
+}
+
+model Event {
+  id        String      @id @default(cuid())
+  name      String
+  startsAt  DateTime
+  endsAt    DateTime
+  stage     EventStage  @default(PRE_REGISTRATION)
+  createdAt DateTime    @default(now())
+
+  ageGroups           AgeGroup[]
+  categories          DanceCategory[]
+  formats             DanceFormat[]
+  judges              Judge[]
+  performances        Performance[]
+  studios             Studio[]
+  userRoles           UserRole[]
+  studioRegistrations StudioEventRegistration[]
+}
+
+model DanceCategory {
+  id      String @id @default(cuid())
+  eventId String
+  name    String
+
+  event        Event         @relation(fields: [eventId], references: [id])
+  performances Performance[]
+
+  @@unique([eventId, name])
+}
+
+model AgeGroup {
+  id           String        @id @default(cuid())
+  eventId      String
+  name         String
+  minAge       Int
+  maxAge       Int?
+  event        Event         @relation(fields: [eventId], references: [id])
+  performances Performance[]
+}
+
+model DanceFormat {
+  id                 String        @id @default(cuid())
+  eventId            String
+  name               String
+  minParticipants    Int
+  maxParticipants    Int
+  maxDurationSeconds Int
+  event              Event         @relation(fields: [eventId], references: [id])
+  performances       Performance[]
+}
+
+model Studio {
+  id             String   @id @default(cuid())
+  eventId        String
+  name           String
+  country        String?
+  city           String?
+  directorName   String?
+  directorPhone  String?
+  invoiceDetails Json?
+  deletedAt      DateTime?
+
+  dancers         Dancer[]
+  event           Event                     @relation(fields: [eventId], references: [id])
+  representatives StudioRepresentative[]
+  registrations   StudioEventRegistration[]
+}
+
+model StudioRepresentative {
+  id        String   @id @default(cuid())
+  studioId  String
+  userId    String
+  name      String
+  email     String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  studio Studio @relation(fields: [studioId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([studioId, userId])
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LOCKED
+}
+
+model StudioEventRegistration {
+  id                  String             @id @default(cuid())
+  studioId            String
+  eventId             String
+  status              RegistrationStatus @default(PENDING)
+  canEditDuringReview Boolean            @default(false)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  studio Studio @relation(fields: [studioId], references: [id])
+  event  Event  @relation(fields: [eventId], references: [id])
+
+  @@unique([studioId, eventId])
+}
+
+model Dancer {
+  id                      String                   @id @default(cuid())
+  studioId                String
+  firstName               String
+  lastName                String
+  birthDate               DateTime
+  deletedAt               DateTime?
+  studio                  Studio                   @relation(fields: [studioId], references: [id])
+  performanceParticipants PerformanceParticipant[]
+}
+
+model Performance {
+  id           String                   @id @default(cuid())
+  eventId      String
+  categoryId   String
+  ageGroupId   String
+  formatId     String
+  title        String
+  durationSec  Int
+  orderOnStage Int
+
+  ageGroup     AgeGroup                 @relation(fields: [ageGroupId], references: [id])
+  category     DanceCategory            @relation(fields: [categoryId], references: [id])
+  event        Event                    @relation(fields: [eventId], references: [id])
+  format       DanceFormat              @relation(fields: [formatId], references: [id])
+  participants PerformanceParticipant[]
+  scores       Score[]
+
+  @@unique([eventId, orderOnStage])
+}
+
+model PerformanceParticipant {
+  performanceId String
+  dancerId      String
+
+  dancer      Dancer      @relation(fields: [dancerId], references: [id])
+  performance Performance @relation(fields: [performanceId], references: [id])
+
+  @@id([performanceId, dancerId])
+}
+
+model Judge {
+  id      String  @id @default(cuid())
+  eventId String
+  name    String
+  event   Event   @relation(fields: [eventId], references: [id])
+  scores  Score[]
+}
+
+model Score {
+  id            String  @id @default(cuid())
+  performanceId String
+  judgeId       String
+  criterion     String
+  value         Float
+  comment       String?
+
+  judge       Judge       @relation(fields: [judgeId], references: [id])
+  performance Performance @relation(fields: [performanceId], references: [id])
+
+  @@unique([performanceId, judgeId, criterion])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String?  // Optional for now (supports OAuth later)
+  createdAt DateTime @default(now())
+  active    Boolean  @default(true)
+
+  roles                 UserRole[]
+  studioRepresentatives StudioRepresentative[]
+}
+
+model Role {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  name        String
+  description String?
+
+  permissions RolePermission[]
+  users       UserRole[]
+}
+
+model Permission {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  name        String
+  description String?
+
+  roles RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  id      String  @id @default(uuid())
+  userId  String
+  roleId  String
+  eventId String?
+
+  user  User   @relation(fields: [userId], references: [id])
+  role  Role   @relation(fields: [roleId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id])
+
+  @@unique([userId, roleId, eventId])
+}
