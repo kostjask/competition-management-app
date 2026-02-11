@@ -18,7 +18,7 @@
     "@types/node": "^25.2.2",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",
-    "turbo": "^2.8.3",
+    "turbo": "^2.8.6",
     "typescript": "^5.9.3"
   },
   "dependencies": {
