@@ -52,7 +52,7 @@ export const removeToken = (): void => {
  */
 const redirectToLogin = (): void => {
   removeToken();
-  window.location.href = "/login";
+  window.location.href = "/auth/login";
 };
 
 /**

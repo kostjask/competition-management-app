@@ -1,12 +1,18 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Sora:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* Optional app-wide globals */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 }
+
 body {
-  margin: 100;
-  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  margin: 0;
+  font-family: "Sora", "Segoe UI", sans-serif;
   background: #f9fafb;
   color: #111827;
+}
+
+.font-display {
+  font-family: "Fraunces", "Times New Roman", serif;
 }

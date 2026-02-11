@@ -2,7 +2,11 @@ import { Router } from "express";
 import { PrismaClient } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
-import { IdSchema } from "../../../../packages/schemas/src";
+import {
+  CreateDancerBodySchema,
+  UpdateDancerBodySchema,
+  IdSchema,
+} from "../../../../packages/schemas/src";
 
 export function dancersRouter(prisma: PrismaClient) {
   const router = Router();
@@ -41,15 +45,11 @@ export function dancersRouter(prisma: PrismaClient) {
     async (req, res) => {
       const auth = req.auth!;
       const studioId = IdSchema.parse(req.params.studioId);
-      const { firstName, lastName, birthDate } = req.body as {
-        firstName?: string;
-        lastName?: string;
-        birthDate?: string;
-      };
-
-      if (!firstName?.trim() || !lastName?.trim() || !birthDate) {
-        return res.status(400).json({ error: "Invalid dancer data" });
-      }
+      const body = CreateDancerBodySchema.parse(req.body);
+      const birthDate =
+        body.birthDate instanceof Date
+          ? body.birthDate
+          : new Date(body.birthDate);
 
       if (!auth.isAdmin) {
         const { studio, approved, isRep, canEditDuringReview } =
@@ -66,9 +66,9 @@ export function dancersRouter(prisma: PrismaClient) {
       const dancer = await prisma.dancer.create({
         data: {
           studioId,
-          firstName: firstName.trim(),
-          lastName: lastName.trim(),
-          birthDate: new Date(birthDate),
+          firstName: body.firstName.trim(),
+          lastName: body.lastName.trim(),
+          birthDate,
         },
       });
 
@@ -108,11 +108,12 @@ export function dancersRouter(prisma: PrismaClient) {
     async (req, res) => {
       const auth = req.auth!;
       const dancerId = IdSchema.parse(req.params.dancerId);
-      const { firstName, lastName, birthDate } = req.body as {
-        firstName?: string;
-        lastName?: string;
-        birthDate?: string;
-      };
+      const body = UpdateDancerBodySchema.parse(req.body);
+      const birthDate = body.birthDate
+        ? body.birthDate instanceof Date
+          ? body.birthDate
+          : new Date(body.birthDate)
+        : undefined;
 
       const dancer = await prisma.dancer.findFirst({
         where: { id: dancerId, deletedAt: null },
@@ -135,9 +136,13 @@ export function dancersRouter(prisma: PrismaClient) {
       const updated = await prisma.dancer.update({
         where: { id: dancerId },
         data: {
-          firstName: firstName?.trim() ?? undefined,
-          lastName: lastName?.trim() ?? undefined,
-          birthDate: birthDate ? new Date(birthDate) : undefined,
+          ...(body.firstName !== undefined
+            ? { firstName: body.firstName.trim() }
+            : {}),
+          ...(body.lastName !== undefined
+            ? { lastName: body.lastName.trim() }
+            : {}),
+          ...(birthDate !== undefined ? { birthDate } : {}),
         },
       });
 

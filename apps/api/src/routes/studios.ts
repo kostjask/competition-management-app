@@ -2,7 +2,13 @@ import { Router } from "express";
 import { PrismaClient, Prisma } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
-import { IdSchema } from "../../../../packages/schemas/src";
+import {
+  CreateStudioBodySchema,
+  UpdateStudioBodySchema,
+  UpdateRegistrationBodySchema,
+  UpdateRepresentativeBodySchema,
+  IdSchema,
+} from "../../../../packages/schemas/src";
 
 export function studiosRouter(prisma: PrismaClient) {
   const router = Router();
@@ -39,36 +45,13 @@ export function studiosRouter(prisma: PrismaClient) {
     return { studio, isRep, status, canEditDuringReview };
   }
 
-  // Create studio + registration request (Representative)
   router.post(
     "/events/:eventId/studios",
     requirePermission("studio.manage", { eventParam: "eventId" }),
     async (req, res) => {
       const auth = req.auth!;
       const eventId = IdSchema.parse(req.params.eventId);
-      const {
-        name,
-        country,
-        city,
-        directorName,
-        directorPhone,
-        invoiceDetails,
-        representativeName,
-        representativeEmail,
-      } = req.body as {
-        name?: string;
-        country?: string;
-        city?: string;
-        directorName?: string;
-        directorPhone?: string;
-        invoiceDetails?: unknown;
-        representativeName?: string;
-        representativeEmail?: string;
-      };
-
-      if (!name?.trim()) {
-        return res.status(400).json({ error: "Studio name is required" });
-      }
+      const body = CreateStudioBodySchema.parse(req.body);
 
       // Check event stage
       if (!auth.isAdmin) {
@@ -83,7 +66,7 @@ export function studiosRouter(prisma: PrismaClient) {
             .json({ error: "Registration not allowed in current event stage" });
         }
 
-        if (!representativeName?.trim() || !representativeEmail?.trim()) {
+        if (!body.representativeName?.trim() || !body.representativeEmail?.trim()) {
           return res
             .status(400)
             .json({ error: "Representative name and email are required" });
@@ -92,19 +75,22 @@ export function studiosRouter(prisma: PrismaClient) {
 
       // Admin can create directly
       if (auth.isAdmin) {
-        const studio = await prisma.studio.create({
-          data: {
-            eventId,
-            name: name.trim(),
-            country: country?.trim(),
-            city: city?.trim(),
-            directorName: directorName?.trim(),
-            directorPhone: directorPhone?.trim(),
-            invoiceDetails: invoiceDetails as Prisma.InputJsonValue | undefined,
-            registrations: {
-              create: { eventId, status: "APPROVED" },
-            },
+        const data: Prisma.StudioUncheckedCreateInput = {
+          eventId,
+          name: body.name.trim(),
+          registrations: {
+            create: { eventId, status: "APPROVED" },
           },
+        };
+
+        if (body.country !== undefined) data.country = body.country.trim();
+        if (body.city !== undefined) data.city = body.city.trim();
+        if (body.directorName !== undefined) data.directorName = body.directorName.trim();
+        if (body.directorPhone !== undefined) data.directorPhone = body.directorPhone.trim();
+        if (body.invoiceDetails !== undefined) data.invoiceDetails = body.invoiceDetails as Prisma.InputJsonValue;
+
+        const studio = await prisma.studio.create({
+          data,
           include: { representatives: true, registrations: true },
         });
 
@@ -112,26 +98,32 @@ export function studiosRouter(prisma: PrismaClient) {
       }
 
       // Representative flow: create studio + registration request
-      const studio = await prisma.studio.create({
-        data: {
-          eventId,
-          name: name.trim(),
-          country: country?.trim(),
-          city: city?.trim(),
-          directorName: directorName?.trim(),
-          directorPhone: directorPhone?.trim(),
-          invoiceDetails: invoiceDetails as Prisma.InputJsonValue | undefined,
-          representatives: {
-            create: {
-              userId: auth.userId,
-              name: representativeName!.trim(),
-              email: representativeEmail!.trim(),
-            },
-          },
-          registrations: {
-            create: { eventId, status: "PENDING" },
+      const data: Prisma.StudioUncheckedCreateInput = {
+        eventId,
+        name: body.name.trim(),
+        representatives: {
+          create: {
+            userId: auth.userId,
+            name: body.representativeName!.trim(),
+            email: body.representativeEmail!.trim(),
           },
         },
+        registrations: {
+          create: { eventId, status: "PENDING" },
+        },
+      };
+
+      if (body.country !== undefined) data.country = body.country.trim();
+      if (body.city !== undefined) data.city = body.city.trim();
+      if (body.directorName !== undefined)
+        data.directorName = body.directorName.trim();
+      if (body.directorPhone !== undefined)
+        data.directorPhone = body.directorPhone.trim();
+      if (body.invoiceDetails !== undefined)
+        data.invoiceDetails = body.invoiceDetails as Prisma.InputJsonValue;
+
+      const studio = await prisma.studio.create({
+        data,
         include: { representatives: true, registrations: true },
       });
 
@@ -176,7 +168,7 @@ export function studiosRouter(prisma: PrismaClient) {
     });
   });
 
-  //todo: move to events router
+  //todo: move to events router?
   // List studios for an event (Admin sees all, reps only approved own)
   router.get(
     "/events/:eventId/studios",
@@ -245,25 +237,7 @@ export function studiosRouter(prisma: PrismaClient) {
     async (req, res) => {
       const auth = req.auth!;
       const studioId = IdSchema.parse(req.params.studioId);
-      const {
-        name,
-        country,
-        city,
-        directorName,
-        directorPhone,
-        invoiceDetails,
-      } = req.body as {
-        name?: string;
-        country?: string;
-        city?: string;
-        directorName?: string;
-        directorPhone?: string;
-        invoiceDetails?: unknown;
-      };
-
-      const invoiceDetailsJson = invoiceDetails as
-        | Prisma.InputJsonValue
-        | undefined;
+      const body = UpdateStudioBodySchema.parse(req.body);
 
       if (!auth.isAdmin) {
         const { studio, isRep, status } = await requireStudioAccess(
@@ -282,16 +256,18 @@ export function studiosRouter(prisma: PrismaClient) {
         }
       }
 
+      const data: Prisma.StudioUpdateInput = {};
+
+      if (body.name !== undefined) data.name = body.name.trim();
+      if (body.country !== undefined) data.country = body.country.trim();
+      if (body.city !== undefined) data.city = body.city.trim();
+      if (body.directorName !== undefined) data.directorName = body.directorName.trim();
+      if (body.directorPhone !== undefined) data.directorPhone = body.directorPhone.trim();
+      if (body.invoiceDetails !== undefined) data.invoiceDetails = body.invoiceDetails as Prisma.InputJsonValue;
+
       const updated = await prisma.studio.update({
         where: { id: studioId },
-        data: {
-          name: name?.trim() ?? undefined,
-          country: country?.trim() ?? undefined,
-          city: city?.trim() ?? undefined,
-          directorName: directorName?.trim() ?? undefined,
-          directorPhone: directorPhone?.trim() ?? undefined,
-          invoiceDetails: invoiceDetailsJson,
-        },
+        data,
         include: { representatives: true, registrations: true },
       });
 
@@ -325,24 +301,24 @@ export function studiosRouter(prisma: PrismaClient) {
       const auth = req.auth!;
       const eventId = IdSchema.parse(req.params.eventId);
       const studioId = IdSchema.parse(req.params.studioId);
-      const { status, canEditDuringReview } = req.body as {
-        status?: "PENDING" | "APPROVED" | "REJECTED";
-        canEditDuringReview?: boolean;
+      const body = UpdateRegistrationBodySchema.parse(req.body);
+
+      const updateData: Prisma.StudioEventRegistrationUpdateInput = {
+        status: body.status,
       };
 
-      if (!status) return res.status(400).json({ error: "Status is required" });
+      if (body.canEditDuringReview !== undefined) {
+        updateData.canEditDuringReview = body.canEditDuringReview;
+      }
 
       const updated = await prisma.studioEventRegistration.upsert({
         where: { studioId_eventId: { studioId, eventId } },
-        update: {
-          status,
-          canEditDuringReview: canEditDuringReview ?? undefined,
-        },
+        update: updateData,
         create: {
           studioId,
           eventId,
-          status,
-          canEditDuringReview: canEditDuringReview ?? false,
+          status: body.status,
+          canEditDuringReview: body.canEditDuringReview ?? false,
         },
       });
 
@@ -392,7 +368,7 @@ export function studiosRouter(prisma: PrismaClient) {
       const auth = req.auth!;
       const studioId = IdSchema.parse(req.params.studioId);
       const representativeId = IdSchema.parse(req.params.representativeId);
-      const { name, email } = req.body as { name?: string; email?: string };
+      const body = UpdateRepresentativeBodySchema.parse(req.body);
 
       const rep = await prisma.studioRepresentative.findUnique({
         where: { id: representativeId },
@@ -405,12 +381,14 @@ export function studiosRouter(prisma: PrismaClient) {
         return res.sendStatus(403);
       }
 
+      const repData: Prisma.StudioRepresentativeUpdateInput = {};
+
+      if (body.name !== undefined) repData.name = body.name.trim();
+      if (body.email !== undefined) repData.email = body.email.trim();
+
       const updated = await prisma.studioRepresentative.update({
         where: { id: representativeId },
-        data: {
-          name: name?.trim() ?? undefined,
-          email: email?.trim() ?? undefined,
-        },
+        data: repData,
       });
 
       return res.json(updated);

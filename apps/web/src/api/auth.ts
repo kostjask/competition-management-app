@@ -48,7 +48,7 @@ export const login = async (data: LoginData): Promise<AuthResponse> => {
  */
 export const logout = (): void => {
   removeToken();
-  window.location.href = "/login";
+  window.location.href = "/auth/login";
 };
 
 /**
