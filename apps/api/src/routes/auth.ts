@@ -1,10 +1,16 @@
 import { Router } from "express";
-import * as bcrypt from "bcrypt";
-import * as jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import crypto from "node:crypto";
 import type { PrismaClient } from "../../generated/prisma/client";
-import { RegisterSchema, LoginSchema } from "../../../../packages/schemas/src";
+import {
+  RegisterSchema,
+  LoginSchema,
+  VerifyEmailSchema,
+} from "../../../../packages/schemas/src";
 import { ZodError } from "zod";
 import type { Response } from "express";
+import { sendVerificationEmail } from "../utils/email";
 
 export const authRouter = (prisma: PrismaClient) => {
   const router = Router();
@@ -18,10 +24,13 @@ export const authRouter = (prisma: PrismaClient) => {
     res: Response,
     statusCode: number,
     error: string,
-    details?: object
-  ) => res.status(statusCode).json({ error, statusCode, ...(details ? { details } : {}) });
+    details?: object,
+  ) =>
+    res
+      .status(statusCode)
+      .json({ error, statusCode, ...(details ? { details } : {}) });
 
-  // Register new user
+  // Register new user (no role initially)
   router.post("/register", async (req, res, next) => {
     try {
       const body = RegisterSchema.parse(req.body);
@@ -35,25 +44,80 @@ export const authRouter = (prisma: PrismaClient) => {
       }
 
       const hashedPassword = await bcrypt.hash(body.password, 10);
+      const verificationToken = crypto.randomBytes(32).toString("hex");
 
       const user = await prisma.user.create({
         data: {
           email: body.email,
           name: body.name,
           password: hashedPassword,
+          verificationToken,
+          emailVerified: false,
         },
       });
 
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, {
+      // Send verification email
+      await sendVerificationEmail({
+        to: user.email,
+        token: verificationToken,
+        name: user.name,
+      });
+
+      res.status(201).json({
+        message:
+          "Registration successful. Please check your email to verify your account.",
+        userId: user.id,
+      });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return sendError(res, 400, "Validation error", { issues: err.issues });
+      }
+      return next(err);
+    }
+  });
+
+  router.post("/verify-email", async (req, res, next) => {
+    try {
+      const { token } = VerifyEmailSchema.parse(req.body);
+
+      console.log(token);
+      
+
+      const user = await prisma.user.findUnique({
+        where: { verificationToken: token },
+      });
+
+      if (!user) {
+        return sendError(res, 400, "Invalid verification token");
+      }
+
+      if (user.emailVerified) {
+        return sendError(res, 400, "Email already verified");
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+        },
+      });
+
+      // Auto-login: generate JWT token
+      const authToken = jwt.sign({ userId: user.id }, JWT_SECRET, {
         expiresIn: "7d",
       });
-      res
-        .status(201)
-        .json({
-          token,
-          tokenType: "Bearer",
-          user: { id: user.id, email: user.email, name: user.name },
-        });
+
+      res.json({
+        message: "Email verified successfully",
+        token: authToken,
+        tokenType: "Bearer",
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+        },
+      });
     } catch (err) {
       if (err instanceof ZodError) {
         return sendError(res, 400, "Validation error", { issues: err.issues });

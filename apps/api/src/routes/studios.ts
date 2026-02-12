@@ -311,18 +311,58 @@ export function studiosRouter(prisma: PrismaClient) {
         updateData.canEditDuringReview = body.canEditDuringReview;
       }
 
-      const updated = await prisma.studioEventRegistration.upsert({
-        where: { studioId_eventId: { studioId, eventId } },
-        update: updateData,
-        create: {
-          studioId,
-          eventId,
-          status: body.status,
-          canEditDuringReview: body.canEditDuringReview ?? false,
-        },
+      const result = await prisma.$transaction(async (tx) => {
+        // Update or create registration
+        const updated = await tx.studioEventRegistration.upsert({
+          where: { studioId_eventId: { studioId, eventId } },
+          update: updateData,
+          create: {
+            studioId,
+            eventId,
+            status: body.status,
+            canEditDuringReview: body.canEditDuringReview ?? false,
+          },
+        });
+
+        // If approved, assign representative role to all active studio representatives
+        if (body.status === "APPROVED") {
+          const studio = await tx.studio.findUnique({
+            where: { id: studioId },
+            include: { representatives: { where: { active: true } } },
+          });
+
+          if (studio) {
+            const representativeRole = await tx.role.findUnique({
+              where: { key: "representative" },
+            });
+
+            if (representativeRole) {
+              // Assign role to each representative
+              for (const rep of studio.representatives) {
+                await tx.userRole.upsert({
+                  where: {
+                    userId_roleId_eventId: {
+                      userId: rep.userId,
+                      roleId: representativeRole.id,
+                      eventId: eventId ?? null,
+                    } as any,
+                  },
+                  create: {
+                    userId: rep.userId,
+                    roleId: representativeRole.id,
+                    eventId: eventId ?? null,
+                  },
+                  update: {}, // Already has role, do nothing
+                });
+              }
+            }
+          }
+        }
+
+        return updated;
       });
 
-      return res.json(updated);
+      return res.json(result);
     },
   );
 

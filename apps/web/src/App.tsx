@@ -9,7 +9,7 @@ import {
 import { useTranslation } from "./i18n/useTranslation";
 import { useLanguage } from "./i18n/useLanguage";
 import type { Locale } from "./i18n/LanguageContext";
-import { AuthNav, LoginPage, RegisterPage, RequireRole } from "./auth";
+import { AuthNav, LoginPage, RegisterPage, VerifyEmailPage, RequireRole, RequireGuest } from "./auth";
 
 function LanguageSelector() {
   const { locale, setLocale } = useLanguage();
@@ -99,8 +99,30 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Navigate to="/auth/login" replace />} />
           <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-          <Route path="/auth/login" element={<LoginPage />} />
-          <Route path="/auth/register" element={<RegisterPage />} />
+          <Route
+            path="/auth/login"
+            element={
+              <RequireGuest>
+                <LoginPage />
+              </RequireGuest>
+            }
+          />
+          <Route
+            path="/auth/register"
+            element={
+              <RequireGuest>
+                <RegisterPage />
+              </RequireGuest>
+            }
+          />
+          <Route
+            path="/verify-email"
+            element={
+              <RequireGuest>
+                <VerifyEmailPage />
+              </RequireGuest>
+            }
+          />
 
           <Route
             path="/admin/*"

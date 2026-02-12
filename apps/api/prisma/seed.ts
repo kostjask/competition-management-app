@@ -1,5 +1,6 @@
 import { prisma } from "../src/db/prisma";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcrypt";
 
 async function main() {
   console.log("🌱 Seeding database...\n");
@@ -147,12 +148,19 @@ async function main() {
 
   // 4. Create test users
   console.log("Creating test users...");
+  
+  // Hash password for test accounts (password: "password123")
+  const hashedPassword = await bcrypt.hash("password123", 10);
+  
   const adminUser = await prisma.user.upsert({
     where: { email: "admin@test.com" },
     update: {},
     create: {
       email: "admin@test.com",
       name: "Admin User",
+      password: hashedPassword,
+      emailVerified: true,
+      active: true,
     },
   });
 
@@ -162,6 +170,9 @@ async function main() {
     create: {
       email: "rep@test.com",
       name: "Representative User",
+      password: hashedPassword,
+      emailVerified: true,
+      active: true,
     },
   });
 
@@ -171,6 +182,9 @@ async function main() {
     create: {
       email: "judge@test.com",
       name: "Judge User",
+      password: hashedPassword,
+      emailVerified: true,
+      active: true,
     },
   });
   console.log("✅ Created 3 test users\n");
@@ -387,17 +401,17 @@ async function main() {
   console.log("════════════════════════════════════════");
   console.log("\n📋 Test Credentials:\n");
   console.log(`Admin User:`);
-  console.log(`  ID:    ${adminUser.id}`);
-  console.log(`  Email: ${adminUser.email}\n`);
-  console.log(`  Token: ${adminToken}\n`);
+  console.log(`  Email:    ${adminUser.email}`);
+  console.log(`  Password: password123`);
+  console.log(`  Token:    ${adminToken}\n`);
   console.log(`Representative User:`);
-  console.log(`  ID:    ${repUser.id}`);
-  console.log(`  Email: ${repUser.email}\n`);
-  console.log(`  Token: ${repToken}\n`);
+  console.log(`  Email:    ${repUser.email}`);
+  console.log(`  Password: password123`);
+  console.log(`  Token:    ${repToken}\n`);
   console.log(`Judge User:`);
-  console.log(`  ID:    ${judgeUser.id}`);
-  console.log(`  Email: ${judgeUser.email}\n`);
-  console.log(`  Token: ${judgeToken}\n`);
+  console.log(`  Email:    ${judgeUser.email}`);
+  console.log(`  Password: password123`);
+  console.log(`  Token:    ${judgeToken}\n`);
   console.log(`Event:`);
   console.log(`  ID:   ${event.id}`);
   console.log(`  Name: ${event.name}`);

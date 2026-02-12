@@ -15,17 +15,22 @@ export interface LoginData {
   password: string;
 }
 
+export interface VerifyEmailData {
+  token: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  userId: string;
+}
+
 /**
  * Register a new user
  */
-export const register = async (data: RegisterData): Promise<AuthResponse> => {
-  const response = await apiClient.post<AuthResponse, RegisterData>("/auth/register", data);
+export const register = async (data: RegisterData): Promise<RegisterResponse> => {
+  const response = await apiClient.post<RegisterResponse, RegisterData>("/auth/register", data);
   
-  // Store the token
-  if (response.token) {
-    setToken(response.token);
-  }
-  
+  // No token is returned - user must verify email first
   return response;
 };
 
@@ -63,4 +68,18 @@ export const getCurrentUser = async (): Promise<UserProfile> => {
  */
 export const isAuthenticated = (): boolean => {
   return !!localStorage.getItem("auth_token");
+};
+
+/**
+ * Verify email with token
+ */
+export const verifyEmail = async (data: VerifyEmailData): Promise<AuthResponse> => {
+  const response = await apiClient.post<AuthResponse, VerifyEmailData>("/auth/verify-email", data);
+  
+  // Store the token if returned
+  if (response.token) {
+    setToken(response.token);
+  }
+  
+  return response;
 };

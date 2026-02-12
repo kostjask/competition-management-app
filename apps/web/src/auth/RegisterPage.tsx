@@ -1,32 +1,85 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "./useAuth";
+import { Link } from "react-router-dom";
+import { register } from "../api/auth";
 
 export function RegisterPage() {
-  const navigate = useNavigate();
-  const { register, loading, error, clearError } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError(null);
-    clearError();
+    setError(null);
+    setLoading(true);
 
     try {
       await register({ name, email, password });
-      navigate("/", { replace: true });
+      setSuccess(true);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Registration failed");
+      setError(err instanceof Error ? err.message : "Registration failed");
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (success) {
+    return (
+      <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-linear-to-br from-slate-50 via-white to-emerald-50 px-6 py-10">
+        <div className="pointer-events-none absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-emerald-100 opacity-70 blur-3xl" />
+        <div className="pointer-events-none absolute right-10 top-10 h-56 w-56 rounded-full bg-slate-200 opacity-60 blur-3xl" />
+        
+        <div className="relative mx-auto flex w-full max-w-md flex-col items-center justify-center pt-20">
+          <div className="w-full rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-2xl backdrop-blur">
+            <div className="text-center">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
+                <svg
+                  className="h-8 w-8 text-emerald-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+              <h2 className="mt-6 text-2xl font-semibold text-slate-900">
+                Check your email
+              </h2>
+              <p className="mt-3 text-sm text-slate-600">
+                We've sent a verification link to <strong>{email}</strong>
+              </p>
+              <p className="mt-2 text-sm text-slate-500">
+                Click the link in the email to verify your account and get started.
+              </p>
+              <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs text-slate-600">
+                  <strong>Didn't receive the email?</strong> Check your spam folder or contact support.
+                </p>
+              </div>
+              <Link
+                to="/auth/login"
+                className="mt-6 block text-sm font-semibold text-emerald-600 hover:text-emerald-500"
+              >
+                Already verified? Sign in
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-gradient-to-br from-slate-50 via-white to-emerald-50 px-6 py-10">
+    <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-linear-to-br from-slate-50 via-white to-emerald-50 px-6 py-10">
       <div className="pointer-events-none absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-emerald-100 opacity-70 blur-3xl" />
       <div className="pointer-events-none absolute right-10 top-10 h-56 w-56 rounded-full bg-slate-200 opacity-60 blur-3xl" />
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-center">
@@ -98,9 +151,9 @@ export function RegisterPage() {
                 </button>
               </div>
             </label>
-            {(formError || error) && (
+            {error && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {formError || error}
+                {error}
               </div>
             )}
             <button

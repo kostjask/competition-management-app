@@ -6,7 +6,7 @@ export interface AuthContext {
 
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../db/prisma";
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   // DEV_AUTH shortcut

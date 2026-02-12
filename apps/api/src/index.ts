@@ -7,6 +7,7 @@ import { performancesRouter } from "./routes/performances";
 import { studiosRouter } from "./routes/studios";
 import { dancersRouter } from "./routes/dancers";
 import { authRouter } from "./routes/auth";
+import { invitationsRouter } from "./routes/invitations";
 import { AuthContext } from "./middleware/auth";
 import { authMiddleware } from "./middleware/auth";
 
@@ -40,12 +41,25 @@ app.get("/health", async (req, res) => {
 app.use("/auth", (req, res, next) => {
   const isPublicAuth =
     req.method === "POST" &&
-    (req.path === "/register" || req.path === "/login");
+    (req.path === "/register" || 
+     req.path === "/login" || 
+     req.path === "/verify-email");
 
   if (isPublicAuth) return next();
   return authMiddleware(req, res, next);
 });
 app.use("/auth", authRouter(prisma));
+
+// Public invitation acceptance
+app.use("/invitations", (req, res, next) => {
+  const isPublicInvitation =
+    (req.method === "POST" && req.path === "/accept") ||
+    (req.method === "GET" && req.path.match(/^\/invitations\/[^\/]+$/));
+
+  if (isPublicInvitation) return next();
+  return authMiddleware(req, res, next);
+});
+app.use("/invitations", invitationsRouter(prisma));
 
 // Authenticated routes
 app.use(authMiddleware);
