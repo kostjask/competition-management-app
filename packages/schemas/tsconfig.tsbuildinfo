@@ -1,1 +1,1 @@
-{"root":["./src/common.schema.ts","./src/index.ts","./src/nomination.schema.ts","./src/performance.schema.ts"],"version":"5.9.3"}
+{"root":["./src/age-group.schema.ts","./src/auth.schema.ts","./src/category.schema.ts","./src/common.schema.ts","./src/dancer.schema.ts","./src/event.schema.ts","./src/format.schema.ts","./src/index.ts","./src/invitation.schema.ts","./src/judge.schema.ts","./src/nomination.schema.ts","./src/performance.schema.ts","./src/studio.schema.ts"],"version":"5.9.3"}

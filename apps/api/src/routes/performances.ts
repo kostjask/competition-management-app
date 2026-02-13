@@ -7,7 +7,7 @@ import {
   ParamsWithStudioAndPerformanceIdSchema,
   CreatePerformanceBodySchema,
   UpdatePerformanceBodySchema,
-} from "../../../../packages/schemas/src";
+} from "@dance/schemas";
 
 export const performancesRouter = (prisma: PrismaClient) => {
   const router = Router();
@@ -238,16 +238,17 @@ export const performancesRouter = (prisma: PrismaClient) => {
           });
         }
 
+        const updateData: any = {};
+        if (body.data.title) updateData.title = body.data.title;
+        if (body.data.durationSec) updateData.durationSec = body.data.durationSec;
+        if (body.data.orderOnStage) updateData.orderOnStage = body.data.orderOnStage;
+        if (body.data.categoryId) updateData.categoryId = body.data.categoryId;
+        if (body.data.ageGroupId) updateData.ageGroupId = body.data.ageGroupId;
+        if (body.data.formatId) updateData.formatId = body.data.formatId;
+
         return tx.performance.update({
           where: { id: performanceId },
-          data: {
-            title: body.data.title ?? undefined,
-            durationSec: body.data.durationSec ?? undefined,
-            orderOnStage: body.data.orderOnStage ?? undefined,
-            categoryId: body.data.categoryId ?? undefined,
-            ageGroupId: body.data.ageGroupId ?? undefined,
-            formatId: body.data.formatId ?? undefined,
-          },
+          data: updateData,
           include: { participants: { include: { dancer: true } } },
         });
       });

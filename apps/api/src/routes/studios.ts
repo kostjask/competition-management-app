@@ -3,12 +3,15 @@ import { PrismaClient, Prisma } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
 import {
-  CreateStudioBodySchema,
   UpdateStudioBodySchema,
-  UpdateRegistrationBodySchema,
   UpdateRepresentativeBodySchema,
+  CreateDancerBodySchema,
+  ParamsWithStudioIdSchema,
+  ParamsWithStudioAndPerformanceIdSchema,
+  CreatePerformanceBodySchema,
+  UpdatePerformanceBodySchema,
   IdSchema,
-} from "../../../../packages/schemas/src";
+} from "@dance/schemas";
 
 export function studiosRouter(prisma: PrismaClient) {
   const router = Router();
@@ -45,91 +48,32 @@ export function studiosRouter(prisma: PrismaClient) {
     return { studio, isRep, status, canEditDuringReview };
   }
 
-  router.post(
-    "/events/:eventId/studios",
-    requirePermission("studio.manage", { eventParam: "eventId" }),
-    async (req, res) => {
-      const auth = req.auth!;
-      const eventId = IdSchema.parse(req.params.eventId);
-      const body = CreateStudioBodySchema.parse(req.body);
+  async function requireApprovedStudioAccess(userId: string, studioId: string) {
+    const studio = await prisma.studio.findFirst({
+      where: { id: studioId, deletedAt: null },
+      include: {
+        registrations: true,
+        representatives: true,
+        event: { select: { stage: true } },
+      },
+    });
 
-      // Check event stage
-      if (!auth.isAdmin) {
-        const event = await prisma.event.findUnique({
-          where: { id: eventId },
-          select: { stage: true },
-        });
+    if (!studio)
+      return { studio: null, approved: false, isRep: false, canEditDuringReview: false };
 
-        if (!event || !isActionAllowed(event.stage, "studio.register")) {
-          return res
-            .status(403)
-            .json({ error: "Registration not allowed in current event stage" });
-        }
+    const isRep = studio.representatives.some(
+      (r) => r.userId === userId && r.active,
+    );
 
-        if (!body.representativeName?.trim() || !body.representativeEmail?.trim()) {
-          return res
-            .status(400)
-            .json({ error: "Representative name and email are required" });
-        }
-      }
+    const registration = studio.registrations.find(
+      (r) => r.eventId === studio.eventId,
+    );
 
-      // Admin can create directly
-      if (auth.isAdmin) {
-        const data: Prisma.StudioUncheckedCreateInput = {
-          eventId,
-          name: body.name.trim(),
-          registrations: {
-            create: { eventId, status: "APPROVED" },
-          },
-        };
+    const approved = registration?.status === "APPROVED";
+    const canEditDuringReview = registration?.canEditDuringReview ?? false;
 
-        if (body.country !== undefined) data.country = body.country.trim();
-        if (body.city !== undefined) data.city = body.city.trim();
-        if (body.directorName !== undefined) data.directorName = body.directorName.trim();
-        if (body.directorPhone !== undefined) data.directorPhone = body.directorPhone.trim();
-        if (body.invoiceDetails !== undefined) data.invoiceDetails = body.invoiceDetails as Prisma.InputJsonValue;
-
-        const studio = await prisma.studio.create({
-          data,
-          include: { representatives: true, registrations: true },
-        });
-
-        return res.status(201).json(studio);
-      }
-
-      // Representative flow: create studio + registration request
-      const data: Prisma.StudioUncheckedCreateInput = {
-        eventId,
-        name: body.name.trim(),
-        representatives: {
-          create: {
-            userId: auth.userId,
-            name: body.representativeName!.trim(),
-            email: body.representativeEmail!.trim(),
-          },
-        },
-        registrations: {
-          create: { eventId, status: "PENDING" },
-        },
-      };
-
-      if (body.country !== undefined) data.country = body.country.trim();
-      if (body.city !== undefined) data.city = body.city.trim();
-      if (body.directorName !== undefined)
-        data.directorName = body.directorName.trim();
-      if (body.directorPhone !== undefined)
-        data.directorPhone = body.directorPhone.trim();
-      if (body.invoiceDetails !== undefined)
-        data.invoiceDetails = body.invoiceDetails as Prisma.InputJsonValue;
-
-      const studio = await prisma.studio.create({
-        data,
-        include: { representatives: true, registrations: true },
-      });
-
-      return res.status(201).json(studio);
-    },
-  );
+    return { studio, approved, isRep, canEditDuringReview };
+  }
 
   // GET all studio
   router.get("/", async (_req, res) => {
@@ -166,45 +110,13 @@ export function studiosRouter(prisma: PrismaClient) {
       include: { registrations: true, representatives: true },
       orderBy: { name: "asc" },
     });
+
+    return res.json(studios);
   });
-
-  //todo: move to events router?
-  // List studios for an event (Admin sees all, reps only approved own)
-  router.get(
-    "/events/:eventId/studios",
-    requirePermission("studio.manage", { eventParam: "eventId" }),
-    async (req, res) => {
-      const auth = req.auth!;
-      const eventId = IdSchema.parse(req.params.eventId);
-
-      if (auth.isAdmin) {
-        const studios = await prisma.studio.findMany({
-          where: { eventId, deletedAt: null },
-          include: { registrations: true, representatives: true },
-          orderBy: { name: "asc" },
-        });
-        return res.json(studios);
-      }
-
-      const studios = await prisma.studio.findMany({
-        where: {
-          eventId,
-          deletedAt: null,
-          representatives: {
-            some: { userId: auth.userId, active: true },
-          },
-        },
-        include: { registrations: true, representatives: true },
-        orderBy: { name: "asc" },
-      });
-
-      return res.json(studios);
-    },
-  );
 
   // Get studio details (Admin or representative)
   router.get(
-    "/studios/:studioId",
+    "/:studioId",
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -215,7 +127,7 @@ export function studiosRouter(prisma: PrismaClient) {
           where: { id: studioId, deletedAt: null },
           include: { registrations: true, representatives: true, event: true },
         });
-        if (!studio) return res.sendStatus(404);
+        if (!studio) return res.status(404).json({ error: "Studio not found" });
         return res.json(studio);
       }
 
@@ -224,7 +136,7 @@ export function studiosRouter(prisma: PrismaClient) {
         studioId,
       );
 
-      if (!studio || !isRep) return res.sendStatus(403);
+      if (!studio || !isRep) return res.status(403).json({ error: "Access denied" });
 
       return res.json(studio);
     },
@@ -232,7 +144,7 @@ export function studiosRouter(prisma: PrismaClient) {
 
   // Update studio (Admin or representative with stage check)
   router.patch(
-    "/studios/:studioId",
+    "/:studioId",
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -245,7 +157,7 @@ export function studiosRouter(prisma: PrismaClient) {
           studioId,
         );
         if (!studio || !isRep || status === "REJECTED") {
-          return res.sendStatus(403);
+          return res.status(403).json({ error: "Access denied" });
         }
 
         // Check stage
@@ -277,12 +189,12 @@ export function studiosRouter(prisma: PrismaClient) {
 
   // Soft delete studio (Admin only)
   router.delete(
-    "/studios/:studioId",
+    "/:studioId",
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
       const studioId = IdSchema.parse(req.params.studioId);
-      if (!auth.isAdmin) return res.sendStatus(403);
+      if (!auth.isAdmin) return res.status(403).json({ error: "Access denied" });
 
       const deleted = await prisma.studio.update({
         where: { id: studioId },
@@ -293,107 +205,330 @@ export function studiosRouter(prisma: PrismaClient) {
     },
   );
 
-  // Approve or reject registration (Admin only)
-  router.patch(
-    "/events/:eventId/studios/:studioId/registration",
-    requirePermission("event.register", { eventParam: "eventId" }),
+  // Create dancer for studio (Admin or approved representative)
+  router.post(
+    "/:studioId/dancers",
+    requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const eventId = IdSchema.parse(req.params.eventId);
       const studioId = IdSchema.parse(req.params.studioId);
-      const body = UpdateRegistrationBodySchema.parse(req.body);
+      const body = CreateDancerBodySchema.parse(req.body);
+      const birthDate =
+        body.birthDate instanceof Date
+          ? body.birthDate
+          : new Date(body.birthDate);
 
-      const updateData: Prisma.StudioEventRegistrationUpdateInput = {
-        status: body.status,
-      };
+      if (!auth.isAdmin) {
+        const { studio, approved, isRep, canEditDuringReview } =
+          await requireApprovedStudioAccess(auth.userId, studioId);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
 
-      if (body.canEditDuringReview !== undefined) {
-        updateData.canEditDuringReview = body.canEditDuringReview;
+        if (!isActionAllowed(studio.event.stage, "dancer.manage", canEditDuringReview)) {
+          return res.status(403).json({
+            error: "Dancer management not allowed in current event stage",
+          });
+        }
       }
 
-      const result = await prisma.$transaction(async (tx) => {
-        // Update or create registration
-        const updated = await tx.studioEventRegistration.upsert({
-          where: { studioId_eventId: { studioId, eventId } },
-          update: updateData,
-          create: {
-            studioId,
-            eventId,
-            status: body.status,
-            canEditDuringReview: body.canEditDuringReview ?? false,
-          },
-        });
-
-        // If approved, assign representative role to all active studio representatives
-        if (body.status === "APPROVED") {
-          const studio = await tx.studio.findUnique({
-            where: { id: studioId },
-            include: { representatives: { where: { active: true } } },
-          });
-
-          if (studio) {
-            const representativeRole = await tx.role.findUnique({
-              where: { key: "representative" },
-            });
-
-            if (representativeRole) {
-              // Assign role to each representative
-              for (const rep of studio.representatives) {
-                await tx.userRole.upsert({
-                  where: {
-                    userId_roleId_eventId: {
-                      userId: rep.userId,
-                      roleId: representativeRole.id,
-                      eventId: eventId ?? null,
-                    } as any,
-                  },
-                  create: {
-                    userId: rep.userId,
-                    roleId: representativeRole.id,
-                    eventId: eventId ?? null,
-                  },
-                  update: {}, // Already has role, do nothing
-                });
-              }
-            }
-          }
-        }
-
-        return updated;
+      const dancer = await prisma.dancer.create({
+        data: {
+          studioId,
+          firstName: body.firstName.trim(),
+          lastName: body.lastName.trim(),
+          birthDate,
+        },
       });
 
-      return res.json(result);
+      return res.status(201).json(dancer);
     },
   );
 
-  // Cancel registration request (Representative, PENDING only)
-  router.delete(
-    "/events/:eventId/studios/:studioId/registration",
-    requirePermission("event.register", { eventParam: "eventId" }),
+  // List dancers for studio (Admin or approved representative)
+  router.get(
+    "/:studioId/dancers",
+    requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
-      const eventId = IdSchema.parse(req.params.eventId);
       const studioId = IdSchema.parse(req.params.studioId);
 
       if (!auth.isAdmin) {
-        const { studio, isRep, status } = await requireStudioAccess(
+        const { approved, isRep } = await requireApprovedStudioAccess(
           auth.userId,
           studioId,
         );
-        if (!studio || !isRep || status !== "PENDING") {
-          return res.sendStatus(403);
+        if (!approved || !isRep) return res.status(403).json({ error: "Access denied" });
+      }
+
+      const dancers = await prisma.dancer.findMany({
+        where: { studioId, deletedAt: null },
+        orderBy: { lastName: "asc" },
+      });
+
+      return res.json(dancers);
+    },
+  );
+
+  // Create performance for studio (Admin or approved representative)
+  router.post(
+    "/:studioId/performances",
+    requirePermission("performance.manage"),
+    async (req, res) => {
+      const auth = req.auth!;
+      const params = ParamsWithStudioIdSchema.safeParse(req.params);
+      if (!params.success) return res.status(400).json(params.error);
+
+      const { studioId } = params.data;
+
+      const body = CreatePerformanceBodySchema.safeParse(req.body);
+      if (!body.success) return res.status(400).json(body.error);
+
+      if (!auth.isAdmin) {
+        const { studio, approved, isRep, canEditDuringReview } =
+          await requireApprovedStudioAccess(auth.userId, studioId);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
+
+        if (
+          !isActionAllowed(
+            studio.event.stage,
+            "performance.manage",
+            canEditDuringReview,
+          )
+        ) {
+          return res.status(403).json({
+            error: "Performance management not allowed in current event stage",
+          });
         }
       }
 
-      const registration = await prisma.studioEventRegistration.findUnique({
-        where: { studioId_eventId: { studioId, eventId } },
+      const studio = await prisma.studio.findUnique({
+        where: { id: studioId },
+        include: { event: true },
       });
 
-      if (!registration) return res.sendStatus(404);
-      if (registration.status !== "PENDING") return res.sendStatus(400);
+      if (!studio) return res.status(404).json({ error: "Studio not found" });
 
-      await prisma.studioEventRegistration.delete({
-        where: { studioId_eventId: { studioId, eventId } },
+      // Validate category/ageGroup/format belong to the same event
+      const [category, ageGroup, format] = await Promise.all([
+        prisma.danceCategory.findFirst({
+          where: { id: body.data.categoryId, eventId: studio.eventId },
+        }),
+        prisma.ageGroup.findFirst({
+          where: { id: body.data.ageGroupId, eventId: studio.eventId },
+        }),
+        prisma.danceFormat.findFirst({
+          where: { id: body.data.formatId, eventId: studio.eventId },
+        }),
+      ]);
+
+      if (!category || !ageGroup || !format) {
+        return res.status(400).json({ error: "Invalid event configuration" });
+      }
+
+      // Validate dancers belong to studio
+      const dancers = await prisma.dancer.findMany({
+        where: { id: { in: body.data.dancerIds }, studioId, deletedAt: null },
+        select: { id: true },
+      });
+
+      if (dancers.length !== body.data.dancerIds.length) {
+        return res.status(400).json({ error: "Invalid dancer list" });
+      }
+
+      const performance = await prisma.performance.create({
+        data: {
+          eventId: studio.eventId,
+          title: body.data.title,
+          durationSec: body.data.durationSec,
+          orderOnStage: body.data.orderOnStage,
+          categoryId: body.data.categoryId,
+          ageGroupId: body.data.ageGroupId,
+          formatId: body.data.formatId,
+          participants: {
+            createMany: {
+              data: body.data.dancerIds.map((dancerId) => ({ dancerId })),
+            },
+          },
+        },
+        include: {
+          participants: { include: { dancer: true } },
+        },
+      });
+
+      return res.status(201).json(performance);
+    },
+  );
+
+  // List performances for studio (Admin or approved representative)
+  router.get(
+    "/:studioId/performances",
+    requirePermission("performance.manage"),
+    async (req, res) => {
+      const auth = req.auth!;
+      const params = ParamsWithStudioIdSchema.safeParse(req.params);
+      if (!params.success) return res.status(400).json(params.error);
+
+      const { studioId } = params.data;
+
+      if (!auth.isAdmin) {
+        const { approved, isRep } = await requireApprovedStudioAccess(
+          auth.userId,
+          studioId,
+        );
+        if (!approved || !isRep) return res.status(403).json({ error: "Access denied" });
+      }
+
+      const performances = await prisma.performance.findMany({
+        where: {
+          participants: {
+            some: {
+              dancer: { studioId },
+            },
+          },
+        },
+        include: {
+          participants: { include: { dancer: true } },
+          category: true,
+          ageGroup: true,
+          format: true,
+        },
+        orderBy: { orderOnStage: "asc" },
+      });
+
+      return res.json(performances);
+    },
+  );
+
+  // Update performance (Admin or approved representative)
+  router.patch(
+    "/:studioId/performances/:performanceId",
+    requirePermission("performance.manage"),
+    async (req, res) => {
+      const auth = req.auth!;
+      const params = ParamsWithStudioAndPerformanceIdSchema.safeParse(req.params);
+      if (!params.success) return res.status(400).json(params.error);
+
+      const { studioId, performanceId } = params.data;
+
+      const body = UpdatePerformanceBodySchema.safeParse(req.body);
+      if (!body.success) return res.status(400).json(body.error);
+
+      const performance = await prisma.performance.findUnique({
+        where: { id: performanceId },
+        include: {
+          participants: { include: { dancer: true } },
+        },
+      });
+
+      if (!performance) return res.status(404).json({ error: "Performance not found" });
+
+      if (!auth.isAdmin) {
+        const { studio, approved, isRep, canEditDuringReview } =
+          await requireApprovedStudioAccess(auth.userId, studioId);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
+
+        if (studio.eventId !== performance.eventId) return res.status(403).json({ error: "Access denied" });
+
+        if (
+          !isActionAllowed(
+            studio.event.stage,
+            "performance.manage",
+            canEditDuringReview,
+          )
+        ) {
+          return res.status(403).json({
+            error: "Performance management not allowed in current event stage",
+          });
+        }
+      }
+
+      // If dancerIds provided, validate they belong to this studio
+      if (body.data.dancerIds) {
+        const dancers = await prisma.dancer.findMany({
+          where: { id: { in: body.data.dancerIds }, studioId, deletedAt: null },
+          select: { id: true },
+        });
+
+        if (dancers.length !== body.data.dancerIds.length) {
+          return res.status(400).json({ error: "Invalid dancer list" });
+        }
+      }
+
+      const updated = await prisma.$transaction(async (tx) => {
+        if (body.data.dancerIds) {
+          await tx.performanceParticipant.deleteMany({
+            where: { performanceId },
+          });
+
+          await tx.performanceParticipant.createMany({
+            data: body.data.dancerIds.map((dancerId) => ({
+              performanceId,
+              dancerId,
+            })),
+          });
+        }
+
+        const updateData: any = {};
+        if (body.data.title) updateData.title = body.data.title;
+        if (body.data.durationSec) updateData.durationSec = body.data.durationSec;
+        if (body.data.orderOnStage) updateData.orderOnStage = body.data.orderOnStage;
+        if (body.data.categoryId) updateData.categoryId = body.data.categoryId;
+        if (body.data.ageGroupId) updateData.ageGroupId = body.data.ageGroupId;
+        if (body.data.formatId) updateData.formatId = body.data.formatId;
+
+        return tx.performance.update({
+          where: { id: performanceId },
+          data: updateData,
+          include: { participants: { include: { dancer: true } } },
+        });
+      });
+
+      return res.json(updated);
+    },
+  );
+
+  // Delete performance (Admin or approved representative)
+  router.delete(
+    "/:studioId/performances/:performanceId",
+    requirePermission("performance.manage"),
+    async (req, res) => {
+      const auth = req.auth!;
+      const params = ParamsWithStudioAndPerformanceIdSchema.safeParse(req.params);
+      if (!params.success) return res.status(400).json(params.error);
+
+      const { studioId, performanceId } = params.data;
+
+      const performance = await prisma.performance.findUnique({
+        where: { id: performanceId },
+      });
+
+      if (!performance) return res.status(404).json({ error: "Performance not found" });
+
+      if (!auth.isAdmin) {
+        const { studio, approved, isRep, canEditDuringReview } =
+          await requireApprovedStudioAccess(auth.userId, studioId);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
+
+        if (studio.eventId !== performance.eventId) return res.status(403).json({ error: "Access denied" });
+
+        if (
+          !isActionAllowed(
+            studio.event.stage,
+            "performance.manage",
+            canEditDuringReview,
+          )
+        ) {
+          return res.status(403).json({
+            error: "Performance management not allowed in current event stage",
+          });
+        }
+      }
+
+      await prisma.performanceParticipant.deleteMany({
+        where: { performanceId },
+      });
+
+      await prisma.performance.delete({
+        where: { id: performanceId },
       });
 
       return res.sendStatus(204);
@@ -402,7 +537,7 @@ export function studiosRouter(prisma: PrismaClient) {
 
   // Update representative info (name/email)
   router.patch(
-    "/studios/:studioId/representatives/:representativeId",
+    "/:studioId/representatives/:representativeId",
     requirePermission("studio.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -414,11 +549,11 @@ export function studiosRouter(prisma: PrismaClient) {
         where: { id: representativeId },
       });
 
-      if (!rep || rep.studioId !== studioId) return res.sendStatus(404);
+      if (!rep || rep.studioId !== studioId) return res.status(404).json({ error: "Representative not found" });
 
       // Only the rep themselves or admin can edit
       if (!auth.isAdmin && rep.userId !== auth.userId) {
-        return res.sendStatus(403);
+        return res.status(403).json({ error: "Access denied" });
       }
 
       const repData: Prisma.StudioRepresentativeUpdateInput = {};

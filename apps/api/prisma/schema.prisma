@@ -12,15 +12,23 @@ enum EventStage {
   REGISTRATION_OPEN
   DATA_REVIEW
   FINALIZED
+  ENDED
 }
 
 model Event {
-  id        String     @id @default(cuid())
-  name      String
-  startsAt  DateTime
-  endsAt    DateTime
-  stage     EventStage @default(PRE_REGISTRATION)
-  createdAt DateTime   @default(now())
+  id          String     @id @default(cuid())
+  name        String
+  startsAt    DateTime
+  endsAt      DateTime
+  stage       EventStage @default(PRE_REGISTRATION)
+  createdAt   DateTime   @default(now())
+  venue       String?
+  country     String?
+  city        String?
+  description String?
+  maxStudios  Int?
+  imageUrl    String?
+  imagePath   String?
 
   ageGroups           AgeGroup[]
   categories          DanceCategory[]
@@ -30,7 +38,7 @@ model Event {
   studios             Studio[]
   userRoles           UserRole[]
   studioRegistrations StudioEventRegistration[]
-  invitations Invitation[]
+  invitations         Invitation[]
 }
 
 model DanceCategory {
@@ -74,6 +82,8 @@ model Studio {
   directorName   String?
   directorPhone  String?
   invoiceDetails Json?
+  logoUrl        String?
+  logoPath       String?
   deletedAt      DateTime?
 
   dancers         Dancer[]
@@ -127,6 +137,8 @@ model Dancer {
   firstName               String
   lastName                String
   birthDate               DateTime
+  photoUrl                String?
+  photoPath               String?
   deletedAt               DateTime?
   studio                  Studio                   @relation(fields: [studioId], references: [id])
   performanceParticipants PerformanceParticipant[]
@@ -163,11 +175,18 @@ model PerformanceParticipant {
 }
 
 model Judge {
-  id      String  @id @default(cuid())
-  eventId String
-  name    String
-  event   Event   @relation(fields: [eventId], references: [id])
-  scores  Score[]
+  id          String  @id @default(cuid())
+  eventId     String
+  userId      String
+  name        String
+  description String?
+  country     String?
+  city        String?
+  event       Event   @relation(fields: [eventId], references: [id])
+  user        User    @relation(fields: [userId], references: [id])
+  scores      Score[]
+
+  @@unique([userId, eventId])
 }
 
 model Score {
@@ -193,10 +212,13 @@ model User {
   verificationToken String?  @unique
   createdAt         DateTime @default(now())
   active            Boolean  @default(true)
+  photoUrl          String?
+  photoPath         String?
 
   roles                 UserRole[]
   studioRepresentatives StudioRepresentative[]
-  createdInvitations Invitation[] @relation("CreatedInvitations")
+  createdInvitations    Invitation[]           @relation("CreatedInvitations")
+  judges                Judge[]
 }
 
 model Role {
@@ -242,18 +264,18 @@ model UserRole {
 }
 
 model Invitation {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   email     String
-  roleKey   String   // "judge", "moderator", etc.
+  roleKey   String // "judge", "moderator", etc.
   eventId   String?
-  token     String   @unique
+  token     String    @unique
   createdBy String
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   expiresAt DateTime
   usedAt    DateTime?
-  
+
   creator User   @relation("CreatedInvitations", fields: [createdBy], references: [id])
   event   Event? @relation(fields: [eventId], references: [id])
-  
+
   @@unique([email, roleKey, eventId])
 }

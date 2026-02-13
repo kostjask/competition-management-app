@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { SubmitEvent } from "react";
 import { Link } from "react-router-dom";
 import { register } from "../api/auth";
 
@@ -12,8 +11,9 @@ export function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async () => {
+    if (!name || !email || !password) return;
+    
     setError(null);
     setLoading(true);
 
@@ -24,6 +24,13 @@ export function RegisterPage() {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && name && email && password) {
+      event.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -105,13 +112,14 @@ export function RegisterPage() {
             <h2 className="text-2xl font-semibold text-slate-900">Create account</h2>
             <p className="mt-2 text-sm text-slate-500">You can log in right after you register.</p>
           </div>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Full name</span>
               <input
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="Jane Doe"
                 autoComplete="name"
                 required
@@ -124,8 +132,9 @@ export function RegisterPage() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="you@example.com"
-                autoComplete="email"
+                autoComplete="username"
                 required
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
               />
@@ -137,6 +146,7 @@ export function RegisterPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Create a password"
                   autoComplete="new-password"
                   required
@@ -157,16 +167,20 @@ export function RegisterPage() {
               </div>
             )}
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading}
               className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-emerald-300"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
-          </form>
+          </div>
           <p className="mt-6 text-center text-sm text-slate-600">
             Already have an account?{" "}
-            <Link className="font-semibold text-emerald-600 hover:text-emerald-500" to="/auth/login">
+            <Link
+              className="font-semibold text-emerald-600 hover:text-emerald-500"
+              to="/auth/login"
+            >
               Sign in
             </Link>
           </p>

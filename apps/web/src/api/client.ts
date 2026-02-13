@@ -87,7 +87,7 @@ async function request<TResponse = unknown>(
     });
 
     // Handle authentication errors
-    if (response.status === 401) {
+    if (response.status === 401 && token) {
       redirectToLogin();
       throw new ApiError(401, "Unauthorized - Please log in again");
     }

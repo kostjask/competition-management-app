@@ -9,9 +9,10 @@ interface AppLayoutProps {
 export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <nav className="flex items-center justify-between px-6 py-4 shadow bg-white">
+      <nav className="flex items-center justify-between px-6 py-2 shadow bg-white min-h-16">
         <div className="flex items-center gap-4">
           <Link className="font-semibold hover:text-blue-600" to="/">Home</Link>
+          <Link className="font-semibold hover:text-blue-600" to="/events">Events</Link>
         </div>
         <div className="flex items-center gap-4">
           <LanguageSelector />

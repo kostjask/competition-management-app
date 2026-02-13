@@ -3,10 +3,9 @@ import { PrismaClient } from "../../generated/prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
 import {
-  CreateDancerBodySchema,
   UpdateDancerBodySchema,
   IdSchema,
-} from "../../../../packages/schemas/src";
+} from "@dance/schemas";
 
 export function dancersRouter(prisma: PrismaClient) {
   const router = Router();
@@ -38,72 +37,9 @@ export function dancersRouter(prisma: PrismaClient) {
     return { studio, approved, isRep, canEditDuringReview };
   }
 
-  // Create dancer (Admin or approved representative)
-  router.post(
-    "/studios/:studioId/dancers",
-    requirePermission("dancer.manage"),
-    async (req, res) => {
-      const auth = req.auth!;
-      const studioId = IdSchema.parse(req.params.studioId);
-      const body = CreateDancerBodySchema.parse(req.body);
-      const birthDate =
-        body.birthDate instanceof Date
-          ? body.birthDate
-          : new Date(body.birthDate);
-
-      if (!auth.isAdmin) {
-        const { studio, approved, isRep, canEditDuringReview } =
-          await requireApprovedStudioAccess(auth.userId, studioId);
-        if (!studio || !approved || !isRep) return res.sendStatus(403);
-
-        if (!isActionAllowed(studio.event.stage, "dancer.manage", canEditDuringReview)) {
-          return res.status(403).json({
-            error: "Dancer management not allowed in current event stage",
-          });
-        }
-      }
-
-      const dancer = await prisma.dancer.create({
-        data: {
-          studioId,
-          firstName: body.firstName.trim(),
-          lastName: body.lastName.trim(),
-          birthDate,
-        },
-      });
-
-      return res.status(201).json(dancer);
-    },
-  );
-
-  // List dancers (Admin or approved representative)
-  router.get(
-    "/studios/:studioId/dancers",
-    requirePermission("dancer.manage"),
-    async (req, res) => {
-      const auth = req.auth!;
-      const studioId = IdSchema.parse(req.params.studioId);
-
-      if (!auth.isAdmin) {
-        const { approved, isRep } = await requireApprovedStudioAccess(
-          auth.userId,
-          studioId,
-        );
-        if (!approved || !isRep) return res.sendStatus(403);
-      }
-
-      const dancers = await prisma.dancer.findMany({
-        where: { studioId, deletedAt: null },
-        orderBy: { lastName: "asc" },
-      });
-
-      return res.json(dancers);
-    },
-  );
-
   // Update dancer (Admin or approved representative)
   router.patch(
-    "/dancers/:dancerId",
+    "/:dancerId",
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -119,12 +55,12 @@ export function dancersRouter(prisma: PrismaClient) {
         where: { id: dancerId, deletedAt: null },
       });
 
-      if (!dancer) return res.sendStatus(404);
+      if (!dancer) return res.status(404).json({ error: "Dancer not found" });
 
       if (!auth.isAdmin) {
         const { studio, approved, isRep, canEditDuringReview } =
           await requireApprovedStudioAccess(auth.userId, dancer.studioId);
-        if (!studio || !approved || !isRep) return res.sendStatus(403);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
 
         if (!isActionAllowed(studio.event.stage, "dancer.manage", canEditDuringReview)) {
           return res.status(403).json({
@@ -152,7 +88,7 @@ export function dancersRouter(prisma: PrismaClient) {
 
   // Soft delete dancer (Admin or approved representative)
   router.delete(
-    "/dancers/:dancerId",
+    "/:dancerId",
     requirePermission("dancer.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -162,12 +98,12 @@ export function dancersRouter(prisma: PrismaClient) {
         where: { id: dancerId, deletedAt: null },
       });
 
-      if (!dancer) return res.sendStatus(404);
+      if (!dancer) return res.status(404).json({ error: "Dancer not found" });
 
       if (!auth.isAdmin) {
         const { studio, approved, isRep, canEditDuringReview } =
           await requireApprovedStudioAccess(auth.userId, dancer.studioId);
-        if (!studio || !approved || !isRep) return res.sendStatus(403);
+        if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
 
         if (!isActionAllowed(studio.event.stage, "dancer.manage", canEditDuringReview)) {
           return res.status(403).json({

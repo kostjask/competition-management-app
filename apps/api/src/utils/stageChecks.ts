@@ -1,4 +1,4 @@
-import { EventStage } from "../../generated/prisma";
+import { EventStage } from "../../generated/prisma/client";
 
 type AllowedAction =
   | "studio.register"

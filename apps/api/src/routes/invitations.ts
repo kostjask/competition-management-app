@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken";
 import {
   CreateInvitationSchema,
   AcceptInvitationSchema,
-} from "../../../../packages/schemas/src";
+} from "@dance/schemas";
 import { ZodError } from "zod";
 import type { Response } from "express";
 import { sendInvitationEmail } from "../utils/email";

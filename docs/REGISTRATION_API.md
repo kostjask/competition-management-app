@@ -335,7 +335,7 @@ User created **without password**.
 
 ### Get Current User
 
-**GET** `/auth/me`
+**GET** `/auth/profile`
 
 **Headers:**
 ```

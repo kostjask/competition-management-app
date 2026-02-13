@@ -28,7 +28,19 @@
     "isolatedModules": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@dance/types": ["../packages/types/src"],
+      "@dance/types/*": ["../packages/types/src/*"],
+      "@dance/schemas": ["../packages/schemas/src"],
+      "@dance/schemas/*": ["../packages/schemas/src/*"],
+      "@i18n": ["./src/i18n"],
+      "@i18n/*": ["./src/i18n/*"],
+      "@api": ["./src/api"],
+      "@api/*": ["./src/api/*"],
+      "@components": ["./src/components"],
+      "@components/*": ["./src/components/*"],
+      "@auth": ["./src/auth"],
+      "@auth/*": ["./src/auth/*"],
     }
   },
   "include": ["src", "vite.config.ts"],

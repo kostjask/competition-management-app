@@ -1,7 +1,15 @@
 import { z } from "zod";
 import { EmailSchema, IdSchema } from "./common.schema.js";
 
-export const RoleKeySchema = z.enum(["representative", "judge", "moderator"]);
+/**
+ * Role key validation.
+ * Roles are defined in the database (Role table), not hardcoded here.
+ * This accepts any non-empty string that matches the role.key pattern.
+ */
+export const RoleKeySchema = z
+  .string()
+  .min(1, "Role key is required")
+  .regex(/^[a-z_]+$/, "Role key must be lowercase letters and underscores only");
 
 export const CreateInvitationSchema = z.object({
   email: EmailSchema,

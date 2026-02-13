@@ -2,30 +2,23 @@
  * Events API methods
  */
 
+import { EventStageSchema, type CreateEventInput, type UpdateEventInput } from "@dance/schemas";
 import { apiClient } from "./client.js";
+
+export type EventStage = (typeof EventStageSchema)["options"][number];
 
 export interface Event {
   id: string;
   name: string;
   startsAt: string;
   endsAt: string;
-  stage: "PRE_REGISTRATION" | "REGISTRATION_OPEN" | "DATA_REVIEW" | "FINALIZED";
+  stage: EventStage;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CreateEventRequest {
-  name: string;
-  startsAt: string;
-  endsAt: string;
-  stage?: "PRE_REGISTRATION" | "REGISTRATION_OPEN" | "DATA_REVIEW" | "FINALIZED";
-}
-
-export interface UpdateEventRequest {
-  name?: string;
-  startsAt?: string;
-  endsAt?: string;
-  stage?: "PRE_REGISTRATION" | "REGISTRATION_OPEN" | "DATA_REVIEW" | "FINALIZED";
+  venue: string;
+  country: string;
+  city: string;
+  description: string;
 }
 
 /**
@@ -45,8 +38,8 @@ export const getEvent = (id: string): Promise<Event> => {
 /**
  * Create a new event (Admin only)
  */
-export const createEvent = (body: CreateEventRequest): Promise<Event> => {
-  return apiClient.post<Event, CreateEventRequest>("/events", body);
+export const createEvent = (body: CreateEventInput): Promise<Event> => {
+  return apiClient.post<Event, CreateEventInput>("/events", body);
 };
 
 /**
@@ -54,7 +47,7 @@ export const createEvent = (body: CreateEventRequest): Promise<Event> => {
  */
 export const updateEvent = (
   id: string,
-  body: UpdateEventRequest
+  body: UpdateEventInput
 ): Promise<Event> => {
-  return apiClient.patch<Event, UpdateEventRequest>(`/events/${id}`, body);
+  return apiClient.patch<Event, UpdateEventInput>(`/events/${id}`, body);
 };

@@ -60,7 +60,7 @@ export const logout = (): void => {
  * Get current user profile
  */
 export const getCurrentUser = async (): Promise<UserProfile> => {
-  return apiClient.get<UserProfile>("/auth/me");
+  return apiClient.get<UserProfile>("/auth/profile");
 };
 
 /**

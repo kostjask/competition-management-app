@@ -14,9 +14,10 @@ import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const initialHasToken = isAuthenticated();
+  const [loading, setLoading] = useState(initialHasToken);
   const [error, setError] = useState<string | null>(null);
-  const [hasToken, setHasToken] = useState(isAuthenticated());
+  const [hasToken, setHasToken] = useState(initialHasToken);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setHasToken(false);
       setUser(null);
       setError(null);
+      setLoading(false);
       return;
     }
 

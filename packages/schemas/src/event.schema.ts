@@ -6,6 +6,7 @@ export const EventStageSchema = z.enum([
   "REGISTRATION_OPEN",
   "DATA_REVIEW",
   "FINALIZED",
+  "ENDED",
 ]);
 
 export const EventIdParamsSchema = z.object({

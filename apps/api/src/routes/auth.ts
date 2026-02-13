@@ -7,7 +7,7 @@ import {
   RegisterSchema,
   LoginSchema,
   VerifyEmailSchema,
-} from "../../../../packages/schemas/src";
+} from "@dance/schemas";
 import { ZodError } from "zod";
 import type { Response } from "express";
 import { sendVerificationEmail } from "../utils/email";
@@ -171,7 +171,9 @@ export const authRouter = (prisma: PrismaClient) => {
   });
 
   // Get current user (requires auth)
-  router.get("/me", async (req, res) => {
+  router.get("/profile", async (req, res) => {
+    console.log("profile: " + JSON.stringify(req.auth));
+    
     if (!req.auth) return res.sendStatus(401);
 
     const user = await prisma.user.findUnique({

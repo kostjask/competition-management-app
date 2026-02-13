@@ -1,5 +1,4 @@
 import { useState } from "react";
-import type { SubmitEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { Location } from "react-router-dom";
 import { useAuth } from "./useAuth";
@@ -15,21 +14,32 @@ export function LoginPage() {
 
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/";
 
-  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  clearError();
+
+  const handleSubmit = async () => {
+    if (!email || !password) return;
+    
     setFormError(null);
     clearError();
 
     try {
       await login({ email, password });
+      // Only navigate on successful login
       navigate(from, { replace: true });
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Login failed");
     }
   };
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && email && password) {
+      event.preventDefault();
+      handleSubmit();
+    }
+  };
+
   return (
-    <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50 px-6 py-10">
+    <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-linear-to-br from-slate-50 via-white to-blue-50 px-6 py-10">
       <div className="pointer-events-none absolute -left-24 top-20 h-72 w-72 rounded-full bg-blue-100 opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute -right-32 bottom-10 h-72 w-72 rounded-full bg-slate-200 opacity-60 blur-3xl" />
       <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-10 lg:flex-row lg:items-center">
@@ -55,15 +65,16 @@ export function LoginPage() {
             <h2 className="text-2xl font-semibold text-slate-900">Sign in</h2>
             <p className="mt-2 text-sm text-slate-500">Use the account you registered for the event.</p>
           </div>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Email</span>
               <input
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                onKeyDown={handleKeyDown}
                 placeholder="you@example.com"
-                autoComplete="email"
+                autoComplete="username"
                 required
                 className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               />
@@ -75,6 +86,7 @@ export function LoginPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   required
@@ -95,16 +107,20 @@ export function LoginPage() {
               </div>
             )}
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={loading}
               className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
             >
               {loading ? "Signing in..." : "Sign in"}
             </button>
-          </form>
+          </div>
           <p className="mt-6 text-center text-sm text-slate-600">
             New here?{" "}
-            <Link className="font-semibold text-blue-600 hover:text-blue-500" to="/auth/register">
+            <Link
+              className="font-semibold text-blue-600 hover:text-blue-500"
+              to="/auth/register"
+            >
               Create an account
             </Link>
           </p>
