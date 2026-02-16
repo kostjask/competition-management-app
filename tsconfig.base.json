@@ -11,6 +11,12 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
 
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@dance/types": ["packages/types/src"],
+      "@dance/types/*": ["packages/types/src/*"],
+      "@dance/schemas": ["packages/schemas/src"],
+      "@dance/schemas/*": ["packages/schemas/src/*"]
+    }
   }
 }

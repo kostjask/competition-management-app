@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import { env, config } from "./config/env";
 import { prisma } from "./db/prisma";
 import { eventsRouter } from "./routes/events";
 import { studiosRouter } from "./routes/studios";
@@ -17,6 +18,7 @@ import { AuthContext } from "./middleware/auth";
 import { authMiddleware } from "./middleware/auth";
 import { setStorageProvider } from "./services/storage";
 import { LocalStorageService } from "./services/local-storage";
+import { errorHandler } from "./errors/handler";
 
 declare global {
   namespace Express {
@@ -95,40 +97,14 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-// Global error handler
-interface ErrorResponse {
-  error: string;
-  statusCode: number;
-  details?: unknown;
-}
+// Global error handler (must be last)
+app.use(errorHandler);
 
-interface CustomError extends Error {
-  name: string;
-  statusCode?: number;
-  details?: unknown;
-}
+const PORT = config.server.port;
+const HOST = config.server.host;
 
-app.use(
-  (
-    err: CustomError,
-    _req: express.Request,
-    res: express.Response,
-    _next: express.NextFunction,
-  ) => {
-    const isValidation = err?.name === "ZodError" || err?.statusCode === 400;
-
-    const statusCode = isValidation ? 400 : (err?.statusCode ?? 500);
-
-    const body: ErrorResponse = {
-      error: err?.message ?? "Unexpected error",
-      statusCode,
-      ...(err?.details ? { details: err.details } : {}),
-    };
-
-    console.error("Unhandled error:", err);
-    res.status(statusCode).json(body);
-  },
-);
-
-const PORT = 4000;
-app.listen(PORT, () => console.log(`API running at http://localhost:${PORT}`));
+app.listen(PORT, HOST, () => {
+  console.log(`\n✨ API running at http://${HOST}:${PORT}`);
+  console.log(`📊 Environment: ${env.NODE_ENV}`);
+  console.log(`🔐 Auth bypass: ${config.dev.authBypass ? "ENABLED" : "disabled"}`);
+});

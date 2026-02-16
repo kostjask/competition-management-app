@@ -18,6 +18,7 @@ export function LoginPage() {
 
   const handleSubmit = async () => {
     if (!email || !password) return;
+    // redo by usinnng  new FormData() and append email and password to it, then send it to the server?
     
     setFormError(null);
     clearError();

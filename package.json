@@ -7,7 +7,9 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "test": "turbo test",
+    "test:watch": "turbo test -- --watch"
   },
   "keywords": [],
   "author": "",

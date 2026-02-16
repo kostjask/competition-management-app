@@ -1,43 +1,72 @@
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { prisma } from "../db/prisma";
+import { config } from "../config/env";
+import { UnauthorizedError } from "../errors";
+
 export interface AuthContext {
-  userId: string
-  isAdmin: boolean
-  permissionsByEvent: Map<string | null, Set<string>>
+  userId: string;
+  isAdmin: boolean;
+  permissionsByEvent: Map<string | null, Set<string>>;
 }
 
-import { Request, Response, NextFunction } from "express";
-import { prisma } from "../db/prisma";
-import jwt from "jsonwebtoken";
-
-export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
-  // DEV_AUTH shortcut
-  if (process.env.DEV_AUTH === "true") {
+export async function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  // DEV_AUTH shortcut for development
+  if (config.dev.authBypass) {
     req.auth = {
       userId: "dev-admin",
       isAdmin: true,
-      permissionsByEvent: new Map(
-        [[null, new Set(["event.manage","studio.manage","dancer.manage","performance.manage","event.register","score.submit"])]]
-      ),
+      permissionsByEvent: new Map([
+        [
+          null,
+          new Set([
+            "event.manage",
+            "studio.manage",
+            "dancer.manage",
+            "performance.manage",
+            "event.register",
+            "score.submit",
+          ]),
+        ],
+      ]),
     };
     return next();
   }
 
-  const JWT_SECRET = process.env.JWT_SECRET;
-  if (!JWT_SECRET) return res.status(500).json({ error: "Server misconfiguration", statusCode: 500 });
-
   const authHeader = req.headers.authorization ?? "";
   if (!authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Unauthorized", statusCode: 401 });
+    return res.status(401).json({
+      error: "Unauthorized",
+      code: "UNAUTHORIZED",
+      statusCode: 401,
+      timestamp: new Date().toISOString(),
+    });
   }
+
   const token = authHeader.slice("Bearer ".length).trim();
   if (!token) {
-    return res.status(401).json({ error: "Unauthorized", statusCode: 401 });
+    return res.status(401).json({
+      error: "Unauthorized",
+      code: "UNAUTHORIZED",
+      statusCode: 401,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   let payload: { userId: string };
   try {
-    payload = jwt.verify(token, JWT_SECRET) as { userId: string };
+    payload = jwt.verify(token, config.auth.jwtSecret) as { userId: string };
   } catch {
-    return res.status(401).json({ error: "Unauthorized", statusCode: 401 });
+    return res.status(401).json({
+      error: "Unauthorized",
+      code: "UNAUTHORIZED",
+      statusCode: 401,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   const userId = payload.userId;
@@ -57,7 +86,8 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       break;
     }
     const eventKey = ur.eventId ?? null;
-    if (!permissionsByEvent.has(eventKey)) permissionsByEvent.set(eventKey, new Set());
+    if (!permissionsByEvent.has(eventKey))
+      permissionsByEvent.set(eventKey, new Set());
     for (const rp of ur.role.permissions) {
       permissionsByEvent.get(eventKey)!.add(rp.permission.key);
     }
