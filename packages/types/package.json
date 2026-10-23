@@ -8,6 +8,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   }
 }

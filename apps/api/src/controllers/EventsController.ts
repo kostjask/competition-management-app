@@ -9,12 +9,12 @@ import {
   IdSchema,
 } from "@dance/schemas";
 import { isActionAllowed } from "../utils/stageChecks";
-import { ForbiddenError, NotFoundError } from "../errors";
+import { ConflictError, ForbiddenError, NotFoundError } from "../errors";
 import { BaseController } from "./BaseController";
 
 export class EventsController extends BaseController {
   /**
-   * Helper: Verify studio access for representative
+   * Helper: Verify studio access
    */
   private async requireStudioAccess(userId: string, studioId: string) {
     const studio = await this.prisma.studio.findFirst({
@@ -66,11 +66,11 @@ export class EventsController extends BaseController {
   async getById(req: Request, res: Response): Promise<void> {
     const params = EventIdParamsSchema.parse(req.params);
     const event = await this.prisma.event.findUnique({
-      where: { id: params.id },
+      where: { id: params.eventId },
     });
 
     if (!event) {
-      throw new NotFoundError("Event", params.id);
+      throw new NotFoundError("Event", params.eventId);
     }
 
     res.json(event);
@@ -120,7 +120,7 @@ export class EventsController extends BaseController {
     if (body.stage) updateData.stage = body.stage;
 
     const event = await this.prisma.event.update({
-      where: { id: params.id },
+      where: { id: params.eventId },
       data: updateData,
     });
 
@@ -135,6 +135,7 @@ export class EventsController extends BaseController {
     const eventId = IdSchema.parse(req.params.eventId);
     const body = CreateStudioBodySchema.parse(req.body);
     const isAdmin = this.isAdmin(req);
+    const studioName = body.name.trim();
 
     // Check event stage for non-admin users
     if (!isAdmin) {
@@ -162,10 +163,8 @@ export class EventsController extends BaseController {
     if (isAdmin) {
       const data: Prisma.StudioUncheckedCreateInput = {
         eventId,
-        name: body.name.trim(),
-        registrations: {
-          create: { eventId, status: "APPROVED" },
-        },
+        name: studioName,
+        approvalStatus: "PENDING",
       };
 
       if (body.country !== undefined) data.country = body.country.trim();
@@ -189,16 +188,14 @@ export class EventsController extends BaseController {
     // Representative flow: create studio + pending registration request
     const data: Prisma.StudioUncheckedCreateInput = {
       eventId,
-      name: body.name.trim(),
+      name: studioName,
+      approvalStatus: "PENDING",
       representatives: {
         create: {
           userId,
           name: body.representativeName!.trim(),
           email: body.representativeEmail!.trim(),
         },
-      },
-      registrations: {
-        create: { eventId, status: "PENDING" },
       },
     };
 
@@ -255,13 +252,28 @@ export class EventsController extends BaseController {
   }
 
   /**
-   * Update studio registration status
+   * Update studio registration status for event
    * PATCH /events/:eventId/studios/:studioId/registration
    */
   async updateRegistration(req: Request, res: Response): Promise<void> {
     const eventId = IdSchema.parse(req.params.eventId);
     const studioId = IdSchema.parse(req.params.studioId);
     const body = UpdateRegistrationBodySchema.parse(req.body);
+
+    const studio = await this.prisma.studio.findFirst({
+      where: { id: studioId, eventId, deletedAt: null },
+      select: { id: true, approvalStatus: true },
+    });
+
+    if (!studio) {
+      throw new NotFoundError("Studio not found", studioId);
+    }
+
+    if (studio.approvalStatus !== "APPROVED") {
+      throw new ForbiddenError(
+        "Studio must be approved before registration to events",
+      );
+    }
 
     const updateData: Prisma.StudioEventRegistrationUpdateInput = {
       status: body.status,

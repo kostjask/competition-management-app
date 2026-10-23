@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../db/prisma";
 import { config } from "../config/env";
-import { UnauthorizedError } from "../errors";
 
 export interface AuthContext {
   userId: string;

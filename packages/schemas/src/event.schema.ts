@@ -7,10 +7,16 @@ export const EventStageSchema = z.enum([
   "DATA_REVIEW",
   "FINALIZED",
   "ENDED",
+  "CANCELLED"
 ]);
 
 export const EventIdParamsSchema = z.object({
-  id: IdSchema,
+  eventId: IdSchema,
+});
+
+export const EventIdStudioIdParamsSchema = z.object({
+  eventId: IdSchema,
+  studioId: IdSchema,
 });
 
 export const CreateEventBodySchema = z.object({

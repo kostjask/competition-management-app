@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { isActionAllowed } from "../utils/stageChecks";
 import {
+  CreateDancerBodySchema,
   UpdateDancerBodySchema,
   IdSchema,
 } from "@dance/schemas";
@@ -87,6 +88,7 @@ export function dancersRouter(prisma: PrismaClient) {
   );
 
   // Soft delete dancer (Admin or approved representative)
+  //todo: implement bulk delete
   router.delete(
     "/:dancerId",
     requirePermission("dancer.manage"),
@@ -120,6 +122,72 @@ export function dancersRouter(prisma: PrismaClient) {
       return res.json(deleted);
     },
   );
+
+
+
+    //todo: move dancers logic to dancers route
+    // Create dancer for studio (Admin or approved representative)
+    router.post(
+      "/:studioId/dancers",
+      requirePermission("dancer.manage"),
+      async (req, res) => {
+        const auth = req.auth!;
+        const studioId = IdSchema.parse(req.params.studioId);
+        const body = CreateDancerBodySchema.parse(req.body);
+        const birthDate =
+          body.birthDate instanceof Date
+            ? body.birthDate
+            : new Date(body.birthDate);
+
+        if (!auth.isAdmin) {
+          const { studio, approved, isRep, canEditDuringReview } =
+            await requireApprovedStudioAccess(auth.userId, studioId);
+          if (!studio || !approved || !isRep) return res.status(403).json({ error: "Access denied" });
+
+          if (!isActionAllowed(studio.event.stage, "dancer.manage", canEditDuringReview)) {
+            return res.status(403).json({
+              error: "Dancer management not allowed in current event stage",
+            });
+          }
+        }
+
+        const dancer = await prisma.dancer.create({
+          data: {
+            studioId,
+            firstName: body.firstName.trim(),
+            lastName: body.lastName.trim(),
+            birthDate,
+          },
+        });
+
+        return res.status(201).json(dancer);
+      },
+    );
+
+    // List dancers for studio (Admin or approved representative)
+    router.get(
+      "/:studioId/dancers",
+      requirePermission("dancer.manage"),
+      async (req, res) => {
+        const auth = req.auth!;
+        const studioId = IdSchema.parse(req.params.studioId);
+
+        if (!auth.isAdmin) {
+          const { approved, isRep } = await requireApprovedStudioAccess(
+            auth.userId,
+            studioId,
+          );
+          if (!approved || !isRep) return res.status(403).json({ error: "Access denied" });
+        }
+
+        const dancers = await prisma.dancer.findMany({
+          where: { studioId, deletedAt: null },
+          orderBy: { lastName: "asc" },
+        });
+
+        return res.json(dancers);
+      },
+    );
 
   return router;
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NamedEntitySchema, IdSchema } from "./common.schema.js";
+import { NamedEntitySchema } from "./common.schema.js";
 
 export const DanceCategorySchema = NamedEntitySchema;
 

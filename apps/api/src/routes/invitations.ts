@@ -1,5 +1,5 @@
 import { Router } from "express";
-import type { PrismaClient } from "../../generated/prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import { asyncHandler } from "../errors/handler";
 import { EventsController } from "../controllers";
@@ -16,7 +16,7 @@ export const eventsRouter = (prisma: PrismaClient) => {
 
   // GET single event (public)
   router.get(
-    "/:id",
+    "/:eventId",
     asyncHandler((req, res) => eventsController.getById(req, res)),
   );
 
@@ -29,16 +29,9 @@ export const eventsRouter = (prisma: PrismaClient) => {
 
   // PATCH update event (Admin only)
   router.patch(
-    "/:id",
+    "/:eventId",
     requirePermission("event.manage"),
     asyncHandler((req, res) => eventsController.update(req, res)),
-  );
-
-  // POST register studio for event
-  router.post(
-    "/:eventId/studios",
-    requirePermission("studio.manage", { eventParam: "eventId" }),
-    asyncHandler((req, res) => eventsController.registerStudio(req, res)),
   );
 
   // GET list studios for event
@@ -48,7 +41,14 @@ export const eventsRouter = (prisma: PrismaClient) => {
     asyncHandler((req, res) => eventsController.listStudios(req, res)),
   );
 
-  // PATCH update registration status
+  // POST register studio for event
+  router.post(
+    "/:eventId/studios/:studioId/registration",
+    requirePermission("studio.manage", { eventParam: "eventId" }),
+    asyncHandler((req, res) => eventsController.registerStudio(req, res)),
+  );
+
+  // PATCH update studio registration status for event (Admin only)
   router.patch(
     "/:eventId/studios/:studioId/registration",
     requirePermission("event.register", { eventParam: "eventId" }),

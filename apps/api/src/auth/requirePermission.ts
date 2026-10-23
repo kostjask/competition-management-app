@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { prisma } from "../db/prisma";
 
 export function requirePermission(
   permission: string,

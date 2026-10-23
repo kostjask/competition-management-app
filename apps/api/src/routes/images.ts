@@ -5,7 +5,7 @@
  */
 
 import { Router, Request, Response } from "express";
-import type { PrismaClient } from "../../generated/prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { uploadFile, deleteFile, getFileUrl } from "../services/storage";
 import {
   createFileUploadMiddleware,

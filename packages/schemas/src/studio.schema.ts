@@ -1,6 +1,15 @@
 import { z } from "zod";
 import { IdSchema, EmailSchema } from "./common.schema.js";
 
+export const StudioIdParamsSchema = z.object({
+  studioId: IdSchema,
+});
+
+export const StudioIdRepIdParamsSchema = z.object({
+  studioId: IdSchema,
+  representativeId: IdSchema,
+});
+
 export const CreateStudioBodySchema = z.object({
   name: z.string().min(1, "Studio name is required"),
   country: z.string().min(1).optional(),
@@ -8,7 +17,10 @@ export const CreateStudioBodySchema = z.object({
   directorName: z.string().min(1).optional(),
   directorPhone: z.string().min(1).optional(),
   invoiceDetails: z.record(z.string(), z.any()).optional(),
-  representativeName: z.string().min(1, "Representative name is required").optional(),
+  representativeName: z
+    .string()
+    .min(1, "Representative name is required")
+    .optional(),
   representativeEmail: EmailSchema.optional(),
 });
 
@@ -26,6 +38,16 @@ export const UpdateRegistrationBodySchema = z.object({
   canEditDuringReview: z.boolean().optional(),
 });
 
+export const StudioApprovalStatusSchema = z.enum([
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+]);
+
+export const UpdateStudioApprovalBodySchema = z.object({
+  status: StudioApprovalStatusSchema,
+});
+
 export const UpdateRepresentativeBodySchema = z.object({
   name: z.string().min(1, "Name is required").optional(),
   email: EmailSchema.optional(),
@@ -33,4 +55,9 @@ export const UpdateRepresentativeBodySchema = z.object({
 
 export type CreateStudioInput = z.infer<typeof CreateStudioBodySchema>;
 export type UpdateStudioInput = z.infer<typeof UpdateStudioBodySchema>;
-export type UpdateRegistrationInput = z.infer<typeof UpdateRegistrationBodySchema>;
+export type UpdateRegistrationInput = z.infer<
+  typeof UpdateRegistrationBodySchema
+>;
+export type UpdateStudioApprovalInput = z.infer<
+  typeof UpdateStudioApprovalBodySchema
+>;

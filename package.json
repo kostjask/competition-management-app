@@ -1,26 +1,33 @@
 {
   "name": "dance-competition-app",
   "version": "0.0.0",
+  "private": true,
+  "engines": { "node": ">=24 <25" },
   "description": "",
   "main": "index.js",
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "typecheck": "turbo typecheck",
-    "seed": "tsx prisma/seed.ts",
+    "seed": "pnpm --filter api seed",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter api prisma:generate",
+    "db:validate": "pnpm --filter api prisma:validate",
+    "db:migrate": "pnpm --filter api prisma:migrate",
+    "test:baseline": "node scripts/test-baseline.cjs",
     "test": "turbo test",
-    "test:watch": "turbo test -- --watch"
+    "test:watch": "turbo watch test"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.29.3",
+  "packageManager": "pnpm@12.15.0",
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^25.2.2",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",
-    "turbo": "^2.8.6",
+    "turbo": "2.11.10",
     "typescript": "^5.9.3"
   },
   "dependencies": {

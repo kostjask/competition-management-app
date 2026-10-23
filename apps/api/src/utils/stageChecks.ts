@@ -1,4 +1,4 @@
-import { EventStage } from "../../generated/prisma/client";
+import { EventStage } from "@prisma/client";
 
 type AllowedAction =
   | "studio.register"
@@ -23,6 +23,12 @@ export function isActionAllowed(
       return ["dancer.manage", "performance.manage"].includes(action);
 
     case "FINALIZED":
+      return false; // No edits allowed
+
+    case "ENDED":
+      return false; // No edits allowed
+
+    case "CANCELLED":
       return false; // No edits allowed
 
     default:

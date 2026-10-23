@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.json",
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "moduleResolution": "NodeNext",
     "module": "NodeNext",
@@ -7,12 +7,7 @@
     "target": "ES2022",
     "outDir": "./dist",
     "rootDir": "./src",
-    "paths": {
-      "@dance/types": ["../types/src/index.ts"]
-    }
+    "declaration": true
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../types" }
-  ]
+  "include": ["src"]
 }

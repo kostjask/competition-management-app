@@ -2,12 +2,22 @@ import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 
 export const PerformanceSchema = z.object({
-  id: IdSchema,
+  performanceId: IdSchema,
   nominationId: IdSchema,
   formatId: IdSchema,
   ageGroupId: IdSchema,
   participantCount: z.number().int().min(1).max(999),
   durationSeconds: z.number().int().min(1)
+});
+
+export const PerformanceIdParamsSchema = z.object({
+  performanceId: IdSchema,
+});
+
+export const PerformanceParamsSchema = z.object({
+  studioId: IdSchema,
+  eventId: IdSchema,
+  performanceId: IdSchema.optional(),
 });
 
 export const ParamsWithStudioIdSchema = z.object({

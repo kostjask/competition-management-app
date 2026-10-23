@@ -2,7 +2,7 @@
  * Base types and utilities for controllers
  */
 import { Request, Response, NextFunction } from "express";
-import { PrismaClient } from "../../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 /**
  * Controller context containing dependencies and request metadata
