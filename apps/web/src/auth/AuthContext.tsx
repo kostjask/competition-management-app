@@ -14,13 +14,31 @@ import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const initialHasToken = isAuthenticated();
+  const [initialHasToken] = useState(isAuthenticated);
   const [loading, setLoading] = useState(initialHasToken);
   const [error, setError] = useState<string | null>(null);
   const [hasToken, setHasToken] = useState(initialHasToken);
 
   const clearError = useCallback(() => {
     setError(null);
+  }, []);
+
+  const loadUser = useCallback(() => {
+    return getCurrentUser()
+      .then((profile) => {
+        setUser(profile);
+      })
+      .catch((err: unknown) => {
+        if (err instanceof ApiError && err.statusCode === 401) {
+          removeToken();
+          setHasToken(false);
+        }
+        setUser(null);
+        setError(err instanceof Error ? err.message : "Authentication failed");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -35,27 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setHasToken(true);
     setLoading(true);
     setError(null);
-
-    try {
-      const profile = await getCurrentUser();
-      setUser(profile);
-    } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
-        removeToken();
-        setHasToken(false);
-      }
-      setUser(null);
-      setError(err instanceof Error ? err.message : "Authentication failed");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await loadUser();
+  }, [loadUser]);
 
   useEffect(() => {
-    if (hasToken) {
-      void refreshUser();
+    if (initialHasToken) {
+      void loadUser();
     }
-  }, [hasToken, refreshUser]);
+  }, [initialHasToken, loadUser]);
 
   const login = useCallback(
     async (data: LoginData) => {

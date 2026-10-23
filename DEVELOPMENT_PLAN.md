@@ -31,7 +31,7 @@ The intended user roles are:
 
 - Package manager: pnpm workspaces.
 - Build orchestration: Turborepo.
-- Language: TypeScript.
+- Language: TypeScript 7.0.2 native compiler, with the TypeScript 6 API compatibility package for lint/tooling.
 - Applications: `apps/api` and `apps/web`.
 - Shared packages: `packages/schemas` and `packages/types`.
 - Local database: PostgreSQL 16 through Docker Compose.
@@ -48,7 +48,7 @@ The intended user roles are:
 
 ### Frontend
 
-- React 19, React Router 7, Vite 7, Tailwind CSS 4.
+- React 19, React Router 7, Vite 8, Tailwind CSS 4.
 - Context-based authentication and localization.
 - Event list, event details, event create, and event edit screens are partly implemented.
 - Admin, judge, moderator, and representative sections currently contain placeholder pages.
@@ -280,6 +280,8 @@ Progress (2026-10-23): all technical Phase 0 tasks pass; see [baseline validatio
 ### Phase 1 — Stabilize API contracts and finish the backend refactor (active)
 
 Goal: one coherent backend architecture and a frontend client that matches it.
+
+- [x] User-requested prerequisite before Phase 1 implementation: update all external dependency declarations to verified latest stable releases, regenerate the lockfile/client, apply TypeScript 7 and lint compatibility changes, and validate the baseline. See [stable dependency refresh](docs/DEPENDENCY_UPDATES.md). Prisma 8 RC is deliberately excluded; TypeScript compiler/API aliases follow the official compatibility setup. Next concrete task remains ADR-001/002/005.
 
 - [ ] Decide and document ADR-001, ADR-002, and ADR-005.
 - [ ] Add an `/api/v1` router and mount every resource router exactly once.

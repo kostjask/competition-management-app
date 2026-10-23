@@ -9,6 +9,8 @@ A TypeScript monorepo for dance competition administration, studio registration,
 - Docker with Compose and access to its daemon.
 - PostgreSQL port 5432, API port 4000, and web port 5173 available locally.
 
+Build and typecheck use TypeScript 7 through the @typescript/native alias; ESLint uses the TypeScript 6 API compatibility alias. See [stable dependency refresh](docs/DEPENDENCY_UPDATES.md) for versions and migration details.
+
 The workspace explicitly permits install scripts for Prisma, its engines, bcrypt, and esbuild. The lockfile has pnpm's environment and project YAML documents; Turbo 2.11.10 supports this format.
 
 ## Local setup
@@ -57,14 +59,14 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.
 git diff --check
 ```
 
-Build and typecheck cover all four workspace packages, including the API and its seed. Lint currently covers the web package; API tests use Node's built-in test runner. No placeholder success scripts are added for packages without test/lint infrastructure. Prisma validation/generation commands are available through db:validate and db:generate. The migration schema is formatted with pnpm.cmd exec prisma format --schema apps/api/prisma/schema.prisma.
+Build and typecheck cover all four workspace packages, including the API and its seed. Lint currently covers the web package; Seven API/runtime/upload tests use Node's built-in test runner. No placeholder success scripts are added for packages without test/lint infrastructure. Prisma validation/generation commands are available through db:validate and db:generate. The migration schema is formatted with pnpm.cmd exec prisma format --schema apps/api/prisma/schema.prisma.
 
 The baseline check requires Docker and creates a uniquely named temporary database using only the Compose fixture connection. It verifies empty-database Prisma deployment, repeat deployment, complete-record seed idempotency, compiled API startup, health/login/profile, and basic authorization failures. It stops its own API process and removes only its own database. The separate migration regression check exercises existing registration statuses, partial studio-name uniqueness, and schema parity in isolated schemas. See [migration validation](docs/MIGRATION_VALIDATION.md) and [baseline validation](docs/BASELINE_VALIDATION.md).
 
 ## Structure
 
 - apps/api: Express 5, Prisma 7, PostgreSQL, JWT, controllers and routes.
-- apps/web: React 19, Vite 7, Tailwind CSS 4, React Router 7, Estonian/English/Russian localization.
+- apps/web: React 19, Vite 8, Tailwind CSS 4, React Router 7, Estonian/English/Russian localization.
 - packages/schemas: shared Zod contracts, built as an ESM package with JavaScript and declarations.
 - packages/types: shared TypeScript declarations.
 - docker/docker-compose.yml: PostgreSQL 16 with a persistent local volume.

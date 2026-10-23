@@ -2,6 +2,8 @@
 
 Validated on 2026-10-23 with Node 24.22.1, pnpm 12.15.0, Turbo 2.11.10, and the Compose PostgreSQL 16 service.
 
+A subsequent [stable dependency refresh](DEPENDENCY_UPDATES.md) updated the toolchain and runtime packages, including TypeScript 7, Vite 8, ESLint 10, and Prisma 7.10.1. The original baseline results below are retained as history; the dependency report records the current seven-test validation.
+
 ## Changes
 
 - Migrated removed pnpm build-policy settings to explicit `allowBuilds` decisions for the same four required packages. Frozen installation now succeeds. See [pnpm's build settings](https://github.com/pnpm/pnpm.io/blob/main/docs/settings/build.md).
