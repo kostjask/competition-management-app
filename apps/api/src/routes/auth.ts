@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { PrismaClient } from "@prisma/client";
 import { asyncHandler } from "../errors/handler";
 import { AuthController } from "../controllers";
 
-export const authRouter = (prisma: PrismaClient) => {
+export const authRouter = (prisma: PrismaClient, authenticate: RequestHandler) => {
   const router = Router();
   const authController = new AuthController(prisma);
 
@@ -28,6 +28,7 @@ export const authRouter = (prisma: PrismaClient) => {
   // Get current user profile (requires auth)
   router.get(
     "/profile",
+    authenticate,
     asyncHandler((req, res) => authController.getProfile(req, res))
   );
 

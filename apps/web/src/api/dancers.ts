@@ -1,76 +1,24 @@
-/**
- * Dancers API methods
- */
-
 import { apiClient } from "./client.js";
+import { DancerSchema, DancersSchema, type Dancer, type CreateDancerInput, type UpdateDancerInput } from "@dance/schemas";
 
-export interface Dancer {
-  id: string;
-  studioId: string;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string;
-}
+export type { Dancer } from "@dance/schemas";
+export type CreateDancerRequest = CreateDancerInput;
+export type UpdateDancerRequest = UpdateDancerInput;
 
-export interface CreateDancerRequest {
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-}
+const collectionPath = (studioId: string) => `/studios/${encodeURIComponent(studioId)}/dancers`;
+const itemPath = (studioId: string, dancerId: string) => `${collectionPath(studioId)}/${encodeURIComponent(dancerId)}`;
 
-export interface UpdateDancerRequest {
-  firstName?: string;
-  lastName?: string;
-  birthDate?: string;
-}
+export const getDancers = async (studioId: string): Promise<Dancer[]> =>
+  DancersSchema.parse(await apiClient.get<unknown>(collectionPath(studioId)));
 
-/**
- * Get all dancers for a studio
- */
-export const getDancers = (studioId: string): Promise<Dancer[]> => {
-  return apiClient.get<Dancer[]>(`/studios/${studioId}/dancers`);
-};
+export const getDancer = async (studioId: string, dancerId: string): Promise<Dancer> =>
+  DancerSchema.parse(await apiClient.get<unknown>(itemPath(studioId, dancerId)));
 
-/**
- * Get a single dancer
- */
-export const getDancer = (studioId: string, dancerId: string): Promise<Dancer> => {
-  return apiClient.get<Dancer>(`/studios/${studioId}/dancers/${dancerId}`);
-};
+export const createDancer = async (studioId: string, body: CreateDancerRequest): Promise<Dancer> =>
+  DancerSchema.parse(await apiClient.post<unknown, CreateDancerRequest>(collectionPath(studioId), body));
 
-/**
- * Create a new dancer
- */
-export const createDancer = (
-  studioId: string,
-  body: CreateDancerRequest
-): Promise<Dancer> => {
-  return apiClient.post<Dancer, CreateDancerRequest>(
-    `/studios/${studioId}/dancers`,
-    body
-  );
-};
+export const updateDancer = async (studioId: string, dancerId: string, body: UpdateDancerRequest): Promise<Dancer> =>
+  DancerSchema.parse(await apiClient.patch<unknown, UpdateDancerRequest>(itemPath(studioId, dancerId), body));
 
-/**
- * Update a dancer
- */
-export const updateDancer = (
-  studioId: string,
-  dancerId: string,
-  body: UpdateDancerRequest
-): Promise<Dancer> => {
-  return apiClient.patch<Dancer, UpdateDancerRequest>(
-    `/studios/${studioId}/dancers/${dancerId}`,
-    body
-  );
-};
-
-/**
- * Delete a dancer
- */
-export const deleteDancer = (studioId: string, dancerId: string): Promise<void> => {
-  return apiClient.delete<void>(`/studios/${studioId}/dancers/${dancerId}`);
-};
+export const deleteDancer = (studioId: string, dancerId: string): Promise<void> =>
+  apiClient.delete<void>(itemPath(studioId, dancerId));

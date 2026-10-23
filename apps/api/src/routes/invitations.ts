@@ -1,9 +1,10 @@
-import { Router } from "express";
+import { Router, type RequestHandler } from "express";
 import type { PrismaClient } from "@prisma/client";
 import { requirePermission } from "../auth/requirePermission";
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { config } from "../config/env";
 import {
   CreateInvitationSchema,
   AcceptInvitationSchema,
@@ -12,13 +13,10 @@ import { ZodError } from "zod";
 import type { Response } from "express";
 import { sendInvitationEmail } from "../utils/email";
 
-export const invitationsRouter = (prisma: PrismaClient) => {
+export const invitationsRouter = (prisma: PrismaClient, authenticate: RequestHandler) => {
   const router = Router();
 
-  const JWT_SECRET = process.env.JWT_SECRET;
-  if (!JWT_SECRET) {
-    throw new Error("JWT_SECRET is not defined");
-  }
+  const JWT_SECRET = config.auth.jwtSecret;
 
   const sendError = (
     res: Response,
@@ -32,7 +30,8 @@ export const invitationsRouter = (prisma: PrismaClient) => {
 
   // Admin creates invitation
   router.post(
-    "/invitations",
+    "/",
+    authenticate,
     requirePermission("event.manage"),
     async (req, res, next) => {
       try {
@@ -134,7 +133,7 @@ export const invitationsRouter = (prisma: PrismaClient) => {
   );
 
   // Accept invitation and complete registration
-  router.post("/invitations/accept", async (req, res, next) => {
+  router.post("/accept", async (req, res, next) => {
     try {
       const body = AcceptInvitationSchema.parse(req.body);
 
@@ -249,7 +248,8 @@ export const invitationsRouter = (prisma: PrismaClient) => {
 
   // List invitations (admin only)
   router.get(
-    "/invitations",
+    "/",
+    authenticate,
     requirePermission("event.manage"),
     async (req, res) => {
       const auth = req.auth!;
@@ -268,7 +268,7 @@ export const invitationsRouter = (prisma: PrismaClient) => {
   );
 
   // Check invitation validity (public endpoint)
-  router.get("/invitations/:token", async (req, res) => {
+  router.get("/:token", async (req, res) => {
     const { token } = req.params;
 
     const invitation = await prisma.invitation.findUnique({

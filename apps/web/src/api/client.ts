@@ -3,7 +3,7 @@
  * Handles HTTP requests with automatic JWT token injection and error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api/v1";
 
 const TOKEN_KEY = "auth_token";
 

@@ -48,7 +48,7 @@ async function snapshot() {
 }
 
 async function login(baseUrl, email) {
-  const response = await fetch(`${baseUrl}/auth/login`, {
+  const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password: 'password123' }), signal: AbortSignal.timeout(5000),
   });
@@ -107,16 +107,20 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     assert.ok(healthy, 'Built API must connect to migrated PostgreSQL');
-    assert.equal((await fetch(`${baseUrl}/events`)).status, 401);
+    assert.equal((await fetch(`${baseUrl}/api/v1/events`)).status, 401);
     const token = await login(baseUrl, 'admin@test.com');
-    const profile = await fetch(`${baseUrl}/auth/profile`, { headers: { Authorization: `Bearer ${token}` } });
+    const profile = await fetch(`${baseUrl}/api/v1/auth/profile`, { headers: { Authorization: `Bearer ${token}` } });
     assert.equal(profile.status, 200);
     assert.equal((await profile.json()).isAdmin, true);
     const judgeToken = await login(baseUrl, 'judge@test.com');
-    const forbidden = await fetch(`${baseUrl}/events`, {
+    const forbidden = await fetch(`${baseUrl}/api/v1/events`, {
       method: 'POST', headers: { Authorization: `Bearer ${judgeToken}`, 'Content-Type': 'application/json' }, body: '{}',
     });
     assert.equal(forbidden.status, 403);
+    await require('./check-studio-registrations.cjs')({
+      client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
+    });
+    await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {

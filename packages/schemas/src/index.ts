@@ -10,3 +10,4 @@ export * from "./judge.schema.js";
 export * from "./nomination.schema.js";
 export * from "./performance.schema.js";
 export * from "./studio.schema.js";
+export * from "./studio-registration.schema.js";
