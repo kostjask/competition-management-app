@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -13,22 +12,37 @@ enum EventStage {
   DATA_REVIEW
   FINALIZED
   ENDED
+  CANCELLED
+}
+
+enum EventRegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  LOCKED
+}
+
+enum StudioApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model Event {
-  id          String     @id @default(cuid())
-  name        String
-  startsAt    DateTime
-  endsAt      DateTime
-  stage       EventStage @default(PRE_REGISTRATION)
-  createdAt   DateTime   @default(now())
-  venue       String?
-  country     String?
-  city        String?
-  description String?
-  maxStudios  Int?
-  imageUrl    String?
-  imagePath   String?
+  id              String     @id @default(cuid())
+  name            String
+  startsAt        DateTime
+  endsAt          DateTime
+  stage           EventStage @default(PRE_REGISTRATION)
+  createdAt       DateTime   @default(now())
+  venue           String?
+  country         String?
+  city            String?
+  description     String?
+  maxStudios      Int?
+  maxPerformances Int?
+  imageUrl        String?
+  imagePath       String?
 
   ageGroups           AgeGroup[]
   categories          DanceCategory[]
@@ -74,9 +88,10 @@ model DanceFormat {
 }
 
 model Studio {
-  id             String    @id @default(cuid())
+  id             String               @id @default(cuid())
   eventId        String
   name           String
+  approvalStatus StudioApprovalStatus @default(PENDING)
   country        String?
   city           String?
   directorName   String?
@@ -85,23 +100,23 @@ model Studio {
   logoUrl        String?
   logoPath       String?
   deletedAt      DateTime?
+  deletedBy      String?
 
   dancers         Dancer[]
   event           Event                     @relation(fields: [eventId], references: [id])
   representatives StudioRepresentative[]
   registrations   StudioEventRegistration[]
-
-  @@unique([name])
 }
 
 model StudioRepresentative {
-  id        String   @id @default(cuid())
-  studioId  String
-  userId    String
-  name      String
-  email     String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  studioId      String
+  userId        String
+  name          String
+  email         String
+  active        Boolean  @default(true)
+  deactivatedBy String?
+  createdAt     DateTime @default(now())
 
   studio Studio @relation(fields: [studioId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
@@ -109,21 +124,14 @@ model StudioRepresentative {
   @@unique([studioId, userId])
 }
 
-enum RegistrationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  LOCKED
-}
-
 model StudioEventRegistration {
-  id                  String             @id @default(cuid())
+  id                  String                  @id @default(cuid())
   studioId            String
   eventId             String
-  status              RegistrationStatus @default(PENDING)
-  canEditDuringReview Boolean            @default(false)
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  status              EventRegistrationStatus @default(PENDING)
+  canEditDuringReview Boolean                 @default(false)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 
   studio Studio @relation(fields: [studioId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
@@ -140,12 +148,13 @@ model Dancer {
   photoUrl                String?
   photoPath               String?
   deletedAt               DateTime?
+  deletedBy               String?
   studio                  Studio                   @relation(fields: [studioId], references: [id])
   performanceParticipants PerformanceParticipant[]
 }
 
 model Performance {
-  id           String @id @default(cuid())
+  id           String    @id @default(cuid())
   eventId      String
   categoryId   String
   ageGroupId   String
@@ -153,6 +162,8 @@ model Performance {
   title        String
   durationSec  Int
   orderOnStage Int
+  deletedAt    DateTime?
+  deletedBy    String?
 
   ageGroup     AgeGroup                 @relation(fields: [ageGroupId], references: [id])
   category     DanceCategory            @relation(fields: [categoryId], references: [id])
@@ -212,6 +223,7 @@ model User {
   verificationToken String?  @unique
   createdAt         DateTime @default(now())
   active            Boolean  @default(true)
+  deactivatedBy     String?
   photoUrl          String?
   photoPath         String?
 
