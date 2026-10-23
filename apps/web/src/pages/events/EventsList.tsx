@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { type Event, getEvents } from "@api/events";
 import { ApiError } from "@api/client";
@@ -7,11 +7,11 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { getTranslation } from "@i18n/translations";
 import { type Locale } from "@i18n/LanguageContext";
 import { useTranslation } from "@i18n/useTranslation";
-
-type StageBadge = {
-  label: string;
-  className: string;
-};
+import {
+  type StageBadge,
+  useStageBadges,
+} from "../../features/events/hooks/useStageBadges";
+import { useDateFormatter } from "../../features/events/hooks/useDateFormatter";
 
 const EventStatus = {
   UPCOMING: "UPCOMING",
@@ -27,34 +27,6 @@ interface EventsByStatus {
   past: Event[];
 }
 
-const useStageBadges = (locale: Locale): Record<Event["stage"], StageBadge> => {
-  return useMemo(
-    () => ({
-      PRE_REGISTRATION: {
-        label: getTranslation("Events.stagePreRegistration", locale),
-        className: "bg-amber-100 text-amber-700 border border-amber-200",
-      },
-      REGISTRATION_OPEN: {
-        label: getTranslation("Events.stageRegistrationOpen", locale),
-        className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-      },
-      DATA_REVIEW: {
-        label: getTranslation("Events.stageDataReview", locale),
-        className: "bg-sky-100 text-sky-700 border border-sky-200",
-      },
-      FINALIZED: {
-        label: getTranslation("Events.stageFinalized", locale),
-        className: "bg-emerald-200 text-emerald-700 border border-emerald-300",
-      },
-      ENDED: {
-        label: getTranslation("Events.stageEnded", locale),
-        className: "bg-gray-200 text-gray-700 border border-gray-300",
-      },
-    }),
-    [locale],
-  );
-};
-
 const useEventsByStatus = (events: Event[]): EventsByStatus => {
   return useMemo(() => {
     const now = new Date();
@@ -67,17 +39,6 @@ const useEventsByStatus = (events: Event[]): EventsByStatus => {
       past: events.filter((event) => new Date(event.endsAt) < now),
     };
   }, [events]);
-};
-
-const useDateFormatter = (locale: Locale) => {
-  return useCallback(
-    (value: string): string =>
-      new Intl.DateTimeFormat(locale, {
-        dateStyle: "medium",
-        timeStyle: "short",
-      }).format(new Date(value)),
-    [locale],
-  );
 };
 
 interface EventCardProps {

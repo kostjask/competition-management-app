@@ -4,7 +4,7 @@ import { EventStageSchema, type CreateEventInput } from "@dance/schemas";
 import { ApiError } from "../../api/client";
 import { createEvent } from "../../api/events";
 import { useTranslation } from "@i18n/useTranslation";
-import { getTranslation } from "@/i18n/translations";
+import { getTranslation } from "@i18n/translations";
 import { EventForm } from "./EventForm";
 
 export default function EventsCreate() {

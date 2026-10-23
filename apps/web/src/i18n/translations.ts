@@ -225,6 +225,11 @@ export const translations: Translations = {
       en: 'Ended',
       ru: 'Завершено'
     },
+    stageCancelled: {
+      et: 'Tühistatud',
+      en: 'Cancelled',
+      ru: 'Отменено'
+    },
     venue: {
       et: 'Asukoht',
       en: 'Venue',

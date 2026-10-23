@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getTranslation } from "@i18n/translations";
 import { type Locale } from "@i18n/LanguageContext";
@@ -7,59 +7,32 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { type Event, getEvent } from "@api/events";
 import { ApiError } from "@api/client";
 import { RoleGate } from "@auth";
+import {
+  type StageBadge,
+  useStageBadges,
+} from "../../features/events/hooks/useStageBadges";
 
-type StageBadge = {
-  label: string;
-  className: string;
-};
+import { useDateFormatter } from "../../features/events/hooks/useDateFormatter";
 
-const useStageBadges = (locale: Locale): Record<Event["stage"], StageBadge> => {
-  return useMemo(
-    () => ({
-      PRE_REGISTRATION: {
-        label: getTranslation("Events.stagePreRegistration", locale),
-        className: "bg-amber-100 text-amber-700 border border-amber-200",
-      },
-      REGISTRATION_OPEN: {
-        label: getTranslation("Events.stageRegistrationOpen", locale),
-        className: "bg-emerald-100 text-emerald-700 border border-emerald-200",
-      },
-      DATA_REVIEW: {
-        label: getTranslation("Events.stageDataReview", locale),
-        className: "bg-sky-100 text-sky-700 border border-sky-200",
-      },
-      FINALIZED: {
-        label: getTranslation("Events.stageFinalized", locale),
-        className: "bg-emerald-200 text-emerald-700 border border-emerald-300",
-      },
-      ENDED: {
-        label: getTranslation("Events.stageEnded", locale),
-        className: "bg-gray-200 text-gray-700 border border-gray-300",
-      },
-    }),
-    [locale],
-  );
-};
-
-const useDateFormatter = (locale: Locale) => {
-  return useCallback(
-    (value: string): string => {
-      try {
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-          return value; // Return original string if date is invalid
-        }
-        return new Intl.DateTimeFormat(locale, {
-          dateStyle: "long",
-          timeStyle: "short",
-        }).format(date);
-      } catch {
-        return value; // Return original string if formatting fails
-      }
-    },
-    [locale],
-  );
-};
+// const useDateFormatter = (locale: Locale) => {
+//   return useCallback(
+//     (value: string): string => {
+//       try {
+//         const date = new Date(value);
+//         if (isNaN(date.getTime())) {
+//           return value; // Return original string if date is invalid
+//         }
+//         return new Intl.DateTimeFormat(locale, {
+//           dateStyle: "long",
+//           timeStyle: "short",
+//         }).format(date);
+//       } catch {
+//         return value; // Return original string if formatting fails
+//       }
+//     },
+//     [locale],
+//   );
+// };
 
 interface EventCardProps {
   event: Event;

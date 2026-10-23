@@ -77,6 +77,7 @@ export function EventForm({
       DATA_REVIEW: t("Events.stageDataReview"),
       FINALIZED: t("Events.stageFinalized"),
       ENDED: t("Events.stageEnded"),
+      CANCELLED: t("Events.stageCancelled"),
     }),
     [t]
   );
