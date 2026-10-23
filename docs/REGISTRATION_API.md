@@ -1,5 +1,9 @@
 # Registration & Invitation System - API Guide
 
+Historical workflow guide: endpoint examples below predate versioned composition.
+Use [current API integration status](API.md) for working paths and authentication
+boundaries, and [ADR-002](adr/002-canonical-api-paths.md) for the target layout.
+
 ## Overview
 
 The system supports two registration flows:

@@ -16,7 +16,7 @@ Type-safe HTTP client for the Dance Competition App with automatic JWT token man
 Create a `.env` file in the web app root:
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=http://localhost:4000/api/v1
 ```
 
 ## Basic Usage
@@ -211,50 +211,19 @@ Follow the pattern in the existing modules to create organized API resources:
 
 ```typescript
 // api/dancers.ts
-import { apiClient } from './client';
+import { apiClient } from "./client.js";
+import { DancerSchema, DancersSchema, type Dancer, type CreateDancerInput } from "@dance/schemas";
 
-export interface Dancer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-}
+export const getDancers = async (studioId: string): Promise<Dancer[]> =>
+  DancersSchema.parse(await apiClient.get<unknown>(`/studios/${encodeURIComponent(studioId)}/dancers`));
 
-export interface CreateDancerRequest {
-  firstName: string;
-  lastName: string;
-  birthDate: string;
-}
-
-export const getDancers = (studioId: string): Promise<Dancer[]> => {
-  return apiClient.get<Dancer[]>(`/studios/${studioId}/dancers`);
-};
-
-export const createDancer = (
-  studioId: string,
-  body: CreateDancerRequest
-): Promise<Dancer> => {
-  return apiClient.post<Dancer, CreateDancerRequest>(
-    `/studios/${studioId}/dancers`,
-    body
-  );
-};
-
-export const updateDancer = (
-  studioId: string,
-  dancerId: string,
-  body: Partial<CreateDancerRequest>
-): Promise<Dancer> => {
-  return apiClient.patch<Dancer, Partial<CreateDancerRequest>>(
-    `/studios/${studioId}/dancers/${dancerId}`,
-    body
-  );
-};
-
-export const deleteDancer = (studioId: string, dancerId: string): Promise<void> => {
-  return apiClient.delete<void>(`/studios/${studioId}/dancers/${dancerId}`);
-};
+export const createDancer = async (studioId: string, body: CreateDancerInput): Promise<Dancer> =>
+  DancerSchema.parse(await apiClient.post<unknown, CreateDancerInput>(
+    `/studios/${encodeURIComponent(studioId)}/dancers`, body
+  ));
 ```
+
+Infer request/response types from shared schemas and validate responses at runtime. Dancer birth dates use `YYYY-MM-DD`; DTOs include nullable `photoUrl` and omit nonexistent timestamps. The actual module also implements detail, partial update, and audited soft deletion. See [current API contracts](../../../../docs/API.md#dancer-contract).
 
 Then export from `index.ts`:
 

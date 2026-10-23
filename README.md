@@ -23,7 +23,7 @@ Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/web/.env.example apps/web/.env
 ```
 
-Copy environment examples only when the destination does not exist. Set a newly generated JWT_SECRET in apps/api/.env (at least 32 characters). The example DATABASE_URL matches the checked-in local Compose service; it is for local development. The web example points to http://localhost:4000. Leave DEV_AUTH=false for the seeded login workflow.
+Copy environment examples only when the destination does not exist. Set a newly generated JWT_SECRET in apps/api/.env (at least 32 characters). The example DATABASE_URL matches the checked-in local Compose service; it is for local development. The web example points to http://localhost:4000/api/v1. Leave DEV_AUTH=false for the seeded login workflow.
 
 ```powershell
 docker compose -f docker/docker-compose.yml up -d postgres
@@ -35,7 +35,7 @@ pnpm.cmd build
 pnpm.cmd dev
 ```
 
-Open http://localhost:5173. API database health is available at http://localhost:4000/health. Most resource routes currently require authentication. Development fixture accounts are defined in [seed.ts](apps/api/prisma/seed.ts); rerunning the seed preserves existing credentials, configuration, approvals, and registration state. The demonstration seed refuses production mode and runs its changes in one transaction. Concurrent seeding is not supported.
+Open http://localhost:5173. API database health is available at http://localhost:4000/health. Business routes use `/api/v1`; existing web `.env` files must set `VITE_API_URL=http://localhost:4000/api/v1` and restart Vite. See [API integration status](docs/API.md) for authentication boundaries and remaining resource-path repairs. Development fixture accounts are defined in [seed.ts](apps/api/prisma/seed.ts); rerunning the seed preserves existing credentials, configuration, approvals, and registration state. The demonstration seed refuses production mode and runs its changes in one transaction. Concurrent seeding is not supported.
 
 The root dev command starts the API watcher and Vite. After changing shared contracts, rebuild @dance/schemas and restart the API watcher. Both dev and compiled API execution consume that package's emitted JavaScript. Client generation uses the standard @prisma/client entry; generated client files remain in ignored node_modules.
 
