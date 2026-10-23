@@ -56,8 +56,14 @@ version prefix is implemented; these resource-specific repairs remain:
 The web client's base URL, registration operations, and dancer operations follow canonical paths and shared contracts.
 Its remaining studio-detail/performance paths and response types still need
 the corresponding planned repairs.
-Historical guides, including [registration examples](REGISTRATION_API.md), do
-not supersede this current status or the ADR target.
+Older implementation summaries do not supersede this current status or the ADR
+target. The maintained [registration workflow](REGISTRATION_API.md) links here
+for implemented contracts.
+
+For the user-facing distinction between accounts, applications, and entry
+submission, see [registration workflow](REGISTRATION_API.md) and
+[user journeys](USER_JOURNEYS.md). Planned drafts, receipts, corrections, and
+recovery screens do not add endpoints to this implemented API inventory.
 
 ## Studio registration contract
 

@@ -2,6 +2,14 @@
 
 A TypeScript monorepo for dance competition administration, studio registration, judging, and results. The project is in baseline stabilization. Authentication, event screens, and parts of registration CRUD exist; route integration, authorization hardening, live judging, music, and results are still unfinished. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for current priorities and known blockers.
 
+## Product workflows and documentation
+
+- [User journeys and UX requirements](docs/USER_JOURNEYS.md): intended onboarding, applications, approvals, entry submission, and recovery, with current gaps and acceptance criteria.
+- [Registration and invitation workflow](docs/REGISTRATION_API.md): implemented boundaries and current API references.
+- [Current API integration status](docs/API.md): working endpoints and remaining integration work.
+
+Planned journeys are not implemented features. The development plan controls prerequisites and delivery order.
+
 ## Prerequisites
 
 - Node.js 24.x (validated with 24.22.1).

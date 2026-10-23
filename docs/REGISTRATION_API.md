@@ -1,509 +1,93 @@
-# Registration & Invitation System - API Guide
-
-Historical workflow guide: endpoint examples below predate versioned composition.
-Use [current API integration status](API.md) for working paths and authentication
-boundaries, and [ADR-002](adr/002-canonical-api-paths.md) for the target layout.
-
-## Overview
-
-The system supports two registration flows:
-1. **Self-Registration** - User registers themselves, then creates a studio
-2. **Invitation-Based** - Admin invites users with pre-assigned roles
-
----
-
-## Environment Setup
-
-### Required Environment Variables
-
-```env
-JWT_SECRET=your-secret-key
-APP_BASE_URL=http://localhost:5173
-NODE_ENV=development
-```
-
-### Seed Database
-
-Run the seed script to create test users and data:
-
-```bash
-cd apps/api
-npx prisma db seed
-```
-
-This creates:
-- **Admin**: `admin@test.com` / `password123`
-- **Representative**: `rep@test.com` / `password123`
-- **Judge**: `judge@test.com` / `password123`
-
----
-
-## Flow 1: Self-Registration (User → Studio → Approval)
-
-### Step 1.1: Register New User
-
-**POST** `/auth/register`
-
-```json
-{
-  "email": "newuser@example.com",
-  "password": "SecurePass123",
-  "name": "John Doe"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Registration successful. Please check your email to verify your account.",
-  "userId": "clx..."
-}
-```
-
-📧 **Email sent** with verification token (check console logs in dev mode)
-
----
-
-### Step 1.2: Verify Email
-
-**POST** `/auth/verify-email`
-
-```json
-{
-  "token": "abc123..." 
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Email verified successfully",
-  "token": "eyJhbGc...",
-  "tokenType": "Bearer",
-  "user": {
-    "id": "clx...",
-    "email": "newuser@example.com",
-    "name": "John Doe"
-  }
-}
-```
-
-✅ **User is now logged in automatically**
-
----
-
-### Step 1.3: Create Studio (Requires Auth)
-
-**POST** `/events/{eventId}/studios`
-
-**Headers:**
-```
-Authorization: Bearer eyJhbGc...
-```
-
-**Body:**
-```json
-{
-  "name": "Elite Dance Studio",
-  "country": "Estonia",
-  "city": "Tallinn",
-  "directorName": "Anna Smith",
-  "directorPhone": "+372 5555 1234",
-  "representativeName": "John Doe",
-  "representativeEmail": "newuser@example.com"
-}
-```
-
-**Response:**
-```json
-{
-  "id": "studio-id",
-  "name": "Elite Dance Studio",
-  "registrations": [{
-    "status": "PENDING",
-    "eventId": "test-event-2026"
-  }],
-  "representatives": [{
-    "userId": "user-id",
-    "name": "John Doe",
-    "email": "newuser@example.com"
-  }]
-}
-```
-
-⚠️ **Studio status**: `PENDING` (awaiting admin approval)
-⚠️ **User role**: None yet (will be assigned on approval)
-
----
-
-### Step 1.4: Admin Approves Studio
-
-**PATCH** `/events/{eventId}/studios/{studioId}/registration`
-
-**Headers:**
-```
-Authorization: Bearer {admin-token}
-```
-
-**Body:**
-```json
-{
-  "status": "APPROVED"
-}
-```
-
-**Response:**
-```json
-{
-  "id": "registration-id",
-  "studioId": "studio-id",
-  "eventId": "event-id",
-  "status": "APPROVED",
-  "canEditDuringReview": false
-}
-```
-
-✅ **Automatic**: User is assigned `representative` role for this event
-
----
-
-## Flow 2: Invitation-Based Registration
-
-### Step 2.1: Admin Creates Invitation
-
-**POST** `/invitations/invitations`
-
-**Headers:**
-```
-Authorization: Bearer {admin-token}
-```
-
-**Body:**
-```json
-{
-  "email": "judge@example.com",
-  "roleKey": "judge",
-  "eventId": "test-event-2026"
-}
-```
-
-**Possible roleKey values**: `representative`, `judge`, `moderator`
-
-**Response:**
-```json
-{
-  "message": "Invitation sent",
-  "invitationId": "inv-id",
-  "token": "xyz789..."
-}
-```
-
-📧 **Email sent** with invitation link (check console logs)
-
----
-
-### Step 2.2: Check Invitation Validity (Optional)
-
-**GET** `/invitations/{token}`
-
-**No authentication required**
-
-**Response:**
-```json
-{
-  "email": "judge@example.com",
-  "roleKey": "judge",
-  "event": {
-    "id": "test-event-2026",
-    "name": "Winter Championship 2026"
-  },
-  "expiresAt": "2026-02-19T10:00:00.000Z"
-}
-```
-
----
-
-### Step 2.3: Accept Invitation
-
-**POST** `/invitations/accept`
-
-**No authentication required**
-
-**Body:**
-```json
-{
-  "token": "xyz789...",
-  "name": "Jane Smith",
-  "password": "SecurePass456"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "Account created successfully",
-  "token": "eyJhbGc...",
-  "tokenType": "Bearer",
-  "user": {
-    "id": "user-id",
-    "email": "judge@example.com",
-    "name": "Jane Smith"
-  }
-}
-```
-
-✅ **User created** with email pre-verified
-✅ **Role assigned** automatically (judge for this event)
-✅ **Auto-logged in** with JWT token
-
----
-
-## Flow 3: Pre-created User Account (for Judges)
-
-### Step 3.1: Admin Creates User (Future Feature)
-
-This would require a new endpoint like:
-
-**POST** `/admin/users` (not implemented yet)
-
-```json
-{
-  "email": "judge2@example.com",
-  "name": "Mike Johnson"
-}
-```
-
-User created **without password**.
-
----
-
-### Step 3.2: Admin Sends Invitation
-
-**POST** `/invitations/invitations`
-
-```json
-{
-  "email": "judge2@example.com",
-  "roleKey": "judge",
-  "eventId": "test-event-2026"
-}
-```
-
----
-
-### Step 3.3: User Sets Password
-
-**POST** `/invitations/accept`
-
-```json
-{
-  "token": "invitation-token",
-  "name": "Mike Johnson",
-  "password": "NewPassword789"
-}
-```
-
-✅ **Password added** to existing user
-✅ **Role assigned**
-✅ **Auto-logged in**
-
----
-
-## Authentication Endpoints
-
-### Login
-
-**POST** `/auth/login`
-
-```json
-{
-  "email": "admin@test.com",
-  "password": "password123"
-}
-```
-
-**Response:**
-```json
-{
-  "token": "eyJhbGc...",
-  "tokenType": "Bearer",
-  "user": {
-    "id": "user-id",
-    "email": "admin@test.com",
-    "name": "Admin User"
-  }
-}
-```
-
----
-
-### Get Current User
-
-**GET** `/auth/profile`
-
-**Headers:**
-```
-Authorization: Bearer eyJhbGc...
-```
-
-**Response:**
-```json
-{
-  "id": "user-id",
-  "email": "admin@test.com",
-  "name": "Admin User",
-  "createdAt": "2026-02-10T10:00:00.000Z",
-  "roles": [
-    {
-      "id": "role-id",
-      "userId": "user-id",
-      "roleId": "admin-role-id",
-      "eventId": null,
-      "role": {
-        "key": "admin",
-        "name": "Administrator"
-      },
-      "event": null
-    }
-  ],
-  "isAdmin": true
-}
-```
-
----
-
-## Admin Endpoints
-
-### List All Invitations
-
-**GET** `/invitations/invitations`
-
-**Headers:**
-```
-Authorization: Bearer {admin-token}
-```
-
-**Response:**
-```json
-[
-  {
-    "id": "inv-id",
-    "email": "judge@example.com",
-    "roleKey": "judge",
-    "eventId": "event-id",
-    "token": "xyz...",
-    "expiresAt": "2026-02-19T10:00:00.000Z",
-    "usedAt": null,
-    "event": {
-      "id": "test-event-2026",
-      "name": "Winter Championship 2026"
-    },
-    "creator": {
-      "id": "admin-id",
-      "name": "Admin User",
-      "email": "admin@test.com"
-    }
-  }
-]
-```
-
----
-
-### List Studios for Event
-
-**GET** `/events/{eventId}/studios`
-
-**Headers:**
-```
-Authorization: Bearer {token}
-```
-
-- **Admin**: Sees all studios
-- **Representative**: Only sees their own studios
-
----
-
-## Testing with cURL
-
-### Example: Complete Self-Registration Flow
-
-```bash
-# 1. Register
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "test@example.com",
-    "password": "password123",
-    "name": "Test User"
-  }'
-
-# 2. Verify email (get token from console logs)
-curl -X POST http://localhost:3000/auth/verify-email \
-  -H "Content-Type: application/json" \
-  -d '{"token": "TOKEN_FROM_EMAIL"}'
-
-# Save the returned token
-TOKEN="eyJhbGc..."
-
-# 3. Create studio
-curl -X POST http://localhost:3000/events/test-event-2026/studios \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{
-    "name": "My Dance Studio",
-    "representativeName": "Test User",
-    "representativeEmail": "test@example.com"
-  }'
-
-# 4. Admin approves (use admin token from seed)
-ADMIN_TOKEN="TOKEN_FROM_SEED_OUTPUT"
-curl -X PATCH http://localhost:3000/events/test-event-2026/studios/STUDIO_ID/registration \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -d '{"status": "APPROVED"}'
-```
-
----
-
-## Error Handling
-
-All errors follow this format:
-
-```json
-{
-  "error": "Error message",
-  "statusCode": 400,
-  "details": {
-    "issues": [...]
-  }
-}
-```
-
-### Common Error Codes
-
-- `400` - Validation error or bad request
-- `401` - Unauthorized (missing or invalid token)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Resource not found
-- `409` - Conflict (duplicate email, etc.)
-
----
-
-## Next Steps
-
-1. **Email Service**: Integrate real email provider (SendGrid, AWS SES, etc.)
-2. **Frontend Integration**: Build UI for registration and invitation flows
-3. **Admin User Creation**: Add endpoint for admins to pre-create user accounts
-4. **Invitation Resend**: Allow admins to resend expired invitations
-5. **Password Reset**: Implement forgot password flow
-
----
-
-## Security Notes
-
-- JWT tokens expire in 7 days
-- Verification tokens are single-use
-- Invitation tokens expire in 7 days
-- All passwords are hashed with bcrypt (10 rounds)
-- Email verification required for self-registration
-- Invitation-based registration bypasses email verification
+# Registration and invitation workflow
+
+Reviewed: 2026-10-24
+
+This guide distinguishes the implemented API from the intended user experience.
+For exact paths, payloads, responses, and validation coverage, use
+[API.md](API.md). For planned screens, recovery behavior, and acceptance criteria,
+use [USER_JOURNEYS.md](USER_JOURNEYS.md). Delivery order and blockers remain in the
+[development plan](../DEVELOPMENT_PLAN.md).
+
+## Three separate actions
+
+1. **Create account:** establish a personal login and verify the email address.
+2. **Apply to competition:** create a studio and pending event registration through
+   the current API; request organization verification and event acceptance.
+3. **Submit entries:** confirm dancers, performances, and music for review. This
+   workflow is planned and has no implemented final-submission API or UI yet.
+
+Account creation does not register a studio or enter a competition. Organization
+approval does not grant event approval. A representative role does not replace
+active membership, approval, ownership, or event-stage checks.
+
+## Implemented API boundaries
+
+All paths below include `/api/v1`. They are API endpoints, not frontend page URLs.
+
+| Operation | Endpoint | Current boundary |
+| --- | --- | --- |
+| Create account | `POST /api/v1/auth/register` | Public; creates an unverified user and invokes the email stub. |
+| Verify email | `POST /api/v1/auth/verify-email` | Public token operation; successful verification returns an authentication token. |
+| Sign in | `POST /api/v1/auth/login` | Public; verification enforcement remains Phase 2 work. |
+| Read own profile | `GET /api/v1/auth/profile` | Authenticated. |
+| Apply with a new studio | `POST /api/v1/events/:eventId/studio-registrations` | Authenticated; no pre-existing representative role required. |
+| List applications | `GET /api/v1/events/:eventId/studio-registrations` | Admin or active studio membership; non-admins see only owned registrations. |
+| Review event registration | `PATCH /api/v1/events/:eventId/studio-registrations/:studioId` | Admin-only; organization must already be approved. See API contract for supported statuses. |
+| Cancel pending application | `DELETE /api/v1/events/:eventId/studio-registrations/:studioId` | Admin or active owner; pending-only, retaining studio and membership records. |
+| Inspect invitation | `GET /api/v1/invitations/:token` | Public; business/security and DTO hardening remain. |
+| Accept invitation | `POST /api/v1/invitations/accept` | Public; existing-account binding and token lifecycle require Phase 2 review. |
+| List/create invitations | `GET/POST /api/v1/invitations` | Authenticated administration; broader permission and token-exposure hardening remain. |
+
+Do not use retired unversioned endpoints or `/invitations/invitations` examples.
+Use the root [setup instructions](../README.md#local-setup); the local API base is
+`http://localhost:4000/api/v1`. Never obtain verification or invitation tokens from
+logs as a production workflow.
+
+## Application lifecycle today
+
+Creating an application atomically creates the studio, its `PENDING` event
+registration, and the non-admin applicant's active representative membership.
+Organization approval also starts `PENDING`; no representative role is assigned
+until event approval. Admin-created contact details do not assign membership to
+an account. The backend derives ownership from authenticated identity.
+
+Non-admin creation is allowed only during `PRE_REGISTRATION` and
+`REGISTRATION_OPEN`. `DATA_REVIEW` is for permitted corrections, not new
+applications. Approved dancer editing currently requires `REGISTRATION_OPEN`, or
+`DATA_REVIEW` with the registration's explicit review permission. Read and write
+authorization remain backend responsibilities.
+
+Organization approval and event acceptance are separate decisions under
+[ADR-001](adr/001-studio-identity-and-event-registration.md). Existing-studio reuse
+across events requires the Phase 3 migration; current creation makes a new studio
+and is not an idempotent retry operation. Similar studio names must never trigger
+automatic identity merging.
+
+## Current user-facing gaps
+
+- Application routes `/events/:id/register` and `/events/:id/studio` are linked
+  from event details but are not implemented. No application status screen exists.
+- New applicants have no assigned role and need an authenticated application home
+  independent of the representative role gate, with ownership enforced on the API.
+- Event reads remain authenticated under ADR-002; public discovery is undecided.
+- Registration copy and backend email-verification enforcement do not agree.
+  Verification currently returns to the homepage rather than the selected event.
+- Email delivery is a development stub. Verification resend/address correction,
+  password reset, invitation resend/revoke, and token-expiry behavior need work.
+- Invitation emails link to `/accept-invitation`, but that frontend page is missing.
+- Entry submission, correction requests with reasons/deadlines, durable drafts,
+  music handling, and submission receipts are planned rather than implemented.
+
+## Intended onboarding and release gate
+
+Target journey: selected event → account creation/sign-in → verification → studio
+application → application status → approved entry preparation → review and submit.
+Returning applicants should resume saved progress with the event and studio clear.
+Show separate organization/event statuses and an actionable next step throughout.
+See the journey guide for detailed validation and recovery requirements.
+
+Phase 1 integration remains the immediate priority. Authentication/recovery belongs
+to Phase 2; state/model decisions to Phase 3; organizer review to Phase 4; applicant
+screens and entries to Phase 5. Production email is owned by Phase 8 and must be
+available before external onboarding. No current API test or this documentation
+establishes a complete production-ready onboarding experience.

@@ -25,6 +25,12 @@ The intended user roles are:
 | Judge | View assigned performances and submit scores. |
 | Moderator | Control stage flow, monitor judge completion, and resolve operational issues. |
 
+### User experience specification
+
+[User journeys and UX requirements](docs/USER_JOURNEYS.md) defines intended account, application, approval, entry, invitation, and competition-day behavior, current gaps, and acceptance criteria. [Registration workflow](docs/REGISTRATION_API.md) separates account creation, event application, and final entry submission. These documents do not mark runtime features complete or override ADRs.
+
+The first onboarding UX milestone is an account holder who can verify their email, apply to one event, and always find their status and next action. Implement it only after applicable Phase 1–4 prerequisites. Real email delivery is a release gate before external onboarding, despite provider work being grouped in Phase 8.
+
 ## 2. Current Technical Baseline
 
 ### Monorepo
@@ -166,11 +172,20 @@ These are stabilization blockers. Resolve them before adding major features.
 - No audit-log entity exists despite auditability being a stated product requirement.
 - Nullable event scope in compound user-role and invitation uniqueness relies on unsafe Prisma casts and needs database-level verification.
 
+### P1 — Onboarding and workflow gaps
+
+- Registration copy promises immediate login, while the intended journey requires email verification; login currently does not enforce verification. Align instructions and backend enforcement in Phase 2.
+- Verification navigates to the homepage and loses the selected event. Safe return destinations and recoverable progress must survive authentication, email verification, and session expiry.
+- New applicants have active studio membership but no representative role until event approval. Their application home must not require that role; API ownership checks still apply.
+- Event details offer new registration during `DATA_REVIEW`, which the backend rejects. Apply actions must match backend stage rules.
+- Invitation emails point to the missing `/accept-invitation` page. External onboarding is blocked until email delivery and recovery work.
+- Durable drafts, submission/receipts, retry idempotency, concurrent editing, and correction requests need explicit state/permission decisions before dependent UI. They are not existing registration status meanings.
+
 ### P1 — Documentation drift
 
 - Resolved during baseline recovery: root README describes React 19, actual directories, current maturity, prerequisites, setup/start commands, and validation scope.
 - The web README is still the default Vite template.
-- Registration, storage, environment, controller, and error guides include claims or endpoints that no longer match the code.
+- Registration workflow documentation now distinguishes current contracts from planned UX. Storage, environment, controller, and error guides still include claims or endpoints that no longer match the code.
 - Several markdown files contain mojibake characters and should be normalized to UTF-8.
 - Historical documentation claims remain unverified outside the maintained validation reports. Current build, typecheck, web lint, three Node tests, and isolated migration/deployment/seed checks passed on 2026-10-23.
 
@@ -331,6 +346,9 @@ Goal: trustworthy event-scoped access before exposing management features.
 - [ ] Add login throttling and generic credential errors.
 - [ ] Stop returning invitation tokens outside development/test.
 - [ ] Add password reset, invitation resend/revoke, and token-expiry tests.
+- [ ] Add verification resend and a defined mistyped-email correction flow with throttling, safe account-recovery responses, invalid/used-link handling, and aligned ET/EN/RU account instructions.
+- [ ] Define and implement validated internal return destinations through sign-in, registration, verification, and session expiry, including email tab/device fallback; never expose credentials in redirect URLs.
+- [ ] Harden invitation acceptance for new/existing accounts and wrong-account sessions; prevent credential resets or role duplication on repeated acceptance. Add `/accept-invitation` UI with expiry/revoke/resend recovery after backend checks.
 - [ ] Decide whether JWT remains in localStorage or moves to secure same-site cookies; document the threat model.
 
 Exit criteria:
@@ -351,6 +369,8 @@ Goal: support the full competition workflow without accumulating incompatible mi
 - [ ] Populate `deletedBy`/`deactivatedBy` consistently and model actor relations if useful.
 - [ ] Add AuditLog with actor, action, entity type/id, event id, timestamp, and safe metadata.
 - [ ] Add lifecycle transition validation and an explicit live stage.
+- [ ] Define draft/final-submission/receipt and correction state in the lifecycle specification before Phase 5: server-backed persistence, retry idempotency (including application creation), concurrent edits, lock/reopen scope and expiry, withdrawal/resubmission, and historical snapshots. Keep these separate from organization/event approval statuses.
+- [ ] Define event timezone, age-calculation policy, registration/entry/music deadlines, and required music rules for Phase 4 configuration and Phase 5 validation.
 - [ ] Design scoring, judge assignment, schedule/session/stage, penalty, and publication entities.
 - [ ] Design music-file metadata and upload ownership; do not store large media in PostgreSQL.
 - [ ] Add indexes for event-scoped lists, active soft-delete filters, participant lookups, stage order, and score aggregation.
@@ -372,7 +392,8 @@ Goal: administrators can prepare a complete event without direct database access
 - [ ] Build category, age-group, format, and scoring-template CRUD screens.
 - [ ] Validate overlapping age groups and format participant/duration limits.
 - [ ] Build judge/moderator invitation and assignment screens.
-- [ ] Build studio and event-registration approval queues.
+- [ ] Build studio and event-registration approval queues with separate organization/event decisions, next-action ownership, safe reasons/contact details, and correction-request scope/deadlines under the Phase 3 specification.
+- [ ] Prioritize pending reviews, corrections, incomplete entries, and missing music on the event dashboard; add an actionable setup checklist before opening registration.
 - [ ] Add event lifecycle transition controls with warnings and prerequisites.
 - [ ] Add schedule generation/editing and conflict reporting.
 - [ ] Add admin preview of representative, judge, and moderator views.
@@ -386,15 +407,19 @@ Exit criteria:
 
 Goal: a representative can complete registration without staff intervention except approval.
 
-- [ ] Add the missing event registration route and UI.
+- [ ] Add missing `/events/:id/register` and `/events/:id/studio` routes and UI using canonical contracts; registration availability must match backend stage rules.
+- [ ] Build “My applications” for authenticated users without requiring a representative role; show only authorized memberships, separate approval statuses, next actions, pending cancellation, and organizer contact.
+- [ ] Preserve selected event/studio and use distinct account/application/entry labels throughout onboarding; prefill profile contact data and postpone optional details.
+- [ ] Build a resumable entry checklist with server-backed draft/save/error states and session/network recovery under the Phase 3 specification. Reconcile uncertain creation outcomes instead of blindly repeating non-idempotent POSTs.
+- [ ] Support selecting an existing owned studio and roster only after ADR-001 migration and cross-event lock/history rules; never auto-merge by name.
 - [ ] Build studio profile create/edit and representative-management screens.
-- [ ] Show studio and event-registration approval statuses separately if both concepts remain.
+- [ ] Show studio and event-registration approval statuses separately as required by ADR-001; distinguish approval from submission and editing locks.
 - [ ] Build dancer list, create, edit, archive, restore, and optional CSV import.
 - [ ] Build performance create/edit/archive with category, age group, format, participants, duration, and title.
 - [ ] Calculate age eligibility using the event's declared age-calculation date and policy.
 - [ ] Enforce format participant count and maximum duration in shared validation and backend transactions.
-- [ ] Add music upload, replacement, validation, and playback preview.
-- [ ] Add registration summary, validation checklist, and final submission/lock action.
+- [ ] Add music upload, replacement, validation, and playback preview with upfront limits, progress/retry states, and preservation of the previous file on replacement failure.
+- [ ] Add registration summary, field-linked validation checklist, explicit final submission/lock confirmation, idempotent receipt, and scoped correction/resubmission flow under the Phase 3 specification.
 - [ ] Clearly display stage-based editing restrictions and admin-granted review exceptions.
 
 Exit criteria:
@@ -402,6 +427,8 @@ Exit criteria:
 - A representative can register a studio, dancers, performances, and music end-to-end.
 - Invalid dancers, formats, durations, or cross-studio participants cannot be submitted.
 - Review locking and permitted corrections are integration-tested.
+- A roleless applicant can find their application status and next action; saved progress survives returning later, and network/session/stage changes never falsely report successful saves.
+- Journey acceptance criteria in `docs/USER_JOURNEYS.md` pass for the delivered scope in ET/EN/RU with keyboard and mobile use.
 
 ### Phase 6 — Live competition operations and judging
 
@@ -416,7 +443,7 @@ Goal: run a competition safely under time pressure.
 - [ ] Show moderator judge-completion status without exposing scores prematurely.
 - [ ] Add controlled reopen/correction flow with audit records.
 - [ ] Add real-time updates using WebSocket or Server-Sent Events only after transactional HTTP workflows are reliable.
-- [ ] Define offline/reconnect behavior for unstable venue networks.
+- [ ] Define offline/reconnect behavior for unstable venue networks: distinguish local drafts from server-acknowledged saves/submissions, reconcile pending work, and prevent duplicate score/stage actions. Do not promise offline support before its policy exists.
 - [ ] Add operational health indicators and a manual fallback/export procedure.
 
 Exit criteria:
@@ -448,7 +475,8 @@ Exit criteria:
 Goal: move development-only integrations to production-ready providers.
 
 - [ ] Introduce an EmailProvider interface and implement the chosen provider.
-- [ ] Add email templates for verification, invitations, password reset, registration status, and schedule changes.
+- [ ] Add ET/EN/RU email templates for verification/resend, invitations, password reset, registration decisions/corrections, and schedule changes, preserving the intended event/next action without exposing private data.
+- [ ] Define delivery failure/retry behavior and verify real verification/invitation/recovery delivery before external onboarding; in-app application status remains available independently of email.
 - [ ] Select local versus object storage through validated configuration.
 - [ ] Implement S3-compatible private storage with signed URLs for music and appropriate public/private policy for images.
 - [ ] Validate MIME type from content, not only the client header; add size limits and safe filenames.
@@ -476,7 +504,7 @@ Goal: make releases repeatable and operations diagnosable.
 - [ ] Create production Dockerfiles and a deployment architecture.
 - [ ] Add database backup, restore, retention, and disaster-recovery procedures.
 - [ ] Review GDPR/privacy requirements for birth dates, photos, contact details, and retention.
-- [ ] Run accessibility, responsive-layout, and localization reviews.
+- [ ] Run accessibility, responsive-layout, and localization reviews against journey criteria: semantic forms, field-linked errors, announced save/status changes, visible focus, keyboard-only completion, mobile/tablet layouts, and ET/EN/RU including authentication and emails.
 - [ ] Define release checklist, migration rollback strategy, and operational runbook.
 
 Exit criteria:
@@ -517,9 +545,12 @@ Exit criteria:
 6. Judges submit complete score sheets.
 7. Admin reviews, finalizes, and publishes rankings.
 
+Journey regression scenarios: roleless application tracking; safe return after email verification; expired/used invitation and wrong-account acceptance; uncertain create/submit responses; saved progress after session expiry; stage/deadline changes during editing; concurrent changes; correction scope/expiry; keyboard-only and ET/EN/RU completion. Add checks with the owning feature phases rather than postponing all verification to Phase 9.
+
 ## 8. Documentation Plan
 
 - [x] Rewrite the root README as the short entry point: product, prerequisites, startup, scripts, architecture links, and current maturity.
+- [x] Add [user journeys and UX requirements](docs/USER_JOURNEYS.md) with implementation gaps, target steps, approval explanations, recovery/notification behavior, acceptance criteria, and decision/dependency gates. Rewrite the registration guide around current contracts and link maintained guides from README/API.
 - [ ] Replace the default web README with frontend-specific setup and conventions.
 - [ ] Add `docs/ARCHITECTURE.md` with application boundaries and request/data flow.
 - [ ] Add `docs/DOMAIN.md` with lifecycle, roles, registration, scoring, and ranking rules.
@@ -532,6 +563,8 @@ Exit criteria:
 - [ ] Mark implementation summaries as historical or delete them after their useful content is merged into maintained guides.
 - [ ] Correct endpoint examples, ports, framework versions, file trees, and build/test claims.
 - [ ] Normalize all markdown to UTF-8.
+
+Documentation progress (2026-10-24, user journeys): added the UX specification, replaced obsolete registration/invitation examples with current API boundaries, and mapped follow-up work to Phases 2–9. No runtime behavior, approval semantics, schema, or phase completion changed. Public discovery, submission/correction state, cross-event reuse, and production email remain gated above. Documentation checks cover local links, UTF-8, and whitespace; runtime validation is not implied. Next concrete implementation task remains Phase 1 canonical event-scoped performance integration with authorization, shared contracts, and tests.
 
 ## 9. Suggested Issue/Epic Breakdown
 
