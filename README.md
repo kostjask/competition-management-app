@@ -1,138 +1,78 @@
 # Dance Competition Management System
 
-A modern, type-safe platform for managing high-stakes dance competitions with real-time judge scoring, multi-role workflows, and international support.
+A TypeScript monorepo for dance competition administration, studio registration, judging, and results. The project is in baseline stabilization. Authentication, event screens, and parts of registration CRUD exist; route integration, authorization hardening, live judging, music, and results are still unfinished. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for current priorities and known blockers.
 
-## Features
+## Prerequisites
 
-- **Role-Based Access Control**: Admin (event config), Judge (live scoring), Moderator (stage flow), Studio Representative (dancer registration)
-- **Real-Time Scoring**: Judges rapidly enter scores during 2-5 minute live performances with configurable rubrics (Technique, Artistry, Presentation, etc.)
-- **Multi-Stage Workflow**: Enforced competition lifecycle (Pre-Registration → Registration Open → Data Review → Live Event → Finalized)
-- **Type-Safe Architecture**: Shared TypeScript interfaces and Zod schemas across frontend and backend
-- **Internationalization**: Full support for Estonian, English, and Russian with context-based i18n system
-- **Studio Management**: Representatives register dancers, manage profiles, upload music, and track performance results
-- **Scalable Schema**: Supports multiple concurrent events, custom scoring templates, dynamic age group calculation from birthdate
+- Node.js 24.x (validated with 24.22.1).
+- pnpm 12.15.0, matching package.json.
+- Docker with Compose and access to its daemon.
+- PostgreSQL port 5432, API port 4000, and web port 5173 available locally.
 
-## Tech Stack
+The workspace explicitly permits install scripts for Prisma, its engines, bcrypt, and esbuild. The lockfile has pnpm's environment and project YAML documents; Turbo 2.11.10 supports this format.
 
-### Frontend
-- **React 18** with TypeScript and Vite
-- **Tailwind CSS v4** for styling
-- **React Router v7** for navigation
-- **Context API** for state management and i18n
-- **Zod** for runtime validation
+## Local setup
 
-### Backend
-- **Node.js** with Express.js
-- **Prisma ORM** with PostgreSQL
-- **JWT** for authentication
-- **Zod** for input validation
+Run from the repository root. On Windows PowerShell, use pnpm.cmd if execution policy blocks pnpm.ps1. Other shells can use pnpm.
 
-### DevOps & Tooling
-- **Turborepo** for monorepo management
-- **pnpm** for workspaces
-- **Docker Compose** for local development environment
-- **TypeScript** for type safety across the stack
-
-## Project Structure
-
-```
-dance-competition-app/
-├── apps/
-│   ├── api/                 # Express backend
-│   │   ├── src/
-│   │   │   ├── routes/      # API endpoints
-│   │   │   ├── services/    # Business logic
-│   │   │   ├── middleware/  # Auth, errors
-│   │   │   ├── controllers/ # Route handlers
-│   │   │   └── db/          # Prisma client
-│   │   └── prisma/          # Schema & migrations
-│   └── web/                 # React frontend
-│       └── src/
-│           ├── pages/       # Route pages
-│           ├── components/  # Reusable UI
-│           ├── api/         # API client
-│           ├── i18n/        # Translations
-│           └── store/       # State management
-├── packages/
-│   ├── schemas/            # Shared Zod schemas
-│   ├── types/              # Shared TypeScript types
-│   └── constants/          # Shared constants & enums
-└── docker-compose.yml      # Local dev environment
-
+```powershell
+pnpm.cmd install --frozen-lockfile
+Copy-Item apps/api/.env.example apps/api/.env
+Copy-Item apps/web/.env.example apps/web/.env
 ```
 
-## Architecture Highlights
+Copy environment examples only when the destination does not exist. Set a newly generated JWT_SECRET in apps/api/.env (at least 32 characters). The example DATABASE_URL matches the checked-in local Compose service; it is for local development. The web example points to http://localhost:4000. Leave DEV_AUTH=false for the seeded login workflow.
 
-### Authentication & Authorization
-- JWT-based authentication with Bearer tokens
-- Role-based access control (RBAC) with event-level scoping
-- Invitation system for judge/moderator/representative onboarding
-- Soft deletes for audit trail integrity
+```powershell
+docker compose -f docker/docker-compose.yml up -d postgres
+pnpm.cmd db:generate
+pnpm.cmd db:validate
+pnpm.cmd db:migrate
+pnpm.cmd seed
+pnpm.cmd build
+pnpm.cmd dev
+```
 
-### Type Safety
-- Shared Zod schemas in `packages/schemas` consumed by both API (validation) and frontend (form handling)
-- Shared TypeScript types in `packages/types` for API responses
-- Path aliases for monorepo imports: `@dance/types`, `@dance/schemas`
+Open http://localhost:5173. API database health is available at http://localhost:4000/health. Most resource routes currently require authentication. Development fixture accounts are defined in [seed.ts](apps/api/prisma/seed.ts); rerunning the seed preserves existing credentials, configuration, approvals, and registration state. The demonstration seed refuses production mode and runs its changes in one transaction. Concurrent seeding is not supported.
 
-### State Management
-- **Server State**: API caching via React hooks
-- **Auth State**: Context + localStorage for JWT persistence
-- **UI State**: React component state (planned Zustand for complex flows)
-- **Translations**: Context-based i18n with ET/EN/RU support
+The root dev command starts the API watcher and Vite. After changing shared contracts, rebuild @dance/schemas and restart the API watcher. Both dev and compiled API execution consume that package's emitted JavaScript. Client generation uses the standard @prisma/client entry; generated client files remain in ignored node_modules.
 
-### Database
-- Prisma models with relationships, soft deletes, and audit timestamps
-- Event-scoped data isolation for multi-tenancy support
-- Automatic age group calculation from dancer birthdate
-- Performance scoring with configurable rubric templates
+To run the compiled API separately after building:
 
-## Learning Goal
+```powershell
+pnpm.cmd --filter api start
+```
 
-This project is built to learn modern full-stack development:
-- Type-safe React applications with TypeScript
-- REST API design with Express and Prisma ORM
-- Monorepo architecture with shared packages
-- Database design and migrations
-- Authentication and authorization patterns
-- Internationalization (i18n) in web apps
-- Real-time data synchronization (WebSockets - future)
+Commands scoped to api run from apps/api, where dotenv reads its .env. An explicitly set shell environment variable takes precedence. Prisma configuration lives at apps/api/prisma.config.ts.
 
-## Real-World Context
+## Validation
 
-This system is being built to replace a completely manual actual dance competition workflow
+```powershell
+pnpm.cmd build
+pnpm.cmd typecheck
+pnpm.cmd lint
+pnpm.cmd test
+pnpm.cmd test:baseline
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.ps1
+git diff --check
+```
 
-**Current Process (Manual)**
-- Event registration and dancer data entry via Google Sheets
-- Judge scoring on paper forms during live performances
-- Manual score aggregation and ranking calculations (error-prone, time-consuming)
-- No real-time visibility into competition progress
-- Paper trails and lost forms
+Build and typecheck cover all four workspace packages, including the API and its seed. Lint currently covers the web package; API tests use Node's built-in test runner. No placeholder success scripts are added for packages without test/lint infrastructure. Prisma validation/generation commands are available through db:validate and db:generate. The migration schema is formatted with pnpm.cmd exec prisma format --schema apps/api/prisma/schema.prisma.
 
-**New System Benefits**
-- **Digital Registration**: Studios register online, upload dancer info in bulk, no spreadsheets
-- **Real-Time Scoring**: Judges enter scores directly into the app during performances (2-5 min per performance) on tablets/phones
-- **Instant Rankings**: Scores auto-calculate, rankings update live, no manual aggregation
-- **Stage Management**: Moderators control performance queue, prevent scheduling conflicts, enforce data integrity
-- **Audit Trail**: All actions logged with timestamps for compliance and dispute resolution
+The baseline check requires Docker and creates a uniquely named temporary database using only the Compose fixture connection. It verifies empty-database Prisma deployment, repeat deployment, complete-record seed idempotency, compiled API startup, health/login/profile, and basic authorization failures. It stops its own API process and removes only its own database. The separate migration regression check exercises existing registration statuses, partial studio-name uniqueness, and schema parity in isolated schemas. See [migration validation](docs/MIGRATION_VALIDATION.md) and [baseline validation](docs/BASELINE_VALIDATION.md).
 
-## Roadmap
+## Structure
 
-- [x] Core backend API (auth, CRUD, validation)
-- [x] Frontend scaffolding (Vite, Tailwind, i18n)
-- [ ] Judge scoring interface with live timer
-- [ ] Admin event setup wizard
-- [ ] Studio representative dashboard
-- [ ] Moderator stage controls
-- [ ] Real-time score broadcast (WebSocket)
-- [ ] Performance rankings & leaderboard
-- [ ] Email notifications
-- [ ] Mobile-responsive UI polish
-- [ ] API documentation (OpenAPI/Swagger)
-- [ ] Integration & E2E tests
+- apps/api: Express 5, Prisma 7, PostgreSQL, JWT, controllers and routes.
+- apps/web: React 19, Vite 7, Tailwind CSS 4, React Router 7, Estonian/English/Russian localization.
+- packages/schemas: shared Zod contracts, built as an ESM package with JavaScript and declarations.
+- packages/types: shared TypeScript declarations.
+- docker/docker-compose.yml: PostgreSQL 16 with a persistent local volume.
+- docs: architecture/refactor notes, validation reports, and API workflow documentation. Older guides may contain historical claims; the plan records unresolved drift.
 
-## License
+## Current limits
 
-MIT
+Baseline checks do not establish complete endpoint or authorization coverage. Duplicate/unmounted performance handlers, route/client mismatches, upload authorization, development auth identity, and other P0 security findings remain in the plan. Email is a development stub, role dashboards are placeholders, and storage currently uses local files. Avoid treating the application as production ready.
 
 ## Author
 
