@@ -7,6 +7,7 @@ A TypeScript monorepo for dance competition administration, studio registration,
 - [User journeys and UX requirements](docs/USER_JOURNEYS.md): intended onboarding, applications, approvals, entry submission, and recovery, with current gaps and acceptance criteria.
 - [Registration and invitation workflow](docs/REGISTRATION_API.md): implemented boundaries and current API references.
 - [Current API integration status](docs/API.md): working endpoints and remaining integration work.
+- [Database integrity and UX review](docs/DATABASE_REVIEW.md): schema findings, proposed targets, migration decisions, and verification gates; no implemented schema changes are implied.
 
 Planned journeys are not implemented features. The development plan controls prerequisites and delivery order.
 

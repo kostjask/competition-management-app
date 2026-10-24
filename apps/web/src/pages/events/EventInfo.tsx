@@ -158,12 +158,6 @@ const EventCard: React.FC<EventCardProps> = ({
             <span>{getTranslation("Events.createdAt", locale)}</span>
             <time>{formatDateTime(event.createdAt)}</time>
           </div>
-          {event.updatedAt !== event.createdAt && (
-            <div className="flex items-center justify-between">
-              <span>{getTranslation("Events.updatedAt", locale)}</span>
-              <time>{formatDateTime(event.updatedAt)}</time>
-            </div>
-          )}
         </div>
 
         {/* Action Buttons */}

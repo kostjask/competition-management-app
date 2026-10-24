@@ -1,3 +1,6 @@
+import { ErrorResponseSchema } from "@dance/schemas";
+export type { AuthResponse, UserProfile, ErrorResponse } from "@dance/schemas";
+
 /**
  * API Client for Dance Competition App
  * Handles HTTP requests with automatic JWT token injection and error handling
@@ -92,22 +95,23 @@ async function request<TResponse = unknown>(
       throw new ApiError(401, "Unauthorized - Please log in again");
     }
 
-    if (response.status === 403) {
-      throw new ApiError(
-        403,
-        "Forbidden - You don't have permission to access this resource"
-      );
-    }
-
     // Handle non-OK responses
     if (!response.ok) {
       let errorMessage = `Request failed with status ${response.status}`;
       let errorDetails: unknown = undefined;
 
       try {
-        const errorData = await response.json();
-        errorMessage = errorData.error || errorData.message || errorMessage;
-        errorDetails = errorData.details || errorData;
+        const errorData: unknown = await response.json();
+        const parsed = ErrorResponseSchema.safeParse(errorData);
+        if (parsed.success) {
+          errorMessage = parsed.data.error;
+          errorDetails = parsed.data.details;
+        } else if (typeof errorData === "object" && errorData !== null) {
+          // Unmigrated resources may still return a local error shape.
+          if ("error" in errorData && typeof errorData.error === "string") errorMessage = errorData.error;
+          else if ("message" in errorData && typeof errorData.message === "string") errorMessage = errorData.message;
+          errorDetails = "details" in errorData ? errorData.details : undefined;
+        }
       } catch {
         // If response is not JSON, use status text
         errorMessage = response.statusText || errorMessage;
@@ -216,47 +220,3 @@ export const apiClient = {
     return request<TResponse>(endpoint, { ...options, method: "DELETE" });
   },
 };
-
-/**
- * Type-safe auth response
- */
-export interface AuthResponse {
-  token: string;
-  tokenType: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
-}
-
-/**
- * Type-safe user profile response
- */
-export interface UserProfile {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-  isAdmin: boolean;
-  roles: Array<{
-    id: string;
-    role: {
-      id: string;
-      name: string;
-    };
-    event: {
-      id: string;
-      name: string;
-    } | null;
-  }>;
-}
-
-/**
- * Error response from API
- */
-export interface ErrorResponse {
-  error: string;
-  statusCode: number;
-  details?: unknown;
-}

@@ -28,7 +28,9 @@ const EnvSchema = z.object({
     .string()
     .min(32, "JWT_SECRET must be at least 32 characters")
     .describe("Secret key for JWT signing"),
-  JWT_EXPIRY: z.string().default("7d"),
+  JWT_EXPIRY: z.templateLiteral([z.number(), z.enum(["ms", "s", "m", "h", "d", "w", "y"])])
+    .refine(value => Number.isFinite(Number.parseFloat(value)) && Number.parseFloat(value) > 0, "JWT_EXPIRY must be a positive duration")
+    .default("7d"),
 
   // Storage
   STORAGE_TYPE: z.enum(["local", "s3", "gcs"]).default("local"),

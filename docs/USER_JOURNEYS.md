@@ -38,6 +38,8 @@ still creates an account without a studio or invitation.
 | Dancers | Canonical API supports authorized CRUD with calendar birth dates, approval gates, stage locks, and soft deletion. | Build roster UI; eligibility, restore, and multi-event behavior remain future work. |
 | Invitations | Inspection/acceptance API exists; email links use `/accept-invitation`, which has no frontend route. | Build new/existing-account acceptance and expired/revoked-link recovery after backend hardening. |
 | Competition entries | Performance CRUD API/client contracts are integrated; role dashboards and entry screens remain placeholders/absent. | Finish remaining Phase 1 stabilization before entries, music, submission, or live operations. |
+| Entry ownership and scheduling | Owner is inferred from participant dancers; current creation requires complete fields and unique orderOnStage. | P3-PERFORMANCE-OWNER/ENTRIES introduces explicit ownership and incomplete unscheduled drafts; stage position is later schedule work. |
+| Studio identity and names | Studios remain event-owned and active names are globally unique. | ADR-001 migration gates reuse; P3-STUDIO-NAMES decides display-name policy before any index change. |
 
 ## Language and navigation
 
@@ -141,6 +143,12 @@ Use a resumable checklist: studio details, dancers, performances, music, review,
 and submission. Show completion and blocking issues for each section. Users may
 revisit saved sections; avoid forcing all roster work into a single long form.
 
+Drafts must have explicit authorized studio/event ownership even before dancers
+are selected. Representatives must be able to save incomplete entries without a
+stage number; explain missing required data at review/submission. These are target
+requirements: current create validation requires full fields and orderOnStage.
+P3-ENTRIES must define storage/contracts before the UI promises draft support.
+
 - Show save-in-progress, saved, unsaved, and failed-save states accurately.
   Preserve form values after validation/network errors. Warn before leaving
   unsaved work and define server-backed draft persistence before promising autosave.
@@ -176,6 +184,12 @@ Acceptance criteria:
   falsely reporting a successful save or discarding visible form values.
 - Concurrent edits are detected and resolved without silently overwriting changes.
 - Corrections are permitted only for the authorized event, scope, and stage.
+- Changing a roster/profile/configuration after submission does not silently
+  rewrite the historical entry; snapshots/versions preserve agreed submitted
+  facts under the privacy policy. Corrections create an explicit audited revision.
+- Schedule generation, slot assignment, or slot changes never become a prerequisite
+  for saving an otherwise authorized draft; final validation still rejects missing
+  entry requirements. Archived-slot reuse follows a defined scheduling policy.
 
 ## Journey 4: Organize and review
 
@@ -272,6 +286,12 @@ remain inaccessible to unauthorized viewers.
 | Public event discovery and result DTO/publication policy | Separate decision under ADR-002; current event reads remain authenticated |
 | Offline/reconnect, scoring locks, and correction/publication semantics | ADR-003/004 before Phases 6–7 |
 | Real email delivery, translated onboarding templates, delivery failure/retry behavior | P2-EMAIL before external M2/M4; Phase 8 expands delivery hardening |
+| Scope-preserving event removal, null-safe assignments, identity normalization and token storage | P2-SCOPE-INTEGRITY and P2-IDENTITY-TOKENS before M1/auth/invitation release |
+| Explicit performance ownership, unscheduled drafts, historical/revision state and database event consistency | P3-PERFORMANCE-OWNER, P3-ENTRIES, P3-HISTORY, P3-CONSTRAINTS before M3 |
+| Date/time storage, query indexes and studio display-name policy | P3-CALENDAR-DATES/INDEXES/STUDIO-NAMES with migration/decision gates in the database review |
+
+See [database integrity and UX review](DATABASE_REVIEW.md) for current schema
+limitations, pending model choices, and direct PostgreSQL verification requirements.
 
 The first onboarding UX milestone (M2) is: a studio applicant can create and verify
 an account, apply to one event, and always find their status and next action.

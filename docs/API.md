@@ -43,7 +43,7 @@ version prefix is implemented; these resource-specific repairs remain:
 
 | Resource | Current development path relative to `/api/v1` | Remaining work |
 | --- | --- | --- |
-| Events | `/events`, `/events/:eventId` | Shared DTO alignment |
+| Events | `GET/POST /events`, `GET/PATCH /events/:eventId` | Strict shared DTOs/client, authenticated reads/admin writes, date ordering and error contracts implemented |
 | Judges | `GET/POST /events/:eventId/judges`; `GET/PATCH/DELETE /events/:eventId/judges/:judgeId` | Controller, strict contracts/client helpers, scoped reads/admin writes, relationship and conflict checks implemented |
 | Event setup | `/events/:eventId/categories`, `/formats`, `/age-groups` (each under the event) | Controller/error/contract consolidation |
 | Studio registration | `GET/POST /events/:eventId/studio-registrations`; `PATCH/DELETE /events/:eventId/studio-registrations/:studioId` | Implemented with shared DTOs, transactions, and ownership/event-scope tests; existing-studio reuse awaits ADR-001 migration |
@@ -54,8 +54,9 @@ version prefix is implemented; these resource-specific repairs remain:
 | Users | No implementation | `routes/users.ts` is empty; no user-management endpoint is claimed |
 | Scores | Reserved only | Scoring design and implementation in later phases |
 
-The web client's studio, registration, dancer, performance, and judge operations follow
-canonical paths and shared contracts. Auth/event/setup DTO consolidation remains.
+The web client's event, studio, registration, dancer, performance, and judge operations follow
+canonical paths and shared contracts. Auth helpers also use shared contracts;
+setup DTO consolidation remains.
 Older implementation summaries do not supersede this current status or the ADR
 target. The maintained [registration workflow](REGISTRATION_API.md) links here
 for implemented contracts.
@@ -66,6 +67,14 @@ submission, see [registration workflow](REGISTRATION_API.md) and
 recovery screens do not add endpoints to this implemented API inventory.
 
 ## Studio registration contract
+
+Schema follow-up is tracked in [database review](DATABASE_REVIEW.md). Explicit
+performance ownership, incomplete drafts without stage order, display-name policy,
+token/identity changes, and stronger event constraints are planned, not current
+request/response contracts. Current full performance-create requirements and global
+active studio-name uniqueness still apply. Keep API/client changes paired with
+reviewed migrations; do not infer that the review introduces a draft endpoint or
+allows duplicate studio names today.
 
 Account eligibility target is defined in
 [ADR-006](adr/006-account-eligibility-and-staff-onboarding.md): studio-focused
@@ -154,6 +163,89 @@ registration, and membership; existing records and roles remain unchanged. The
 response contains no conflicting studio identity or database details.
 Existing unique event/studio constraints
 remain unchanged; this feature adds no database migration or automatic backfill.
+
+## Authentication contract
+
+Public mutations are `POST /api/v1/auth/register`, `/auth/login`, and
+`/auth/verify-email`. Bodies reject unknown fields. Registration requires a
+valid `email`, a password of at least eight characters, and a trimmed name of
+at least two characters. Login requires email and nonempty password; verification
+requires a nonempty token. Email case/canonicalization semantics are unchanged.
+Invalid input returns the standard 400 envelope with `details.fields`.
+
+Registration returns 201 with only `message` and `userId`, without a session.
+An existing email or a database uniqueness race returns 409 `CONFLICT`.
+Login returns 200 with `token`, literal `tokenType: "Bearer"`, and `user`
+containing only `id`, `email`, and `name`. Verification returns the same
+session plus `message`, after clearing the stored verification token.
+Bad credentials return 401, disabled login returns 403, unknown verification
+tokens return 404, and already-verified token records return 403. The frontend
+validates each complete response before saving a returned session token.
+
+`GET /api/v1/auth/profile` requires a bearer session and always selects the
+caller, ignoring any attempted user selector in query parameters. It returns
+`id`, `email`, `name`, ISO UTC `createdAt`, `isAdmin`, and `roles`.
+Each role assignment contains only `id`, nullable `eventId`,
+`role: { id, key, name }`, and nullable `event: { id, name }`.
+Null event scope represents existing global assignments; event-specific IDs are
+preserved. Roleless accounts receive an empty array. Assignments sort by ID.
+Profiles exclude passwords, verification tokens, private paths, role descriptions,
+permission relations, and redundant user/role foreign keys. A missing caller
+record returns 404. Role keys/scopes are now available; frontend role-guard
+unification remains P2-ROLES.
+
+Auth success DTOs validate on both server and client. The shared error contract
+contains `error`, `code`, `statusCode`, optional `details`, and ISO UTC
+`timestamp`; the global handler uses its inferred type. The web client parses
+that envelope and retains server messages/details, including disabled-account
+403s, while tolerating local errors from unmigrated resources. Existing 401
+session-clearing/redirect behavior is unchanged. JWT expiry uses validated
+compact durations documented in [environment configuration](ENVIRONMENT_CONFIGURATION.md).
+
+This contract slice does not implement signup eligibility, email canonicalization,
+verification expiry/atomic consumption, active-account request checks, secure
+email delivery, safe return destinations, or password recovery. Current login
+still permits unverified active users, and verification still signs a session
+without checking active status. These known security/workflow gaps remain in
+Phase 2; DTO completion does not authorize external onboarding release.
+
+## Event contract
+
+`GET /api/v1/events` and `GET /api/v1/events/:eventId` require authentication;
+any authenticated account may read, without an event role. Lists are ordered by
+start instant then ID. `POST /api/v1/events` and `PATCH /api/v1/events/:eventId`
+remain admin-only, including when a non-admin has global or event-scoped
+`event.manage`. Creation returns 201; reads and updates return 200. Missing
+items return 404. All errors use the global envelope, including 401/403 denials.
+No event DELETE endpoint is introduced.
+
+POST requires trimmed, nonblank `name`, `startsAt`, and `endsAt`; optional
+`stage` retains the database default `PRE_REGISTRATION`. Existing stage values
+remain unchanged. Optional `venue`, `country`, `city`, and `description`
+accept trimmed nonblank text or null. `maxStudios` and `maxPerformances` accept
+positive integers up to 2147483647 or null. These stored settings do not add new
+registration-capacity enforcement. Dates must be ISO instants with Z or an
+explicit offset; timezone-free strings and calendar-only dates are rejected.
+The end must be strictly later than the start. PATCH accepts a nonempty subset;
+omitted fields stay unchanged and explicit null clears optional details/limits.
+Unknown fields, IDs, audit timestamps, relations, image URLs and private paths
+are rejected. Image changes remain on the upload route, whose resource-specific
+authorization is still P2-BOUNDARIES.
+
+A partial date update validates the resulting stored pair in a serializable
+transaction. Concurrent edits cannot produce a reversed pair; serialization
+conflicts return 409 with instructions to reload before retrying. Missing records
+and concurrent disappearance return 404. Existing legacy rows are not rewritten;
+invalid stored date pairs must be corrected before a PATCH can succeed.
+
+List/detail/create/update use one explicit DTO: `id`, `name`, `startsAt`,
+`endsAt`, `stage`, `createdAt`, nullable `venue`, `country`, `city`,
+`description`, `maxStudios`, `maxPerformances`, and `imageUrl`.
+Dates serialize as ISO UTC strings. DTOs omit `imagePath`, relations and the
+nonexistent `updatedAt`; the detail screen no longer renders that timestamp.
+Backend serialization and frontend responses validate shared schemas. This slice
+adds no schema migration, setup form fields, image upload UI, new deadline fields,
+or lifecycle transition policy; those remain separately tracked work.
 
 ## Studio profile contract
 
@@ -400,7 +492,7 @@ Eight additional registration HTTP tests cover roleless creation, admin behavior
 strict inputs/stages, list scope, approval roles, parent mismatches, cancellation,
 and retired paths. Seven dancer HTTP tests add CRUD/DTO, scope/ownership/approval,
 stage/review, parent substitution, strict calendar inputs, audit/archive, and
-retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. Three judge HTTP tests add CRUD/DTOs, nullable/strict inputs, authentication, scoped reads/admin writes, missing parents/users, inactive assignment, parent substitution, and conflict/error mapping. A registration duplicate-name HTTP regression checks the global conflict envelope for applicants and admins without exposing database details. The API test total is 45.
+retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. Three judge HTTP tests add CRUD/DTOs, nullable/strict inputs, authentication, scoped reads/admin writes, missing parents/users, inactive assignment, parent substitution, and conflict/error mapping. A registration duplicate-name HTTP regression checks the global conflict envelope for applicants and admins without exposing database details. Four event HTTP tests add nullable DTO/CRUD, strict inputs, offset serialization, partial-date regressions, all non-admin write scopes, missing records, and conflict mapping. Five auth HTTP tests cover strict inputs, hashed registration and duplicate races, login/verification DTOs and failure envelopes, caller-only profiles, role keys/scopes and private-field exclusion. A JWT configuration test checks valid signing durations and startup rejection. The API test total is 55.
 
 `pnpm.cmd test:baseline` separately creates an isolated Compose PostgreSQL
 database and starts the compiled server to verify deployment/seed preservation,
@@ -420,3 +512,11 @@ The baseline runner also executes `scripts/check-judges.cjs`: real unique user/e
 conflicts, cross-event items, scoped reads/admin writes, nullable updates, missing
 and inactive users, unchanged roles, and score-restricted deletion with record
 preservation. These checks use the runner-owned disposable database.
+
+The baseline runner also executes `scripts/check-events.cjs`: real event DTOs,
+nullable persistence, private-path exclusion, rejected-write preservation, missing
+records and competing partial-date updates that must retain a valid date pair.
+
+The baseline runner also executes `scripts/check-auth.cjs` against real users
+and global/event roles: roleless profiles, caller-only identity, explicit DTOs,
+UTC creation time, private-field exclusion, bearer login and disabled-login errors.

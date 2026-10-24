@@ -12,19 +12,32 @@ have implemented API/client slices. Judge CRUD now uses a controller and shared
 contracts; role dashboards and application/entry screens remain unfinished. Email is a stub and public signup
 is still unrestricted. Current contracts are in [API.md](docs/API.md).
 
-**Next task: P1-EVENTS**: align event request/response schemas with stored fields
-and frontend expectations, remove invented timestamps, serialize dates explicitly,
-and cover read/write authorization and error contracts. P1-CI is implemented and
-locally validated; its first hosted run and required-check settings remain
-operator follow-up after publication. Atomic staff onboarding remains Phase 2.
+Database review follow-up: [DATABASE_REVIEW.md](docs/DATABASE_REVIEW.md) maps
+schema/UX findings to tasks below. Highest-priority new database work is
+P2-SCOPE-INTEGRITY: physical event removal must never convert event-specific
+roles or invitations into global scope. No schema fix or live-data audit is
+claimed. Event and auth/profile contract stabilization is complete; event setup contracts are next.
 
-Latest recorded application validation: the CI checkpoint on
-2026-10-24 reports 45 API tests, build/typecheck/web lint, Prisma checks,
-and isolated PostgreSQL migration/workflow suites passing. Workflow actionlint
-and Compose configuration checks pass; hosted execution is not yet verified.
-Exact scope is recorded in
+**Next task: P1-CATEGORIES**: consolidate category controller/shared contracts
+and client helpers; cover event parent checks and CRUD success, validation,
+authorization and conflict errors. P1-EVENTS and P1-AUTH-CONTRACTS are complete.
+P1-CI hosted execution and required-check settings remain operator follow-up
+after publication. Account security and atomic staff onboarding remain Phase 2.
+
+Latest recorded application validation: the P1-AUTH-CONTRACTS checkpoint on
+2026-10-24 passed 55 API tests, workspace build/typecheck/web lint, Prisma
+validate/generate/format checks, and the isolated PostgreSQL baseline including
+auth/profile DTOs and stored global/event role scope. No schema migration was
+added. Hosted CI remains unverified. Exact scope is recorded in
 [development history](docs/DEVELOPMENT_HISTORY.md); historical next-task
 statements are superseded here.
+
+Localization follow-up: ET/EN/RU support is partial, not a completed workflow.
+The localization workstream below adds I18N-CONTRACT through I18N-QA with phased
+dependencies and release checks. Existing transport DTO completion does not imply
+that error reasons, validation issues, or UI messages are translatable. The current
+next resource task remains unchanged; localization contracts/core/validation must
+also pass before Phase 1 exits.
 
 ## 1. Product Goal
 
@@ -113,7 +126,7 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 - Performance controller integration is complete; controller migration for other resources remains incomplete.
 - Resolved (2026-10-24): performance routes now compose one controller with no duplicate inline handlers.
 - The performance router is mounted under canonical event paths; `routes/users.ts` remains empty and user management is deferred.
-- Studio profile, registration, dancer, and performance clients match canonical routes/shared contracts; corresponding screens are absent. Auth/event/setup contracts still need alignment.
+- Studio profile, registration, dancer, and performance clients match canonical routes/shared contracts; corresponding screens are absent. Setup contracts still need alignment.
 - Auth and invitation routes now use `/api/v1` with explicit protected operations; duplicated invitation paths are removed. Invitation business/security and DTO cleanup remain.
 - Email sending is a development stub.
 - Storage provider configuration is documented, but the server always instantiates local storage.
@@ -132,7 +145,7 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 - WebSocket or other real-time updates.
 - Password reset and invitation resend/revoke flows.
 - Audit log.
-- Comprehensive application/UI coverage. Baseline CI workflow is implemented with independent workspace and PostgreSQL jobs; the first hosted run and branch-protection configuration are pending publication. The latest recorded API suite has 45 tests plus isolated PostgreSQL workflow checks; browser workflow coverage remains pending.
+- Comprehensive application/UI coverage. Baseline CI workflow is implemented with independent workspace and PostgreSQL jobs; the first hosted run and branch-protection configuration are pending publication. The latest recorded API suite has 55 tests plus isolated PostgreSQL workflow checks; browser workflow coverage remains pending.
 - OpenAPI documentation.
 
 ## 4. Immediate Problems Found During Audit
@@ -158,6 +171,8 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 
 ### P0 — Authorization and security
 
+- Database scope hazard: UserRole.eventId and Invitation.eventId use ON DELETE SET NULL in migrations; null role scope grants global permissions. If physical event removal is allowed by other references, scoped access could broaden. P2-SCOPE-INTEGRITY must fix/review referential actions before M1 and before any event-deletion operation; no current event-delete endpoint or observed exploitation is claimed.
+- Ordinary nullable composite uniqueness does not prevent duplicate null-scoped UserRole/Invitation combinations. Audit deployed data and enforce a deliberate global/event uniqueness and invitation-history policy in P2-SCOPE-INTEGRITY.
 - `useRole()` compares requested role keys such as `representative` with the role display name such as `Studio Representative`; role-gated UI can fail.
 - `RequireRole` separately uses fuzzy display-name matching. Frontend role checks need one key-based implementation.
 - Image upload endpoints verify resource existence but not ownership or resource-specific permissions. Any authenticated user can currently target arbitrary event, user, dancer, or studio IDs.
@@ -179,9 +194,9 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 
 ### P1 — Data-contract inconsistencies
 
-- Frontend event types expect `updatedAt`, but the Event model has no `updatedAt` field.
+- Resolved (2026-10-24): event DTOs and detail UI omit nonexistent `updatedAt`; shared contracts explicitly serialize stored dates and nullable fields.
 - Resolved (2026-10-24): studio, dancer, and performance DTOs omit nonexistent timestamps; nullable fields and representative/registration timestamps follow the actual stored model.
-- Event create/update schemas only accept name, dates, and stage, while the database and UI expect venue, location, description, limits, and image data.
+- Resolved (2026-10-24): event mutations accept stored venue/location/description/limits with strict nullable contracts and resulting-date validation. DTOs expose `imageUrl`; image writes remain on upload routes. Broader setup UI is Phase 4.
 - Resolved (2026-10-24): performance contracts use current Prisma field names and explicit participant DTOs; the unused duplicate `packages/types` performance interface is removed. Legacy nomination cleanup remains.
 - Shared schemas contain both current and legacy naming (`nomination` versus category).
 - API response types are duplicated manually in the frontend instead of being derived from shared contracts.
@@ -189,6 +204,7 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 
 ### P1 — Domain-model decisions required
 
+- [Database review](docs/DATABASE_REVIEW.md) adds explicit performance ownership, incomplete unscheduled drafts, historical snapshots/revisions, studio display-name identity policy, native date/time and exact scoring precision decisions. These are proposed schema targets, not implemented migrations or reopened accepted ADRs.
 - A Studio currently belongs directly to one Event and also has a StudioEventRegistration join model. This prevents a studio identity from cleanly registering for multiple events and duplicates event ownership.
 - The documented lifecycle includes a live event, but `EventStage` has no explicit live/running stage.
 - Score uses a free-form `criterion` string; there is no rubric, criterion weight, score range, judge assignment, score lock, or submission state.
@@ -210,6 +226,7 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 
 ### P1 — Documentation drift
 
+- Localization audit (2026-10-24, static source review): the catalogue contains 54 keys and the 58 literal translation calls checked resolve, but 14 components contain literal JSX text. This is not a full string inventory or browser test. Auth/navigation/profile/dashboard/accessibility text remains English; ApiError drops the server code and renders message strings; validation flattens issues to strings. Saved locale is not validated on initial load, HTML remains lang=en, profile dates ignore the selected locale, and email functions accept no locale. I18N tasks below address these gaps; counts are audit evidence, not a completion metric.
 - Resolved during baseline recovery: root README describes React 19, actual directories, current maturity, prerequisites, setup/start commands, and validation scope.
 - The web README is still the default Vite template.
 - Registration workflow documentation now distinguishes current contracts from planned UX. Storage, environment, controller, and error guides still include claims or endpoints that no longer match the code.
@@ -303,9 +320,9 @@ tasks before execution, keeping the parent ID as the traceable outcome.
 
 | Milestone | Required outcome and gate | Prerequisites |
 | --- | --- | --- |
-| M1 Stable foundation | Integrated resource contracts, critical auth/upload fixes, automated baseline CI, and minimum audit/privacy foundations. | Phase 1 and P2-AUDIT, P2-PRIVACY, P2-AUTH, P2-ROLES, P2-BOUNDARIES, P2-SESSION. |
+| M1 Stable foundation | Integrated resource contracts, critical auth/upload fixes, automated baseline CI, and minimum audit/privacy foundations. | Phase 1 and P2-SCOPE-INTEGRITY, P2-IDENTITY-TOKENS, P2-AUDIT, P2-PRIVACY, P2-AUTH, P2-ROLES, P2-BOUNDARIES, P2-SESSION. |
 | M2 Studio application | Applicant signs up, verifies via real email, applies, tracks both approvals, receives a decision, and resumes safely. Organizer can configure registration and review applications. | M1; P2-ONBOARDING-MODEL, P2-SIGNUP, P2-EMAIL, P3-REGISTRATION, P4-CORE, P4-REVIEW, P5-APPLICATION. No scoring/live model prerequisite. |
-| M3 Competition entries | Approved representative saves dancers/performances/music, submits validated entries, and handles scoped corrections. | M2; P3-ENTRIES; P4-ENTRY-CONFIG; P5-ENTRIES, P5-MUSIC, P5-SUBMISSION, P8-MEDIA. |
+| M3 Competition entries | Approved representative saves dancers/performances/music, submits validated entries, and handles scoped corrections. | M2; P3-PERFORMANCE-OWNER, P3-CONSTRAINTS, P3-HISTORY, P3-CALENDAR-DATES, P3-ENTRIES; P4-ENTRY-CONFIG; P5-ENTRIES, P5-MUSIC, P5-SUBMISSION, P8-MEDIA. |
 | M4 Staff readiness | Admin invites event judges/moderators; intended users accept; assignments/access removal are consistent and preserve history. | M1; P2-STAFF-MODEL, P2-INVITE, P2-JUDGE-ACCEPT, P2-OFFBOARD, P2-EMAIL, P4-STAFF. Can proceed after its prerequisites independently of M3. |
 | M5 Competition operation and results | Schedule, queue, scoring, recovery, and publication pass a rehearsal with manual fallback. | M3, M4; Phases 6–7 and applicable Phase 9 operational gates. |
 
@@ -313,6 +330,14 @@ Every external milestone also requires the applicable P9-BROWSER journey checks,
 P9-OBSERVABILITY, P9-DEPLOY staging evidence, and P9-RECOVERY data-use safeguards.
 These tasks begin with the first released scope and expand incrementally; they
 do not wait for a final Phase 9 pass or unrelated future journeys.
+
+Localization gates: M1 requires I18N-CONTRACT, I18N-CORE and I18N-VALIDATION.
+M2/M4 additionally require I18N-UI, I18N-FORMATTING, I18N-PREFERENCES and I18N-QA
+for their delivered screens, errors, emails and return paths. I18N-CONTENT must
+define content/fallback policy before organizer configuration/publication; implement
+only the content types needed by the milestone. M3/M5 extend the same gates to
+entries, judging/results and exports. Future screen/content coverage does not hold
+an earlier milestone open; no language gate can be satisfied by labels alone.
 
 Phase numbers retain their existing topic references. Phase 2A explicitly brings
 its required decisions/migrations forward; Phase 2B never waits for Phase 3 audit
@@ -326,6 +351,30 @@ milestone may proceed when all its listed prerequisites pass, without waiting fo
 unrelated deferred tasks. This is the explicit dependency rule for roadmap gates;
 do not start unrelated later work just because it is available. No milestone or
 phase is marked complete by this documentation reorganization.
+
+### Localization workstream — cross-cutting ET/EN/RU delivery
+
+These eight tasks are implementation backlog, all unchecked. Phase labels below
+assign ownership without delaying foundational work until Phase 9. Keep logs and
+internal diagnostics separate from user-visible prose; do not translate API paths,
+authorization keys, enum values, IDs or personal/studio names. Reuse the current
+translation system where practical; add a library only for a demonstrated need.
+
+- [ ] I18N-CONTRACT (Phase 1): extend shared error/success contracts with stable semantic reason/message identifiers, safe typed interpolation parameters, and structured field issues while retaining HTTP status and generic error codes. Preserve these in ApiError and render through one localized presenter; do not match English sentences or infer every domain reason from status alone. Cover auth, global/local route errors, uploads, network failures, non-JSON responses and success notices. Pair backend/client/schema changes so strict DTO validation remains compatible. Acceptance: the same business error renders in ET/EN/RU, unknown/legacy reasons produce a localized safe fallback, raw technical/PII messages are not shown, and changing language updates an already-visible error without a refetch.
+- [ ] I18N-CORE (Phase 1): infer valid catalogue keys/types from the actual dictionary, enforce all three nonempty locale values, validate saved locale at initialization and define one supported-locale/default/fallback policy. Add typed interpolation and plural handling for ET/EN/RU without sentence concatenation; keep structured message descriptors in UI state and translate at render time. Missing/malformed keys must have safe production behavior and visible development/test diagnostics, not undefined output or raw key leakage. Acceptance: invalid storage, missing keys/locales, parameter mismatches, zero/one/multiple/Russian plural cases, and live locale switching are covered; the selector uses descriptive language names and accessible selected-state labels.
+- [ ] I18N-VALIDATION (Phase 1; after I18N-CONTRACT, using I18N-CORE): preserve field paths, stable rule identifiers, safe bounds/parameters and custom domain-rule reasons instead of only Zod message strings. Present client-side and server-side issues through the same mapping, with linked field errors and a localized summary. Cover required/type/length/range/date/cross-field/duplicate/root/nested issues and unknown-rule fallback without including raw input. Do not rely solely on bundled Zod locales: current schema messages override locale maps, and the installed locale exports do not include Estonian. Do not mutate process-wide Zod locale per server request. Acceptance: equivalent local/API validation produces equivalent ET/EN/RU feedback and existing errors retranslate when language changes, including custom refinements.
+- [ ] I18N-UI (initial auth/navigation in Phase 2; extend with Phases 4–7; after I18N-CORE/CONTRACT/VALIDATION): replace user-visible hardcoded text in login/register/verify/profile, AuthNav/layouts, guards, home and visible placeholder dashboards. Include titles, buttons, placeholders, password controls, confirmations, loading/empty/error/success/disabled states and accessibility text. Translate known role/status display labels by stable keys rather than database English names; keep unknown dynamic-role fallback explicit and do not change authorization behavior. Acceptance: each delivered workflow in ET/RU has no unintended English application text, and language switching preserves entered values, pending work, focus and accessible error/status presentation. Future screens must meet the same gate when delivered.
+- [ ] I18N-FORMATTING (Phase 2 and each feature UI; after I18N-CORE): synchronize document.documentElement.lang and page titles with locale, translate spinner/selector/control accessible names, and centralize Intl-based dates, numbers, durations and future currency formatting. Replace ProfilePage's unlocalized date-fns formatting. Keep locale separate from event timezone, UTC API instants and calendar birth dates under P3-CALENDAR-DATES; use full message interpolation/plurals for joined dates, limits and counts. Acceptance: ET/EN/RU language metadata, date/number/count boundaries, language switching and long mobile text pass; changing language never shifts a birth date or silently changes event timezone.
+- [ ] I18N-PREFERENCES (Phase 2A design/persistence before P2-EMAIL and Phase 2B behavior; after I18N-CORE): define precedence for explicit choice, account preference, browser storage, supported browser languages and default; reconcile preferences safely on login/logout. Add validated shared account preference and migration only if required by the chosen cross-device/email policy. Define recipient/invitation locale for users without accounts, safe link locale handling, and backend-rendered email locale propagation. Do not infer recipient language from the administrator's current UI or change global server locale between requests. Acceptance: tabs/verification/invitations/session recovery preserve or explicitly fall back on language; background email uses a deterministic recipient locale; unsupported values and concurrent recipients cannot leak language between requests. Stable error identifiers remain locale-independent even if diagnostic/fallback prose is localized.
+- [ ] I18N-CONTENT (Phase 3 policy before Phase 4 organizer content, extend to Phases 6–7): distinguish interface strings from organizer-authored event descriptions, category/age/format labels, rubric criteria and announcements. Decide which need authored translations, required languages, editing/preview and missing-content fallback. Record broad model decisions before migrations and preserve existing content. Do not automatically translate names/titles or treat display text as identity. Acceptance: configured content renders under its declared policy without blank/raw enum labels, unavailable translations have an understandable fallback, and publication/export preserves rule identity and privacy. Only milestone-relevant content implementation is a release prerequisite.
+- [ ] I18N-QA (starts in Phase 1 CI; expands with P9-BROWSER at each milestone): automate catalogue completeness/key/parameter/plural checks and a reviewed detector for hardcoded JSX/attributes, excluding internal diagnostics and intentional user content. Add component/API/browser coverage for all three locales: language switching while errors are visible, client/server validation, login/verification, pending approvals, upload/network/session failures, unknown errors, emails and later exports/results. Include screen-reader language/announcements, keyboard/mobile layouts and long translations; arrange fluent ET/EN/RU review of terminology and grammar. Acceptance: CI fails for missing/invalid translations, relevant workflow/browser/email fixtures pass in each locale, and human review evidence exists for the released scope. Static scans alone do not prove complete translation coverage.
+
+Implementation order: define I18N-CONTRACT and I18N-CORE first, then
+I18N-VALIDATION; start I18N-QA checks with those changes. Complete preference design
+before P2-EMAIL templates/provider integration. Migrate existing UI and formatting
+against the shared presenter; add later domain-content support with its owning
+feature. No new architecture or database preference field is considered implemented
+by adding these tasks, and completed Phase 1 transport slices remain completed.
 
 ### Phase 0 — Preserve and restore the development baseline (complete)
 
@@ -368,8 +417,8 @@ relevant isolated database checks when changing transactional/data behavior.
 - [x] P1-JUDGES: consolidated judge controller, strict shared DTOs and canonical frontend helpers; covered event existence/scope, parent substitution, active user relation, nullable profile updates, conflict/error responses, and CRUD. Event/user links are immutable; scored judges cannot be deleted. No schema migration or role/record acceptance implementation. See the judge checkpoint in development history.
 - [x] P1-CONFLICT: studio-registration creation maps database duplicate active-name failures to global 409 responses under the existing SQL-only index. HTTP regression and PostgreSQL checks cover applicant/admin conflicts across events/locations, unchanged records/roles, competing creates with one complete winner, case sensitivity, and archived-name reuse/preservation. No migration. See the registration-conflict checkpoint in development history.
 - [x] P1-CI: added independent GitHub Actions workspace and PostgreSQL jobs for frozen install, build, typecheck, current lint/tests, Prisma validation/formatting, and isolated migration/workflow suites. Read-only permissions, health readiness, bounded jobs, run-specific Compose scope and always cleanup; unavailable Docker fails visibly. Migration runner selects the platform pnpm executable. Local actionlint/Compose checks and command suites pass; first hosted run and required-check settings await publication. See docs/TESTING.md and the CI checkpoint in development history.
-- [ ] P1-EVENTS: align event request/response contracts with stored fields and frontend expectations; remove invented timestamps, use explicit date serialization, and cover read/write authorization/errors. Later deadline fields follow P3-REGISTRATION.
-- [ ] P1-AUTH-CONTRACTS: shared explicit auth/profile DTOs, frontend validation, and consistent errors. Authentication security behavior belongs to P2-AUTH, not a completed DTO task.
+- [x] P1-EVENTS: strict shared event inputs/DTOs and runtime-validated client; stored nullable details/limits, explicit UTC serialization, no private image path or invented updatedAt. Authenticated reads/admin-only writes, global errors, missing records, resulting partial-date validation and serializable conflict handling covered by HTTP/PostgreSQL tests. No migration; image mutations remain uploads. Later deadlines/lifecycle policy follow P3-REGISTRATION; setup UI remains Phase 4.
+- [x] P1-AUTH-CONTRACTS: strict shared auth inputs and explicit registration/login/verification/profile DTOs; frontend validates before saving session tokens. Profiles explicitly serialize UTC creation time, role keys and null/event scopes without private fields or unrestricted relations. Shared global error schema/type, preserved client 403 messages, duplicate-registration race mapping and typed/validated compact JWT expiry. HTTP/config and PostgreSQL profile/login checks pass; no migration. Eligibility, token lifecycle, active/verified account enforcement and role guards remain Phase 2.
 - [ ] P1-CATEGORIES: controller/shared contracts and client helpers; event parent checks and CRUD success/validation/authorization/conflict coverage.
 - [ ] P1-FORMATS: controller/shared contracts and client helpers; event parent checks and CRUD coverage. New domain participant/duration policy follows P3-ENTRIES.
 - [ ] P1-AGE-GROUPS: controller/shared contracts and client helpers; event parent checks and CRUD coverage. Eligibility/overlap policy follows P3-ENTRIES.
@@ -384,21 +433,30 @@ do not mount or add an empty users controller to finish a checklist.
 Exit: no duplicate/unreachable handlers; every in-scope operation is covered by
 the resource contract matrix; frontend paths match backend paths; all error
 responses use the global envelope; strict typecheck passes with any exception
-documented; P1-CI runs the baseline. Success DTOs and 204 responses are not errors.
+documented; P1-CI runs the baseline and I18N-QA foundation checks. I18N-CONTRACT,
+I18N-CORE and I18N-VALIDATION pass for migrated resources. Success DTOs and 204
+responses are not errors; localized success notices use stable message descriptors.
 
 ### Phase 2A — Onboarding decisions, audit/privacy, and email foundations
 
-Entry: Phase 1 contracts are stabilized. These are prerequisites for Phase 2B,
+Entry: Phase 1 contracts/localization foundations are stabilized. These are prerequisites for Phase 2B,
 not later Phase 3 work. Each model change needs reviewed migrations, preservation
 checks, and shared contracts before dependent runtime work.
 
-- [ ] P2-ONBOARDING-MODEL: specify studio-focused account/onboarding context, verification/draft persistence, required details, intended-event return handling, pending-user read/edit/cancel scope, retry/idempotency, and retention. Preserve existing roleless accounts; reject an intent flag as proof of privilege. Implement the minimal required storage/contracts before P2-SIGNUP.
+- [ ] P2-SCOPE-INTEGRITY: high priority before M1 or any event-deletion operation. Replace/restrict event foreign-key behavior that can turn UserRole/Invitation event scope null/global; choose archive/restrict or explicit history-preserving removal semantics. Audit existing null scopes/duplicates without guessing lost ownership. Enforce null-safe global/event uniqueness with suitable constraints/indexes and Prisma query handling; invitation resend/history must remain valid. PostgreSQL tests must prove no scope broadening, concurrent duplicate rejection, and preservation of legitimate assignments. New migration only.
+- [ ] P2-IDENTITY-TOKENS: before P2-AUTH/INVITE/SIGNUP, define one email canonicalization/collision policy across accounts and invitations; audit before migration, never auto-merge users or change ownership. Add purpose-bound verification/recovery/invitation token digests, expiry, consumed/revoked state and atomic rotation/resend semantics. Define transition of existing links; keep raw secrets out of normal DTOs, logs and audits. Test case variants, collision handling, expiry, wrong-purpose/replay/concurrent consumption, and safe account recovery.
+- [ ] P2-ONBOARDING-MODEL: specify studio-focused account/onboarding context, verification/draft persistence, required details, intended-event return handling, pending-user read/edit/cancel scope, retry/idempotency, and retention. Preserve existing roleless accounts; reject an intent flag as proof of privilege. Implement the minimal required storage/contracts before P2-SIGNUP; apply P2-IDENTITY-TOKENS account/token contracts.
 - [ ] P2-AUDIT: define safe audit metadata and implement minimal durable AuditLog/actor support for account, invitation, access, and approval changes. Preserve domain data and exclude tokens, passwords, private contact/billing payloads. Include transaction/rollback tests; later audit coverage grows with each feature.
 - [ ] P2-PRIVACY: document data minimization, authorized viewers, birth-date/photo/contact handling, retention/deletion/export responsibilities, and existing-account transition policy before new dancer/media workflows. Do not automatically delete/deactivate roleless users. No cleanup until its policy is reviewed.
-- [ ] P2-STAFF-MODEL: define invitation/assignment states, mandatory judge/moderator event scope, nullable role/invitation uniqueness, atomic acceptance, revocation versus accepted-access removal, and history preservation. Define moderator stage permissions separately from score submission; organizer-level management needs an explicit least-privilege decision. Implement required fields/constraints before dependent invitation handlers; verify null uniqueness in PostgreSQL without unsafe casts.
+- [ ] P2-STAFF-MODEL: after P2-SCOPE-INTEGRITY and P2-IDENTITY-TOKENS, define invitation/assignment states, mandatory judge/moderator event scope, atomic acceptance, revocation versus accepted-access removal, and history preservation. Add explicit studio-bound invitation scope before P5-MEMBERS; define assignable role references/validation rather than trusting arbitrary role-key text. Define moderator stage permissions separately from score submission; organizer-level management needs an explicit least-privilege decision. Implement required fields/constraints before dependent invitation handlers; use the verified null-safe uniqueness policy without unsafe casts.
 - [ ] P2-EMAIL: introduce an email provider/fake interface, select and integrate a real provider through validated configuration, and add ET/EN/RU verification/resend, invitation, recovery, and application-decision templates. Define delivery failure/retry semantics, token safety, and no false “sent” confirmation. Fake delivery tests run in CI; verify real delivery in staging before M2/M4 release. Broader media/provider hardening remains Phase 8.
 
-Exit: onboarding/invitation persistence and permission decisions are explicit;
+P2-EMAIL depends on I18N-PREFERENCES recipient/invitation locale policy and
+persistence decisions before integration; I18N-UI/FORMATTING complete the delivered
+onboarding surfaces in Phase 2B without waiting for future entry/judging screens.
+
+Exit: scope removal cannot broaden permissions; null-safe uniqueness and token
+lifecycle/identity transition tests pass. Onboarding/invitation persistence and permission decisions are explicit;
 minimal audit/model migrations preserve data; privacy requirements are recorded;
 the email integration is tested and staging delivery evidence is recorded before
 an external milestone. No dependency on future scoring or multi-event migration.
@@ -408,7 +466,7 @@ an external milestone. No dependency on future scoring or multi-event migration.
 Entry: relevant Phase 2A foundations pass. Apply each task's narrower prerequisites
 before its implementation; M1 uses only the security foundation tasks listed above.
 
-- [ ] P2-AUTH: verify active/existing/email-verified users at appropriate login/request boundaries; handle verification/resend, mistyped-email correction, password reset, safe recovery responses, expiry/used tokens, and seeded development identity. Never silently reactivate inactive invitees.
+- [ ] P2-AUTH: after P2-IDENTITY-TOKENS, verify active/existing/email-verified users at appropriate login/request boundaries; handle verification/resend, mistyped-email correction, password reset, safe recovery responses, expiry/used tokens, and seeded development identity. Never silently reactivate inactive invitees.
 - [ ] P2-ROLES: unify frontend guards and gates on stable role keys, permission/event scopes, and explicit global/admin semantics. Add profile permission data if required; test bypass and parent/ownership invariants.
 - [ ] P2-BOUNDARIES: secure each image upload by resource ownership/permissions; use configured CORS, security headers, validated production configuration, login throttling, and rate limits for auth/invite/upload routes. Use audit hooks from P2-AUDIT.
 - [ ] P2-SESSION: decide JWT cookie versus localStorage threat model and implement the chosen session handling; validate internal return destinations through email tabs/devices and session expiry, preserving recoverable work without credentials in URLs.
@@ -429,8 +487,14 @@ scoring/live-operation schema. P3-ENTRIES is an M3 prerequisite, not an M2 gate.
 
 - [ ] P3-REGISTRATION: record the application/review portion of ADR-003 before dependent behavior. Define permitted transitions, event timezone and registration deadline, cancellation/rejection/resubmission, pending correction scope, and separate organization/event approval. Add only required fields, constraints, and transition tests for registration opening/review/closure. Full live transitions are P6-LIVE-MODEL.
 - [ ] P3-STUDIO-IDENTITY: implement ADR-001 with data audit/backfill/preservation tests and a new migration; define shared studio/roster edit rules across event locks and historical entries before removing Studio.eventId. Never infer approval or auto-merge by name; flag contradictory participant/registration relationships. Multi-event reuse must not ship before this gate.
+- [ ] P3-STUDIO-NAMES: decide/document display-name identity and duplicate-review policy before altering the global active-name index. Recommended target permits unrelated studios to share display names and uses stable IDs for identity; never auto-merge or add unique dancer name/birth-date identity keys. Audit existing records, search/disambiguation, rename/restore conflicts, canonical contracts, and index preservation/removal tests. Current case-sensitive global uniqueness remains until an explicit new migration; do not weaken it opportunistically in P1.
+- [ ] P3-PERFORMANCE-OWNER: before draft/entry UI and M3, record explicit studio/event-registration ownership design, including event-consistent keys and active ownership validation. Audit/backfill existing performances only when ownership is unambiguous; preserve IDs, participants and scores. Resolve empty/mixed legacy participant sets through reviewed repair, not first-participant inference. Migrate controllers/DTOs atomically with canonical contracts and negative ownership tests; single-studio entries remain the current target.
+- [ ] P3-CONSTRAINTS: before M3 entry enforcement, audit existing ranges and cross-event contradictions; add agreed row CHECK constraints for date ordering, positive limits/durations/counts and min/max bounds, and compound unique/FK protection for event-owned category/age-group/format relations where practical. Define remaining participant membership/active checks transactionally; ordinary row CHECKs must not query other tables. Cover direct SQL/API violations, rollback, concurrency, and preservation; score/judge event constraints extend in P6-SCORING-MODEL.
+- [ ] P3-HISTORY: before P5-ENTRIES/SUBMISSION, specify submitted participant/studio/configuration snapshots or versioned records, audit provenance, and optimistic revision/conflict semantics. Later profile/dancer/configuration edits must not silently rewrite submitted/historical entries; define correction versioning and privacy-minimal retention. Test stale writes/concurrent submits, unchanged historical display, and explicit correction/audit outcomes with preservation migrations.
+- [ ] P3-CALENDAR-DATES: audit legacy timestamp interpretation before conversion; choose native PostgreSQL date for dancer birth dates with documented mapping/backfill and leap-day/timezone tests. Define event/deadline instant storage, IANA event timezone, DST behavior and age-calculation date policy with P3-REGISTRATION/ENTRIES. Never blindly truncate or reinterpret existing timestamps. Complete before M3 eligibility; M2 event time/deadline semantics must already be explicit in P3-REGISTRATION.
+- [ ] P3-INDEXES: review actual event registration/approval queues, studio rosters, memberships by user, judges by event, participants by dancer and active-record queries using representative EXPLAIN plans. Add only useful missing FK/filter/order indexes, respecting existing composite-index prefixes and SQL-only objects. Verify migration parity and performance; FK declarations do not index their referencing columns automatically.
 - [ ] P3-DATA-HYGIENE: add needed mutable-entity timestamps, intentional referential actions/indexes, consistent active filters and deletedBy/deactivatedBy actor fields. Define restore policy. Audit legacy birth-date timezone interpretation before converting values; current UTC calendar serialization does not rewrite stored dates. Retain historical data under P2-PRIVACY.
-- [ ] P3-ENTRIES: before M3, define durable entry drafts, explicit submission/receipt state, idempotent retries, concurrent edits, correction scope/deadline, locks, withdrawal/resubmission, and historical snapshots. Keep submission state separate from approvals. Define age date/group policy, format count/duration constraints, entry/music deadlines, and required music rules with corresponding schema/backend tests.
+- [ ] P3-ENTRIES: after P3-PERFORMANCE-OWNER and the P3-HISTORY/CONSTRAINTS/CALENDAR-DATES designs, implement durable incomplete drafts without stage order, explicit submission/receipt state, idempotent retries, revision conflicts, correction scope/deadline, locks and withdrawal/resubmission. Record nullable transitional fields versus dedicated draft representation before code; validation becomes strict at submit, not every draft save. Keep submission separate from approval. Define age policy, format count/duration, entry/music deadlines and required music rules with backend tests; do not require Phase 6 schedule generation to save/submit an unscheduled entry.
 - [ ] P3-MUSIC-MODEL: before P5-MUSIC, define file metadata, upload ownership, replacement lifecycle, and private access; store media outside PostgreSQL. Apply P2-PRIVACY and P8-MEDIA requirements.
 
 Exit for M2 subset: P3-REGISTRATION and relevant migration invariants pass on empty
@@ -472,8 +536,8 @@ P5-REUSE/MEMBERS are separately gated extensions, not hidden M2 requirements.
 Entry: M3/M4 for the user workflow; complete model/specification tasks before
 their own dependent screens. Do not require these models for M2 registration.
 
-- [ ] P6-LIVE-MODEL: extend ADR-003 with SCHEDULED/LIVE/FINALIZED/ENDED/CANCELLED transitions, stage/session/queue states, authorized advance/pause/skip/withdraw/reopen actions, and safe lifecycle migration. Add schedule/session/stage schema, indexes, conflict model, and transition tests.
-- [ ] P6-SCORING-MODEL: accept ADR-004 and implement rubric/templates/criteria, ranges/steps/weights, judge assignments, draft/submitted/locked score sheets, penalties/disqualification, rounding/dropped scores/ties, versioned calculation and publication/correction semantics. Review nullable uniqueness and database constraints; preserve existing scores. This precedes scoring-template UI.
+- [ ] P6-LIVE-MODEL: extend ADR-003 with SCHEDULED/LIVE/FINALIZED/ENDED/CANCELLED transitions, stage/session/queue states, authorized advance/pause/skip/withdraw/reopen actions, and safe lifecycle migration. Separate schedule-entry/stage/session ordering from performance identity/draft submission; define moving/swapping/withdrawing and archived-slot reuse with transactional uniqueness/concurrency checks. Preserve existing orders/history, allow unscheduled entries from P3-ENTRIES, and add schedule indexes/conflict/transition tests.
+- [ ] P6-SCORING-MODEL: accept ADR-004 and implement rubric/templates/criteria, ranges/steps/weights, judge assignments, draft/submitted/locked score sheets, penalties/disqualification, rounding/dropped scores/ties, versioned calculation and publication/correction semantics. Choose scaled integers or explicit Decimal precision instead of unspecified Float semantics; define finite/range/step checks, exact tie/rounding rules and preservation/conversion of existing scores. Enforce same-event judge/performance and criterion-template consistency where practical via database keys plus backend validation. Extend P3-CONSTRAINTS/HISTORY without rewriting historical scores silently. This precedes scoring-template UI.
 - [ ] P6-SCHEDULE: after P6-LIVE-MODEL, build generation/editing with stage/session filters and dancer conflict reporting; validate manual adjustments. Scheduling is no longer part of core Phase 4 registration setup.
 - [ ] P6-TEMPLATES: after P6-SCORING-MODEL, build scoring-template/criterion configuration and prerequisite checks before opening live judging, not before accepting studio applications.
 - [ ] P6-JUDGE: after P6-SCORING-MODEL/TEMPLATES and P4-STAFF, build touch-friendly assigned-current-performance rubric, explicit ranges, draft autosave and server-confirmed final lock; block unassigned scoring and prohibited peer-score visibility.
@@ -543,6 +607,7 @@ hold the first usable registration journey open.
 - Format participant and duration validation.
 - Score range, weighting, rounding, dropped-score, and tie-break rules.
 - Permission aggregation across global and event-scoped roles.
+- I18N-CORE catalogue keys/completeness/fallbacks, typed parameters/plural categories, supported-locale persistence, locale-aware formatting and render-time error switching.
 
 ### API integration tests
 
@@ -555,6 +620,7 @@ hold the first usable registration journey open.
 - Score draft, submit, lock, reopen, and concurrent update behavior.
 - Soft delete and restore behavior.
 - Upload authorization and failure compensation.
+- I18N-CONTRACT/VALIDATION parity for domain/network/upload errors and structured field issues; deterministic recipient email locale and concurrent-request isolation. Do not snapshot English prose as the only API behavior assertion.
 
 ### End-to-end tests
 
@@ -567,6 +633,11 @@ hold the first usable registration journey open.
 7. Admin reviews, finalizes, and publishes rankings.
 
 Journey regression scenarios: roleless application tracking; safe return after email verification; expired/used invitation and wrong-account acceptance; uncertain create/submit responses; saved progress after session expiry; stage/deadline changes during editing; concurrent changes; correction scope/expiry; keyboard-only and ET/EN/RU completion. Add checks with the owning feature phases rather than postponing all verification to Phase 9.
+
+Run the delivered journey matrix in ET/EN/RU with invalid data, unknown errors,
+already-visible errors during language switching, locale persistence, email link
+return, document language, plural counts and long responsive text. I18N-QA records
+static-scan exclusions and fluent-language review; developer logs may remain English.
 
 ## 8. Documentation Plan
 
@@ -582,10 +653,12 @@ Journey regression scenarios: roleless application tracking; safe return after e
 - [ ] Add `docs/DEPLOYMENT.md`.
 - [x] Add ADR-001, ADR-002, and ADR-005 for studio identity, canonical paths, and shared contracts.
 - [x] Add ADR-006 for studio-focused signup and invitation-only staff onboarding; align journey, registration, API, root, and role guides. Runtime signup restrictions, atomic judge assignment, and invitation UI/security remain unchecked in their owning phases.
+- [x] DB-REVIEW: record [database integrity and UX findings](docs/DATABASE_REVIEW.md), map them to prioritized tasks, and align identity/onboarding/journey guidance. Documentation only; no schema migration, deployed-data audit, index change, token conversion, or constraint fix is claimed.
 - [ ] Add ADR-003 and ADR-004 for lifecycle and scoring before their dependent implementation.
 - [ ] Mark implementation summaries as historical or delete them after their useful content is merged into maintained guides.
 - [ ] Correct endpoint examples, ports, framework versions, file trees, and build/test claims.
 - [ ] Normalize all markdown to UTF-8.
+- [ ] Document I18N-CONTRACT/VALIDATION transport rules, supported locale/default/fallback and preference precedence, catalogue conventions, organizer-content translation policy, and I18N-QA release evidence as implementation decisions are made. Existing general ET/EN/RU statements do not replace these acceptance criteria.
 
 ## 9. Dependency and issue tracking
 
@@ -622,6 +695,7 @@ backend tasks; do not retroactively claim missing UI or AuditLog implementation.
 - All technical slices and milestone prerequisites pass, including required security/audit/privacy and real email/media providers.
 - Users complete the journey through UI with loading/empty/error/success/disabled states, safe retries, session/network recovery, and actionable next steps.
 - ET/EN/RU, semantic forms, keyboard focus/navigation, accessible error/status announcements, and phone/tablet layouts pass for the delivered scope.
+- Applicable I18N tasks pass for the released scope: translated API/local validation/success feedback, safe unknown-error fallback, live error retranslation, correct document language/formatting, deterministic email language and fluent-language review. No future UI/content coverage is implied by a technical contract checkbox.
 - Sensitive changes emit durable audit records; backend authorization and cross-event/studio failures are tested.
 - Browser end-to-end acceptance and applicable staging delivery/deploy/restore/recovery gates pass, with evidence tied to the validated revision.
 - Optional/deferred features and known limitations are explicit. No phase or milestone is closed while its required outcome remains unfinished.
@@ -646,3 +720,15 @@ Plan revision (2026-10-24): dependency/structure changes are documented under
 PLAN-REVIEW. This revision changes no runtime code or schema and does not rerun
 past application checks. Documentation validation covers links, task references,
 UTF-8, whitespace, and the final diff; report results in the handoff.
+
+Database review follow-up (2026-10-24), DB-REVIEW: new scope/identity prerequisites
+and ownership/draft/history/date/constraint/index tasks are documented in the
+owning phases. Scoring precision and schedule-slot policy remain later model
+decisions. Current API/index/schema behavior and existing completed slices are
+unchanged; no live-data audit or database validation was performed for this update.
+
+Localization planning follow-up (2026-10-24): added eight unchecked I18N tasks,
+Phase 1 foundation requirements, recipient-locale dependencies and per-milestone
+acceptance/CI/human-review gates from the static localization audit. No application
+strings, transport contracts, preference fields or runtime behavior were changed;
+past application validation counts above are preserved rather than claimed rerun.

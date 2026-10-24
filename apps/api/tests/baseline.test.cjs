@@ -25,3 +25,19 @@ test('review exceptions permit dancer/performance changes only', () => {
   assert.equal(isActionAllowed('DATA_REVIEW', 'studio.register', true), false);
   assert.equal(isActionAllowed('DATA_REVIEW', 'studio.edit', true), false);
 });
+
+test('JWT expiry configuration signs supported durations and rejects invalid values at startup', () => {
+  const { spawnSync } = require('node:child_process');
+  const path = require('node:path');
+  const cwd = path.resolve(__dirname, '..');
+  const baseEnv = { ...process.env, NODE_ENV: 'test', DATABASE_URL: 'postgresql://unused:unused@127.0.0.1:1/unused',
+    JWT_SECRET: require('node:crypto').randomBytes(32).toString('hex'), EMAIL_FROM: 'config@example.invalid' };
+  const code = `const { config } = require('./dist/config/env.js');
+    const jwt = require('jsonwebtoken');
+    const decoded = jwt.decode(jwt.sign({ userId: 'fixture' }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }));
+    if (!Number.isFinite(decoded.exp)) process.exit(2);`;
+  for (const value of ['7d', '1h', '30m', '1.5h', '500ms', '0d', '-1h', 'forever', '7', 'Infinityd']) {
+    const result = spawnSync(process.execPath, ['-e', code], { cwd, env: { ...baseEnv, JWT_EXPIRY: value }, encoding: 'utf8' });
+    assert.equal(result.status === 0, ['7d', '1h', '30m', '1.5h', '500ms'].includes(value), value);
+  }
+});

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IdSchema, DateSchema } from "./common.schema.js";
+import { IdSchema } from "./common.schema.js";
 
 export const EventStageSchema = z.enum([
   "PRE_REGISTRATION",
@@ -19,22 +19,30 @@ export const EventIdStudioIdParamsSchema = z.object({
   studioId: IdSchema,
 });
 
-export const CreateEventBodySchema = z.object({
-  name: z.string().min(1, "Event name is required"),
-  startsAt: DateSchema,
-  endsAt: DateSchema,
+const InstantSchema = z.iso.datetime({ offset: true });
+const TextSchema = z.string().trim().min(1);
+const LimitSchema = z.number().int().positive().max(2147483647);
+const eventFields = {
+  name: TextSchema,
+  startsAt: InstantSchema,
+  endsAt: InstantSchema,
   stage: EventStageSchema.optional(),
-}).refine(
+  venue: TextSchema.nullable().optional(),
+  country: TextSchema.nullable().optional(),
+  city: TextSchema.nullable().optional(),
+  description: TextSchema.nullable().optional(),
+  maxStudios: LimitSchema.nullable().optional(),
+  maxPerformances: LimitSchema.nullable().optional(),
+};
+
+export const CreateEventBodySchema = z.strictObject(eventFields).refine(
   (data) => new Date(data.startsAt) < new Date(data.endsAt),
   { message: "End date must be after start date", path: ["endsAt"] }
 );
 
-export const UpdateEventBodySchema = z.object({
-  name: z.string().min(1).optional(),
-  startsAt: DateSchema.optional(),
-  endsAt: DateSchema.optional(),
-  stage: EventStageSchema.optional(),
-}).refine(
+export const UpdateEventBodySchema = z.strictObject(eventFields).partial()
+.refine((body) => Object.keys(body).length > 0, "At least one field is required")
+.refine(
   (data) => {
     if (data.startsAt && data.endsAt) {
       return new Date(data.startsAt) < new Date(data.endsAt);
@@ -46,3 +54,14 @@ export const UpdateEventBodySchema = z.object({
 
 export type CreateEventInput = z.infer<typeof CreateEventBodySchema>;
 export type UpdateEventInput = z.infer<typeof UpdateEventBodySchema>;
+
+export const EventSchema = z.strictObject({
+  id: IdSchema, name: z.string(), startsAt: z.iso.datetime(), endsAt: z.iso.datetime(),
+  stage: EventStageSchema, createdAt: z.iso.datetime(),
+  venue: z.string().nullable(), country: z.string().nullable(), city: z.string().nullable(),
+  description: z.string().nullable(), maxStudios: z.int().nullable(),
+  maxPerformances: z.int().nullable(), imageUrl: z.string().nullable(),
+});
+export const EventsSchema = z.array(EventSchema);
+export type Event = z.infer<typeof EventSchema>;
+export type EventStage = z.infer<typeof EventStageSchema>;

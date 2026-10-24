@@ -17,3 +17,8 @@ export const PaginationSchema = z.object({
 });
 
 export type Pagination = z.infer<typeof PaginationSchema>;
+export const ErrorResponseSchema = z.strictObject({
+  error: z.string(), code: z.string(), statusCode: z.number().int().min(400).max(599),
+  details: z.record(z.string(), z.unknown()).optional(), timestamp: z.iso.datetime(),
+});
+export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;

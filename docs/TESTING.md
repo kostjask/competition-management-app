@@ -55,7 +55,9 @@ The baseline runner uses only the checked-in Compose fixture, creates a random
 dance_baseline_* database, deploys/redeploys migrations, checks full-record seed
 idempotency and production-seed refusal, and starts its own compiled API on a
 temporary port. It runs registration, dancer, performance, studio and judge
-HTTP/database workflows. It stops its server and drops its own database in a
+HTTP/database workflows, event DTO/persistence and concurrent partial-date
+checks, and auth/profile DTOs with real global/event roles. It stops its server
+and drops its own database in a
 finally block. The migration suite creates random schemas in dance_comp, checks
 fresh and existing-data upgrades, status/default/data preservation, the partial
 active-studio-name index and schema parity, and removes its schemas/temp SQL.

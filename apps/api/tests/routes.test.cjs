@@ -162,7 +162,7 @@ test('validation errors use the global handler and health stays outside the API 
 
 test('profile and upload operations dispatch after authentication; health errors omit internals', async (t) => {
   const { request, prisma, calls } = await fixture(t);
-  prisma.user.findUnique = async ({ where }) => ({ id: where.id, name: 'Fixture', roles: [] });
+  prisma.user.findUnique = async ({ where }) => ({ id: where.id, name: 'Fixture', email: 'fixture@example.invalid', createdAt: new Date('2026-01-01'), roles: [] });
   const profile = await request('/api/v1/auth/profile', { user: 'admin' });
   assert.equal(profile.status, 200);
   assert.equal(profile.body.id, 'admin');
@@ -847,4 +847,223 @@ test('judge uniqueness, foreign key and concurrent disappearance use global erro
     assert.equal(result.body.code, expected === 409 ? 'CONFLICT' : 'NOT_FOUND');
     assert.ok(Number.isFinite(Date.parse(result.body.timestamp)));
   }
+});
+
+async function eventFixture(t) {
+  const f = await fixture(t);
+  let stored;
+  f.prisma.event = {
+    create: async ({ data }) => (stored = { id: 'e', createdAt: new Date('2026-01-01'),
+      stage: 'PRE_REGISTRATION', venue: null, country: null, city: null, description: null,
+      maxStudios: null, maxPerformances: null, imageUrl: null, ...data }),
+    findUnique: async ({ where }) => stored?.id === where.id ? stored : null,
+    findMany: async (args) => { f.calls.push({ name: 'event-list', args }); return stored ? [stored] : []; },
+    update: async ({ data }) => (stored = { ...stored, ...data }),
+  };
+  f.prisma.$transaction = async (work, options) => {
+    assert.equal(options.isolationLevel, 'Serializable');
+    return work(f.prisma);
+  };
+  return { ...f, stored: () => stored };
+}
+const eventInput = { name: ' Event ', startsAt: '2026-11-01T10:00:00+02:00', endsAt: '2026-11-01T12:00:00+02:00' };
+
+test('event CRUD contracts include stored nullable fields and omit private/nonexistent fields', async (t) => {
+  const { request, stored, calls } = await eventFixture(t);
+  const { EventSchema } = require('@dance/schemas');
+  const created = await request('/api/v1/events', { user: 'admin', method: 'POST', body: {
+    ...eventInput, venue: ' Hall ', country: ' EE ', city: ' Tallinn ', description: ' Description ',
+    maxStudios: 20, maxPerformances: 100, stage: 'REGISTRATION_OPEN',
+  } });
+  assert.equal(created.status, 201);
+  const event = EventSchema.parse(created.body);
+  assert.equal(event.name, 'Event'); assert.equal(event.venue, 'Hall');
+  assert.equal(event.startsAt, '2026-11-01T08:00:00.000Z');
+  assert.equal(event.maxStudios, 20); assert.equal(event.imageUrl, null);
+  stored().imagePath = 'private'; stored().password = 'private';
+  const read = await request('/api/v1/events/e', { user: 'moderator' });
+  assert.deepEqual(read.body, event);
+  assert.deepEqual((await request('/api/v1/events', { user: 'moderator' })).body, [event]);
+  assert.deepEqual(calls.find(c => c.name === 'event-list').args.orderBy, [{ startsAt: 'asc' }, { id: 'asc' }]);
+  const patched = await request('/api/v1/events/e', { user: 'admin', method: 'PATCH', body: {
+    city: null, venue: null, description: null, maxStudios: null, maxPerformances: 50,
+  } });
+  assert.equal(patched.status, 200); assert.equal(patched.body.city, null);
+  assert.equal(patched.body.country, 'EE'); assert.equal(patched.body.maxPerformances, 50);
+});
+
+test('event operations require authentication and all non-admin write scopes fail with standard errors', async (t) => {
+  const { request, prisma, stored } = await eventFixture(t);
+  for (const [method, path, body] of [['GET', '/events'], ['GET', '/events/e'],
+    ['POST', '/events', eventInput], ['PATCH', '/events/e', { name: 'x' }]]) {
+    const result = await request(`/api/v1${path}`, { method, body });
+    assert.equal(result.status, 401); assert.equal(result.body.code, 'UNAUTHORIZED');
+  }
+  for (const scope of ['allowed-event', 'e', 'other', null]) {
+    prisma.userRole.findMany = async () => [{ eventId: scope, role: { key: 'organizer',
+      permissions: [{ permission: { key: 'event.manage' } }] } }];
+    for (const [method, suffix, body] of [['POST', '', eventInput], ['PATCH', '/e', { name: 'x' }]]) {
+      const result = await request(`/api/v1/events${suffix}`, { user: 'organizer', method, body });
+      assert.equal(result.status, 403); assert.equal(result.body.code, 'FORBIDDEN');
+      assert.equal(result.body.statusCode, 403); assert.ok(Number.isFinite(Date.parse(result.body.timestamp)));
+    }
+  }
+  assert.equal(stored(), undefined);
+  assert.deepEqual((await request('/api/v1/events', { user: 'organizer' })).body, []);
+});
+
+test('event strict mutation validation and partial date ordering reject invalid writes without changes', async (t) => {
+  const { request, stored } = await eventFixture(t);
+  const send = (body, method = 'PATCH') => request(`/api/v1/events${method === 'PATCH' ? '/e' : ''}`, { user: 'admin', method, body });
+  assert.equal((await send(eventInput, 'POST')).status, 201);
+  const before = { ...stored() };
+  for (const body of [{}, { name: ' ' }, { name: null }, { venue: '' }, { maxStudios: 0 },
+    { maxPerformances: 1.5 }, { maxStudios: 2147483648 }, { stage: 'LIVE' },
+    { startsAt: '2026-11-01' }, { endsAt: '2026-02-30T12:00:00Z' },
+    { startsAt: '2026-11-01T10:00:00Z' }, { endsAt: '2026-11-01T08:00:00Z' },
+    { id: 'other' }, { imageUrl: 'url' }, { imagePath: 'path' }, { updatedAt: 'now' }, { createdAt: 'now' }]) {
+    const result = await send(body);
+    assert.equal(result.status, 400, JSON.stringify(body)); assert.equal(result.body.code, 'VALIDATION_ERROR');
+    assert.ok(result.body.details.fields); assert.deepEqual(stored(), before);
+  }
+  for (const extra of [{ imageUrl: 'url' }, { name: ' ' }, { maxPerformances: -1 },
+    { endsAt: eventInput.startsAt }, { startsAt: '2026-11-01T10:00:00' }]) {
+    assert.equal((await send({ ...eventInput, ...extra }, 'POST')).status, 400);
+  }
+  const result = await send({ startsAt: '2026-11-02T08:00:00Z', endsAt: '2026-11-02T09:00:00Z' });
+  assert.equal(result.status, 200);
+  assert.equal((await send({ endsAt: '2026-11-02T10:00:00Z' })).status, 200);
+});
+
+test('event missing records and transaction conflicts use standard errors', async (t) => {
+  const { request, prisma } = await eventFixture(t);
+  for (const method of ['GET', 'PATCH']) {
+    const result = await request('/api/v1/events/missing', { user: 'admin', method, body: method === 'PATCH' ? { name: 'x' } : undefined });
+    assert.equal(result.status, 404); assert.equal(result.body.code, 'NOT_FOUND');
+  }
+  for (const [code, status] of [['P2025', 404], ['P2034', 409]]) {
+    prisma.$transaction = async () => { throw new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+      'Fixture', { code, clientVersion: 'test' }); };
+    const result = await request('/api/v1/events/e', { user: 'admin', method: 'PATCH', body: { name: 'x' } });
+    assert.equal(result.status, status); assert.equal(result.body.statusCode, status);
+  }
+});
+
+async function authFixture(t) {
+  const f = await fixture(t);
+  const email = require('../dist/utils/email.js');
+  const deliveries = [];
+  t.mock.method(email, 'sendVerificationEmail', async data => { deliveries.push(data); });
+  let user;
+  f.prisma.user = {
+    findUnique: async ({ where, select }) => {
+      f.calls.push({ name: 'auth-user', where, select });
+      return user && Object.entries(where).every(([key, value]) => user[key] === value) ? user : null;
+    },
+    create: async ({ data, select }) => {
+      f.calls.push({ name: 'auth-create', data, select });
+      return (user = { id: 'account', active: true, createdAt: new Date('2026-01-02'), roles: [], ...data });
+    },
+    update: async ({ data }) => (user = { ...user, ...data }),
+  };
+  return { ...f, deliveries, stored: () => user, setUser: value => { user = value; } };
+}
+const authInput = { email: 'auth-contract@example.invalid', name: ' Account ', password: 'fixture-password' };
+
+test('auth registration validates explicit response and private fields, hashes passwords and maps duplicates', async (t) => {
+  const { request, deliveries, stored, prisma } = await authFixture(t);
+  const { RegisterResponseSchema, ErrorResponseSchema } = require('@dance/schemas');
+  const created = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
+  assert.equal(created.status, 201);
+  assert.equal(RegisterResponseSchema.parse(created.body).userId, 'account');
+  assert.deepEqual(Object.keys(created.body).sort(), ['message', 'userId']);
+  assert.equal(stored().name, 'Account'); assert.equal(stored().emailVerified, false);
+  assert.notEqual(stored().password, authInput.password);
+  assert.ok(await require('bcrypt').compare(authInput.password, stored().password));
+  assert.equal(deliveries.length, 1); assert.equal(deliveries[0].token, stored().verificationToken);
+  const duplicate = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
+  assert.equal(duplicate.status, 409); ErrorResponseSchema.parse(duplicate.body);
+  prisma.user.findUnique = async () => null;
+  prisma.user.create = async () => { throw new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+    'Private duplicate details', { code: 'P2002', clientVersion: 'test' }); };
+  const race = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
+  assert.equal(race.status, 409); assert.equal(race.body.error, 'Email already registered');
+  assert.equal(deliveries.length, 1);
+});
+
+test('auth mutations reject unknown fields, missing values and whitespace names with shared error envelopes', async (t) => {
+  const { request, calls } = await authFixture(t);
+  const { ErrorResponseSchema } = require('@dance/schemas');
+  for (const [path, bodies] of [
+    ['register', [{}, { ...authInput, name: '  ' }, { ...authInput, password: 'short' },
+      { ...authInput, isAdmin: true }, { ...authInput, roles: [] }, { ...authInput, email: 'invalid' }]],
+    ['login', [{}, { email: authInput.email, password: '' }, { email: authInput.email, password: 'x', active: true }]],
+    ['verify-email', [{}, { token: '' }, { token: 'x', userId: 'other' }]],
+  ]) {
+    for (const body of bodies) {
+      const result = await request(`/api/v1/auth/${path}`, { method: 'POST', body });
+      assert.equal(result.status, 400); const error = ErrorResponseSchema.parse(result.body);
+      assert.equal(error.code, 'VALIDATION_ERROR'); assert.ok(error.details.fields);
+    }
+  }
+  assert.equal(calls.length, 0);
+});
+
+test('auth login returns only a validated bearer session and preserves credential and disabled-account failures', async (t) => {
+  const { request, setUser, stored } = await authFixture(t);
+  const { AuthResponseSchema, ErrorResponseSchema } = require('@dance/schemas');
+  const login = password => request('/api/v1/auth/login', { method: 'POST', body: { email: authInput.email, password } });
+  assert.equal((await login('missing')).status, 401);
+  setUser({ id: 'account', email: authInput.email, name: 'Account', active: true, emailVerified: false,
+    password: await require('bcrypt').hash(authInput.password, 4), verificationToken: 'private', photoPath: 'private' });
+  const invalid = await login('incorrect'); assert.equal(invalid.status, 401); ErrorResponseSchema.parse(invalid.body);
+  const success = await login(authInput.password);
+  assert.equal(success.status, 200); const session = AuthResponseSchema.parse(success.body);
+  const claims = jwt.verify(session.token, process.env.JWT_SECRET);
+  assert.equal(claims.userId, 'account'); assert.ok(claims.exp > claims.iat);
+  assert.deepEqual(session.user, { id: 'account', email: authInput.email, name: 'Account' });
+  stored().active = false;
+  const disabled = await login(authInput.password); assert.equal(disabled.status, 403);
+  assert.equal(disabled.body.error, 'Account is disabled'); ErrorResponseSchema.parse(disabled.body);
+  stored().active = true; stored().password = null;
+  assert.equal((await login(authInput.password)).status, 401);
+});
+
+test('auth verification returns its explicit session contract and clears the stored token', async (t) => {
+  const { request, setUser, stored } = await authFixture(t);
+  const { VerifyEmailResponseSchema, ErrorResponseSchema } = require('@dance/schemas');
+  const verify = token => request('/api/v1/auth/verify-email', { method: 'POST', body: { token } });
+  const missing = await verify('missing'); assert.equal(missing.status, 404); ErrorResponseSchema.parse(missing.body);
+  setUser({ id: 'account', email: authInput.email, name: 'Account', emailVerified: true, verificationToken: 'fixture' });
+  assert.equal((await verify('fixture')).status, 403);
+  stored().emailVerified = false;
+  const success = await verify('fixture'); assert.equal(success.status, 200);
+  const session = VerifyEmailResponseSchema.parse(success.body);
+  assert.equal(jwt.verify(session.token, process.env.JWT_SECRET).userId, 'account');
+  assert.equal(stored().emailVerified, true); assert.equal(stored().verificationToken, null);
+  assert.equal((await verify('fixture')).status, 404);
+});
+
+test('auth profile constrains identity to the caller and explicitly serializes role keys and scopes', async (t) => {
+  const { request, setUser, calls } = await authFixture(t);
+  const { UserProfileSchema, ErrorResponseSchema } = require('@dance/schemas');
+  assert.equal((await request('/api/v1/auth/profile')).status, 401);
+  const missing = await request('/api/v1/auth/profile', { user: 'account' });
+  assert.equal(missing.status, 404); ErrorResponseSchema.parse(missing.body);
+  setUser({ id: 'account', email: authInput.email, name: 'Account', createdAt: new Date('2026-01-02'),
+    password: 'private', verificationToken: 'private', photoPath: 'private', roles: [
+      { id: 'global', userId: 'account', eventId: null, roleId: 'r',
+        role: { id: 'r', key: 'judge', name: 'Judge', description: 'private', permissions: ['private'] }, event: null },
+      { id: 'scoped', eventId: 'e', role: { id: 's', key: 'representative', name: 'Studio Representative' },
+        event: { id: 'e', name: 'Event', imagePath: 'private' } },
+    ] });
+  const result = await request('/api/v1/auth/profile', { user: 'account' });
+  assert.equal(result.status, 200); const profile = UserProfileSchema.parse(result.body);
+  assert.equal(profile.createdAt, '2026-01-02T00:00:00.000Z'); assert.equal(profile.isAdmin, false);
+  assert.equal(profile.roles[0].eventId, null); assert.equal(profile.roles[1].role.key, 'representative');
+  assert.equal(JSON.stringify(profile).includes('private'), false);
+  const lookup = calls.filter(c => c.name === 'auth-user').at(-1);
+  assert.deepEqual(lookup.where, { id: 'account' }); assert.equal(lookup.select.roles.select.role.select.key, true);
+  assert.equal(lookup.select.password, undefined);
+  assert.equal((await request('/api/v1/auth/profile?userId=account', { user: 'someone-else' })).status, 404);
 });

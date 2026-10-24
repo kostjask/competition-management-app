@@ -124,6 +124,8 @@ async function main() {
     await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
+    await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
+    await require('./check-auth.cjs')({ client, baseUrl, login });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {

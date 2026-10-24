@@ -43,6 +43,14 @@ moderator permission reuse of `score.submit` is not a complete stage-control pol
 
 ## Current limitations and target repairs
 
+- Event-scope foreign keys currently use ON DELETE SET NULL; null role scope is
+  interpreted as global by authorization. P2-SCOPE-INTEGRITY must prevent physical
+  event removal from broadening assignments/invitations and enforce null-safe
+  uniqueness. Existing unrelated foreign keys may restrict deletion but are not a
+  substitute for an intentional scope policy. No live exploitation is claimed.
+- Email identity and invitation/verification token storage need P2-IDENTITY-TOKENS
+  canonicalization/collision review, digest/expiry/lifecycle metadata, and safe
+  legacy transition. No automatic account merge or ownership change is allowed.
 - Frontend `useRole` compares display names; `RequireRole` uses a separate fuzzy
   name mapping. Phase 2 must unify checks around stable keys and event scopes.
 - Judge invitation acceptance and judge record creation are separate operations.
@@ -71,6 +79,7 @@ active-record invariants. Public event discovery/results remain deferred under
 ADR-002 and must not be used to justify spectator signup.
 
 See [registration workflow](docs/REGISTRATION_API.md),
+[database review](docs/DATABASE_REVIEW.md),
 [user journeys](docs/USER_JOURNEYS.md),
 [frontend role guide](apps/web/ROLE_SYSTEM.md), and
 [development plan](DEVELOPMENT_PLAN.md) for current gaps and delivery order.

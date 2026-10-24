@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
+import type { ErrorResponse } from "@dance/schemas";
 import { AppError, ValidationError, InternalServerError } from "./index";
 
 /**
@@ -34,13 +35,7 @@ export function handleZodError(error: ZodError): ValidationError {
 /**
  * Type for standard API error response
  */
-export interface ErrorResponse {
-  error: string;
-  code: string;
-  statusCode: number;
-  details: Record<string, unknown> | undefined;
-  timestamp: string;
-}
+export type { ErrorResponse } from "@dance/schemas";
 
 /**
  * Central error handler middleware for Express

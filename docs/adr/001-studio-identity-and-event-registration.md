@@ -41,6 +41,25 @@ Choose reusable studios, as recommended in the development plan.
 - Do not automatically merge studios by name or contact details. Similar names
   are not proof of identity or permission to access historical dancers.
 
+## Database review follow-up (2026-10-24)
+
+The reusable identity decision above remains accepted. The current SQL-only
+active-studio-name index is globally unique and case-sensitive; it can block
+unrelated studios with the same display name. P3-STUDIO-NAMES must record the
+display-name/duplicate-review policy before changing that index. The recommended
+target permits shared display names and disambiguates studios through stable IDs
+and authorized context; this ADR does not itself remove uniqueness or authorize
+identity merging. Applied migrations remain immutable.
+
+P3-PERFORMANCE-OWNER will define explicit studio/event-registration ownership for
+performances, replacing participant-derived ownership only after audited backfill
+and relationship tests. Empty/mixed legacy participant sets must be flagged for
+review, never assigned to an arbitrary first dancer's studio. P3-HISTORY must
+define submitted participant/configuration snapshots or versions before shared
+roster/profile edits can affect historical entries. These implementation decisions
+and migration gates are described in [database review](../DATABASE_REVIEW.md)
+and the [development plan](../../DEVELOPMENT_PLAN.md); no schema change is claimed.
+
 ## Implementation sequence and data safety
 
 1. Phase 1 fixes the registration operation and contracts using the existing

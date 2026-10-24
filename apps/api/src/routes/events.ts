@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
-import { requirePermission } from "../auth/requirePermission";
 import { asyncHandler } from "../errors/handler";
 import { EventsController } from "../controllers";
 
@@ -23,14 +22,12 @@ export const eventsRouter = (prisma: PrismaClient) => {
   // POST create event (Admin only)
   router.post(
     "/",
-    requirePermission("event.manage"),
     asyncHandler((req, res) => eventsController.create(req, res)),
   );
 
   // PATCH update event (Admin only)
   router.patch(
     "/:eventId",
-    requirePermission("event.manage"),
     asyncHandler((req, res) => eventsController.update(req, res)),
   );
 

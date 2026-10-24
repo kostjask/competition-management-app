@@ -130,3 +130,81 @@ check settings remain explicit operator follow-up after publication. No commit,
 push, remote or branch-protection changes were made. Phase 1 remains active;
 next implementation task is P1-EVENTS. Final UTF-8/local-link/whitespace and diff
 review accompany the handoff.
+
+## P1-EVENTS checkpoint (2026-10-24)
+
+Implemented strict shared event inputs and explicit response DTOs across the API
+and web client. Stored venue/location/description/limits now survive mutations;
+optional fields support null clearing, omitted fields remain unchanged, dates
+require explicit ISO timezones and serialize as UTC. Private image paths and
+nonexistent updatedAt are excluded; imageUrl is read-only on these endpoints.
+Event creation UI sends strings and detail UI omits the invented update timestamp.
+Reads remain authenticated for all accounts; writes remain admin-only with global
+error envelopes. PATCH validates the resulting stored date pair in a serializable
+transaction, mapping serialization conflicts to 409 and missing records to 404.
+
+Added four HTTP tests and an isolated PostgreSQL event suite covering DTOs,
+strict/null/omission behavior, read/write access, date-order regressions, unchanged
+records after rejected writes, and competing partial-date edits. The baseline
+runner includes this suite. No Prisma schema or migration changed. Setup fields
+in forms, capacity enforcement, deadlines, lifecycle transitions, upload security,
+and browser coverage remain in their existing later tasks. Existing uncommitted
+database-review documentation was preserved.
+
+Validation passed: pnpm.cmd build; pnpm.cmd --filter api test (49/49 fresh);
+pnpm.cmd test (49/49 fresh API execution with cached dependency builds);
+pnpm.cmd typecheck; pnpm.cmd lint (web only); pnpm.cmd db:validate;
+pnpm.cmd db:generate; pnpm.cmd exec prisma format --check --schema
+apps/api/prisma/schema.prisma; pnpm.cmd test:baseline (disposable PostgreSQL
+migrate/redeploy, seed preservation and all existing plus event workflows).
+The first baseline attempt could not access Docker inside the sandbox; rerunning
+with approved Docker access passed and cleaned up its fixture. No separate
+migration regression rerun was needed because no schema/migration changed.
+Build/typecheck/lint used Turbo caches for unchanged inputs. JavaScript syntax
+and git diff --check passed; final diff reviewed. Hosted CI remains unverified.
+
+P1-EVENTS is complete; Phase 1 remains active. Next concrete task:
+P1-AUTH-CONTRACTS, shared explicit auth/profile DTOs, runtime-validated frontend
+responses and consistent errors; authentication security changes remain P2-AUTH.
+
+## P1-AUTH-CONTRACTS checkpoint (2026-10-24)
+
+Added strict shared registration/login/verification bodies and explicit success
+DTOs plus the standard error-envelope schema/type. AuthController selects and
+maps allowed fields, serializes profile createdAt as UTC, and includes stable
+role keys with null/global or event scope. It no longer returns unrestricted
+UserRole/Role records. Registration uniqueness races return the existing 409
+conflict rather than an unexpected database error. Registration names are trimmed.
+Frontend helpers infer shared types and validate the complete response before
+storing tokens; client 403 errors retain server messages/details. Existing type
+imports from api/client remain compatible through shared re-exports.
+
+Removed auth JWT-signing any casts by validating JWT_EXPIRY centrally as a
+positive compact duration with lowercase ms/s/m/h/d/w/y. The default remains 7d;
+unitless, spaced or long-form values now fail startup and must use compact syntax.
+Environment documentation/example were updated. No schema/migration changed.
+
+Five HTTP tests cover registration hashing/duplicates, strict validation,
+login/verification session shapes and failures, caller-only profiles and private
+field exclusion. A config regression covers signing valid expiry values and
+rejecting invalid ones at startup. Verification email is mocked in HTTP tests,
+so generated verification secrets are not logged. The PostgreSQL baseline adds
+scripts/check-auth.cjs for real roleless/global/event profile scopes, UTC dates,
+caller isolation, bearer DTOs and disabled-login errors.
+
+Validation passed: pnpm.cmd build; pnpm.cmd --filter api test (55/55 fresh);
+pnpm.cmd test (55/55); pnpm.cmd typecheck; pnpm.cmd lint (web);
+pnpm.cmd db:validate; pnpm.cmd db:generate; pnpm.cmd exec prisma format --check
+--schema apps/api/prisma/schema.prisma; pnpm.cmd test:baseline with approved
+Docker access (isolated migrate/redeploy, seed preservation and all workflows,
+including auth/profile). Unchanged Turbo inputs reused local caches. JavaScript
+syntax, UTF-8/document links, final diff and git diff --check were reviewed.
+No separate migration regression rerun: persistence schema/migrations unchanged.
+No browser runtime coverage is claimed; hosted CI remains unverified.
+
+P1-AUTH-CONTRACTS is complete; Phase 1 remains active. Next concrete task:
+P1-CATEGORIES, controller/shared contracts and client helpers with parent/event,
+validation, authorization and conflict coverage. Signup remains unrestricted;
+active/email-verified request enforcement, verification expiry/atomic consumption,
+secure email delivery, email identity policy, session recovery, and role-guard
+unification remain in Phase 2. DTO completion does not close those security gates.

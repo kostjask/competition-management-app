@@ -1,85 +1,36 @@
-/**
- * Authentication API methods
- */
+import {
+  RegisterResponseSchema, AuthResponseSchema, VerifyEmailResponseSchema, UserProfileSchema,
+  type RegisterInput, type LoginInput, type VerifyEmailInput,
+  type RegisterResponse, type AuthResponse, type VerifyEmailResponse, type UserProfile,
+} from "@dance/schemas";
+import { apiClient, setToken, removeToken } from "./client.js";
 
-import { apiClient, setToken, removeToken, type AuthResponse, type UserProfile } from "./client.js";
+export type RegisterData = RegisterInput;
+export type LoginData = LoginInput;
+export type VerifyEmailData = VerifyEmailInput;
+export type { RegisterResponse } from "@dance/schemas";
 
-export interface RegisterData {
-  email: string;
-  name: string;
-  password: string;
-}
+export const register = async (data: RegisterData): Promise<RegisterResponse> =>
+  RegisterResponseSchema.parse(await apiClient.post<unknown, RegisterData>("/auth/register", data));
 
-export interface LoginData {
-  email: string;
-  password: string;
-}
-
-export interface VerifyEmailData {
-  token: string;
-}
-
-export interface RegisterResponse {
-  message: string;
-  userId: string;
-}
-
-/**
- * Register a new user
- */
-export const register = async (data: RegisterData): Promise<RegisterResponse> => {
-  const response = await apiClient.post<RegisterResponse, RegisterData>("/auth/register", data);
-  
-  // No token is returned - user must verify email first
-  return response;
-};
-
-/**
- * Login user
- */
 export const login = async (data: LoginData): Promise<AuthResponse> => {
-  const response = await apiClient.post<AuthResponse, LoginData>("/auth/login", data);
-  
-  // Store the token
-  if (response.token) {
-    setToken(response.token);
-  }
-  
+  const response = AuthResponseSchema.parse(await apiClient.post<unknown, LoginData>("/auth/login", data));
+  setToken(response.token);
   return response;
 };
 
-/**
- * Logout user
- */
 export const logout = (): void => {
   removeToken();
   window.location.href = "/auth/login";
 };
 
-/**
- * Get current user profile
- */
-export const getCurrentUser = async (): Promise<UserProfile> => {
-  return apiClient.get<UserProfile>("/auth/profile");
-};
+export const getCurrentUser = async (): Promise<UserProfile> =>
+  UserProfileSchema.parse(await apiClient.get<unknown>("/auth/profile"));
 
-/**
- * Check if user is authenticated
- */
-export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem("auth_token");
-};
+export const isAuthenticated = (): boolean => !!localStorage.getItem("auth_token");
 
-/**
- * Verify email with token
- */
-export const verifyEmail = async (data: VerifyEmailData): Promise<AuthResponse> => {
-  const response = await apiClient.post<AuthResponse, VerifyEmailData>("/auth/verify-email", data);
-  
-  // Store the token if returned
-  if (response.token) {
-    setToken(response.token);
-  }
-  
+export const verifyEmail = async (data: VerifyEmailData): Promise<VerifyEmailResponse> => {
+  const response = VerifyEmailResponseSchema.parse(await apiClient.post<unknown, VerifyEmailData>("/auth/verify-email", data));
+  setToken(response.token);
   return response;
 };

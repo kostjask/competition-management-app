@@ -67,7 +67,10 @@ postgresql://postgres:mypassword@localhost:5432/dance_competition
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-**JWT_EXPIRY:** Token expiration (standard notation):
+**JWT_EXPIRY:** Positive numeric duration with an explicit lowercase unit
+(`ms`, `s`, `m`, `h`, `d`, `w`, or `y`), default `7d`. Fractional values such as
+`1.5h` are supported. Invalid, zero/negative, unitless, long-form or spaced values
+are rejected at startup. Use compact notation when updating older configuration:
 
 - `7d` - 7 days
 - `30d` - 30 days

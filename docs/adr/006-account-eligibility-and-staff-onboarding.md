@@ -76,6 +76,15 @@ for an existing account. These operations do not form a complete staff journey.
 
 ## Delivery and verification
 
+Database review adds prerequisites without changing account eligibility:
+P2-SCOPE-INTEGRITY must ensure event removal never nulls staff scope into global
+access and must enforce a deliberate null-safe uniqueness/history policy.
+P2-IDENTITY-TOKENS supplies consistent email canonicalization with collision
+review, purpose-bound token digests, expiry/consumption/revocation and safe legacy
+link transition before signup/invitation handlers change. P2-STAFF-MODEL adds
+explicit studio scope for member invitations. These are planned fixes; current
+schema/token storage and APIs remain unchanged. See [database review](../DATABASE_REVIEW.md).
+
 The revised development plan retains this product decision and changes delivery
 ordering. Phase 1 stabilizes judge/controller/contracts and introduces baseline
 CI. Phase 2A provides onboarding/assignment persistence decisions and required

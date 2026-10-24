@@ -18,8 +18,8 @@ export default function EventsCreate() {
     const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
     return {
       name: "",
-      startsAt,
-      endsAt,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
       stage: EventStageSchema.options[0],
     };
   }, []);
