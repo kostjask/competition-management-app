@@ -51,7 +51,7 @@ export class StudioRegistrationsController extends BaseController {
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true } });
       if (!event) throw new NotFoundError("Event", eventId);
       if (!isAdmin && !isActionAllowed(event.stage, "studio.register")) {
-        throw new ForbiddenError("Registration not allowed in current event stage");
+        throw new ForbiddenError("Registration not allowed in current event stage", "stageLocked");
       }
 
       // A single nested write is atomic, including membership and registration.
@@ -80,7 +80,7 @@ export class StudioRegistrationsController extends BaseController {
       return serialize(registration);
     }).catch((error: unknown) => {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("Studio with this name already exists");
+        throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
       throw error;
     });
@@ -117,7 +117,7 @@ export class StudioRegistrationsController extends BaseController {
       });
       if (!studio) throw new NotFoundError("Studio", studioId);
       if (studio.approvalStatus !== "APPROVED") {
-        throw new ForbiddenError("Studio must be approved before registration to events");
+        throw new ForbiddenError("Studio must be approved before registration to events", "studioApprovalRequired");
       }
       const registration = await tx.studioEventRegistration.findUnique({
         where: { studioId_eventId: { studioId, eventId } },
@@ -156,13 +156,13 @@ export class StudioRegistrationsController extends BaseController {
       });
       if (!studio) throw new NotFoundError("Studio", studioId);
       if (!this.isAdmin(req) && studio.representatives.length === 0) {
-        throw new ForbiddenError("Can only cancel your own pending registrations");
+        throw new ForbiddenError("Can only cancel your own pending registrations", "ownershipRequired");
       }
       const registration = await tx.studioEventRegistration.findUnique({
         where: { studioId_eventId: { studioId, eventId } },
       });
       if (!registration) throw new NotFoundError("Registration");
-      if (registration.status !== "PENDING") throw new ForbiddenError("Can only cancel pending registrations");
+      if (registration.status !== "PENDING") throw new ForbiddenError("Can only cancel pending registrations", "pendingRequired");
       const deleted = await tx.studioEventRegistration.deleteMany({
         where: {
           studioId, eventId, status: "PENDING",
@@ -172,7 +172,7 @@ export class StudioRegistrationsController extends BaseController {
           },
         },
       });
-      if (deleted.count !== 1) throw new ConflictError("Registration changed; reload before cancelling");
+      if (deleted.count !== 1) throw new ConflictError("Registration changed; reload before cancelling", undefined, "concurrentChange");
     });
     res.status(204).send();
   }

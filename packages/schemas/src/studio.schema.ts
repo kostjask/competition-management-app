@@ -14,14 +14,14 @@ export const UpdateStudioBodySchema = z.strictObject({
   name: text.optional(), country: text.nullable().optional(), city: text.nullable().optional(),
   directorName: text.nullable().optional(), directorPhone: text.nullable().optional(),
   invoiceDetails: invoice.nullable().optional(),
-}).refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one studio field is required" });
+}).refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one studio field is required", params: { reason: "nonemptyPatch" } });
 export const UpdateRegistrationBodySchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]), canEditDuringReview: z.boolean().optional(),
 });
 export const StudioApprovalStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
 export const UpdateStudioApprovalBodySchema = z.strictObject({ status: StudioApprovalStatusSchema });
 export const UpdateRepresentativeBodySchema = z.strictObject({ name: text.optional(), email: EmailSchema.optional() })
-  .refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one representative field is required" });
+  .refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one representative field is required", params: { reason: "nonemptyPatch" } });
 export const StudioRepresentativeSchema = z.strictObject({
   id: IdSchema, studioId: IdSchema, userId: IdSchema, name: z.string(), email: z.string(),
   active: z.boolean(), createdAt: z.iso.datetime(),

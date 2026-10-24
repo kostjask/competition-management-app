@@ -23,7 +23,7 @@ export const CreateDancerBodySchema = z.strictObject({
 
 export const UpdateDancerBodySchema = CreateDancerBodySchema.partial().refine(
   (body) => Object.values(body).some((value) => value !== undefined),
-  { message: "At least one dancer field is required" },
+  { message: "At least one dancer field is required", params: { reason: "nonemptyPatch" } },
 );
 
 export type Dancer = z.infer<typeof DancerSchema>;

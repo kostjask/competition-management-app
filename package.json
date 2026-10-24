@@ -2,7 +2,9 @@
   "name": "dance-competition-app",
   "version": "0.0.0",
   "private": true,
-  "engines": { "node": ">=24 <25" },
+  "engines": {
+    "node": ">=24 <25"
+  },
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -15,8 +17,9 @@
     "db:validate": "pnpm --filter api prisma:validate",
     "db:migrate": "pnpm --filter api prisma:migrate",
     "test:baseline": "node scripts/test-baseline.cjs",
-    "test": "turbo test",
-    "test:watch": "turbo watch test"
+    "test": "pnpm test:i18n && turbo test",
+    "test:watch": "turbo watch test",
+    "test:i18n": "node scripts/check-i18n.cjs"
   },
   "keywords": [],
   "author": "",

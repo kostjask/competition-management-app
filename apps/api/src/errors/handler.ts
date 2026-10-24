@@ -1,87 +1,33 @@
-import { Request, Response, NextFunction } from "express";
+import { Prisma } from "@prisma/client";
+import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import type { ErrorResponse } from "@dance/schemas";
-import { AppError, ValidationError, InternalServerError } from "./index";
-
-/**
- * Wraps async route handlers to catch errors and pass to Express error handler
- */
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>,
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch((error) => {
-      next(error);
-    });
-  };
+import { validationIssues, type ErrorResponse, type FieldIssue } from "@dance/schemas";
+import { AppError, ValidationError, InternalServerError, ConflictError, NotFoundError } from "./index";
+export function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<unknown>) {
+  return (req: Request, res: Response, next: NextFunction) => { Promise.resolve(fn(req, res, next)).catch(next); };
 }
-
-/**
- * Converts Zod validation errors to structured ValidationError
- */
 export function handleZodError(error: ZodError): ValidationError {
-  const fieldErrors = error.issues.reduce(
-    (acc, issue) => {
-      const path = issue.path.join(".");
-      acc[path] = issue.message;
-      return acc;
-    },
-    {} as Record<string, string>,
-  );
-
-  return new ValidationError("Validation failed", { fields: fieldErrors });
+  const fields: Record<string, string> = {};
+  for (const issue of error.issues) fields[issue.path.join(".")] = issue.message;
+  return new ValidationError("Validation failed", { fields });
 }
-
-/**
- * Type for standard API error response
- */
 export type { ErrorResponse } from "@dance/schemas";
-
-/**
- * Central error handler middleware for Express
- */
-export function errorHandler(
-  error: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-) {
-  // Convert Zod errors
-  if (error instanceof ZodError) {
-    const validationError = handleZodError(error);
-    const response: ErrorResponse = {
-      error: validationError.message,
-      code: validationError.code,
-      statusCode: validationError.statusCode,
-      details: validationError.details,
-      timestamp: new Date().toISOString(),
-    };
-    return res.status(validationError.statusCode).json(response);
-  }
-
-  // Handle app errors
-  if (error instanceof AppError) {
-    const response: ErrorResponse = {
-      error: error.message,
-      code: error.code,
-      statusCode: error.statusCode,
-      details: error.details,
-      timestamp: new Date().toISOString(),
-    };
-    return res.status(error.statusCode).json(response);
-  }
-
-  // Log unexpected errors
-  console.error("Unexpected error:", error);
-
-  // Default to 500 for unknown errors
+export function errorHandler(error: unknown, _req: Request, res: Response, _next: NextFunction) {
+  let issues: FieldIssue[] = [];
+  let appError: AppError;
+  if (error instanceof ZodError) { issues = validationIssues(error.issues); appError = handleZodError(error); }
+  else if (error instanceof AppError) {
+    appError = error;
+    if (error instanceof ValidationError && error.details?.fields && typeof error.details.fields === "object") {
+      issues = Object.keys(error.details.fields).map(field => ({ path: field ? field.split(".") : [], rule: "invalid", params: {} }));
+    }
+  } else if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2002", "P2003", "P2025", "P2034"].includes(error.code)) {
+    appError = error.code === "P2025" ? new NotFoundError("Record") : new ConflictError("The operation conflicts with current records", undefined, error.code === "P2034" ? "concurrentChange" : error.code === "P2003" ? "relationshipConflict" : "conflict");
+  } else if (error instanceof SyntaxError && "status" in error && error.status === 400) appError = new ValidationError("Invalid JSON");
+  else { console.error("Unexpected API error"); appError = new InternalServerError(); }
   const response: ErrorResponse = {
-    error: "An unexpected error occurred",
-    code: "INTERNAL_SERVER_ERROR",
-    statusCode: 500,
-    details: undefined,
-    timestamp: new Date().toISOString(),
+    error: appError.message, code: appError.code, statusCode: appError.statusCode,
+    reason: appError.reason, params: {}, issues, details: appError.details, timestamp: new Date().toISOString(),
   };
-
-  res.status(500).json(response);
+  res.status(appError.statusCode).json(response);
 }

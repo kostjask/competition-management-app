@@ -9,6 +9,7 @@ async function upload(t, { type = 'image/png', size = 8, field = 'image' } = {})
   app.post('/upload', createFileUploadMiddleware({ fieldName: 'image', maxSize: 32 }), (req, res) => {
     res.json({ size: req.file?.size, buffered: Buffer.isBuffer(req.file?.buffer), type: req.file?.mimetype });
   });
+  app.use(require('../dist/errors/handler.js').errorHandler);
   const server = app.listen(0, '127.0.0.1');
   await once(server, 'listening');
   t.after(() => new Promise((resolve) => {

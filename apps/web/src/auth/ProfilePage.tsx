@@ -1,3 +1,4 @@
+import { ErrorFeedback } from "../components/ErrorFeedback";
 import { format } from "date-fns";
 import { useAuth } from "./useAuth";
 
@@ -34,7 +35,7 @@ export function ProfilePage() {
 
       {error ? (
         <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {error}
+          <ErrorFeedback error={error} fields={{ name: "register-name", email: "register-email", password: "register-password" }} />
         </div>
       ) : null}
 

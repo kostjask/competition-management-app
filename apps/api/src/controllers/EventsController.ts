@@ -88,7 +88,7 @@ export class EventsController extends BaseController {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2025") throw new NotFoundError("Event", eventId);
-        if (error.code === "P2034") throw new ConflictError("Event changed concurrently; reload before retrying");
+        if (error.code === "P2034") throw new ConflictError("Event changed concurrently; reload before retrying", undefined, "concurrentChange");
       }
       throw error;
     }

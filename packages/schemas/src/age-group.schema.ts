@@ -1,42 +1,13 @@
 import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
-
-export const CreateAgeGroupBodySchema = z.object({
-  name: z.string().min(1, "Age group name is required"),
-  minAge: z.number().int().min(0, "Minimum age must be at least 0"),
-  maxAge: z.number().int().min(0).optional().nullable(),
-}).refine(
-  (data) => {
-    if (data.maxAge !== null && data.maxAge !== undefined) {
-      return data.minAge <= data.maxAge;
-    }
-    return true;
-  },
-  { message: "Min age cannot exceed max age", path: ["maxAge"] }
-);
-
-export const UpdateAgeGroupBodySchema = z.object({
-  name: z.string().min(1).optional(),
-  minAge: z.number().int().min(0).optional(),
-  maxAge: z.number().int().min(0).optional().nullable(),
-}).refine(
-  (data) => {
-    if (data.minAge !== undefined && data.maxAge !== null && data.maxAge !== undefined) {
-      return data.minAge <= data.maxAge;
-    }
-    return true;
-  },
-  { message: "Min age cannot exceed max age", path: ["maxAge"] }
-);
-
-export const AgeGroupIdParamsSchema = z.object({
-  id: IdSchema,
-  eventId: IdSchema,
-});
-
-export const AgeGroupEventParamsSchema = z.object({
-  eventId: IdSchema,
-});
-
+const IntSchema = z.number().int().max(2147483647);
+const fields = { name: z.string().trim().min(1), minAge: IntSchema.min(0), maxAge: IntSchema.min(0).nullable().optional() };
+export const CreateAgeGroupBodySchema = z.strictObject(fields).refine(data => data.maxAge == null || data.minAge <= data.maxAge, { path: ["maxAge"], params: { reason: "ageRange" }, message: "Invalid range" });
+export const UpdateAgeGroupBodySchema = z.strictObject(fields).partial().refine(data => Object.keys(data).length > 0, { params: { reason: "nonemptyPatch" }, message: "At least one field is required" });
+export const AgeGroupEventParamsSchema = z.object({ eventId: IdSchema });
+export const AgeGroupItemParamsSchema = AgeGroupEventParamsSchema.extend({ ageGroupId: IdSchema });
+export const AgeGroupSchema = z.strictObject({ id: IdSchema, eventId: IdSchema, name: z.string(), minAge: z.number().int(), maxAge: z.number().int().nullable() });
+export const AgeGroupsSchema = z.array(AgeGroupSchema);
+export type AgeGroup = z.infer<typeof AgeGroupSchema>;
 export type CreateAgeGroupInput = z.infer<typeof CreateAgeGroupBodySchema>;
 export type UpdateAgeGroupInput = z.infer<typeof UpdateAgeGroupBodySchema>;

@@ -23,7 +23,8 @@ postgresql://unused:unused@127.0.0.1:1/unused is sufficient. Do not replace an
 existing application environment file. Build/typecheck cover the four workspace
 packages and the API seed. Lint currently covers web only. The API uses Node's
 built-in test runner against the compiled application; pnpm test builds its
-dependencies first. There is no browser test infrastructure yet.
+dependencies first. The web test script uses the existing tsx runner for Node tests and static React
+component rendering. No interactive browser test infrastructure is claimed.
 
 Turbo may reuse unchanged local results. To run fresh HTTP tests after building,
 use pnpm --filter api test. In CI each job begins with a fresh checkout and
@@ -54,9 +55,15 @@ Windows and pnpm elsewhere.
 The baseline runner uses only the checked-in Compose fixture, creates a random
 dance_baseline_* database, deploys/redeploys migrations, checks full-record seed
 idempotency and production-seed refusal, and starts its own compiled API on a
-temporary port. It runs registration, dancer, performance, studio and judge
+temporary port. It runs registration, dancer, performance, studio, judge, category,
+format/age-group and invitation
 HTTP/database workflows, event DTO/persistence and concurrent partial-date
-checks, and auth/profile DTOs with real global/event roles. It stops its server
+checks, and auth/profile DTOs with real global/event roles. Category checks include
+strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
+competing creates, plus deletion preserving active/archived performances. Setup
+checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
+Invitation checks cover real scoped/global acceptance, concurrency and rollback.
+It stops its server
 and drops its own database in a
 finally block. The migration suite creates random schemas in dance_comp, checks
 fresh and existing-data upgrades, status/default/data preservation, the partial
@@ -103,3 +110,28 @@ Local workflow validation uses the official
 config --quiet for the merged files. A passing local check is not evidence of a
 hosted run. The initial hosted run and branch-protection configuration remain
 operator follow-up after the workflow is published.
+
+## Phase 1 coverage and localization gate
+
+pnpm test first runs pnpm test:i18n, a TypeScript AST source guard against new
+hardcoded JSX text/accessible attributes. Existing reviewed exceptions are in
+[i18n-hardcoded-baseline.json](i18n-hardcoded-baseline.json); they remain I18N-UI
+work. The detector itself has a regression test. Do not regenerate this baseline
+to hide new strings; translate them or document a specific intentional-content
+exception. Catalogue completeness, placeholder and native plural checks run for
+ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
+
+The current suite has 72 API tests and 8 frontend tests. Frontend checks include
+all-locale component renders of the same stored error, field links, selector
+semantics, network/non-JSON/multipart/204 handling, response-schema failures and
+safe legacy/future fallback. Shared validation preserves root/nested rules and
+bounds without input values. These are static component/transport checks, not
+interactive browser, keyboard/mobile/screen-reader or fluent-language review.
+Those remain per-workflow release checks under I18N-QA and P9-BROWSER.
+
+[api-coverage.json](api-coverage.json) inventories 56 mounted method/path operations
+and their test evidence/non-applicable or Phase 2 exceptions. Tests compare runtime
+router registration to the inventory and reject unauthenticated access to every
+protected operation. /health and static files are infrastructure exceptions.
+The coverage inventory does not imply complete authorization hardening: upload
+ownership and invitation existing-account/scope policy are still Phase 2 gates.

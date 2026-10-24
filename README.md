@@ -1,6 +1,6 @@
 # Dance Competition Management System
 
-A TypeScript monorepo for dance competition administration, studio registration, judging, and results. The project is in baseline stabilization. Authentication, event screens, and parts of registration CRUD exist; route integration, authorization hardening, live judging, music, and results are still unfinished. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for current priorities and known blockers.
+A TypeScript monorepo for dance competition administration, studio registration, judging, and results. Phase 1 API and localization foundations are implemented. Authentication, event screens and backend registration CRUD exist; authorization hardening, complete onboarding screens, live judging, music and results remain unfinished. See [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md) for current priorities and known blockers.
 
 ## Product workflows and documentation
 
@@ -16,6 +16,11 @@ and moderators join by event invitation, additional representatives by studio-bo
 invitation, and admins through controlled provisioning. Spectators need no account.
 See [ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md). Current
 public signup is still unrestricted; enforcement is planned, not implemented.
+
+Phase 1 technical contracts and localization foundations are complete. The next
+work is Phase 2A scope integrity; external onboarding is not release-ready. See
+[localization foundations](docs/LOCALIZATION.md) for the implemented feedback core
+and remaining UI/browser/language-review gates.
 
 ## Prerequisites
 

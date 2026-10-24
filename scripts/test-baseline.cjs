@@ -123,6 +123,9 @@ async function main() {
     await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
+    await require('./check-setup.cjs')({ client, baseUrl, adminToken: token });
+    await require('./check-invitations.cjs')({ client, baseUrl, adminToken: token });
+    await require('./check-categories.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-auth.cjs')({ client, baseUrl, login });

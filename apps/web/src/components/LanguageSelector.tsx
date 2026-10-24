@@ -1,19 +1,24 @@
+import { useTranslation } from "../i18n/useTranslation";
 import { useLanguage } from "../i18n/useLanguage";
 
 const languages = [
-  { code: "et" as const, label: "EE" },
-  { code: "en" as const, label: "EN" },
-  { code: "ru" as const, label: "RU" },
+  { code: "et" as const, label: "Eesti" },
+  { code: "en" as const, label: "English" },
+  { code: "ru" as const, label: "Русский" },
 ];
 
 export function LanguageSelector() {
+  const { t } = useTranslation();
   const { locale, setLocale } = useLanguage();
 
   return (
-    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+    <div role="group" aria-label={t("Feedback.selectedLanguage")} className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
       {languages.map((lang) => (
         <button
           key={lang.code}
+          type="button"
+          lang={lang.code}
+          aria-pressed={locale === lang.code}
           onClick={() => setLocale(lang.code)}
           className={`px-3 py-1.5 text-xs font-semibold rounded transition-all duration-200 ${
             locale === lang.code

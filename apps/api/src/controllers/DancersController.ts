@@ -40,10 +40,10 @@ export class DancersController extends BaseController {
     const registration = studio.registrations.find((record) => record.eventId === studio.eventId);
     if (!permitted || studio.representatives.length === 0 || studio.approvalStatus !== "APPROVED" ||
       registration?.status !== "APPROVED") {
-      throw new ForbiddenError("Access to studio dancers denied");
+      throw new ForbiddenError("Access to studio dancers denied", "ownershipRequired");
     }
     if (write && !isActionAllowed(studio.event.stage, "dancer.manage", registration.canEditDuringReview)) {
-      throw new ForbiddenError("Dancer management not allowed in current event stage");
+      throw new ForbiddenError("Dancer management not allowed in current event stage", "stageLocked");
     }
   }
 

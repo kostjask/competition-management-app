@@ -10,12 +10,12 @@ const fields = {
   durationSec: z.number().int().positive().max(2147483647),
   orderOnStage: z.number().int().positive().max(2147483647),
   categoryId: IdSchema, ageGroupId: IdSchema, formatId: IdSchema,
-  dancerIds: z.array(IdSchema).min(1).refine((ids) => new Set(ids).size === ids.length, { message: "Dancer IDs must be unique" }),
+  dancerIds: z.array(IdSchema).min(1).refine((ids) => new Set(ids).size === ids.length, { message: "Dancer IDs must be unique", params: { reason: "duplicate" } }),
 };
 export const CreatePerformanceBodySchema = z.strictObject({ studioId: IdSchema, ...fields });
 export const UpdatePerformanceBodySchema = z.strictObject(fields).partial().refine(
   (body) => Object.values(body).some((value) => value !== undefined),
-  { message: "At least one performance field is required" },
+  { message: "At least one performance field is required", params: { reason: "nonemptyPatch" } },
 );
 export const PerformanceSchema = z.strictObject({
   id: IdSchema, eventId: IdSchema, title: z.string(), durationSec: z.number().int(),

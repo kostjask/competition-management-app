@@ -1,3 +1,4 @@
+import { decode } from "./client.js";
 import { apiClient } from "./client.js";
 import {
   StudioSchema, StudiosSchema, StudioRepresentativeSchema, StudioRegistrationSchema, StudioRegistrationsSchema,
@@ -17,24 +18,24 @@ const registrationsPath = (eventId: string) => `/events/${encodeURIComponent(eve
 
 /** Event applications; each result includes a studio summary. */
 export const getStudios = async (eventId: string): Promise<StudioRegistration[]> =>
-  StudioRegistrationsSchema.parse(await apiClient.get<unknown>(registrationsPath(eventId)));
+  decode(StudioRegistrationsSchema, await apiClient.get(registrationsPath(eventId)));
 /** Studio profiles visible to the current member/admin, independent of application approval. */
 export const getMyStudios = async (): Promise<Studio[]> =>
-  StudiosSchema.parse(await apiClient.get<unknown>("/studios"));
+  decode(StudiosSchema, await apiClient.get("/studios"));
 export const getStudio = async (studioId: string): Promise<Studio> =>
-  StudioSchema.parse(await apiClient.get<unknown>(studioPath(studioId)));
+  decode(StudioSchema, await apiClient.get(studioPath(studioId)));
 export const createStudio = async (eventId: string, body: CreateStudioRequest): Promise<StudioRegistration> =>
-  StudioRegistrationSchema.parse(await apiClient.post<unknown, CreateStudioRequest>(registrationsPath(eventId), body));
+  decode(StudioRegistrationSchema, await apiClient.post<CreateStudioRequest>(registrationsPath(eventId), body));
 export const updateStudio = async (studioId: string, body: UpdateStudioRequest): Promise<Studio> =>
-  StudioSchema.parse(await apiClient.patch<unknown, UpdateStudioRequest>(studioPath(studioId), body));
+  decode(StudioSchema, await apiClient.patch<UpdateStudioRequest>(studioPath(studioId), body));
 export const updateStudioRegistration = async (eventId: string, studioId: string, body: UpdateRegistrationRequest): Promise<StudioRegistration> =>
-  StudioRegistrationSchema.parse(await apiClient.patch<unknown, UpdateRegistrationRequest>(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`, body));
+  decode(StudioRegistrationSchema, await apiClient.patch<UpdateRegistrationRequest>(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`, body));
 export const cancelStudioRegistration = (eventId: string, studioId: string): Promise<void> =>
-  apiClient.delete<void>(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`);
+  apiClient.delete(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`);
 export const updateStudioRepresentative = async (studioId: string, representativeId: string, body: UpdateRepresentativeRequest): Promise<StudioRepresentative> =>
-  StudioRepresentativeSchema.parse(await apiClient.patch<unknown, UpdateRepresentativeRequest>(
+  decode(StudioRepresentativeSchema, await apiClient.patch<UpdateRepresentativeRequest>(
     `${studioPath(studioId)}/representatives/${encodeURIComponent(representativeId)}`, body,
   ));
 export const updateStudioApproval = async (studioId: string, body: UpdateStudioApprovalInput): Promise<Studio> =>
-  StudioSchema.parse(await apiClient.patch<unknown, UpdateStudioApprovalInput>(`${studioPath(studioId)}/approval`, body));
-export const deleteStudio = (studioId: string): Promise<void> => apiClient.delete<void>(studioPath(studioId));
+  decode(StudioSchema, await apiClient.patch<UpdateStudioApprovalInput>(`${studioPath(studioId)}/approval`, body));
+export const deleteStudio = (studioId: string): Promise<void> => apiClient.delete(studioPath(studioId));

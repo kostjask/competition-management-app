@@ -4,6 +4,7 @@
  * Handles multipart file uploads with validation and processing.
  */
 
+import { ValidationError } from "../errors";
 import multer, { type StorageEngine } from "multer";
 import { type Request, type Response, type NextFunction } from "express";
 
@@ -53,28 +54,9 @@ export function createFileUploadMiddleware(options: FileUploadOptions) {
   return (req: Request, res: Response, next: NextFunction) => {
     upload.single(options.fieldName)(req, res, (err: unknown) => {
       if (err instanceof multer.MulterError) {
-        if (err.code === "LIMIT_FILE_SIZE") {
-          return res.status(400).json({
-            error: "File too large",
-            statusCode: 400,
-            details: `Maximum file size is ${maxSize / 1024 / 1024}MB`,
-          });
-        }
-        return res.status(400).json({
-          error: "File upload error",
-          statusCode: 400,
-          details: err.message,
-        });
+        return next(new ValidationError(err.code === "LIMIT_FILE_SIZE" ? "File too large" : "File upload error", undefined, err.code === "LIMIT_FILE_SIZE" ? "uploadTooLarge" : "uploadInvalid"));
       }
-
-      if (err instanceof Error) {
-        return res.status(400).json({
-          error: "File upload error",
-          statusCode: 400,
-          details: err.message,
-        });
-      }
-
+      if (err instanceof Error) return next(new ValidationError("File upload error", undefined, "uploadType"));
       next();
     });
   };

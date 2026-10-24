@@ -37,11 +37,11 @@ const eventFields = {
 
 export const CreateEventBodySchema = z.strictObject(eventFields).refine(
   (data) => new Date(data.startsAt) < new Date(data.endsAt),
-  { message: "End date must be after start date", path: ["endsAt"] }
+  { params: { reason: "dateOrder" }, message: "End date must be after start date", path: ["endsAt"] }
 );
 
 export const UpdateEventBodySchema = z.strictObject(eventFields).partial()
-.refine((body) => Object.keys(body).length > 0, "At least one field is required")
+.refine((body) => Object.keys(body).length > 0, { message: "At least one field is required", params: { reason: "nonemptyPatch" } })
 .refine(
   (data) => {
     if (data.startsAt && data.endsAt) {
@@ -49,7 +49,7 @@ export const UpdateEventBodySchema = z.strictObject(eventFields).partial()
     }
     return true;
   },
-  { message: "End date must be after start date", path: ["endsAt"] }
+  { params: { reason: "dateOrder" }, message: "End date must be after start date", path: ["endsAt"] }
 );
 
 export type CreateEventInput = z.infer<typeof CreateEventBodySchema>;

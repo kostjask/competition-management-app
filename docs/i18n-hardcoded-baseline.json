@@ -1,0 +1,480 @@
+{
+  "reason": "Reviewed Phase 1 baseline of existing auth/navigation/profile/home/placeholder UI and intentional product names. These exceptions belong to I18N-UI (Phase 2 and later feature UI); they are not translation completion evidence. New text must be translated. Tests and authored content are excluded by source scope, not broad string suppression.",
+  "entries": [
+    {
+      "file": "apps/web/src/auth/AuthNav.tsx",
+      "kind": "text",
+      "text": "Log in"
+    },
+    {
+      "file": "apps/web/src/auth/AuthNav.tsx",
+      "kind": "text",
+      "text": "Sign up"
+    },
+    {
+      "file": "apps/web/src/auth/AuthNav.tsx",
+      "kind": "text",
+      "text": "Edit Profile"
+    },
+    {
+      "file": "apps/web/src/auth/AuthNav.tsx",
+      "kind": "text",
+      "text": "Log out"
+    },
+    {
+      "file": "apps/web/src/auth/AuthNav.tsx",
+      "kind": "text",
+      "text": "Log out"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Competition access"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Welcome back"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Sign in to manage schedules, score submissions, and studio communication."
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Live stage updates and judging tools."
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Secure access tied to your role."
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Sign in"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Use the account you registered for the event."
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Email"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "placeholder",
+      "text": "you@example.com"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Password"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "text"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "password"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "placeholder",
+      "text": "Enter your password"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "Hide"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "Show"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "Signing in..."
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "conditional",
+      "text": "Sign in"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "New here?"
+    },
+    {
+      "file": "apps/web/src/auth/LoginPage.tsx",
+      "kind": "text",
+      "text": "Create an account"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Loading profile..."
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Unable to load profile."
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Account"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Profile"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Joined"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Edit"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Personal info"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Name"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Email"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Admin"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "conditional",
+      "text": "Yes"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "conditional",
+      "text": "No"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "Roles"
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "text",
+      "text": "No roles assigned yet."
+    },
+    {
+      "file": "apps/web/src/auth/ProfilePage.tsx",
+      "kind": "conditional",
+      "text": "No event"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Check your email"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "We've sent a verification link to"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Didn't receive the email?"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Check your spam folder or contact support."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Already verified? Sign in"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "New account"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Join the season"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Create a profile for your studio and keep schedules, registrations, and scores in sync."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Register dancers and performances quickly."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Stay in sync with event organizers."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Create account"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "You can log in right after you register."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Full name"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "placeholder",
+      "text": "Jane Doe"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Email"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "placeholder",
+      "text": "you@example.com"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Password"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "text"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "password"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "placeholder",
+      "text": "Create a password"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "Hide"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "Show"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "Creating account..."
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "conditional",
+      "text": "Create account"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Already have an account?"
+    },
+    {
+      "file": "apps/web/src/auth/RegisterPage.tsx",
+      "kind": "text",
+      "text": "Sign in"
+    },
+    {
+      "file": "apps/web/src/auth/RequireAuth.tsx",
+      "kind": "text",
+      "text": "Loading..."
+    },
+    {
+      "file": "apps/web/src/auth/RequireRole.tsx",
+      "kind": "text",
+      "text": "Loading..."
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Verifying your email"
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Please wait while we verify your account..."
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Email verified!"
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Redirecting to homepage in 3 sec..."
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Verification failed"
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Register again"
+    },
+    {
+      "file": "apps/web/src/auth/VerifyEmailPage.tsx",
+      "kind": "text",
+      "text": "Go to login"
+    },
+    {
+      "file": "apps/web/src/components/layouts/AppLayout.tsx",
+      "kind": "text",
+      "text": "Home"
+    },
+    {
+      "file": "apps/web/src/components/layouts/AppLayout.tsx",
+      "kind": "text",
+      "text": "Events"
+    },
+    {
+      "file": "apps/web/src/components/layouts/AuthLayout.tsx",
+      "kind": "text",
+      "text": "Home"
+    },
+    {
+      "file": "apps/web/src/components/LoadingSpinner.tsx",
+      "kind": "aria-label",
+      "text": "Loading"
+    },
+    {
+      "file": "apps/web/src/pages/admin/AdminDashboard.tsx",
+      "kind": "text",
+      "text": "Admin Dashboard"
+    },
+    {
+      "file": "apps/web/src/pages/admin/AdminDashboard.tsx",
+      "kind": "text",
+      "text": "Manage events, studios, and permissions."
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-name"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-name-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-stage"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-stage-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-startsAt"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-startsAt-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-endsAt"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-endsAt-error"
+    },
+    {
+      "file": "apps/web/src/pages/Home.tsx",
+      "kind": "text",
+      "text": "Welcome to the competition app."
+    },
+    {
+      "file": "apps/web/src/pages/judge/JudgeInterface.tsx",
+      "kind": "text",
+      "text": "Judge Interface"
+    },
+    {
+      "file": "apps/web/src/pages/judge/JudgeInterface.tsx",
+      "kind": "text",
+      "text": "Score performances and review entries."
+    },
+    {
+      "file": "apps/web/src/pages/moderator/ModeratorControls.tsx",
+      "kind": "text",
+      "text": "Moderator Controls"
+    },
+    {
+      "file": "apps/web/src/pages/moderator/ModeratorControls.tsx",
+      "kind": "text",
+      "text": "Control stage flow and validate scores."
+    },
+    {
+      "file": "apps/web/src/pages/representative/RepresentativeConsole.tsx",
+      "kind": "text",
+      "text": "Studio Management"
+    },
+    {
+      "file": "apps/web/src/pages/representative/RepresentativeConsole.tsx",
+      "kind": "text",
+      "text": "Manage dancers and performances."
+    }
+  ]
+}

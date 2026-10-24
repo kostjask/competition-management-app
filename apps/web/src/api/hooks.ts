@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { ApiError } from "./client.js";
+import { toUiError, type UiError } from "./error";
 
 /**
  * Generic hook for API calls with loading and error states
@@ -15,7 +15,7 @@ export function useApiCall<TData, TArgs extends unknown[]>(
 ) {
   const [data, setData] = useState<TData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
 
   const execute = async (...args: TArgs) => {
     try {
@@ -26,7 +26,7 @@ export function useApiCall<TData, TArgs extends unknown[]>(
       return result;
     } catch (err) {
       const errorMessage =
-        err instanceof ApiError ? err.message : "An error occurred";
+        toUiError(err);
       setError(errorMessage);
       throw err;
     } finally {
@@ -45,7 +45,7 @@ export function useFetch<TData>(
 ) {
   const [data, setData] = useState<TData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +61,7 @@ export function useFetch<TData>(
       } catch (err) {
         if (!cancelled) {
           const errorMessage =
-            err instanceof ApiError ? err.message : "An error occurred";
+            toUiError(err);
           setError(errorMessage);
         }
       } finally {
@@ -80,47 +80,3 @@ export function useFetch<TData>(
 
   return { data, loading, error };
 }
-
-/**
- * Example usage in a component:
- * 
- * import { useFetch } from './api/hooks';
- * import { getCurrentUser } from './api/auth';
- * 
- * function UserProfile() {
- *   const { data: user, loading, error } = useFetch(getCurrentUser);
- * 
- *   if (loading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error}</div>;
- *   if (!user) return null;
- * 
- *   return <div>Welcome, {user.name}!</div>;
- * }
- * 
- * // For mutations (login, register, etc.):
- * import { useApiCall } from './api/hooks';
- * import { login } from './api/auth';
- * 
- * function LoginForm() {
- *   const { loading, error, execute: doLogin } = useApiCall(login);
- * 
- *   const handleSubmit = async (e) => {
- *     e.preventDefault();
- *     try {
- *       await doLogin({ email: '...', password: '...' });
- *       // Navigate to dashboard
- *     } catch (err) {
- *       // Error is already set in state
- *     }
- *   };
- * 
- *   return (
- *     <form onSubmit={handleSubmit}>
- *       {error && <div className="error">{error}</div>}
- *       <button disabled={loading}>
- *         {loading ? 'Logging in...' : 'Login'}
- *       </button>
- *     </form>
- *   );
- * }
- */

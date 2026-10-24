@@ -32,31 +32,34 @@ routes reach a 404 through the global error handler; they do not gain a public
 handler through a path predicate.
 
 Invitation paths no longer repeat `/invitations`. Existing invitation tokens and
-JWTs remain valid; URL migration does not rotate credentials. Existing invitation
-business logic, token exposure, local error formats, and broader authorization
-limitations remain tracked work, not completed security hardening.
+JWTs remain valid; URL migration does not rotate credentials. Invitation DTOs now omit raw tokens and use the global error envelope. Existing-account
+identity, token persistence/lifecycle, role eligibility and broader authorization
+limitations remain tracked Phase 2 work, not completed security hardening.
 
-## Remaining resource integration
+## Resource integration
 
 The complete target layout is in [ADR-002](adr/002-canonical-api-paths.md). The
-version prefix is implemented; these resource-specific repairs remain:
+version prefix and mounted business controller/contracts are implemented:
 
 | Resource | Current development path relative to `/api/v1` | Remaining work |
 | --- | --- | --- |
 | Events | `GET/POST /events`, `GET/PATCH /events/:eventId` | Strict shared DTOs/client, authenticated reads/admin writes, date ordering and error contracts implemented |
 | Judges | `GET/POST /events/:eventId/judges`; `GET/PATCH/DELETE /events/:eventId/judges/:judgeId` | Controller, strict contracts/client helpers, scoped reads/admin writes, relationship and conflict checks implemented |
-| Event setup | `/events/:eventId/categories`, `/formats`, `/age-groups` (each under the event) | Controller/error/contract consolidation |
+| Categories | `GET/POST /events/:eventId/categories`; `GET/PATCH/DELETE /events/:eventId/categories/:categoryId` | Controller, strict contracts/client helpers, parent/scope checks and conflict handling implemented |
+| Formats and age groups | `GET/POST /events/:eventId/formats` and `/age-groups`; item `GET/PATCH/DELETE /:formatId` or `/:ageGroupId` | Strict DTOs/controller/client, parent/scope checks and serializable partial-range validation implemented |
+| Invitations | `GET/POST /invitations`; `GET /invitations/:token`; `POST /invitations/accept` | Strict DTO/controller/client, role/event checks and standard errors implemented; security/lifecycle remains Phase 2 |
 | Studio registration | `GET/POST /events/:eventId/studio-registrations`; `PATCH/DELETE /events/:eventId/studio-registrations/:studioId` | Implemented with shared DTOs, transactions, and ownership/event-scope tests; existing-studio reuse awaits ADR-001 migration |
 | Studios | `GET /studios`; `GET/PATCH/DELETE /studios/:studioId`; approval and representative PATCH actions | Shared DTOs/client paths, member reads, scoped writes, active parents, and audited archive implemented |
 | Dancers | `GET/POST /studios/:studioId/dancers`; `GET/PATCH/DELETE /studios/:studioId/dancers/:dancerId` | Implemented with shared DTOs, event-derived permissions, active ownership, stage checks, and audited soft deletion |
-| Images | `/images/events/:eventId`, `/users/:userId`, `/dancers/:dancerId`, `/studios/:studioId` (each under `/images`) | Resource-specific upload authorization |
+| Images | `/images/events/:eventId`, `/users/:userId`, `/dancers/:dancerId`, `/studios/:studioId` (each under `/images`) | Controller/shared DTOs/multipart helpers and error tests implemented; resource-specific authorization remains Phase 2 |
 | Performances | `GET/POST /events/:eventId/performances`; `GET/PATCH/DELETE /events/:eventId/performances/:performanceId` | Implemented with shared contracts, single-studio ownership checks, transactions, and audited soft deletion |
 | Users | No implementation | `routes/users.ts` is empty; no user-management endpoint is claimed |
 | Scores | Reserved only | Scoring design and implementation in later phases |
 
 The web client's event, studio, registration, dancer, performance, and judge operations follow
-canonical paths and shared contracts. Auth helpers also use shared contracts;
-setup DTO consolidation remains.
+canonical paths and shared contracts. Auth, setup, invitation and image helpers
+also decode shared response schemas. The transport returns unknown rather than
+asserting unchecked generic response types.
 Older implementation summaries do not supersede this current status or the ADR
 target. The maintained [registration workflow](REGISTRATION_API.md) links here
 for implemented contracts.
@@ -437,7 +440,7 @@ paths, and audit fields. Backend serialization and frontend responses are
 runtime-validated. Client helpers now take `eventId`; creation carries `studioId`
 in its body, and list accepts an optional studio filter. No existing UI consumes
 these helpers. The unused duplicate performance type in `packages/types` is
-removed; shared schemas are canonical. Legacy nomination cleanup remains separate.
+removed; shared schemas are canonical. Unused legacy nomination schemas/types are now removed.
 
 Writes are transactional. Participant replacement uses a nested update so a
 stage-order conflict rolls back replacement too. The existing unique
@@ -479,6 +482,125 @@ concurrently missing item returns 404; foreign-key races return 409. No migratio
 or automatic cleanup is introduced. CRUD neither grants nor removes UserRole;
 invitation acceptance and history-preserving staff offboarding remain Phase 2.
 
+## Category contract
+
+Authenticated collection operations use GET/POST at
+`/api/v1/events/:eventId/categories`; item GET/PATCH/DELETE use
+`.../categories/:categoryId`. Reads require admin or `event.manage` for the
+event or globally; writes remain admin-only. Every operation checks the event
+exists (404 otherwise). Every item operation constrains both IDs, including
+admin mutations. Wrong-event/missing items return 404; permission denials return
+the global 403 envelope. Existing stage behavior is unchanged.
+
+POST and PATCH accept only `{ "name": "Ballet" }`. Names are trimmed and must
+be nonblank strings. Empty PATCH bodies, null names and unknown fields such as
+id, eventId, performances or audit fields are rejected with the global validation
+envelope. The path alone selects the event. DTOs contain exactly `id`,
+`eventId` and `name`, with no invented timestamps or relations. Lists are
+arrays ordered by name then ID. Backend serialization and frontend API helpers
+validate shared schemas; helpers are exported through the API barrel. No
+category management screen is delivered here.
+
+Creation returns 201, list/detail/update return 200 and deletion returns 204
+without a body. Existing per-event name uniqueness returns a standard 409 for
+create/rename conflicts, including competing creates. Names can repeat across
+events. Updates/deletes constrain the event in the database write, with a
+concurrently missing item mapped to 404. DELETE hard-deletes unused categories;
+the database foreign key blocks referenced categories with 409, preserving all
+performances, including archived ones. Relationship races also return 409.
+No schema/migration, new lifecycle restriction or historical snapshot behavior
+is introduced. Legacy nomination schemas/types were removed under P1-TYPES.
+
+## Formats and age groups
+
+Both resources use authenticated GET/POST collections under an event, and
+GET/PATCH/DELETE items with formatId or ageGroupId. Reads require admin or global/
+event event.manage; writes remain admin-only. Every operation checks the event;
+item predicates include both IDs. Missing parents/items return 404 and permission
+denials use the standard envelope. Existing stage behavior remains unchanged.
+
+Format input fields are name, minParticipants, maxParticipants and
+maxDurationSeconds; all numeric values are positive PostgreSQL-compatible integers.
+Age group input fields are name, minAge (nonnegative integer), and optional nullable
+maxAge. Names are trimmed/nonblank; unknown fields and empty patches are rejected.
+PATCH omission preserves maxAge, while null clears it. Minima cannot exceed maxima.
+PATCH validates the resulting record in a serializable transaction; conflicting
+concurrent edits return 409 or fail range validation with 400, preserving a valid
+stored range. DTOs contain exactly id/eventId and the respective stored fields,
+including explicit nullable maxAge. No fabricated timestamps/relations are sent.
+
+Lists sort formats by name then ID and age groups by minAge then ID. Creation
+returns 201, reads/updates 200 and deletion 204. The existing schema permits
+repeated format/age-group labels, including concurrent creates and renames. This
+slice does not add name uniqueness, overlap, eligibility or participant/duration
+policy. The existing foreign keys prevent deleting configurations referenced by
+active or archived performances (409). Missing/concurrently removed records return
+404; relationship/serialization races map to standard errors. No migration.
+
+## Invitation contracts
+
+GET/POST /api/v1/invitations are authenticated admin operations. GET
+/api/v1/invitations/:token and POST /api/v1/invitations/accept remain public.
+Create accepts strict email/roleKey/optional eventId. The role and supplied event
+must exist; submitted audit/token fields are rejected. The create response is
+message/messageId (invitationSent)/invitationId; no raw token is returned. List
+DTOs expose only id, email, roleKey, nullable eventId, UTC createdAt/expiresAt and
+nullable UTC usedAt. Inspect exposes email/roleKey, nullable event id/name and UTC
+expiry. Storage tokens, creators and unrestricted relations are excluded.
+
+Accept requires token, trimmed name and password. It returns a validated bearer
+session with explicit user identity, message and invitationAccepted messageId.
+Lookups/role assignment/consumption are serializable and use typed null-aware
+predicates, avoiding Prisma nullable-compound assertions. Missing records return
+404, used/expired invitations and an already-assigned role return 400, active
+invitation/constraint/serialization conflicts return 409. Missing role failures
+roll back without creating accounts or consuming invitations. Existing invitation
+history uniqueness can still prevent reuse; resend/history policy remains Phase 2.
+
+Scope remains optional, including global scope, and role existence is not an
+assignable-role policy. Existing-account acceptance still lacks intended-account
+authentication/eligibility enforcement. No Judge record is created automatically.
+Plaintext persistence, stub logging/delivery, token digests, safe existing-account
+acceptance, mandatory staff scope and atomic Judge reconciliation remain Phase 2
+release gates. This contract slice does not authorize external onboarding.
+
+## Image contracts
+
+POST /api/v1/images/events/:eventId uses multipart image; users/:userId and
+dancers/:dancerId use photo; studios/:studioId uses logo. Paths remain canonical.
+All require authentication and validate resource IDs/existence; archived studios/
+dancers are unavailable. Resource ownership and permission checks remain
+P2-BOUNDARIES, which must pass before an upload UI is exposed.
+
+Missing file, declared MIME rejection, size and unexpected multipart fields use
+the global validation envelope with uploadMissing/uploadType/uploadTooLarge/
+uploadInvalid reasons. Existing JPEG/PNG/WebP and 10 MiB limits remain; content
+sniffing/provider policy is P8-MEDIA. Success is exactly success:true, messageId:
+saved and the appropriate imageUrl/photoUrl/logoUrl; private storage paths are
+omitted. Helpers use FormData and runtime response decoding.
+
+Upload occurs before database update/old-file removal. Database failure attempts
+new-file cleanup and retains the old file. Full provider replacement, old-file
+cleanup/retry and orphan handling remain P8-MEDIA; no durable cross-storage
+transaction is claimed. Unexpected failures use a sanitized 500 envelope, with no
+exception/SQL/storage-path details returned.
+
+## Localized errors and coverage
+
+All business errors retain error/code/statusCode/timestamp/optional details and
+add semantic reason, numeric params and structured path/rule/params issues.
+Success notices carry messageId; 204 and ordinary data DTOs remain unchanged.
+The frontend renders descriptors through one localized presenter; legacy/future
+reasons have a safe fallback and response decoding happens before session storage.
+See [localization contracts](LOCALIZATION.md) and [ADR-007](adr/007-localized-feedback-contracts.md).
+
+[The coverage inventory](api-coverage.json) maps all 56 mounted operations to
+success/input/authentication/permission/parent/active/conflict test evidence or
+explicit non-applicable/deferred cases. Runtime router and no-token tests prevent
+inventory drift. This is not a test-coverage percentage or security/browser-release
+claim. /health has a simple infrastructure status shape; static files are outside
+the versioned business DTO/error contract. Empty users/scoring routes remain deferred.
+
 ## Validation
 
 Run `pnpm.cmd build` followed by `pnpm.cmd --filter api test` for fresh HTTP tests
@@ -492,7 +614,7 @@ Eight additional registration HTTP tests cover roleless creation, admin behavior
 strict inputs/stages, list scope, approval roles, parent mismatches, cancellation,
 and retired paths. Seven dancer HTTP tests add CRUD/DTO, scope/ownership/approval,
 stage/review, parent substitution, strict calendar inputs, audit/archive, and
-retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. Three judge HTTP tests add CRUD/DTOs, nullable/strict inputs, authentication, scoped reads/admin writes, missing parents/users, inactive assignment, parent substitution, and conflict/error mapping. A registration duplicate-name HTTP regression checks the global conflict envelope for applicants and admins without exposing database details. Four event HTTP tests add nullable DTO/CRUD, strict inputs, offset serialization, partial-date regressions, all non-admin write scopes, missing records, and conflict mapping. Five auth HTTP tests cover strict inputs, hashed registration and duplicate races, login/verification DTOs and failure envelopes, caller-only profiles, role keys/scopes and private-field exclusion. A JWT configuration test checks valid signing durations and startup rejection. The API test total is 55.
+retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. Three judge HTTP tests add CRUD/DTOs, nullable/strict inputs, authentication, scoped reads/admin writes, missing parents/users, inactive assignment, parent substitution, and conflict/error mapping. A registration duplicate-name HTTP regression checks the global conflict envelope for applicants and admins without exposing database details. Four event HTTP tests add nullable DTO/CRUD, strict inputs, offset serialization, partial-date regressions, all non-admin write scopes, missing records, and conflict mapping. Five auth HTTP tests cover strict inputs, hashed registration and duplicate races, login/verification DTOs and failure envelopes, caller-only profiles, role keys/scopes and private-field exclusion. A JWT configuration test checks valid signing durations and startup rejection. Three category HTTP tests add strict CRUD/DTOs, all-operation parent checks, authentication/scoped reads/admin writes, validation and database conflict/error mapping. Six setup HTTP tests add format/age CRUD, strict inputs, resulting partial ranges, scoped reads/admin writes, parents and conflict mapping. Invitation tests cover serialized/token-free DTOs, role/event checks, acceptance and error contracts. All image routes exercise multipart errors, explicit DTOs, missing/archived records and storage failures. Coverage and localization guards bring the API test total to 72; 8 frontend localization/transport tests also run.
 
 `pnpm.cmd test:baseline` separately creates an isolated Compose PostgreSQL
 database and starts the compiled server to verify deployment/seed preservation,
@@ -520,3 +642,14 @@ records and competing partial-date updates that must retain a valid date pair.
 The baseline runner also executes `scripts/check-auth.cjs` against real users
 and global/event roles: roleless profiles, caller-only identity, explicit DTOs,
 UTC creation time, private-field exclusion, bearer login and disabled-login errors.
+
+The baseline runner also executes `scripts/check-categories.cjs`: real CRUD,
+trimmed-name persistence, same-event create/rename conflicts, competing creates,
+cross-event parent checks, global/event read permissions, admin-only writes,
+missing parents, strict rejected inputs, and foreign-key-restricted deletion
+preserving active and archived performances. It uses the disposable fixture only.
+
+The baseline also runs scripts/check-setup.cjs (real CRUD, nullable ranges,
+label-policy preservation, serializable concurrent partial updates and referenced
+performance preservation) and scripts/check-invitations.cjs (token-free DTOs,
+scoped/global role acceptance, concurrent replay and missing-role rollback).

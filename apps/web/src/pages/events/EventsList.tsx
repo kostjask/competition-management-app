@@ -1,7 +1,8 @@
+import { toUiError, type UiError } from "../../api/error";
+import { ErrorFeedback } from "../../components/ErrorFeedback";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { type Event, getEvents } from "@api/events";
-import { ApiError } from "@api/client";
 import { RoleGate } from "@auth";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { getTranslation } from "@i18n/translations";
@@ -140,8 +141,8 @@ const EventSection: React.FC<EventSectionProps> = ({
   formatDateTime,
   locale,
 }) => {
-  const getTitleKey = (status: EventStatus): string => {
-    const keys: Record<EventStatus, string> = {
+  const getTitleKey = (status: EventStatus): "Events.current" | "Events.upcoming" | "Events.past" => {
+    const keys: Record<EventStatus, "Events.current" | "Events.upcoming" | "Events.past"> = {
       [EventStatus.CURRENT]: "Events.current",
       [EventStatus.UPCOMING]: "Events.upcoming",
       [EventStatus.PAST]: "Events.past",
@@ -183,7 +184,7 @@ export default function EventsList() {
   const { locale } = useTranslation();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
 
   const stageBadges = useStageBadges(locale);
   const { upcoming, current, past } = useEventsByStatus(events);
@@ -203,9 +204,7 @@ export default function EventsList() {
       } catch (err) {
         if (active) {
           const message =
-            err instanceof ApiError
-              ? err.message
-              : getTranslation("Events.loadError", locale);
+            toUiError(err);
           setError(message);
         }
       } finally {
@@ -220,7 +219,7 @@ export default function EventsList() {
     return () => {
       active = false;
     };
-  }, [locale]);
+  }, []);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-linear-to-br from-slate-50 via-white to-amber-50">
@@ -258,7 +257,7 @@ export default function EventsList() {
 
         {error && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-            {error}
+            <ErrorFeedback error={error} />
           </div>
         )}
 

@@ -1,3 +1,5 @@
+import type { ErrorReason } from "@dance/schemas";
+
 /**
  * Base application error class with HTTP status codes
  */
@@ -11,6 +13,7 @@ export class AppError extends Error {
     statusCode: number = 500,
     code: string = "INTERNAL_SERVER_ERROR",
     details?: Record<string, unknown>,
+    public readonly reason: ErrorReason = "unexpected",
   ) {
     super(message);
     this.name = "AppError";

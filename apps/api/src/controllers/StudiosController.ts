@@ -46,7 +46,7 @@ export class StudiosController extends BaseController {
     try { return await this.prisma.$transaction(work); }
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("Studio with this name already exists");
+        throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
       throw error;
     }
@@ -60,7 +60,7 @@ export class StudiosController extends BaseController {
     if (!studio) throw new NotFoundError("Studio", studioId);
     if (this.isAdmin(req)) return studio;
     if (!studio.representatives.some((r) => r.userId === this.getUserId(req) && r.active)) {
-      throw new ForbiddenError("Access to studio denied");
+      throw new ForbiddenError("Access to studio denied", "ownershipRequired");
     }
     if (write) {
       if (!this.hasPermission(req, "studio.manage", studio.eventId) && !this.hasPermission(req, "studio.manage", null)) {
@@ -69,7 +69,7 @@ export class StudiosController extends BaseController {
       // Organization edits keep their existing pre-registration/open-stage policy.
       // Event approval governs entry operations, not access to the organization profile.
       if (!isActionAllowed(studio.event.stage, "studio.edit")) {
-        throw new ForbiddenError("Studio edits not allowed in current event stage");
+        throw new ForbiddenError("Studio edits not allowed in current event stage", "stageLocked");
       }
     }
     return studio;
@@ -99,7 +99,7 @@ export class StudiosController extends BaseController {
       if (name !== studio.name && await db.studio.findFirst({
         where: { id: { not: studioId }, name, deletedAt: null }, select: { id: true },
       })) {
-        throw new ConflictError("Studio with this name already exists");
+        throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
       return serialize(await db.studio.update({
         where: { id: studioId, deletedAt: null },

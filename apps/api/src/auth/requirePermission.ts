@@ -1,3 +1,4 @@
+import { UnauthorizedError, ForbiddenError } from "../errors";
 import { Request, Response, NextFunction } from "express";
 
 export function requirePermission(
@@ -6,7 +7,7 @@ export function requirePermission(
 ) {
   return (req: Request, res: Response, next: NextFunction) => {
     const auth = req.auth;
-    if (!auth) return res.sendStatus(401);
+    if (!auth) return next(new UnauthorizedError());
 
     if (auth.isAdmin) return next();
 
@@ -22,7 +23,7 @@ export function requirePermission(
       auth.permissionsByEvent.get(eventId)?.has(permission) ||
       auth.permissionsByEvent.get(null)?.has(permission);
 
-    if (!allowed) return res.sendStatus(403);
+    if (!allowed) return next(new ForbiddenError());
     next();
   };
 }

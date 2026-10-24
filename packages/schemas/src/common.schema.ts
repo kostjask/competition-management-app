@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ErrorReasonSchema, FieldIssueSchema, MessageParamsSchema } from "./message.schema.js";
 
 export const IdSchema = z.string().min(1, "ID is required");
 
@@ -19,6 +20,7 @@ export const PaginationSchema = z.object({
 export type Pagination = z.infer<typeof PaginationSchema>;
 export const ErrorResponseSchema = z.strictObject({
   error: z.string(), code: z.string(), statusCode: z.number().int().min(400).max(599),
+  reason: ErrorReasonSchema, params: MessageParamsSchema, issues: z.array(FieldIssueSchema),
   details: z.record(z.string(), z.unknown()).optional(), timestamp: z.iso.datetime(),
 });
 export type ErrorResponse = z.infer<typeof ErrorResponseSchema>;

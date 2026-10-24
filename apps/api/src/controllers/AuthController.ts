@@ -40,7 +40,7 @@ export class AuthController extends BaseController {
   async register(req: Request, res: Response): Promise<void> {
     const body = RegisterSchema.parse(req.body);
     const existing = await this.prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
-    if (existing) throw new ConflictError("Email already registered");
+    if (existing) throw new ConflictError("Email already registered", undefined, "emailRegistered");
     const hashedPassword = await bcrypt.hash(body.password, 10);
     const verificationToken = crypto.randomBytes(32).toString("hex");
     let user: Prisma.UserGetPayload<{ select: typeof identitySelect }>;
@@ -51,13 +51,13 @@ export class AuthController extends BaseController {
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("Email already registered");
+        throw new ConflictError("Email already registered", undefined, "emailRegistered");
       }
       throw error;
     }
     await sendVerificationEmail({ to: user.email, token: verificationToken, name: user.name });
     res.status(201).json(response(RegisterResponseSchema, {
-      message: "Registration successful. Please check your email to verify your account.", userId: user.id,
+      message: "Registration successful. Please check your email to verify your account.", messageId: "registered", userId: user.id,
     }));
   }
 
@@ -67,9 +67,9 @@ export class AuthController extends BaseController {
       where: { verificationToken: token }, select: { ...identitySelect, emailVerified: true },
     });
     if (!user) throw new NotFoundError("Verification token");
-    if (user.emailVerified) throw new ForbiddenError("Email already verified");
+    if (user.emailVerified) throw new ForbiddenError("Email already verified", "emailVerified");
     await this.prisma.user.update({ where: { id: user.id }, data: { emailVerified: true, verificationToken: null } });
-    res.json(response(VerifyEmailResponseSchema, { message: "Email verified successfully", ...session(user) }));
+    res.json(response(VerifyEmailResponseSchema, { message: "Email verified successfully", messageId: "emailVerified", ...session(user) }));
   }
 
   async login(req: Request, res: Response): Promise<void> {
@@ -78,9 +78,9 @@ export class AuthController extends BaseController {
       where: { email: body.email }, select: { ...identitySelect, password: true, active: true },
     });
     if (!user || !user.password || !await bcrypt.compare(body.password, user.password)) {
-      throw new UnauthorizedError("Invalid credentials");
+      throw new UnauthorizedError("Invalid credentials", "invalidCredentials");
     }
-    if (!user.active) throw new ForbiddenError("Account is disabled");
+    if (!user.active) throw new ForbiddenError("Account is disabled", "accountDisabled");
     res.json(response(AuthResponseSchema, session(user)));
   }
 

@@ -1,0 +1,901 @@
+{
+  "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
+  "operations": [
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/register",
+      "tests": {
+        "success": "auth registration validates explicit response",
+        "invalidInput": "auth mutations reject unknown fields",
+        "authentication": "N/A: public operation",
+        "permission": "N/A: public operation",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "N/A: creation has no existing active record",
+        "conflict": "auth registration validates explicit response"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/verify-email",
+      "tests": {
+        "success": "auth verification returns its explicit session contract",
+        "invalidInput": "auth mutations reject unknown fields",
+        "authentication": "N/A: public operation",
+        "permission": "N/A: public operation",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "N/A: active-account verification policy is P2-AUTH",
+        "conflict": "auth verification returns its explicit session contract"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/login",
+      "tests": {
+        "success": "auth login returns only a validated bearer session",
+        "invalidInput": "auth mutations reject unknown fields",
+        "authentication": "N/A: public operation",
+        "permission": "N/A: public operation",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "auth login returns only a validated bearer session",
+        "conflict": "N/A: login does not mutate records"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "GET",
+      "path": "/profile",
+      "tests": {
+        "success": "auth profile constrains identity to the caller",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "auth profile constrains identity to the caller",
+        "permission": "N/A: any authenticated identity is allowed by the current contract",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "N/A: active-user request verification is P2-AUTH",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "GET",
+      "path": "/",
+      "tests": {
+        "success": "invitation contracts validate relationships",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "invitation contracts validate relationships",
+        "permission": "invitation contracts validate relationships",
+        "crossParent": "invitation contracts validate relationships",
+        "inactiveRecord": "invitation contracts validate relationships",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "POST",
+      "path": "/",
+      "tests": {
+        "success": "invitation contracts validate relationships",
+        "invalidInput": "invitation contracts validate relationships",
+        "authentication": "invitation contracts validate relationships",
+        "permission": "invitation contracts validate relationships",
+        "crossParent": "invitation contracts validate relationships",
+        "inactiveRecord": "invitation contracts validate relationships",
+        "conflict": "invitation contracts validate relationships"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "GET",
+      "path": "/:token",
+      "tests": {
+        "success": "invitation contracts validate relationships",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "N/A: public operation",
+        "permission": "N/A: public operation",
+        "crossParent": "invitation contracts validate relationships",
+        "inactiveRecord": "invitation contracts validate relationships",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "POST",
+      "path": "/accept",
+      "tests": {
+        "success": "invitation acceptance returns an explicit session",
+        "invalidInput": "invitation contracts validate relationships",
+        "authentication": "N/A: public operation",
+        "permission": "N/A: public operation",
+        "crossParent": "invitation contracts validate relationships",
+        "inactiveRecord": "N/A: existing-account eligibility is explicitly P2-INVITE",
+        "conflict": "invitation contracts validate relationships"
+      }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/",
+      "tests": {
+        "success": "event CRUD contracts include stored nullable fields",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "event operations require authentication",
+        "permission": "N/A: any authenticated identity is allowed by the current contract",
+        "crossParent": "N/A: collection has no parent selector",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId",
+      "tests": {
+        "success": "event CRUD contracts include stored nullable fields",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "event operations require authentication",
+        "permission": "N/A: any authenticated identity is allowed by the current contract",
+        "crossParent": "event missing records and transaction conflicts",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/",
+      "tests": {
+        "success": "event CRUD contracts include stored nullable fields",
+        "invalidInput": "event strict mutation validation",
+        "authentication": "event operations require authentication",
+        "permission": "event operations require authentication",
+        "crossParent": "N/A: collection has no parent selector",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "event missing records and transaction conflicts"
+      }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId",
+      "tests": {
+        "success": "event CRUD contracts include stored nullable fields",
+        "invalidInput": "event strict mutation validation",
+        "authentication": "event operations require authentication",
+        "permission": "event operations require authentication",
+        "crossParent": "event missing records and transaction conflicts",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "event missing records and transaction conflicts"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studio-registrations",
+      "tests": {
+        "success": "registration lists require active ownership",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "registration mutations reject wrong event scope",
+        "permission": "registration mutations reject wrong event scope",
+        "crossParent": "registration mutations reject wrong event scope",
+        "inactiveRecord": "registration lists require active ownership",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/studio-registrations",
+      "tests": {
+        "success": "roleless applicants create a pending registration",
+        "invalidInput": "registration rejects whitespace",
+        "authentication": "registration mutations reject wrong event scope",
+        "permission": "registration mutations reject wrong event scope",
+        "crossParent": "registration mutations reject wrong event scope",
+        "inactiveRecord": "registration lists require active ownership",
+        "conflict": "registration creation maps database uniqueness"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/studio-registrations/:studioId",
+      "tests": {
+        "success": "approval requires admin and organization approval",
+        "invalidInput": "registration rejects whitespace",
+        "authentication": "registration mutations reject wrong event scope",
+        "permission": "registration mutations reject wrong event scope",
+        "crossParent": "registration mutations reject wrong event scope",
+        "inactiveRecord": "registration lists require active ownership",
+        "conflict": "approval requires admin and organization approval"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/studio-registrations/:studioId",
+      "tests": {
+        "success": "cancellation enforces ownership and pending state",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "registration mutations reject wrong event scope",
+        "permission": "registration mutations reject wrong event scope",
+        "crossParent": "registration mutations reject wrong event scope",
+        "inactiveRecord": "registration lists require active ownership",
+        "conflict": "cancellation enforces ownership and pending state"
+      }
+    },
+    {
+      "router": "judges",
+      "exportName": "judgesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/judges",
+      "tests": {
+        "success": "judge CRUD uses strict DTOs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "judge operations enforce authentication",
+        "permission": "judge operations enforce authentication",
+        "crossParent": "judge operations enforce authentication",
+        "inactiveRecord": "judge CRUD uses strict DTOs",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "judges",
+      "exportName": "judgesRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/judges",
+      "tests": {
+        "success": "judge CRUD uses strict DTOs",
+        "invalidInput": "judge CRUD uses strict DTOs",
+        "authentication": "judge operations enforce authentication",
+        "permission": "judge operations enforce authentication",
+        "crossParent": "judge operations enforce authentication",
+        "inactiveRecord": "judge CRUD uses strict DTOs",
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+      }
+    },
+    {
+      "router": "judges",
+      "exportName": "judgesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/judges/:judgeId",
+      "tests": {
+        "success": "judge CRUD uses strict DTOs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "judge operations enforce authentication",
+        "permission": "judge operations enforce authentication",
+        "crossParent": "judge operations enforce authentication",
+        "inactiveRecord": "judge CRUD uses strict DTOs",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "judges",
+      "exportName": "judgesRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/judges/:judgeId",
+      "tests": {
+        "success": "judge CRUD uses strict DTOs",
+        "invalidInput": "judge CRUD uses strict DTOs",
+        "authentication": "judge operations enforce authentication",
+        "permission": "judge operations enforce authentication",
+        "crossParent": "judge operations enforce authentication",
+        "inactiveRecord": "judge CRUD uses strict DTOs",
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+      }
+    },
+    {
+      "router": "judges",
+      "exportName": "judgesRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/judges/:judgeId",
+      "tests": {
+        "success": "judge CRUD uses strict DTOs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "judge operations enforce authentication",
+        "permission": "judge operations enforce authentication",
+        "crossParent": "judge operations enforce authentication",
+        "inactiveRecord": "judge CRUD uses strict DTOs",
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+      }
+    },
+    {
+      "router": "categories",
+      "exportName": "categoriesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/categories",
+      "tests": {
+        "success": "category CRUD validates strict names",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "category operations enforce authentication",
+        "permission": "category operations enforce authentication",
+        "crossParent": "category CRUD validates strict names",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "categories",
+      "exportName": "categoriesRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/categories",
+      "tests": {
+        "success": "category CRUD validates strict names",
+        "invalidInput": "category CRUD validates strict names",
+        "authentication": "category operations enforce authentication",
+        "permission": "category operations enforce authentication",
+        "crossParent": "category CRUD validates strict names",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+      }
+    },
+    {
+      "router": "categories",
+      "exportName": "categoriesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/categories/:categoryId",
+      "tests": {
+        "success": "category CRUD validates strict names",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "category operations enforce authentication",
+        "permission": "category operations enforce authentication",
+        "crossParent": "category CRUD validates strict names",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "categories",
+      "exportName": "categoriesRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/categories/:categoryId",
+      "tests": {
+        "success": "category CRUD validates strict names",
+        "invalidInput": "category CRUD validates strict names",
+        "authentication": "category operations enforce authentication",
+        "permission": "category operations enforce authentication",
+        "crossParent": "category CRUD validates strict names",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+      }
+    },
+    {
+      "router": "categories",
+      "exportName": "categoriesRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/categories/:categoryId",
+      "tests": {
+        "success": "category CRUD validates strict names",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "category operations enforce authentication",
+        "permission": "category operations enforce authentication",
+        "crossParent": "category CRUD validates strict names",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+      }
+    },
+    {
+      "router": "formats",
+      "exportName": "formatsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/formats",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "formats",
+      "exportName": "formatsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/formats",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "formats",
+      "exportName": "formatsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/formats/:formatId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "formats",
+      "exportName": "formatsRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/formats/:formatId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "formats",
+      "exportName": "formatsRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/formats/:formatId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "age-groups",
+      "exportName": "ageGroupsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/age-groups",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "age-groups",
+      "exportName": "ageGroupsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/age-groups",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "age-groups",
+      "exportName": "ageGroupsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/age-groups/:ageGroupId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "age-groups",
+      "exportName": "ageGroupsRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/age-groups/:ageGroupId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "age-groups",
+      "exportName": "ageGroupsRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/age-groups/:ageGroupId",
+      "tests": {
+        "success": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "every operation enforces authentication, scoped reads and admin writes",
+        "permission": "every operation enforces authentication, scoped reads and admin writes",
+        "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
+        "inactiveRecord": "N/A: model has no active/archive field",
+        "conflict": "maps uniqueness, relationship and serialization conflicts"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/performances",
+      "tests": {
+        "success": "performance canonical CRUD",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "performance authentication, event permissions",
+        "permission": "performance authentication, event permissions",
+        "crossParent": "performance authentication, event permissions",
+        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/performances",
+      "tests": {
+        "success": "performance canonical CRUD",
+        "invalidInput": "performance strict inputs",
+        "authentication": "performance authentication, event permissions",
+        "permission": "performance authentication, event permissions",
+        "crossParent": "performance authentication, event permissions",
+        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/performances/:performanceId",
+      "tests": {
+        "success": "performance canonical CRUD",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "performance authentication, event permissions",
+        "permission": "performance authentication, event permissions",
+        "crossParent": "performance authentication, event permissions",
+        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/performances/:performanceId",
+      "tests": {
+        "success": "performance canonical CRUD",
+        "invalidInput": "performance strict inputs",
+        "authentication": "performance authentication, event permissions",
+        "permission": "performance authentication, event permissions",
+        "crossParent": "performance authentication, event permissions",
+        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "DELETE",
+      "path": "/:eventId/performances/:performanceId",
+      "tests": {
+        "success": "performance canonical CRUD",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "performance authentication, event permissions",
+        "permission": "performance authentication, event permissions",
+        "crossParent": "performance authentication, event permissions",
+        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "GET",
+      "path": "/",
+      "tests": {
+        "success": "studio reads allow active roleless membership",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "GET",
+      "path": "/:studioId",
+      "tests": {
+        "success": "studio reads allow active roleless membership",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "PATCH",
+      "path": "/:studioId",
+      "tests": {
+        "success": "studio PATCH trims text",
+        "invalidInput": "studio PATCH trims text",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "studio PATCH trims text"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "DELETE",
+      "path": "/:studioId",
+      "tests": {
+        "success": "studio delete archives with actor",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "studio PATCH trims text"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "PATCH",
+      "path": "/:studioId/approval",
+      "tests": {
+        "success": "studio representative and approval operations",
+        "invalidInput": "studio PATCH trims text",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "studio PATCH trims text"
+      }
+    },
+    {
+      "router": "studios",
+      "exportName": "studiosRouter",
+      "mount": "/studios",
+      "method": "PATCH",
+      "path": "/:studioId/representatives/:representativeId",
+      "tests": {
+        "success": "studio representative and approval operations",
+        "invalidInput": "studio PATCH trims text",
+        "authentication": "studio writes derive permissions from the stored event",
+        "permission": "studio writes derive permissions from the stored event",
+        "crossParent": "studio representative and approval operations",
+        "inactiveRecord": "studio delete archives with actor",
+        "conflict": "studio PATCH trims text"
+      }
+    },
+    {
+      "router": "dancers",
+      "exportName": "dancersRouter",
+      "mount": "/studios",
+      "method": "GET",
+      "path": "/:studioId/dancers",
+      "tests": {
+        "success": "dancer CRUD accepts event-scoped permission",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "dancer access requires matching event permission",
+        "permission": "dancer access requires matching event permission",
+        "crossParent": "dancer access requires matching event permission",
+        "inactiveRecord": "dancer delete records the actor",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "dancers",
+      "exportName": "dancersRouter",
+      "mount": "/studios",
+      "method": "POST",
+      "path": "/:studioId/dancers",
+      "tests": {
+        "success": "dancer CRUD accepts event-scoped permission",
+        "invalidInput": "dancer schemas reject invalid dates",
+        "authentication": "dancer access requires matching event permission",
+        "permission": "dancer access requires matching event permission",
+        "crossParent": "dancer access requires matching event permission",
+        "inactiveRecord": "dancer delete records the actor",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "dancers",
+      "exportName": "dancersRouter",
+      "mount": "/studios",
+      "method": "GET",
+      "path": "/:studioId/dancers/:dancerId",
+      "tests": {
+        "success": "dancer CRUD accepts event-scoped permission",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "dancer access requires matching event permission",
+        "permission": "dancer access requires matching event permission",
+        "crossParent": "dancer access requires matching event permission",
+        "inactiveRecord": "dancer delete records the actor",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "dancers",
+      "exportName": "dancersRouter",
+      "mount": "/studios",
+      "method": "PATCH",
+      "path": "/:studioId/dancers/:dancerId",
+      "tests": {
+        "success": "dancer CRUD accepts event-scoped permission",
+        "invalidInput": "dancer schemas reject invalid dates",
+        "authentication": "dancer access requires matching event permission",
+        "permission": "dancer access requires matching event permission",
+        "crossParent": "dancer access requires matching event permission",
+        "inactiveRecord": "dancer delete records the actor",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "dancers",
+      "exportName": "dancersRouter",
+      "mount": "/studios",
+      "method": "DELETE",
+      "path": "/:studioId/dancers/:dancerId",
+      "tests": {
+        "success": "dancer CRUD accepts event-scoped permission",
+        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "authentication": "dancer access requires matching event permission",
+        "permission": "dancer access requires matching event permission",
+        "crossParent": "dancer access requires matching event permission",
+        "inactiveRecord": "dancer delete records the actor",
+        "conflict": "database race fallbacks and malformed JWT identities"
+      }
+    },
+    {
+      "router": "images",
+      "exportName": "imagesRouter",
+      "mount": "/images",
+      "method": "POST",
+      "path": "/events/:eventId",
+      "tests": {
+        "success": "all image routes use strict DTOs",
+        "invalidInput": "all image routes use strict DTOs",
+        "authentication": "all image routes use strict DTOs",
+        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "all image routes use strict DTOs",
+        "conflict": "all image routes use strict DTOs"
+      }
+    },
+    {
+      "router": "images",
+      "exportName": "imagesRouter",
+      "mount": "/images",
+      "method": "POST",
+      "path": "/users/:userId",
+      "tests": {
+        "success": "all image routes use strict DTOs",
+        "invalidInput": "all image routes use strict DTOs",
+        "authentication": "all image routes use strict DTOs",
+        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "all image routes use strict DTOs",
+        "conflict": "all image routes use strict DTOs"
+      }
+    },
+    {
+      "router": "images",
+      "exportName": "imagesRouter",
+      "mount": "/images",
+      "method": "POST",
+      "path": "/dancers/:dancerId",
+      "tests": {
+        "success": "all image routes use strict DTOs",
+        "invalidInput": "all image routes use strict DTOs",
+        "authentication": "all image routes use strict DTOs",
+        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "all image routes use strict DTOs",
+        "conflict": "all image routes use strict DTOs"
+      }
+    },
+    {
+      "router": "images",
+      "exportName": "imagesRouter",
+      "mount": "/images",
+      "method": "POST",
+      "path": "/studios/:studioId",
+      "tests": {
+        "success": "all image routes use strict DTOs",
+        "invalidInput": "all image routes use strict DTOs",
+        "authentication": "all image routes use strict DTOs",
+        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "crossParent": "N/A: no event/studio parent selector",
+        "inactiveRecord": "all image routes use strict DTOs",
+        "conflict": "all image routes use strict DTOs"
+      }
+    }
+  ]
+}

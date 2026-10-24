@@ -73,7 +73,7 @@ export class LocalStorageService implements StorageProvider {
       await fs.unlink(fullPath);
     } catch (err) {
       // Silently ignore if file doesn't exist
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      if (!(err instanceof Error && "code" in err && err.code === "ENOENT")) {
         console.error("File deletion error:", err);
         throw new Error("Failed to delete file");
       }

@@ -1,3 +1,5 @@
+import { toUiError, type UiError } from "../../api/error";
+import { ErrorFeedback } from "../../components/ErrorFeedback";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getTranslation } from "@i18n/translations";
@@ -5,7 +7,6 @@ import { type Locale } from "@i18n/LanguageContext";
 import { useTranslation } from "@i18n/useTranslation";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { type Event, getEvent } from "@api/events";
-import { ApiError } from "@api/client";
 import { RoleGate } from "@auth";
 import {
   type StageBadge,
@@ -200,7 +201,7 @@ export default function EventInfo() {
   const { id } = useParams<{ id: string }>();
   const [eventData, setEventData] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<UiError | null>(null);
 
   const stageBadges = useStageBadges(locale);
   const formatDateTime = useDateFormatter(locale);
@@ -210,7 +211,7 @@ export default function EventInfo() {
 
     const fetchEvent = async () => {
       if (!id) {
-        setLoadError(getTranslation("Events.loadError", locale));
+        setLoadError(toUiError(null));
         setLoading(false);
         return;
       }
@@ -225,9 +226,7 @@ export default function EventInfo() {
       } catch (err) {
         if (active) {
           const message =
-            err instanceof ApiError
-              ? err.message
-              : getTranslation("Events.loadError", locale);
+            toUiError(err);
           setLoadError(message);
         }
       } finally {
@@ -242,7 +241,7 @@ export default function EventInfo() {
     return () => {
       active = false;
     };
-  }, [id, locale]);
+  }, [id]);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-linear-to-br from-slate-50 via-white to-amber-50 px-6 py-10">
@@ -268,7 +267,7 @@ export default function EventInfo() {
 
         {loadError && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-            {loadError}
+            <ErrorFeedback error={loadError} />
           </div>
         )}
 

@@ -20,11 +20,11 @@ export type RegisterInput = z.infer<typeof RegisterSchema>;
 export type LoginInput = z.infer<typeof LoginSchema>;
 export type VerifyEmailInput = z.infer<typeof VerifyEmailSchema>;
 export const AuthUserSchema = z.strictObject({ id: IdSchema, email: EmailSchema, name: z.string() });
-export const RegisterResponseSchema = z.strictObject({ message: z.string(), userId: IdSchema });
+export const RegisterResponseSchema = z.strictObject({ message: z.string(), messageId: z.literal("registered"), userId: IdSchema });
 export const AuthResponseSchema = z.strictObject({
   token: z.string().min(1), tokenType: z.literal("Bearer"), user: AuthUserSchema,
 });
-export const VerifyEmailResponseSchema = AuthResponseSchema.extend({ message: z.string() });
+export const VerifyEmailResponseSchema = AuthResponseSchema.extend({ message: z.string(), messageId: z.literal("emailVerified") });
 export const UserProfileSchema = AuthUserSchema.extend({
   createdAt: z.iso.datetime(), isAdmin: z.boolean(),
   roles: z.array(z.strictObject({

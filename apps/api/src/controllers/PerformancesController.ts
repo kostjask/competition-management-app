@@ -62,10 +62,10 @@ export class PerformancesController extends BaseController {
     if (this.isAdmin(req)) return;
     const registration = studio.registrations[0];
     if (!studio.representatives.length || studio.approvalStatus !== "APPROVED" || registration?.status !== "APPROVED") {
-      throw new ForbiddenError("Access to studio performances denied");
+      throw new ForbiddenError("Access to studio performances denied", "ownershipRequired");
     }
     if (write && !isActionAllowed(studio.event.stage, "performance.manage", registration.canEditDuringReview)) {
-      throw new ForbiddenError("Performance management not allowed in current event stage");
+      throw new ForbiddenError("Performance management not allowed in current event stage", "stageLocked");
     }
   }
 
@@ -76,7 +76,7 @@ export class PerformancesController extends BaseController {
     });
     if (!performance) throw new NotFoundError("Performance", performanceId);
     const studioId = studioFor(performance);
-    if (!studioId) throw new ConflictError("Performance participants require a single studio; legacy data needs review");
+    if (!studioId) throw new ConflictError("Performance participants require a single studio; legacy data needs review", undefined, "ambiguousStudio");
     await this.requireAccess(req, db, eventId, studioId, write);
     return { performance, studioId };
   }
@@ -89,15 +89,15 @@ export class PerformancesController extends BaseController {
       db.danceFormat.findFirst({ where: { id: selection.formatId, eventId }, select: { id: true } }),
       db.dancer.findMany({ where: { id: { in: selection.dancerIds }, studioId, deletedAt: null }, select: { id: true } }),
     ]);
-    if (!category || !ageGroup || !format) throw new ConflictError("Invalid event configuration");
-    if (dancers.length !== selection.dancerIds.length) throw new ConflictError("Participants must be active dancers of the performance studio");
+    if (!category || !ageGroup || !format) throw new ConflictError("Invalid event configuration", undefined, "invalidConfiguration");
+    if (dancers.length !== selection.dancerIds.length) throw new ConflictError("Participants must be active dancers of the performance studio", undefined, "invalidParticipants");
   }
 
   private async transaction<T>(work: (db: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     try { return await this.prisma.$transaction(work); }
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("Stage order is already reserved for this event");
+        throw new ConflictError("Stage order is already reserved for this event", undefined, "orderReserved");
       }
       throw error;
     }

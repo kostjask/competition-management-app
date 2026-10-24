@@ -1,7 +1,8 @@
+import { toUiError, type UiError } from "../../api/error";
+import { ErrorFeedback } from "../../components/ErrorFeedback";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { type CreateEventInput } from "@dance/schemas";
-import { ApiError } from "@api/client";
 import { type Event, getEvent, updateEvent } from "@api/events";
 import { LoadingSpinner } from "@components/LoadingSpinner";
 import { getTranslation } from "@i18n/translations";
@@ -14,16 +15,16 @@ export default function EventEdit() {
   const { id } = useParams<{ id: string }>();
   const [eventData, setEventData] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<UiError | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<UiError | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const load = async () => {
       if (!id) {
-        setLoadError(getTranslation("Events.loadError", locale));
+        setLoadError(toUiError(null));
         setLoading(false);
         return;
       }
@@ -38,9 +39,7 @@ export default function EventEdit() {
       } catch (err) {
         if (active) {
           const message =
-            err instanceof ApiError
-              ? err.message
-              : getTranslation("Events.loadError", locale);
+            toUiError(err);
           setLoadError(message);
         }
       } finally {
@@ -55,7 +54,7 @@ export default function EventEdit() {
     return () => {
       active = false;
     };
-  }, [id, locale]);
+  }, [id]);
 
   const handleSubmit = async (values: CreateEventInput) => {
     if (!id) {
@@ -69,9 +68,7 @@ export default function EventEdit() {
       navigate("/events");
     } catch (err) {
       const message =
-        err instanceof ApiError
-          ? err.message
-          : getTranslation("Events.submitError", locale);
+        toUiError(err);
       setSubmitError(message);
       throw err;
     } finally {
@@ -108,7 +105,7 @@ export default function EventEdit() {
           </div>
         ) : loadError ? (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-            {loadError}
+            <ErrorFeedback error={loadError} />
           </div>
         ) : initialValues ? (
           <EventForm

@@ -1,41 +1,7 @@
-import { type Locale } from './LanguageContext';
-
-/**
- * Translation Naming Convention:
- * - Section names: PascalCase (e.g., "Auth", "Studio", "Judge")
- * - Key names: camelCase (e.g., "enterName", "noEvents", "selectStage")
- * - Full key path: "Section.keyName" (e.g., "Auth.loginButton")
- * - Meaningful keys shortly describing literal text (noEvents -> "No events yet")
- * 
- * Structure:
- * ```
- * {
- *   SectionName: {
- *     keyName: {
- *       et: "Estonian translation",
- *       en: "English translation",
- *       ru: "Russian translation"
- *     }
- *   }
- * }
- * ```
- */
-
-type TranslationValue = {
-  et: string;
-  en: string;
-  ru: string;
-};
-
-type TranslationSection = {
-  [key: string]: TranslationValue;
-};
-
-type Translations = {
-  [section: string]: TranslationSection;
-};
-
-export const translations: Translations = {
+import { isLocale, DEFAULT_LOCALE, type Locale } from "./locale";
+export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
+export type TranslationValue = Record<Locale, string | PluralText>;
+export const translations = {
   Auth: {
     loginSubmit: {
       et: 'Sisselogimine',
@@ -315,23 +281,41 @@ export const translations: Translations = {
       en: 'Current events',
       ru: 'Текущие события'
     },
-  }
-};
+  },
+  Feedback: {
+    fallback: { et: "Midagi läks valesti. Proovi uuesti.", en: "Something went wrong. Please try again.", ru: "Что-то пошло не так. Попробуйте ещё раз." },
+    validation: { et: "Kontrolli märgitud välju.", en: "Check the highlighted fields.", ru: "Проверьте отмеченные поля." },
+    selectedLanguage: { et: "Vali keel", en: "Choose language", ru: "Выберите язык" },
+    items: { et: { one: "{count} kirje", other: "{count} kirjet" }, en: { one: "{count} item", other: "{count} items" }, ru: { one: "{count} запись", few: "{count} записи", many: "{count} записей", other: "{count} записи" } },
+  },
+} as const satisfies Record<string, Record<string, TranslationValue>>;
 
-export const getTranslation = (key: string, locale: Locale): string => {
-  const [section, keyName] = key.split('.');
-  
-  if (!section || !keyName) {
-    console.warn(`Invalid translation key format: ${key}. Expected format: "Section.keyName"`);
-    return key;
+type Catalogue = typeof translations;
+export type TranslationKey = { [S in keyof Catalogue]: { [K in keyof Catalogue[S]]: K extends string ? `${S}.${K}` : never }[keyof Catalogue[S]] }[keyof Catalogue];
+type TextOf<V> = V extends string ? V : V extends object ? V[keyof V] : never;
+type Placeholders<S> = S extends `${string}{${infer P}}${infer Rest}` ? P | Placeholders<Rest> : never;
+type ValueAt<K extends TranslationKey> = K extends `${infer S}.${infer T}` ? S extends keyof Catalogue ? T extends keyof Catalogue[S] ? Catalogue[S][T] : never : never : never;
+type Parameters<K extends TranslationKey> = Placeholders<TextOf<TextOf<ValueAt<K>>>>;
+export type TranslationArgs<K extends TranslationKey> = [Parameters<K>] extends [never] ? [] : [params: { [P in Parameters<K>]: P extends "count" | "minimum" | "maximum" ? number : string | number }];
+const catalogue: Record<string, Record<string, TranslationValue>> = translations;
+export function translate(key: string, locale: unknown, params: Record<string, string | number> = {}): string {
+  const language = isLocale(locale) ? locale : DEFAULT_LOCALE;
+  const [section, name] = key.split(".");
+  let value: string | PluralText | undefined = catalogue[section]?.[name]?.[language];
+  if (value && typeof value !== "string") {
+    const count = params.count;
+    value = typeof count === "number" && Number.isFinite(count) ? value[new Intl.PluralRules(language).select(count)] ?? value.other : undefined;
   }
-
-  const translationValue = translations[section]?.[keyName];
-  
-  if (!translationValue) {
-    console.warn(`Translation not found: ${key}`);
-    return key;
-  }
-
-  return translationValue[locale];
-};
+  if (typeof value !== "string" || !value.trim()) { console.warn("Invalid translation key or locale"); return translations.Feedback.fallback[language]; }
+  let invalid = false;
+  const output = value.replace(/\{(\w+)\}/g, (_match, parameter: string) => {
+    const item = params[parameter];
+    if ((typeof item !== "number" && typeof item !== "string") || (typeof item === "number" && !Number.isFinite(item))) { invalid = true; return ""; }
+    return typeof item === "number" ? new Intl.NumberFormat(language).format(item) : item;
+  });
+  if (invalid) { console.warn("Invalid translation parameters"); return translations.Feedback.fallback[language]; }
+  return output;
+}
+export function getTranslation<K extends TranslationKey>(key: K, locale: Locale, ...args: TranslationArgs<K>): string {
+  return translate(key, locale, args[0]);
+}

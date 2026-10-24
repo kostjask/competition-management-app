@@ -1,4 +1,6 @@
-import { ErrorResponseSchema } from "@dance/schemas";
+import type { z } from "zod";
+import { ApiError, parseApiError } from "./error";
+export { ApiError } from "./error";
 export type { AuthResponse, UserProfile, ErrorResponse } from "@dance/schemas";
 
 /**
@@ -6,28 +8,9 @@ export type { AuthResponse, UserProfile, ErrorResponse } from "@dance/schemas";
  * Handles HTTP requests with automatic JWT token injection and error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api/v1";
+const API_BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:4000/api/v1";
 
 const TOKEN_KEY = "auth_token";
-
-/**
- * API Error class for structured error handling
- */
-export class ApiError extends Error {
-  statusCode: number;
-  details?: unknown;
-
-  constructor(
-    statusCode: number,
-    message: string,
-    details?: unknown
-  ) {
-    super(message);
-    this.name = "ApiError";
-    this.statusCode = statusCode;
-    this.details = details;
-  }
-}
 
 /**
  * Get the stored JWT token from localStorage
@@ -61,16 +44,16 @@ const redirectToLogin = (): void => {
 /**
  * Make an authenticated API request
  */
-async function request<TResponse = unknown>(
+async function request(
   endpoint: string,
   options: RequestInit = {}
-): Promise<TResponse> {
+): Promise<unknown> {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = getToken();
 
   // Prepare headers
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
   };
 
   // Add Authorization header if token exists
@@ -92,45 +75,26 @@ async function request<TResponse = unknown>(
     // Handle authentication errors
     if (response.status === 401 && token) {
       redirectToLogin();
-      throw new ApiError(401, "Unauthorized - Please log in again");
+      throw new ApiError(401, "Unauthorized", undefined, "UNAUTHORIZED", "authenticationRequired");
     }
 
     // Handle non-OK responses
     if (!response.ok) {
-      let errorMessage = `Request failed with status ${response.status}`;
-      let errorDetails: unknown = undefined;
-
-      try {
-        const errorData: unknown = await response.json();
-        const parsed = ErrorResponseSchema.safeParse(errorData);
-        if (parsed.success) {
-          errorMessage = parsed.data.error;
-          errorDetails = parsed.data.details;
-        } else if (typeof errorData === "object" && errorData !== null) {
-          // Unmigrated resources may still return a local error shape.
-          if ("error" in errorData && typeof errorData.error === "string") errorMessage = errorData.error;
-          else if ("message" in errorData && typeof errorData.message === "string") errorMessage = errorData.message;
-          errorDetails = "details" in errorData ? errorData.details : undefined;
-        }
-      } catch {
-        // If response is not JSON, use status text
-        errorMessage = response.statusText || errorMessage;
-      }
-
-      throw new ApiError(response.status, errorMessage, errorDetails);
+      const data: unknown = await response.json().catch(() => null);
+      throw parseApiError(response.status, data);
     }
 
     // Handle 204 No Content
     if (response.status === 204) {
-      return undefined as TResponse;
+      return undefined;
     }
 
     // Parse JSON response
     try {
       return await response.json();
     } catch {
-      // If response is not JSON, return empty object
-      return {} as TResponse;
+      // A successful HTTP status still requires valid JSON.
+      throw new ApiError(502, "Invalid response", undefined, "INVALID_RESPONSE", "invalidResponse");
     }
   } catch (error) {
     // Re-throw ApiError instances
@@ -140,83 +104,29 @@ async function request<TResponse = unknown>(
 
     // Handle network errors
     if (error instanceof TypeError) {
-      throw new ApiError(0, "Network error - Please check your connection");
+      throw new ApiError(0, "Network error", undefined, "NETWORK", "network");
     }
 
     // Handle unknown errors
     throw new ApiError(
       500,
-      error instanceof Error ? error.message : "An unknown error occurred"
+      "Request failed"
     );
   }
 }
 
 /**
- * HTTP client with typed methods
+ * HTTP transport returns unknown; feature helpers decode shared contracts
  */
+export function decode<T>(schema: z.ZodType<T>, input: unknown): T {
+  const result = schema.safeParse(input);
+  if (!result.success) throw new ApiError(502, "Invalid response", undefined, "INVALID_RESPONSE", "invalidResponse");
+  return result.data;
+}
 export const apiClient = {
-  /**
-   * GET request
-   */
-  get: <TResponse = unknown>(
-    endpoint: string,
-    options?: Omit<RequestInit, "method" | "body">
-  ): Promise<TResponse> => {
-    return request<TResponse>(endpoint, { ...options, method: "GET" });
-  },
-
-  /**
-   * POST request
-   */
-  post: <TResponse = unknown, TBody = unknown>(
-    endpoint: string,
-    body?: TBody,
-    options?: Omit<RequestInit, "method" | "body">
-  ): Promise<TResponse> => {
-    return request<TResponse>(endpoint, {
-      ...options,
-      method: "POST",
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
-
-  /**
-   * PUT request
-   */
-  put: <TResponse = unknown, TBody = unknown>(
-    endpoint: string,
-    body?: TBody,
-    options?: Omit<RequestInit, "method" | "body">
-  ): Promise<TResponse> => {
-    return request<TResponse>(endpoint, {
-      ...options,
-      method: "PUT",
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
-
-  /**
-   * PATCH request
-   */
-  patch: <TResponse = unknown, TBody = unknown>(
-    endpoint: string,
-    body?: TBody,
-    options?: Omit<RequestInit, "method" | "body">
-  ): Promise<TResponse> => {
-    return request<TResponse>(endpoint, {
-      ...options,
-      method: "PATCH",
-      body: body ? JSON.stringify(body) : undefined,
-    });
-  },
-
-  /**
-   * DELETE request
-   */
-  delete: <TResponse = unknown>(
-    endpoint: string,
-    options?: Omit<RequestInit, "method" | "body">
-  ): Promise<TResponse> => {
-    return request<TResponse>(endpoint, { ...options, method: "DELETE" });
-  },
+  get: (endpoint: string, options?: Omit<RequestInit, "method" | "body">): Promise<unknown> => request(endpoint, { ...options, method: "GET" }),
+  post: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "POST", ...(body !== undefined && { body: JSON.stringify(body) }) }),
+  patch: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "PATCH", ...(body !== undefined && { body: JSON.stringify(body) }) }),
+  upload: (endpoint: string, body: FormData): Promise<unknown> => request(endpoint, { method: "POST", body }),
+  delete: async (endpoint: string): Promise<void> => { await request(endpoint, { method: "DELETE" }); },
 };

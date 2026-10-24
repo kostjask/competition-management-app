@@ -1,17 +1,25 @@
+import { RegisterSchema } from "@dance/schemas";
+import { formatSuccess } from "../i18n/errors";
+import { useLanguage } from "../i18n/useLanguage";
+import { ErrorFeedback } from "../components/ErrorFeedback";
+import { toUiError, type UiError } from "../api/error";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { register } from "../api/auth";
 
 export function RegisterPage() {
+  const { locale } = useLanguage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async () => {
+    const parsed = RegisterSchema.safeParse({ name, email, password });
+    if (!parsed.success) { setError(toUiError(parsed.error)); return; }
     if (!name || !email || !password) return;
     
     setError(null);
@@ -21,7 +29,7 @@ export function RegisterPage() {
       await register({ name, email, password });
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(toUiError(err));
     } finally {
       setLoading(false);
     }
@@ -65,7 +73,7 @@ export function RegisterPage() {
                 We've sent a verification link to <strong>{email}</strong>
               </p>
               <p className="mt-2 text-sm text-slate-500">
-                Click the link in the email to verify your account and get started.
+                {formatSuccess("registered", locale)}
               </p>
               <div className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs text-slate-600">
@@ -116,6 +124,7 @@ export function RegisterPage() {
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Full name</span>
               <input
+                id="register-name"
                 type="text"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -129,6 +138,7 @@ export function RegisterPage() {
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Email</span>
               <input
+                id="register-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -143,6 +153,7 @@ export function RegisterPage() {
               <span className="text-sm font-medium text-slate-700">Password</span>
               <div className="mt-1 flex items-center rounded-lg border border-slate-300 px-3 py-2 focus-within:border-emerald-500">
                 <input
+                  id="register-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -163,7 +174,7 @@ export function RegisterPage() {
             </label>
             {error && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {error}
+                <ErrorFeedback error={error} fields={{ name: "register-name", email: "register-email", password: "register-password" }} />
               </div>
             )}
             <button

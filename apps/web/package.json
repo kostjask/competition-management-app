@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "tsx --tsconfig tsconfig.app.json --test tests/*.test.tsx"
   },
   "dependencies": {
     "@dance/schemas": "workspace:*",

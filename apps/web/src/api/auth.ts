@@ -1,3 +1,4 @@
+import { decode } from "./client.js";
 import {
   RegisterResponseSchema, AuthResponseSchema, VerifyEmailResponseSchema, UserProfileSchema,
   type RegisterInput, type LoginInput, type VerifyEmailInput,
@@ -11,10 +12,10 @@ export type VerifyEmailData = VerifyEmailInput;
 export type { RegisterResponse } from "@dance/schemas";
 
 export const register = async (data: RegisterData): Promise<RegisterResponse> =>
-  RegisterResponseSchema.parse(await apiClient.post<unknown, RegisterData>("/auth/register", data));
+  decode(RegisterResponseSchema, await apiClient.post<RegisterData>("/auth/register", data));
 
 export const login = async (data: LoginData): Promise<AuthResponse> => {
-  const response = AuthResponseSchema.parse(await apiClient.post<unknown, LoginData>("/auth/login", data));
+  const response = decode(AuthResponseSchema, await apiClient.post<LoginData>("/auth/login", data));
   setToken(response.token);
   return response;
 };
@@ -25,12 +26,12 @@ export const logout = (): void => {
 };
 
 export const getCurrentUser = async (): Promise<UserProfile> =>
-  UserProfileSchema.parse(await apiClient.get<unknown>("/auth/profile"));
+  decode(UserProfileSchema, await apiClient.get("/auth/profile"));
 
 export const isAuthenticated = (): boolean => !!localStorage.getItem("auth_token");
 
 export const verifyEmail = async (data: VerifyEmailData): Promise<VerifyEmailResponse> => {
-  const response = VerifyEmailResponseSchema.parse(await apiClient.post<unknown, VerifyEmailData>("/auth/verify-email", data));
+  const response = decode(VerifyEmailResponseSchema, await apiClient.post<VerifyEmailData>("/auth/verify-email", data));
   setToken(response.token);
   return response;
 };

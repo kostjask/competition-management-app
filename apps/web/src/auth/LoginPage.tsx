@@ -1,3 +1,6 @@
+import { LoginSchema } from "@dance/schemas";
+import { ErrorFeedback } from "../components/ErrorFeedback";
+import { toUiError, type UiError } from "../api/error";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type { Location } from "react-router-dom";
@@ -9,14 +12,14 @@ export function LoginPage() {
   const { login, loading, error, clearError } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<UiError | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const from = (location.state as { from?: Location })?.from?.pathname ?? "/";
 
-  clearError();
-
   const handleSubmit = async () => {
+    const parsed = LoginSchema.safeParse({ email, password });
+    if (!parsed.success) { setFormError(toUiError(parsed.error)); return; }
     if (!email || !password) return;
     // redo by usinnng  new FormData() and append email and password to it, then send it to the server?
     
@@ -28,7 +31,7 @@ export function LoginPage() {
       // Only navigate on successful login
       navigate(from, { replace: true });
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Login failed");
+      setFormError(toUiError(err));
     }
   };
 
@@ -70,6 +73,7 @@ export function LoginPage() {
             <label className="block">
               <span className="text-sm font-medium text-slate-700">Email</span>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
@@ -84,6 +88,7 @@ export function LoginPage() {
               <span className="text-sm font-medium text-slate-700">Password</span>
               <div className="mt-1 flex items-center rounded-lg border border-slate-300 px-3 py-2 focus-within:border-blue-500">
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
@@ -104,7 +109,7 @@ export function LoginPage() {
             </label>
             {(formError || error) && (
               <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-                {formError || error}
+                <ErrorFeedback error={formError || error} fields={{ email: "login-email", password: "login-password" }} />
               </div>
             )}
             <button

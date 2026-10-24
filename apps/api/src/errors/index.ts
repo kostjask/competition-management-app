@@ -1,3 +1,4 @@
+import type { ErrorReason } from "@dance/schemas";
 import { AppError } from "./AppError";
 
 export { AppError };
@@ -6,8 +7,8 @@ export { AppError };
  * 400 Bad Request - Input validation failed
  */
 export class ValidationError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(message, 400, "VALIDATION_ERROR", details);
+  constructor(message: string, details?: Record<string, unknown>, reason: ErrorReason = "invalidInput") {
+    super(message, 400, "VALIDATION_ERROR", details, reason);
     this.name = "ValidationError";
     Object.setPrototypeOf(this, ValidationError.prototype);
   }
@@ -21,7 +22,7 @@ export class NotFoundError extends AppError {
     const message = id
       ? `${resource} with id "${id}" not found`
       : `${resource} not found`;
-    super(message, 404, "NOT_FOUND", { resource, id });
+    super(message, 404, "NOT_FOUND", { resource, id }, "recordNotFound");
     this.name = "NotFoundError";
     Object.setPrototypeOf(this, NotFoundError.prototype);
   }
@@ -31,8 +32,8 @@ export class NotFoundError extends AppError {
  * 401 Unauthorized - Authentication failed
  */
 export class UnauthorizedError extends AppError {
-  constructor(message: string = "Authentication required") {
-    super(message, 401, "UNAUTHORIZED");
+  constructor(message: string = "Authentication required", reason: ErrorReason = "authenticationRequired") {
+    super(message, 401, "UNAUTHORIZED", undefined, reason);
     this.name = "UnauthorizedError";
     Object.setPrototypeOf(this, UnauthorizedError.prototype);
   }
@@ -42,8 +43,8 @@ export class UnauthorizedError extends AppError {
  * 403 Forbidden - User lacks permission
  */
 export class ForbiddenError extends AppError {
-  constructor(message: string = "Access denied") {
-    super(message, 403, "FORBIDDEN");
+  constructor(message: string = "Access denied", reason: ErrorReason = "permissionDenied") {
+    super(message, 403, "FORBIDDEN", undefined, reason);
     this.name = "ForbiddenError";
     Object.setPrototypeOf(this, ForbiddenError.prototype);
   }
@@ -53,8 +54,8 @@ export class ForbiddenError extends AppError {
  * 409 Conflict - Resource already exists
  */
 export class ConflictError extends AppError {
-  constructor(message: string, details?: Record<string, unknown>) {
-    super(message, 409, "CONFLICT", details);
+  constructor(message: string, details?: Record<string, unknown>, reason: ErrorReason = "conflict") {
+    super(message, 409, "CONFLICT", details, reason);
     this.name = "ConflictError";
     Object.setPrototypeOf(this, ConflictError.prototype);
   }

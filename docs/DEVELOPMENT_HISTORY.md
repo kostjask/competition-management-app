@@ -208,3 +208,105 @@ validation, authorization and conflict coverage. Signup remains unrestricted;
 active/email-verified request enforcement, verification expiry/atomic consumption,
 secure email delivery, email identity policy, session recovery, and role-guard
 unification remain in Phase 2. DTO completion does not close those security gates.
+
+
+## P1-CATEGORIES checkpoint (2026-10-24)
+
+Completed the category transport/controller slice. Routes compose one controller;
+strict shared name inputs reject whitespace-only names, empty patches and spoofed
+relationships. Explicit id/eventId/name DTOs are validated in backend serialization
+and canonical web client helpers. No management screen, lifecycle policy, schema
+migration or nomination-type cleanup is included.
+
+All operations verify the event exists. Reads preserve admin/global/event
+event.manage access; writes remain admin-only with standard 403 errors. Item
+reads and writes constrain both category and event IDs; update/delete predicates
+avoid a separate relationship-check/write race. Database P2002, P2003 and P2025
+map to global conflict/not-found errors without exposing database details.
+Deletion remains hard deletion for unused categories, relying on the existing
+foreign key to retain active and archived performances rather than a racy count.
+
+Three HTTP tests cover CRUD/explicit DTOs, strict input, missing events/items,
+cross-event substitution, authentication, global/event reads, admin-only writes,
+conflicts and concurrent disappearance. scripts/check-categories.cjs is wired
+into the disposable PostgreSQL baseline for real name uniqueness/rename
+preservation, concurrent creates, parent/scope checks, trimmed updates and
+performance-restricted deletion including archived rows.
+
+Validation passed: pnpm.cmd build; pnpm.cmd --filter api test (58/58 fresh);
+pnpm.cmd test (58/58); pnpm.cmd typecheck; pnpm.cmd lint (web);
+pnpm.cmd db:validate; pnpm.cmd db:generate; pnpm.cmd exec prisma format --check
+--schema apps/api/prisma/schema.prisma; pnpm.cmd test:baseline (isolated migration
+deploy/redeploy, seed preservation, all prior workflows and category checks).
+Initial sandbox Docker access was denied; the approved escalated baseline passed
+and cleaned up its disposable database. Unchanged Turbo inputs reused local cache.
+No separate migration regression rerun: schema/migrations unchanged. JavaScript
+syntax, documentation links/UTF-8, final diff and git diff --check were reviewed.
+No browser coverage or hosted CI execution is claimed.
+
+P1-CATEGORIES is complete; Phase 1 remains active. Next: P1-FORMATS controller,
+shared contracts/client and event-parent/CRUD/validation/authorization/conflict
+coverage. New participant/duration policy remains P3-ENTRIES. Localization
+foundations, legacy types and setup screens remain in their owning tasks.
+
+
+## Phase 1 completion checkpoint (2026-10-24)
+
+Completed P1-FORMATS, P1-AGE-GROUPS, P1-INVITATION-CONTRACTS, P1-IMAGES,
+P1-TYPES and P1-COVERAGE, together with I18N-CONTRACT/CORE/VALIDATION and the
+Phase 1 portion of I18N-QA. Preserved the preceding category implementation.
+No branch/commit/push or schema migration was created.
+
+Formats/age groups have strict shared DTOs/controller/client helpers and event/
+permission checks. Partial range validation runs in serializable transactions,
+including explicit maxAge null clearing. Database tests retain active/archived
+performances and valid concurrent ranges. Their existing schema permits duplicate
+labels; no new uniqueness, overlap or participant/eligibility policy was imposed.
+
+Invitations now have explicit UTC DTOs, role/event checks, global errors, typed
+nullable-scope predicates and transactional acceptance/rollback/replay tests.
+Raw tokens are removed from normal create/list DTOs. Existing-account identity,
+role eligibility, mandatory staff scope, plaintext token persistence/history,
+email delivery/logging and atomic Judge assignment remain Phase 2 gates.
+
+Uploads now use one controller, shared path/output contracts, global multipart
+errors and runtime-validated FormData clients. Private storage paths are omitted;
+archived dancer/studio records are unavailable. New files precede database update
+and old-file removal, with attempted cleanup on database failure. Resource-specific
+permissions remain P2-BOUNDARIES; full provider/cleanup behavior remains P8-MEDIA.
+Unused nomination schemas/interfaces and migrated-boundary any/unsafe casts are
+removed. Known database races fall back to standard conflict/not-found errors.
+
+Localized transport adds semantic reasons, safe numeric parameters and structured
+path/rule issues. Shared validation avoids raw input/prose in issues and labels
+custom date/range/duplicate/empty-patch rules. The client retains descriptors in
+state and renders safe ET/EN/RU feedback without refetching on language changes.
+Unknown/legacy/technical errors have localized fallbacks. Native Intl plurals,
+typed keys/parameters, saved-locale validation and accessible native language
+selection are covered. ADR-007 and LOCALIZATION.md document policy and limits.
+
+The source detector records 95 existing reviewed literal UI exceptions under
+I18N-UI and fails for new ones; it does not declare those screens translated.
+The 56-operation inventory records applicable test evidence and explicit Phase 2
+or non-applicable cases. Runtime inventory and all-protected-operation auth tests
+prevent method/path drift. Health/static responses remain infrastructure exceptions.
+
+Validation passed: pnpm.cmd build; pnpm.cmd test (72 API tests and 8 frontend tests,
+plus the source guard); pnpm.cmd typecheck; pnpm.cmd lint (web); pnpm.cmd db:validate;
+pnpm.cmd db:generate; pnpm.cmd exec prisma format --check --schema
+apps/api/prisma/schema.prisma; and pnpm.cmd test:baseline with approved Docker access
+(all prior workflows, setup concurrent ranges and invitation transactions).
+The baseline deploys/redeploys migrations and checks seed preservation in its own
+disposable database, which is cleaned up. No separate migration regression rerun
+was needed because schema/migrations are unchanged. Unchanged Turbo inputs reused
+local cache. JavaScript syntax, local document links/UTF-8, final diff and
+whitespace were reviewed separately. Earlier failing test assumptions were fixed:
+foreign-key rollback now returns 409, and setup labels remain non-unique.
+
+Phase 1 technical exit criteria are satisfied. No external milestone is complete:
+hosted CI execution/settings, interactive browser/keyboard/mobile/screen-reader
+checks and fluent-language review are not claimed. I18N-QA remains open across
+future workflows. Next concrete task is P2-SCOPE-INTEGRITY: review scope-removal/
+null-safe uniqueness policy and existing data, then implement a new preserving
+migration with PostgreSQL scope/concurrency checks. No Phase 2 schema work was
+performed at this checkpoint.

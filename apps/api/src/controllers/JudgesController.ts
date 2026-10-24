@@ -34,8 +34,8 @@ export class JudgesController extends BaseController {
   private async mutation<T>(operation: () => Promise<T>): Promise<T> {
     try { return await operation(); } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === "P2002") throw new ConflictError("User is already a judge for this event");
-        if (error.code === "P2003") throw new ConflictError("Judge relationship changed or scores prevent deletion");
+        if (error.code === "P2002") throw new ConflictError("User is already a judge for this event", undefined, "judgeAssigned");
+        if (error.code === "P2003") throw new ConflictError("Judge relationship changed or scores prevent deletion", undefined, "relationshipConflict");
         if (error.code === "P2025") throw new NotFoundError("Judge");
       }
       throw error;
@@ -65,7 +65,7 @@ export class JudgesController extends BaseController {
     const body = CreateJudgeBodySchema.parse(req.body);
     const user = await this.prisma.user.findUnique({ where: { id: body.userId }, select: { active: true } });
     if (!user) throw new NotFoundError("User", body.userId);
-    if (!user.active) throw new ConflictError("Cannot assign an inactive user");
+    if (!user.active) throw new ConflictError("Cannot assign an inactive user", undefined, "inactiveUser");
     const judge = await this.mutation(() => this.prisma.judge.create({
       data: { eventId, userId: body.userId, name: body.name,
         description: body.description ?? null, country: body.country ?? null, city: body.city ?? null },

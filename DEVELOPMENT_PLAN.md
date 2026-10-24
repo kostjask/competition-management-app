@@ -6,38 +6,37 @@ This document is the practical source of truth for continuing development. It su
 
 ## Current checkpoint and next action
 
-Phase 0 is complete. Phase 1 is active; no user-facing onboarding milestone is
-complete. Canonical studio registration, studio profiles, dancers, and performances
-have implemented API/client slices. Judge CRUD now uses a controller and shared
-contracts; role dashboards and application/entry screens remain unfinished. Email is a stub and public signup
-is still unrestricted. Current contracts are in [API.md](docs/API.md).
+Phases 0 and 1 are complete for their technical scope. Phase 2A is next; no
+user-facing onboarding milestone or external release is complete. All mounted
+business resources now have controller/shared DTO/client contracts, including
+setup, invitations and uploads. ET/EN/RU feedback contracts, dictionary core and
+shared validation are implemented; later UI/email/content translation and browser
+release evidence remain separate. Current contracts are in [API.md](docs/API.md).
 
-Database review follow-up: [DATABASE_REVIEW.md](docs/DATABASE_REVIEW.md) maps
-schema/UX findings to tasks below. Highest-priority new database work is
-P2-SCOPE-INTEGRITY: physical event removal must never convert event-specific
-roles or invitations into global scope. No schema fix or live-data audit is
-claimed. Event and auth/profile contract stabilization is complete; event setup contracts are next.
+**Next task: P2-SCOPE-INTEGRITY**: fix event-removal scope broadening and enforce
+null-safe role/invitation uniqueness with a reviewed new migration and isolated
+PostgreSQL preservation/concurrency tests. Begin with the policy/data audit in
+[DATABASE_REVIEW.md](docs/DATABASE_REVIEW.md); do not infer lost scope or merge data.
+No deployed-data audit or scope migration has been performed in Phase 1.
 
-**Next task: P1-CATEGORIES**: consolidate category controller/shared contracts
-and client helpers; cover event parent checks and CRUD success, validation,
-authorization and conflict errors. P1-EVENTS and P1-AUTH-CONTRACTS are complete.
-P1-CI hosted execution and required-check settings remain operator follow-up
-after publication. Account security and atomic staff onboarding remain Phase 2.
+Latest validation (2026-10-24): workspace build/typecheck/web lint; 72 API tests and
+8 frontend localization/transport tests; source-text guard and 56-operation
+coverage inventory; Prisma validate/generate/format checks; and the complete
+isolated PostgreSQL baseline, including setup concurrent ranges and invitation
+acceptance/rollback. No schema migration was added. Details are in
+[development history](docs/DEVELOPMENT_HISTORY.md). Hosted CI execution and
+required-check settings remain operator follow-up after publication.
 
-Latest recorded application validation: the P1-AUTH-CONTRACTS checkpoint on
-2026-10-24 passed 55 API tests, workspace build/typecheck/web lint, Prisma
-validate/generate/format checks, and the isolated PostgreSQL baseline including
-auth/profile DTOs and stored global/event role scope. No schema migration was
-added. Hosted CI remains unverified. Exact scope is recorded in
-[development history](docs/DEVELOPMENT_HISTORY.md); historical next-task
-statements are superseded here.
+Phase 1 exceptions are explicit: infrastructure health/static responses are not
+business DTOs; image ownership/permissions and existing-account invitation safety
+remain mandatory Phase 2 gates. Raw invitation tokens were removed from normal
+DTOs, but token digests/lifecycle, email-stub logging and nullable-scope integrity
+remain unfinished. Email is still a stub and public signup remains unrestricted.
 
-Localization follow-up: ET/EN/RU support is partial, not a completed workflow.
-The localization workstream below adds I18N-CONTRACT through I18N-QA with phased
-dependencies and release checks. Existing transport DTO completion does not imply
-that error reasons, validation issues, or UI messages are translatable. The current
-next resource task remains unchanged; localization contracts/core/validation must
-also pass before Phase 1 exits.
+Localization is not an end-to-end release claim: I18N-QA foundation checks run in
+pnpm test/CI, while 95 reviewed existing literal UI strings remain I18N-UI work.
+Browser/keyboard/mobile/screen-reader and fluent ET/EN/RU review are still required
+for delivered journeys. See [localization contracts](docs/LOCALIZATION.md).
 
 ## 1. Product Goal
 
@@ -87,7 +86,7 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 - JWT authentication and database-driven roles/permissions.
 - Local file-storage abstraction with image upload routes.
 - Central error classes and error middleware.
-- Controller migration started but not completed.
+- Mounted business resources use controllers; the deferred users router remains empty.
 
 ### Frontend
 
@@ -112,7 +111,7 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 - User registration, verification, login, and profile endpoints.
 - Role and permission seeding.
 - Event CRUD foundations.
-- CRUD foundations for categories, age groups, formats, and judges.
+- Strict shared contracts/controllers/client helpers for categories, age groups, formats, judges, invitations and images.
 - Studio approval, event-registration, dancer, and performance business rules in progress.
 - Event-stage checks for registration data changes.
 - Soft-delete fields for studios, dancers, and performances.
@@ -123,11 +122,11 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 
 ### Partial or not integrated
 
-- Performance controller integration is complete; controller migration for other resources remains incomplete.
+- Mounted resource controller migration is complete; setup/onboarding UI remains unfinished.
 - Resolved (2026-10-24): performance routes now compose one controller with no duplicate inline handlers.
 - The performance router is mounted under canonical event paths; `routes/users.ts` remains empty and user management is deferred.
-- Studio profile, registration, dancer, and performance clients match canonical routes/shared contracts; corresponding screens are absent. Setup contracts still need alignment.
-- Auth and invitation routes now use `/api/v1` with explicit protected operations; duplicated invitation paths are removed. Invitation business/security and DTO cleanup remain.
+- Studio profile, registration, dancer, and performance clients match canonical routes/shared contracts; corresponding screens are absent. Setup contracts are aligned; management screens remain pending.
+- Auth and invitation routes now use `/api/v1` with explicit protected operations; duplicated invitation paths are removed. Invitation DTO/controller cleanup is complete; business/security and token lifecycle remain Phase 2.
 - Email sending is a development stub.
 - Storage provider configuration is documented, but the server always instantiates local storage.
 - Event images are stored but event screens still render placeholders.
@@ -145,7 +144,7 @@ The first onboarding milestone (M2) is a studio applicant who can verify their e
 - WebSocket or other real-time updates.
 - Password reset and invitation resend/revoke flows.
 - Audit log.
-- Comprehensive application/UI coverage. Baseline CI workflow is implemented with independent workspace and PostgreSQL jobs; the first hosted run and branch-protection configuration are pending publication. The latest recorded API suite has 55 tests plus isolated PostgreSQL workflow checks; browser workflow coverage remains pending.
+- Comprehensive application/UI coverage. Baseline CI workflow is implemented with independent workspace and PostgreSQL jobs; the first hosted run and branch-protection configuration are pending publication. The latest recorded API suite has 72 tests and 8 frontend localization/transport tests plus isolated PostgreSQL workflow checks; browser workflow coverage remains pending.
 - OpenAPI documentation.
 
 ## 4. Immediate Problems Found During Audit
@@ -157,7 +156,7 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 - The unfinished backend refactor and baseline repairs are preserved in logical commits. Route integration and security work remain incomplete.
 - Resolved (2026-10-23): frozen dependency installation, Turbo lockfile compatibility, workspace build/typecheck coverage (including the previously unnamed API), baseline tests, web lint, and whitespace checks now pass. See [baseline validation](docs/BASELINE_VALIDATION.md).
 - Prisma deployment/redeployment and full-record seed idempotency pass in an isolated empty database; compiled API startup and basic authentication/authorization smoke checks pass.
-- The user authorized commits, and the checkpoint is satisfied by the database, backend/build, frontend, and documentation commits. Phase 0 is complete; Phase 1 is active. No push was requested or performed.
+- The user authorized commits, and the checkpoint is satisfied by the database, backend/build, frontend, and documentation commits. Phase 0 was complete and Phase 1 active at that checkpoint; Phase 1 technical scope is now complete. No push was requested or performed.
 
 ### P0 — Route integration and contract mismatches
 
@@ -180,16 +179,16 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 - Rate-limit settings exist but no rate limiter is installed or used.
 - Authentication middleware does not verify that the user still exists, is active, or is email-verified on each authenticated request.
 - `DEV_AUTH` uses a synthetic user ID that can fail when handlers write audit/ownership fields requiring a real user.
-- Invitation responses still expose raw tokens. Resolved (2026-10-24): invitation signing now uses centralized JWT configuration.
+- Resolved (2026-10-24): invitation create/list DTOs omit raw tokens and signing uses centralized JWT configuration. Plaintext token persistence, stub logging, safe lifecycle and existing-account acceptance remain Phase 2 work.
 
 ### P0 — Backend refactor defects
 
 - Resolved (2026-10-24): performance list validates params/query only; complete CRUD uses shared schemas and explicit DTOs.
 - Resolved (2026-10-24): performance controller method coverage and accidental import are repaired.
 - Resolved (2026-10-24): duplicate performance route logic is removed; routes only compose controller calls.
-- Error handling is inconsistent: some modules throw typed errors, while others return raw Zod errors, empty `sendStatus` responses, or local ad-hoc JSON.
+- Resolved (2026-10-24): mounted business routes, authentication/permission middleware and uploads use the global error envelope with semantic reasons and structured validation. Health remains a simple infrastructure status response.
 - Resolved during baseline recovery: all API Prisma imports now use the standard generated `@prisma/client` entry, and error imports resolve at compiled runtime.
-- Several handlers use `any` or unsafe casts despite the repository's strict type-safety goal.
+- Resolved (2026-10-24): migrated route/controller/error/client boundaries contain no any or unsafe response/nullable-scope casts. Invitation lookups use typed predicates and serializable transactions; database null-safe integrity remains P2-SCOPE-INTEGRITY.
 - Soft deletes are inconsistent: some delete routes hard-delete, some return the deleted row, and `deletedBy` is not consistently written.
 
 ### P1 — Data-contract inconsistencies
@@ -198,8 +197,8 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 - Resolved (2026-10-24): studio, dancer, and performance DTOs omit nonexistent timestamps; nullable fields and representative/registration timestamps follow the actual stored model.
 - Resolved (2026-10-24): event mutations accept stored venue/location/description/limits with strict nullable contracts and resulting-date validation. DTOs expose `imageUrl`; image writes remain on upload routes. Broader setup UI is Phase 4.
 - Resolved (2026-10-24): performance contracts use current Prisma field names and explicit participant DTOs; the unused duplicate `packages/types` performance interface is removed. Legacy nomination cleanup remains.
-- Shared schemas contain both current and legacy naming (`nomination` versus category).
-- API response types are duplicated manually in the frontend instead of being derived from shared contracts.
+- Resolved (2026-10-24): unused legacy nomination schemas/types are removed; resource DTOs are canonical.
+- Resolved (2026-10-24): resource clients infer shared DTOs and decode unknown transport output, including before storing sessions.
 - Resolved during baseline recovery: web API fallback/example and root setup now consistently use port 4000. Historical endpoint guides still need reconciliation.
 
 ### P1 — Domain-model decisions required
@@ -226,7 +225,7 @@ Open findings are assigned to stable task IDs in the delivery plan. Resolved ent
 
 ### P1 — Documentation drift
 
-- Localization audit (2026-10-24, static source review): the catalogue contains 54 keys and the 58 literal translation calls checked resolve, but 14 components contain literal JSX text. This is not a full string inventory or browser test. Auth/navigation/profile/dashboard/accessibility text remains English; ApiError drops the server code and renders message strings; validation flattens issues to strings. Saved locale is not validated on initial load, HTML remains lang=en, profile dates ignore the selected locale, and email functions accept no locale. I18N tasks below address these gaps; counts are audit evidence, not a completion metric.
+- Localization foundations implemented (2026-10-24): typed catalogue keys/parameters, supported-locale initialization, native Intl plurals, semantic feedback and shared structured validation. CI checks all three catalogues and rejects new literal JSX/accessible text against 95 reviewed legacy exceptions. Auth/navigation/profile/dashboard text, document language/formatting, email locale and browser/fluent-language review remain in their owning I18N tasks; no complete translation or journey claim.
 - Resolved during baseline recovery: root README describes React 19, actual directories, current maturity, prerequisites, setup/start commands, and validation scope.
 - The web README is still the default Vite template.
 - Registration workflow documentation now distinguishes current contracts from planned UX. Storage, environment, controller, and error guides still include claims or endpoints that no longer match the code.
@@ -354,20 +353,21 @@ phase is marked complete by this documentation reorganization.
 
 ### Localization workstream — cross-cutting ET/EN/RU delivery
 
-These eight tasks are implementation backlog, all unchecked. Phase labels below
+The Phase 1 foundation tasks below are complete; the cross-phase tasks retain
+their own release gates. Phase labels below
 assign ownership without delaying foundational work until Phase 9. Keep logs and
 internal diagnostics separate from user-visible prose; do not translate API paths,
 authorization keys, enum values, IDs or personal/studio names. Reuse the current
 translation system where practical; add a library only for a demonstrated need.
 
-- [ ] I18N-CONTRACT (Phase 1): extend shared error/success contracts with stable semantic reason/message identifiers, safe typed interpolation parameters, and structured field issues while retaining HTTP status and generic error codes. Preserve these in ApiError and render through one localized presenter; do not match English sentences or infer every domain reason from status alone. Cover auth, global/local route errors, uploads, network failures, non-JSON responses and success notices. Pair backend/client/schema changes so strict DTO validation remains compatible. Acceptance: the same business error renders in ET/EN/RU, unknown/legacy reasons produce a localized safe fallback, raw technical/PII messages are not shown, and changing language updates an already-visible error without a refetch.
-- [ ] I18N-CORE (Phase 1): infer valid catalogue keys/types from the actual dictionary, enforce all three nonempty locale values, validate saved locale at initialization and define one supported-locale/default/fallback policy. Add typed interpolation and plural handling for ET/EN/RU without sentence concatenation; keep structured message descriptors in UI state and translate at render time. Missing/malformed keys must have safe production behavior and visible development/test diagnostics, not undefined output or raw key leakage. Acceptance: invalid storage, missing keys/locales, parameter mismatches, zero/one/multiple/Russian plural cases, and live locale switching are covered; the selector uses descriptive language names and accessible selected-state labels.
-- [ ] I18N-VALIDATION (Phase 1; after I18N-CONTRACT, using I18N-CORE): preserve field paths, stable rule identifiers, safe bounds/parameters and custom domain-rule reasons instead of only Zod message strings. Present client-side and server-side issues through the same mapping, with linked field errors and a localized summary. Cover required/type/length/range/date/cross-field/duplicate/root/nested issues and unknown-rule fallback without including raw input. Do not rely solely on bundled Zod locales: current schema messages override locale maps, and the installed locale exports do not include Estonian. Do not mutate process-wide Zod locale per server request. Acceptance: equivalent local/API validation produces equivalent ET/EN/RU feedback and existing errors retranslate when language changes, including custom refinements.
+- [x] I18N-CONTRACT (Phase 1): extend shared error/success contracts with stable semantic reason/message identifiers, safe typed interpolation parameters, and structured field issues while retaining HTTP status and generic error codes. Preserve these in ApiError and render through one localized presenter; do not match English sentences or infer every domain reason from status alone. Cover auth, global/local route errors, uploads, network failures, non-JSON responses and success notices. Pair backend/client/schema changes so strict DTO validation remains compatible. Acceptance: the same business error renders in ET/EN/RU, unknown/legacy reasons produce a localized safe fallback, raw technical/PII messages are not shown, and changing language updates an already-visible error without a refetch.
+- [x] I18N-CORE (Phase 1): infer valid catalogue keys/types from the actual dictionary, enforce all three nonempty locale values, validate saved locale at initialization and define one supported-locale/default/fallback policy. Add typed interpolation and plural handling for ET/EN/RU without sentence concatenation; keep structured message descriptors in UI state and translate at render time. Missing/malformed keys must have safe production behavior and visible development/test diagnostics, not undefined output or raw key leakage. Acceptance: invalid storage, missing keys/locales, parameter mismatches, zero/one/multiple/Russian plural cases, and live locale switching are covered; the selector uses descriptive language names and accessible selected-state labels.
+- [x] I18N-VALIDATION (Phase 1; after I18N-CONTRACT, using I18N-CORE): preserve field paths, stable rule identifiers, safe bounds/parameters and custom domain-rule reasons instead of only Zod message strings. Present client-side and server-side issues through the same mapping, with linked field errors and a localized summary. Cover required/type/length/range/date/cross-field/duplicate/root/nested issues and unknown-rule fallback without including raw input. Do not rely solely on bundled Zod locales: current schema messages override locale maps, and the installed locale exports do not include Estonian. Do not mutate process-wide Zod locale per server request. Acceptance: equivalent local/API validation produces equivalent ET/EN/RU feedback and existing errors retranslate when language changes, including custom refinements.
 - [ ] I18N-UI (initial auth/navigation in Phase 2; extend with Phases 4–7; after I18N-CORE/CONTRACT/VALIDATION): replace user-visible hardcoded text in login/register/verify/profile, AuthNav/layouts, guards, home and visible placeholder dashboards. Include titles, buttons, placeholders, password controls, confirmations, loading/empty/error/success/disabled states and accessibility text. Translate known role/status display labels by stable keys rather than database English names; keep unknown dynamic-role fallback explicit and do not change authorization behavior. Acceptance: each delivered workflow in ET/RU has no unintended English application text, and language switching preserves entered values, pending work, focus and accessible error/status presentation. Future screens must meet the same gate when delivered.
 - [ ] I18N-FORMATTING (Phase 2 and each feature UI; after I18N-CORE): synchronize document.documentElement.lang and page titles with locale, translate spinner/selector/control accessible names, and centralize Intl-based dates, numbers, durations and future currency formatting. Replace ProfilePage's unlocalized date-fns formatting. Keep locale separate from event timezone, UTC API instants and calendar birth dates under P3-CALENDAR-DATES; use full message interpolation/plurals for joined dates, limits and counts. Acceptance: ET/EN/RU language metadata, date/number/count boundaries, language switching and long mobile text pass; changing language never shifts a birth date or silently changes event timezone.
 - [ ] I18N-PREFERENCES (Phase 2A design/persistence before P2-EMAIL and Phase 2B behavior; after I18N-CORE): define precedence for explicit choice, account preference, browser storage, supported browser languages and default; reconcile preferences safely on login/logout. Add validated shared account preference and migration only if required by the chosen cross-device/email policy. Define recipient/invitation locale for users without accounts, safe link locale handling, and backend-rendered email locale propagation. Do not infer recipient language from the administrator's current UI or change global server locale between requests. Acceptance: tabs/verification/invitations/session recovery preserve or explicitly fall back on language; background email uses a deterministic recipient locale; unsupported values and concurrent recipients cannot leak language between requests. Stable error identifiers remain locale-independent even if diagnostic/fallback prose is localized.
 - [ ] I18N-CONTENT (Phase 3 policy before Phase 4 organizer content, extend to Phases 6–7): distinguish interface strings from organizer-authored event descriptions, category/age/format labels, rubric criteria and announcements. Decide which need authored translations, required languages, editing/preview and missing-content fallback. Record broad model decisions before migrations and preserve existing content. Do not automatically translate names/titles or treat display text as identity. Acceptance: configured content renders under its declared policy without blank/raw enum labels, unavailable translations have an understandable fallback, and publication/export preserves rule identity and privacy. Only milestone-relevant content implementation is a release prerequisite.
-- [ ] I18N-QA (starts in Phase 1 CI; expands with P9-BROWSER at each milestone): automate catalogue completeness/key/parameter/plural checks and a reviewed detector for hardcoded JSX/attributes, excluding internal diagnostics and intentional user content. Add component/API/browser coverage for all three locales: language switching while errors are visible, client/server validation, login/verification, pending approvals, upload/network/session failures, unknown errors, emails and later exports/results. Include screen-reader language/announcements, keyboard/mobile layouts and long translations; arrange fluent ET/EN/RU review of terminology and grammar. Acceptance: CI fails for missing/invalid translations, relevant workflow/browser/email fixtures pass in each locale, and human review evidence exists for the released scope. Static scans alone do not prove complete translation coverage.
+- [ ] I18N-QA (Phase 1 foundation implemented; remains open for workflow/browser/human release evidence; expands with P9-BROWSER at each milestone): automate catalogue completeness/key/parameter/plural checks and a reviewed detector for hardcoded JSX/attributes, excluding internal diagnostics and intentional user content. Add component/API/browser coverage for all three locales: language switching while errors are visible, client/server validation, login/verification, pending approvals, upload/network/session failures, unknown errors, emails and later exports/results. Include screen-reader language/announcements, keyboard/mobile layouts and long translations; arrange fluent ET/EN/RU review of terminology and grammar. Acceptance: CI fails for missing/invalid translations, relevant workflow/browser/email fixtures pass in each locale, and human review evidence exists for the released scope. Static scans alone do not prove complete translation coverage.
 
 Implementation order: define I18N-CONTRACT and I18N-CORE first, then
 I18N-VALIDATION; start I18N-QA checks with those changes. Complete preference design
@@ -399,7 +399,7 @@ Exit criteria:
 - Prisma validation, migration, generation, and seed commands work.
 - Current work is committed in reviewable units before broad refactoring.
 
-### Phase 1 — API contracts and automated baseline (active)
+### Phase 1 — API contracts and automated baseline (complete: technical scope)
 
 Entry: Phase 0 baseline preserved. Resource tasks must validate external input,
 use explicit shared DTOs, canonical paths/client helpers, centralized errors, and
@@ -419,13 +419,19 @@ relevant isolated database checks when changing transactional/data behavior.
 - [x] P1-CI: added independent GitHub Actions workspace and PostgreSQL jobs for frozen install, build, typecheck, current lint/tests, Prisma validation/formatting, and isolated migration/workflow suites. Read-only permissions, health readiness, bounded jobs, run-specific Compose scope and always cleanup; unavailable Docker fails visibly. Migration runner selects the platform pnpm executable. Local actionlint/Compose checks and command suites pass; first hosted run and required-check settings await publication. See docs/TESTING.md and the CI checkpoint in development history.
 - [x] P1-EVENTS: strict shared event inputs/DTOs and runtime-validated client; stored nullable details/limits, explicit UTC serialization, no private image path or invented updatedAt. Authenticated reads/admin-only writes, global errors, missing records, resulting partial-date validation and serializable conflict handling covered by HTTP/PostgreSQL tests. No migration; image mutations remain uploads. Later deadlines/lifecycle policy follow P3-REGISTRATION; setup UI remains Phase 4.
 - [x] P1-AUTH-CONTRACTS: strict shared auth inputs and explicit registration/login/verification/profile DTOs; frontend validates before saving session tokens. Profiles explicitly serialize UTC creation time, role keys and null/event scopes without private fields or unrestricted relations. Shared global error schema/type, preserved client 403 messages, duplicate-registration race mapping and typed/validated compact JWT expiry. HTTP/config and PostgreSQL profile/login checks pass; no migration. Eligibility, token lifecycle, active/verified account enforcement and role guards remain Phase 2.
-- [ ] P1-CATEGORIES: controller/shared contracts and client helpers; event parent checks and CRUD success/validation/authorization/conflict coverage.
-- [ ] P1-FORMATS: controller/shared contracts and client helpers; event parent checks and CRUD coverage. New domain participant/duration policy follows P3-ENTRIES.
-- [ ] P1-AGE-GROUPS: controller/shared contracts and client helpers; event parent checks and CRUD coverage. Eligibility/overlap policy follows P3-ENTRIES.
-- [ ] P1-INVITATION-CONTRACTS: controller/shared DTOs, canonical client, centralized errors, role/event relationship validation, and tests of current endpoints. Security/lifecycle changes remain P2-INVITE.
-- [ ] P1-IMAGES: consolidate upload controller/input/output/error contracts and add route tests; resource-specific authorization is P2-BOUNDARIES and must pass before exposed upload UI.
-- [ ] P1-TYPES: remove remaining legacy nomination types and unsafe casts in migrated resources; document any unavoidable limitation and a regression test. No duplicate manual transport types.
-- [ ] P1-COVERAGE: inventory each mounted method/path and map success, invalid input, authentication, permission, cross-parent/event, inactive-record, and conflict tests to it; close uncovered applicable cases before Phase 1 exit. Do not count one mount test as operation-wide coverage.
+- [x] P1-CATEGORIES: consolidated controller, strict trimmed-name inputs/shared DTOs and runtime-validated canonical client helpers. All operations verify the event; reads require admin or global/event event.manage, writes remain admin-only. Item mutations constrain both IDs atomically. HTTP and isolated PostgreSQL checks cover CRUD, validation, scope/parent failures, duplicate and concurrent conflicts, missing items and performance-restricted deletion including archived records. No migration, lifecycle policy or management UI. See the category checkpoint in development history.
+- [x] P1-FORMATS: controller/shared contracts and canonical client helpers implemented; strict PostgreSQL integer/name/range inputs, resulting partial-range validation in serializable transactions, event/scope checks, CRUD, conflict and active/archived performance-preservation tests. Duplicate labels remain permitted by the current schema. New participant/duration policy follows P3-ENTRIES.
+- [x] P1-AGE-GROUPS: controller/shared contracts and canonical client helpers implemented; nullable maxAge with omitted-versus-cleared updates, strict integer/name/range inputs, resulting partial-range/concurrency validation, event/scope checks, CRUD and referenced-performance preservation. Duplicate labels remain permitted. Eligibility/overlap policy follows P3-ENTRIES.
+- [x] P1-INVITATION-CONTRACTS: controller, strict shared serialized DTOs, canonical client and global errors implemented. Role/event existence and stored acceptance scope validated; typed serializable lookups replace unsafe nullable compound-key casts. DTOs omit raw tokens; acceptance/session and replay/rollback tests pass. Existing-account identity, role allowlists/mandatory staff scope, token history/digests and Judge reconciliation remain Phase 2.
+- [x] P1-IMAGES: controller, path/output/error contracts, canonical multipart helpers and all four route/storage-fake tests implemented. DTOs omit storage paths; active studio/dancer checks and upload-before-update replacement preserve old files on upload/database failure. Complete provider/cleanup semantics remain P8-MEDIA; resource-specific authorization remains P2-BOUNDARIES and must pass before upload UI.
+- [x] P1-TYPES: unused nomination schemas/interfaces removed; shared inferred resource DTOs are canonical. Removed nullable-scope, JWT identity and HTTP response casts; request transport returns unknown and decodes every response. No any or unsafe cast remains in migrated controller/route/error/client boundaries. Non-transport ID alias remains in packages/types.
+- [x] P1-COVERAGE: 56 mounted method/path entries inventoried in docs/api-coverage.json with success/input/authentication/permission/parent/active/conflict evidence and explicit non-applicable or Phase 2 exceptions. Runtime router inventory and every protected operation authentication tests prevent drift. HTTP/PostgreSQL resource tests cover applicable current semantics; infrastructure health/static responses and deferred security gates are explicit exceptions, not full security/browser coverage.
+
+Phase 1 exit evidence: 72 API tests, 8 frontend tests, source/coverage guards,
+workspace and Prisma checks, and the complete isolated PostgreSQL baseline pass.
+I18N-CONTRACT/CORE/VALIDATION and the I18N-QA foundation gate are implemented.
+Hosted CI publication/settings and browser/fluent review remain explicit external
+or later workflow evidence; no M1/M2 or external release is marked complete.
 
 User management routes remain deferred until a concrete use case defines them;
 do not mount or add an empty users controller to finish a checklist.
@@ -658,7 +664,7 @@ static-scan exclusions and fluent-language review; developer logs may remain Eng
 - [ ] Mark implementation summaries as historical or delete them after their useful content is merged into maintained guides.
 - [ ] Correct endpoint examples, ports, framework versions, file trees, and build/test claims.
 - [ ] Normalize all markdown to UTF-8.
-- [ ] Document I18N-CONTRACT/VALIDATION transport rules, supported locale/default/fallback and preference precedence, catalogue conventions, organizer-content translation policy, and I18N-QA release evidence as implementation decisions are made. Existing general ET/EN/RU statements do not replace these acceptance criteria.
+- [x] Document Phase 1 I18N-CONTRACT/VALIDATION, locale fallback and dictionary conventions in docs/LOCALIZATION.md and ADR-007. Account/email preferences, organizer-content policy and workflow/browser/fluent-language evidence remain their explicitly unchecked cross-phase tasks.
 
 ## 9. Dependency and issue tracking
 

@@ -61,7 +61,8 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   ]);
   const missingUserToken = jwt.sign({ userId: randomUUID() }, jwtSecret);
   const failed = await request(root, missingUserToken, 'POST', { ...application, name: 'Rollback studio' });
-  assert.equal(failed.status, 500);
+  assert.equal(failed.status, 409);
+  assert.equal(failed.body.reason, "relationshipConflict");
   assert.deepEqual(await Promise.all([
     client.studio.count(), client.studioRepresentative.count(), client.studioEventRegistration.count(),
   ]), before, 'A failed membership write must not leave a studio or registration');

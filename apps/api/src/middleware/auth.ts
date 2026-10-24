@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import type { PrismaClient } from "@prisma/client";
+import { UnauthorizedError } from "../errors";
 import { config } from "../config/env";
 
 export interface AuthContext {
@@ -39,37 +40,23 @@ export function createAuthMiddleware(prisma: PrismaClient) {
 
     const authHeader = req.headers.authorization ?? "";
     if (!authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        error: "Unauthorized",
-        code: "UNAUTHORIZED",
-        statusCode: 401,
-        timestamp: new Date().toISOString(),
-      });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
     const token = authHeader.slice("Bearer ".length).trim();
     if (!token) {
-      return res.status(401).json({
-        error: "Unauthorized",
-        code: "UNAUTHORIZED",
-        statusCode: 401,
-        timestamp: new Date().toISOString(),
-      });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
-    let payload: { userId: string };
+    let userId: string;
     try {
-      payload = jwt.verify(token, config.auth.jwtSecret) as { userId: string };
+      const payload = jwt.verify(token, config.auth.jwtSecret);
+      if (typeof payload !== "object" || typeof payload.userId !== "string" || !payload.userId) throw new Error("Invalid identity");
+      userId = payload.userId;
     } catch {
-      return res.status(401).json({
-        error: "Unauthorized",
-        code: "UNAUTHORIZED",
-        statusCode: 401,
-        timestamp: new Date().toISOString(),
-      });
+      return next(new UnauthorizedError("Unauthorized"));
     }
 
-    const userId = payload.userId;
     const roles = await prisma.userRole.findMany({
       where: { userId },
       include: {

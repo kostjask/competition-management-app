@@ -9,7 +9,7 @@ const profileFields = {
 };
 export const CreateJudgeBodySchema = z.strictObject({ userId: IdSchema, ...profileFields });
 export const UpdateJudgeBodySchema = z.strictObject(profileFields).partial()
-  .refine((body) => Object.keys(body).length > 0, "At least one field is required");
+  .refine((body) => Object.keys(body).length > 0, { message: "At least one field is required", params: { reason: "nonemptyPatch" } });
 export const JudgeEventParamsSchema = z.object({ eventId: IdSchema });
 export const JudgeItemParamsSchema = JudgeEventParamsSchema.extend({ judgeId: IdSchema });
 export const JudgeSchema = z.strictObject({

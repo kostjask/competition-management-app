@@ -1,3 +1,7 @@
+import { validationIssues, type FieldIssue } from "@dance/schemas";
+import { toUiError, type UiError } from "../../api/error";
+import { formatIssue } from "../../i18n/errors";
+import { ErrorFeedback } from "../../components/ErrorFeedback";
 import { useMemo, useState } from "react";
 import { CreateEventBodySchema, EventStageSchema, type CreateEventInput } from "@dance/schemas";
 import { useTranslation } from "@i18n/useTranslation";
@@ -23,7 +27,7 @@ type EventFormProps = {
   title: string;
   initialValues: CreateEventInput;
   submitLabel: string;
-  submitError?: string | null;
+  submitError?: UiError | null;
   isSubmitting?: boolean;
   onSubmit: (values: CreateEventInput) => Promise<void>;
   onCancel: () => void;
@@ -58,11 +62,12 @@ export function EventForm({
   onSubmit,
   onCancel,
 }: EventFormProps) {
-  const { t } = useTranslation();
-  const [formError, setFormError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<
-    Partial<Record<keyof CreateEventInput, string>>
-  >({});
+  const { t, locale } = useTranslation();
+  const [localError, setLocalError] = useState<UiError | null>(null);
+  const visibleError = localError ?? submitError ?? null;
+  const fieldErrors: Partial<Record<string, FieldIssue>> = {};
+  for (const issue of visibleError?.issues ?? []) fieldErrors[issue.path.join(".")] = issue;
+  const fieldMessage = (field: string) => { const issue = fieldErrors[field]; return issue ? formatIssue(issue, locale) : null; };
   const [formValues, setFormValues] = useState<EventFormValues>(() => ({
     name: initialValues.name ?? "",
     startsAt: toLocalInputValue(initialValues.startsAt),
@@ -84,8 +89,7 @@ export function EventForm({
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setFormError(null);
-    setFieldErrors({});
+    setLocalError(null);
 
     const payload: CreateEventInput = {
       name: formValues.name.trim(),
@@ -97,14 +101,7 @@ export function EventForm({
     const parsed = CreateEventBodySchema.safeParse(payload);
 
     if (!parsed.success) {
-      const flattened = parsed.error.flatten();
-      setFieldErrors({
-        name: flattened.fieldErrors.name?.[0],
-        startsAt: flattened.fieldErrors.startsAt?.[0],
-        endsAt: flattened.fieldErrors.endsAt?.[0],
-        stage: flattened.fieldErrors.stage?.[0],
-      });
-      setFormError(flattened.formErrors[0] ?? null);
+      setLocalError({ ...toUiError(parsed.error), issues: validationIssues(parsed.error.issues) });
       return;
     }
 
@@ -124,11 +121,13 @@ export function EventForm({
           <p className="text-sm text-slate-500">{t("Events.formHint")}</p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form noValidate className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="grid gap-6 md:grid-cols-2">
             <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
               {t("Events.nameLabel")}
               <input
+                id={"event-name"}
+                aria-describedby={fieldErrors.name ? "event-name-error" : undefined}
                 className={getInputClassName(Boolean(fieldErrors.name))}
                 value={formValues.name}
                 onChange={(eventValue) =>
@@ -142,19 +141,21 @@ export function EventForm({
                 required
               />
               {fieldErrors.name ? (
-                <span className="text-xs font-medium text-rose-600">{fieldErrors.name}</span>
+                <span id="event-name-error" className="text-xs font-medium text-rose-600">{fieldMessage("name")}</span>
               ) : null}
             </label>
 
             <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
               {t("Events.stageLabel")}
               <select
+                id={"event-stage"}
+                aria-describedby={fieldErrors.stage ? "event-stage-error" : undefined}
                 className={getInputClassName(Boolean(fieldErrors.stage))}
                 value={formValues.stage}
                 onChange={(eventValue) =>
                   setFormValues((prev) => ({
                     ...prev,
-                    stage: eventValue.target.value as EventStage,
+                    stage: EventStageSchema.parse(eventValue.target.value),
                   }))
                 }
                 aria-invalid={Boolean(fieldErrors.stage)}
@@ -166,7 +167,7 @@ export function EventForm({
                 ))}
               </select>
               {fieldErrors.stage ? (
-                <span className="text-xs font-medium text-rose-600">{fieldErrors.stage}</span>
+                <span id="event-stage-error" className="text-xs font-medium text-rose-600">{fieldMessage("stage")}</span>
               ) : null}
             </label>
 
@@ -174,6 +175,8 @@ export function EventForm({
               {t("Events.startsAtLabel")}
               <input
                 type="datetime-local"
+                id={"event-startsAt"}
+                aria-describedby={fieldErrors.startsAt ? "event-startsAt-error" : undefined}
                 className={getInputClassName(Boolean(fieldErrors.startsAt))}
                 value={formValues.startsAt}
                 onChange={(eventValue) =>
@@ -186,7 +189,7 @@ export function EventForm({
                 required
               />
               {fieldErrors.startsAt ? (
-                <span className="text-xs font-medium text-rose-600">{fieldErrors.startsAt}</span>
+                <span id="event-startsAt-error" className="text-xs font-medium text-rose-600">{fieldMessage("startsAt")}</span>
               ) : null}
             </label>
 
@@ -194,6 +197,8 @@ export function EventForm({
               {t("Events.endsAtLabel")}
               <input
                 type="datetime-local"
+                id={"event-endsAt"}
+                aria-describedby={fieldErrors.endsAt ? "event-endsAt-error" : undefined}
                 className={getInputClassName(Boolean(fieldErrors.endsAt))}
                 value={formValues.endsAt}
                 onChange={(eventValue) =>
@@ -206,22 +211,12 @@ export function EventForm({
                 required
               />
               {fieldErrors.endsAt ? (
-                <span className="text-xs font-medium text-rose-600">{fieldErrors.endsAt}</span>
+                <span id="event-endsAt-error" className="text-xs font-medium text-rose-600">{fieldMessage("endsAt")}</span>
               ) : null}
             </label>
           </div>
 
-          {formError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {formError}
-            </div>
-          ) : null}
-
-          {submitError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {submitError}
-            </div>
-          ) : null}
+          <ErrorFeedback error={visibleError} fields={{ name: "event-name", stage: "event-stage", startsAt: "event-startsAt", endsAt: "event-endsAt" }} />
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button

@@ -1,3 +1,7 @@
+import { formatSuccess } from "../i18n/errors";
+import { useLanguage } from "../i18n/useLanguage";
+import { ErrorFeedback } from "../components/ErrorFeedback";
+import { toUiError, type UiError } from "../api/error";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { verifyEmail } from "../api/auth";
@@ -5,6 +9,7 @@ import { setToken } from "../api/client";
 import { useAuth } from "./useAuth";
 
 export function VerifyEmailPage() {
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { refreshUser } = useAuth();
@@ -12,8 +17,8 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     token ? "loading" : "error"
   );
-  const [error, setError] = useState<string | null>(
-    token ? null : "No verification token provided"
+  const [error, setError] = useState<UiError | null>(
+    token ? null : toUiError(null)
   );
 
   useEffect(() => {
@@ -39,7 +44,7 @@ export function VerifyEmailPage() {
         }, 3000);
       } catch (err) {
         setStatus("error");
-        setError(err instanceof Error ? err.message : "Verification failed");
+        setError(toUiError(err));
       }
     };
 
@@ -86,7 +91,7 @@ export function VerifyEmailPage() {
                 Email verified!
               </h2>
               <p className="mt-2 text-sm text-slate-500">
-                Your email has been successfully verified. You're now logged in.
+                {formatSuccess("emailVerified", locale)}
               </p>
               <p className="mt-4 text-sm text-slate-400">
                 Redirecting to homepage in 3 sec...
@@ -114,9 +119,9 @@ export function VerifyEmailPage() {
               <h2 className="mt-6 text-2xl font-semibold text-slate-900">
                 Verification failed
               </h2>
-              <p className="mt-2 text-sm text-rose-600">
-                {error || "Unable to verify your email. The link may be invalid or expired."}
-              </p>
+              <div className="mt-2 text-sm text-rose-600">
+                <ErrorFeedback error={error || toUiError(null)} />
+              </div>
               <div className="mt-6 space-y-3">
                 <Link
                   to="/auth/register"

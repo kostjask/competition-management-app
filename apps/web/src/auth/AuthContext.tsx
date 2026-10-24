@@ -1,3 +1,4 @@
+import { toUiError, type UiError } from "../api/error";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
@@ -16,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [initialHasToken] = useState(isAuthenticated);
   const [loading, setLoading] = useState(initialHasToken);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
   const [hasToken, setHasToken] = useState(initialHasToken);
 
   const clearError = useCallback(() => {
@@ -34,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setHasToken(false);
         }
         setUser(null);
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        setError(toUiError(err));
       })
       .finally(() => {
         setLoading(false);
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasToken(true);
         await refreshUser();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Login failed");
+        setError(toUiError(err));
         throw err;
       } finally {
         setLoading(false);
@@ -91,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasToken(true);
         await refreshUser();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Registration failed");
+        setError(toUiError(err));
         throw err;
       } finally {
         setLoading(false);

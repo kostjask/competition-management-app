@@ -1,7 +1,7 @@
+import { toUiError, type UiError } from "../../api/error";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { EventStageSchema, type CreateEventInput } from "@dance/schemas";
-import { ApiError } from "../../api/client";
 import { createEvent } from "../../api/events";
 import { useTranslation } from "@i18n/useTranslation";
 import { getTranslation } from "@i18n/translations";
@@ -11,7 +11,7 @@ export default function EventsCreate() {
   const { locale } = useTranslation();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<UiError | null>(null);
 
   const initialValues = useMemo<CreateEventInput>(() => {
     const startsAt = new Date();
@@ -31,7 +31,7 @@ export default function EventsCreate() {
       await createEvent(values);
       navigate("/events");
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : getTranslation("Events.submitError", locale);
+      const message = toUiError(err);
       setSubmitError(message);
       throw err;
     } finally {
