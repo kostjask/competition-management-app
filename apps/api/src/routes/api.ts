@@ -12,6 +12,7 @@ import { ageGroupsRouter } from "./age-groups";
 import { studiosRouter } from "./studios";
 import { dancersRouter } from "./dancers";
 import { imagesRouter } from "./images";
+import { performancesRouter } from "./performances";
 
 export function apiRouter(prisma: PrismaClient) {
   const router = Router();
@@ -31,11 +32,11 @@ export function apiRouter(prisma: PrismaClient) {
     categoriesRouter(prisma),
     formatsRouter(prisma),
     ageGroupsRouter(prisma),
+    performancesRouter(prisma),
   );
   router.use("/studios", authenticate, studiosRouter(prisma), dancersRouter(prisma));
   router.use("/images", authenticate, imagesRouter(prisma));
 
-  // Performances await canonical-path/controller repairs; users.ts is empty.
-  // Do not expose the duplicate performance handlers or pretend users exist.
+  // users.ts is empty; user management remains deferred.
   return router;
 }

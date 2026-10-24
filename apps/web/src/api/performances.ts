@@ -1,120 +1,20 @@
-/**
- * Performances API methods
- */
-
 import { apiClient } from "./client.js";
+import { PerformanceSchema, PerformancesSchema, type Performance, type CreatePerformanceInput, type UpdatePerformanceInput } from "@dance/schemas";
 
-export interface Performance {
-  id: string;
-  eventId: string;
-  title: string;
-  durationSec: number;
-  orderOnStage: number;
-  categoryId: string;
-  ageGroupId: string;
-  formatId: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string;
-}
+export type { Performance } from "@dance/schemas";
+export type PerformanceWithDetails = Performance;
+export type CreatePerformanceRequest = CreatePerformanceInput;
+export type UpdatePerformanceRequest = UpdatePerformanceInput;
+const collectionPath = (eventId: string) => `/events/${encodeURIComponent(eventId)}/performances`;
+const itemPath = (eventId: string, performanceId: string) => `${collectionPath(eventId)}/${encodeURIComponent(performanceId)}`;
 
-export interface PerformanceWithDetails extends Performance {
-  participants: Array<{
-    id: string;
-    dancerId: string;
-    dancer: {
-      id: string;
-      firstName: string;
-      lastName: string;
-      birthDate: string;
-    };
-  }>;
-  category?: {
-    id: string;
-    name: string;
-  };
-  ageGroup?: {
-    id: string;
-    name: string;
-  };
-  format?: {
-    id: string;
-    name: string;
-  };
-}
-
-export interface CreatePerformanceRequest {
-  title: string;
-  durationSec: number;
-  orderOnStage: number;
-  categoryId: string;
-  ageGroupId: string;
-  formatId: string;
-  dancerIds: string[];
-}
-
-export interface UpdatePerformanceRequest {
-  title?: string;
-  durationSec?: number;
-  orderOnStage?: number;
-  categoryId?: string;
-  ageGroupId?: string;
-  formatId?: string;
-  dancerIds?: string[];
-}
-
-/**
- * Get all performances for a studio
- */
-export const getPerformances = (studioId: string): Promise<PerformanceWithDetails[]> => {
-  return apiClient.get<PerformanceWithDetails[]>(`/studios/${studioId}/performances`);
-};
-
-/**
- * Get a single performance
- */
-export const getPerformance = (
-  studioId: string,
-  performanceId: string
-): Promise<PerformanceWithDetails> => {
-  return apiClient.get<PerformanceWithDetails>(
-    `/studios/${studioId}/performances/${performanceId}`
-  );
-};
-
-/**
- * Create a new performance
- */
-export const createPerformance = (
-  studioId: string,
-  body: CreatePerformanceRequest
-): Promise<PerformanceWithDetails> => {
-  return apiClient.post<PerformanceWithDetails, CreatePerformanceRequest>(
-    `/studios/${studioId}/performances`,
-    body
-  );
-};
-
-/**
- * Update a performance
- */
-export const updatePerformance = (
-  studioId: string,
-  performanceId: string,
-  body: UpdatePerformanceRequest
-): Promise<PerformanceWithDetails> => {
-  return apiClient.patch<PerformanceWithDetails, UpdatePerformanceRequest>(
-    `/studios/${studioId}/performances/${performanceId}`,
-    body
-  );
-};
-
-/**
- * Delete a performance
- */
-export const deletePerformance = (
-  studioId: string,
-  performanceId: string
-): Promise<void> => {
-  return apiClient.delete<void>(`/studios/${studioId}/performances/${performanceId}`);
-};
+export const getPerformances = async (eventId: string, studioId?: string): Promise<Performance[]> =>
+  PerformancesSchema.parse(await apiClient.get<unknown>(`${collectionPath(eventId)}${studioId ? `?studioId=${encodeURIComponent(studioId)}` : ""}`));
+export const getPerformance = async (eventId: string, performanceId: string): Promise<Performance> =>
+  PerformanceSchema.parse(await apiClient.get<unknown>(itemPath(eventId, performanceId)));
+export const createPerformance = async (eventId: string, body: CreatePerformanceRequest): Promise<Performance> =>
+  PerformanceSchema.parse(await apiClient.post<unknown, CreatePerformanceRequest>(collectionPath(eventId), body));
+export const updatePerformance = async (eventId: string, performanceId: string, body: UpdatePerformanceRequest): Promise<Performance> =>
+  PerformanceSchema.parse(await apiClient.patch<unknown, UpdatePerformanceRequest>(itemPath(eventId, performanceId), body));
+export const deletePerformance = (eventId: string, performanceId: string): Promise<void> =>
+  apiClient.delete<void>(itemPath(eventId, performanceId));

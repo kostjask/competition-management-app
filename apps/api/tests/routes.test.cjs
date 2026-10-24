@@ -70,7 +70,9 @@ test('all mounted resource groups and invitation administration require authenti
     ['GET', '/events/e/formats'], ['GET', '/events/e/age-groups'],
     ['GET', '/events/e/studio-registrations'], ['POST', '/events/e/studio-registrations'],
     ['PATCH', '/events/e/studio-registrations/s'], ['DELETE', '/events/e/studio-registrations/s'],
-    ['GET', '/studios'], ['GET', '/studios/s/dancers'],
+    ['GET', '/studios'], ['GET', '/studios/s'], ['PATCH', '/studios/s'], ['DELETE', '/studios/s'],
+    ['PATCH', '/studios/s/approval'], ['PATCH', '/studios/s/representatives/r'],
+    ['GET', '/studios/s/dancers'],
     ['POST', '/studios/s/dancers'], ['GET', '/studios/s/dancers/d'],
     ['PATCH', '/studios/s/dancers/d'], ['DELETE', '/studios/s/dancers/d'],
     ['POST', '/images/events/e'], ['GET', '/invitations'], ['POST', '/invitations'],
@@ -465,4 +467,266 @@ test('retired dancer paths have no handlers', async (t) => {
     ['PATCH', '/dancers/d'], ['DELETE', '/dancers/d'],
   ]) assert.equal((await request(`/api/v1${path}`, { user: 'admin', method })).status, 404);
   assert.deepEqual(calls, []);
+});
+
+const performancePath = '/api/v1/events/e/performances';
+const performanceInput = { studioId: 's', title: ' Title ', durationSec: 60, orderOnStage: 1,
+  categoryId: 'c', ageGroupId: 'a', formatId: 'f', dancerIds: ['d'] };
+async function performanceFixture(t) {
+  const f = await fixture(t);
+  const { prisma, calls } = f;
+  const dancer = { id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: new Date('2012-02-29'), photoUrl: null };
+  const performance = { id: 'p', eventId: 'e', title: 'Title', durationSec: 60, orderOnStage: 1,
+    categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [{ dancerId: 'd', dancer }] };
+  const studio = { approvalStatus: 'APPROVED', event: { stage: 'REGISTRATION_OPEN' },
+    representatives: [{ id: 'r' }], registrations: [{ status: 'APPROVED', canEditDuringReview: false }] };
+  prisma.userRole.findMany = async ({ where }) => where.userId === 'admin'
+    ? [{ eventId: null, role: { key: 'admin', permissions: [] } }]
+    : [{ eventId: where.userId === 'wrong-event' ? 'other' : 'e', role: { key: 'representative',
+      permissions: [{ permission: { key: 'performance.manage' } }] } }];
+  prisma.event.findUnique = async () => ({ id: 'e' });
+  prisma.studio.findFirst = async ({ where }) => where.id === 's' && where.eventId === 'e' ? studio : null;
+  prisma.studio.findMany = async (args) => { calls.push({ name: 'performance-studios', args }); return [{ id: 's' }]; };
+  prisma.danceCategory.findFirst = prisma.ageGroup.findFirst = prisma.danceFormat.findFirst = async ({ where }) =>
+    where.id === 'foreign' ? null : { id: where.id };
+  prisma.dancer.findMany = async ({ where }) => where.id.in.every((id) => id === 'd') ? [{ id: 'd' }] : [];
+  prisma.performance = {
+    findFirst: async ({ where }) => where.id === 'p' && where.eventId === 'e' ? performance : null,
+    findMany: async (args) => { calls.push({ name: 'performance-list', args }); return [performance]; },
+    create: async (args) => { calls.push({ name: 'performance-create', args }); return performance; },
+    update: async (args) => { calls.push({ name: 'performance-update', args }); return { ...performance, ...args.data, participants: performance.participants }; },
+    updateMany: async (args) => { calls.push({ name: 'performance-delete', args }); return { count: 1 }; },
+  };
+  prisma.$transaction = async (fn) => fn(prisma);
+  return { ...f, studio, performance };
+}
+
+test('performance canonical CRUD uses explicit DTOs and transactional nested participant writes', async (t) => {
+  const { request, calls } = await performanceFixture(t);
+  assert.equal((await request(performancePath, { user: 'owner' })).status, 200);
+  const created = await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput });
+  assert.equal(created.status, 201);
+  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'title']);
+  assert.equal(created.body.participants[0].dancer.birthDate, '2012-02-29');
+  const data = calls.find(({ name }) => name === 'performance-create').args.data;
+  assert.equal(data.title, 'Title');
+  assert.equal('studioId' in data, false);
+  assert.deepEqual(data.participants.createMany.data, [{ dancerId: 'd' }]);
+  assert.equal((await request(`${performancePath}/p`, { user: 'owner' })).status, 200);
+  const patched = await request(`${performancePath}/p`, { user: 'owner', method: 'PATCH', body: { title: ' Changed ', dancerIds: ['d'] } });
+  assert.equal(patched.status, 200);
+  assert.equal(patched.body.title, 'Changed');
+  const update = calls.find(({ name }) => name === 'performance-update').args;
+  assert.deepEqual(update.data.participants.deleteMany, {});
+  assert.deepEqual(update.where, { id: 'p', eventId: 'e', deletedAt: null });
+  assert.equal((await request(`${performancePath}/p`, { user: 'owner', method: 'DELETE' })).status, 204);
+  const archive = calls.find(({ name }) => name === 'performance-delete').args;
+  assert.equal(archive.data.deletedBy, 'owner');
+  assert.ok(archive.data.deletedAt instanceof Date);
+});
+
+test('performance authentication, event permissions, ownership, approval and review gates apply', async (t) => {
+  const { request, studio } = await performanceFixture(t);
+  for (const [method, suffix] of [['GET', ''], ['POST', ''], ['GET', '/p'], ['PATCH', '/p'], ['DELETE', '/p']]) {
+    assert.equal((await request(performancePath + suffix, { method })).status, 401);
+    assert.equal((await request(performancePath + suffix, { method, user: 'wrong-event', body: method === 'POST' ? performanceInput : method === 'PATCH' ? { title: 'x' } : undefined })).status, 403);
+  }
+  for (const change of [() => { studio.representatives = []; }, () => { studio.approvalStatus = 'PENDING'; },
+    () => { studio.registrations[0].status = 'LOCKED'; }]) {
+    studio.representatives = [{ id: 'r' }]; studio.approvalStatus = 'APPROVED'; studio.registrations[0].status = 'APPROVED';
+    change();
+    assert.equal((await request(`${performancePath}/p`, { user: 'owner' })).status, 403);
+    assert.equal((await request(`${performancePath}/p`, { user: 'admin' })).status, 200);
+  }
+  studio.registrations[0].status = 'APPROVED';
+  studio.event.stage = 'DATA_REVIEW';
+  assert.equal((await request(`${performancePath}/p`, { user: 'owner' })).status, 200);
+  assert.equal((await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput })).status, 403);
+  studio.registrations[0].canEditDuringReview = true;
+  assert.equal((await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput })).status, 201);
+  studio.event.stage = 'FINALIZED';
+  assert.equal((await request(`${performancePath}/p`, { user: 'owner', method: 'DELETE' })).status, 403);
+});
+
+test('performance strict inputs reject spoofing, invalid selections and duplicate participants', async (t) => {
+  const { request, calls } = await performanceFixture(t);
+  for (const body of [{ ...performanceInput, eventId: 'other' }, { ...performanceInput, title: ' ' },
+    { ...performanceInput, dancerIds: [] }, { ...performanceInput, dancerIds: ['d', 'd'] },
+    { ...performanceInput, durationSec: 2147483648 }]) {
+    const result = await request(performancePath, { user: 'owner', method: 'POST', body });
+    assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
+  }
+  for (const body of [{}, { studioId: 's' }, { deletedAt: null }])
+    assert.equal((await request(`${performancePath}/p`, { user: 'owner', method: 'PATCH', body })).status, 400);
+  for (const body of [{ categoryId: 'foreign' }, { ageGroupId: 'foreign' }, { formatId: 'foreign' }, { dancerIds: ['foreign'] }]) {
+    assert.equal((await request(`${performancePath}/p`, { user: 'admin', method: 'PATCH', body })).status, 409);
+  }
+  assert.equal(calls.some(({ name }) => name === 'performance-update'), false);
+  assert.equal((await request(`${performancePath}?studioId=s&studioId=other`, { user: 'owner' })).status, 400);
+  assert.equal((await request(`${performancePath}?eventId=other`, { user: 'owner' })).status, 400);
+});
+
+test('performance parent substitution and ambiguous legacy participants fail closed for admins too', async (t) => {
+  const { request, performance } = await performanceFixture(t);
+  for (const method of ['GET', 'PATCH', 'DELETE']) {
+    assert.equal((await request('/api/v1/events/other/performances/p', { user: 'admin', method, body: method === 'PATCH' ? { title: 'x' } : undefined })).status, 404);
+  }
+  assert.equal((await request(performancePath, { user: 'admin', method: 'POST', body: { ...performanceInput, studioId: 'other' } })).status, 404);
+  const original = performance.participants;
+  for (const participants of [[], [...original, { dancerId: 'foreign', dancer: { ...original[0].dancer, id: 'foreign', studioId: 'other' } }]]) {
+    performance.participants = participants;
+    assert.equal((await request(`${performancePath}/p`, { user: 'admin' })).status, 409);
+    assert.deepEqual((await request(performancePath, { user: 'admin' })).body, []);
+  }
+});
+
+test('performance lists constrain every participant and retired routes cannot mutate', async (t) => {
+  const { request, calls } = await performanceFixture(t);
+  assert.equal((await request(`${performancePath}?studioId=s`, { user: 'owner' })).status, 200);
+  const where = calls.find(({ name }) => name === 'performance-list').args.where;
+  assert.equal(where.eventId, 'e'); assert.equal(where.deletedAt, null);
+  assert.deepEqual(where.participants.every.dancer.studioId.in, ['s']);
+  const studios = calls.find(({ name }) => name === 'performance-studios').args.where;
+  assert.deepEqual(studios.representatives, { some: { userId: 'owner', active: true } });
+  assert.deepEqual(studios.registrations, { some: { eventId: 'e', status: 'APPROVED' } });
+  for (const path of ['/api/v1/studios/s/performances', '/api/v1/performances/studios/s/events/e', '/events/e/performances'])
+    assert.equal((await request(path, { user: 'admin', method: 'POST', body: performanceInput })).status, 404);
+});
+
+async function studioFixture(t) {
+  const f = await fixture(t);
+  const { prisma, calls } = f;
+  const rep = { id: 'r', studioId: 's', userId: 'owner', name: 'Owner', email: 'owner@example.invalid', active: true, createdAt: new Date('2026-01-01') };
+  const studio = { id: 's', eventId: 'e', name: 'Studio', approvalStatus: 'PENDING', country: 'EE', city: 'Tallinn',
+    directorName: null, directorPhone: null, invoiceDetails: null, logoUrl: null,
+    representatives: [rep], registrations: [{ id: 'registration', studioId: 's', eventId: 'e', status: 'PENDING',
+      canEditDuringReview: false, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01') }],
+    event: { stage: 'REGISTRATION_OPEN' } };
+  prisma.userRole.findMany = async ({ where }) => where.userId === 'admin'
+    ? [{ eventId: null, role: { key: 'admin', permissions: [] } }]
+    : where.userId === 'applicant' ? [] : [{ eventId: where.userId === 'wrong-event' ? 'other' : where.userId === 'global' ? null : 'e',
+      role: { key: 'representative', permissions: [{ permission: { key: 'studio.manage' } }] } }];
+  prisma.studio.findFirst = async ({ where }) => {
+    calls.push({ name: 'studio-find', where });
+    return where.id === 's' ? studio : null;
+  };
+  prisma.studio.findMany = async (args) => { calls.push({ name: 'studio-list', args }); return [studio]; };
+  prisma.studio.update = async (args) => { calls.push({ name: 'studio-update', args }); return { ...studio, ...args.data }; };
+  prisma.studio.updateMany = async (args) => { calls.push({ name: 'studio-archive', args }); return { count: 1 }; };
+  prisma.studioRepresentative = {
+    findFirst: async ({ where }) => where.id === rep.id && where.studioId === rep.studioId && rep.active ? rep : null,
+    update: async (args) => { calls.push({ name: 'representative-update', args }); return { ...rep, ...args.data }; },
+  };
+  prisma.$transaction = async (work) => { calls.push({ name: 'studio-transaction' }); return work(prisma); };
+  return { ...f, studio, rep };
+}
+const studioPath = '/api/v1/studios/s';
+
+test('studio reads allow active roleless membership and return explicit identical profile DTOs', async (t) => {
+  const { request, studio, calls } = await studioFixture(t);
+  studio.representatives[0].userId = 'applicant';
+  const result = await request(studioPath, { user: 'applicant' });
+  assert.equal(result.status, 200);
+  assert.equal(result.body.approvalStatus, 'PENDING');
+  assert.equal(result.body.directorName, null);
+  assert.equal('event' in result.body, false);
+  assert.equal('createdAt' in result.body, false);
+  assert.equal('logoPath' in result.body, false);
+  assert.equal('user' in result.body.representatives[0], false);
+  assert.equal(result.body.representatives[0].createdAt, '2026-01-01T00:00:00.000Z');
+  assert.equal(result.body.registrations[0].status, 'PENDING');
+  const list = await request('/api/v1/studios', { user: 'applicant' });
+  assert.equal(list.status, 200); assert.deepEqual(list.body, [result.body]);
+  assert.deepEqual(calls.find(({ name }) => name === 'studio-list').args.where,
+    { deletedAt: null, representatives: { some: { userId: 'applicant', active: true } } });
+  studio.representatives = [];
+  assert.equal((await request(studioPath, { user: 'applicant' })).status, 403);
+  assert.equal((await request(studioPath, { user: 'admin' })).status, 200);
+});
+
+test('studio writes derive permissions from the stored event and always require ownership', async (t) => {
+  const { request, rep, calls } = await studioFixture(t);
+  const patch = (user) => request(studioPath, { user, method: 'PATCH', body: { directorName: ' Changed ' } });
+  assert.equal((await patch('owner')).status, 200);
+  rep.userId = 'wrong-event'; assert.equal((await patch('wrong-event')).status, 403);
+  rep.userId = 'global'; assert.equal((await patch('global')).status, 200);
+  rep.userId = 'applicant'; assert.equal((await patch('applicant')).status, 403);
+  rep.userId = 'owner'; assert.equal((await patch('outsider')).status, 403);
+  assert.equal((await patch('admin')).status, 200);
+  assert.ok(calls.some(({ name }) => name === 'studio-transaction'));
+});
+
+test('studio stage locks cover profile, representative and archive while admin bypass remains explicit', async (t) => {
+  const { request, studio } = await studioFixture(t);
+  studio.registrations[0].canEditDuringReview = true;
+  for (const stage of ['DATA_REVIEW', 'FINALIZED', 'ENDED', 'CANCELLED']) {
+    studio.event.stage = stage;
+    assert.equal((await request(studioPath, { user: 'owner' })).status, 200);
+    for (const [method, suffix, body] of [['PATCH', '', { name: 'x' }], ['DELETE', '', undefined],
+      ['PATCH', '/representatives/r', { name: 'x' }]]) {
+      assert.equal((await request(studioPath + suffix, { user: 'owner', method, body })).status, 403);
+      assert.equal((await request(studioPath + suffix, { user: 'admin', method, body })).status, method === 'DELETE' ? 204 : 200);
+    }
+  }
+  studio.event.stage = 'PRE_REGISTRATION';
+  assert.equal((await request(studioPath, { user: 'owner', method: 'PATCH', body: { name: 'Open' } })).status, 200);
+});
+
+test('studio PATCH trims text, preserves omitted values, permits explicit clearing and validates strict bodies', async (t) => {
+  const { request, calls, prisma } = await studioFixture(t);
+  const patch = (body) => request(studioPath, { user: 'owner', method: 'PATCH', body });
+  const updated = await patch({ directorName: ' New director ', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
+  assert.equal(updated.status, 200); assert.equal(updated.body.directorName, 'New director');
+  assert.equal(updated.body.country, 'EE'); assert.equal(updated.body.city, null);
+  assert.deepEqual(calls.find(({ name }) => name === 'studio-update').args.data,
+    { directorName: 'New director', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
+  for (const body of [{}, { name: ' ' }, { name: null }, { country: '' }, { eventId: 'foreign' },
+    { approvalStatus: 'APPROVED' }, { representatives: [] }, { logoUrl: 'url' }, { deletedAt: null }, { invoiceDetails: [] }]) {
+    const result = await patch(body); assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
+  }
+  const find = prisma.studio.findFirst;
+  let collisionWhere;
+  prisma.studio.findFirst = async (args) => {
+    if (typeof args.where.id === 'object') { collisionWhere = args.where; return { id: 'collision' }; }
+    return find(args);
+  };
+  assert.equal((await patch({ name: 'Collision' })).status, 409);
+  assert.deepEqual(collisionWhere, { id: { not: 's' }, name: 'Collision', deletedAt: null });
+  prisma.studio.findFirst = find;
+  prisma.studio.update = async () => { throw new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+    'Fixture uniqueness race', { code: 'P2002', clientVersion: '7.10.1' },
+  ); };
+  assert.equal((await patch({ name: 'Concurrent rename' })).status, 409);
+});
+
+test('studio representative and approval operations enforce active parents, self ownership and strict inputs', async (t) => {
+  const { request, rep, prisma } = await studioFixture(t);
+  const route = `${studioPath}/representatives/r`;
+  assert.equal((await request(route, { user: 'owner', method: 'PATCH', body: { name: ' Changed ' } })).body.name, 'Changed');
+  for (const body of [{}, { name: ' ' }, { email: 'invalid' }, { userId: 'other' }, { active: false }])
+    assert.equal((await request(route, { user: 'owner', method: 'PATCH', body })).status, 400);
+  rep.userId = 'other';
+  assert.equal((await request(route, { user: 'owner', method: 'PATCH', body: { name: 'Blocked' } })).status, 403);
+  rep.active = false;
+  assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'Blocked' } })).status, 404);
+  assert.equal((await request(`${studioPath}/representatives/foreign`, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);
+  assert.equal((await request(`${studioPath}/approval`, { user: 'owner', method: 'PATCH', body: { status: 'APPROVED' } })).status, 403);
+  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED' } })).body.approvalStatus, 'APPROVED');
+  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', eventId: 'other' } })).status, 400);
+  prisma.studio.findFirst = async () => null;
+  assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);
+});
+
+test('studio delete archives with actor and returns 204; missing/deleted resources and retired paths cannot mutate', async (t) => {
+  const { request, calls, prisma } = await studioFixture(t);
+  assert.equal((await request(studioPath, { user: 'owner', method: 'DELETE' })).status, 204);
+  const archived = calls.find(({ name }) => name === 'studio-archive').args;
+  assert.deepEqual(archived.where, { id: 's', deletedAt: null });
+  assert.equal(archived.data.deletedBy, 'owner'); assert.ok(archived.data.deletedAt instanceof Date);
+  prisma.studio.findFirst = async () => null;
+  for (const [method, body] of [['GET', undefined], ['PATCH', { name: 'x' }], ['DELETE', undefined]])
+    assert.equal((await request(studioPath, { user: 'admin', method, body })).status, 404);
+  for (const [method, route, body] of [['PATCH', '/events/e/studios/s', { name: 'x' }],
+    ['DELETE', '/events/e/studios/s', undefined], ['PATCH', '/studios/s/representative', { name: 'x' }]])
+    assert.equal((await request(`/api/v1${route}`, { user: 'admin', method, body })).status, 404);
 });

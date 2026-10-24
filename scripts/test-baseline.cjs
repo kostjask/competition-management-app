@@ -121,6 +121,8 @@ async function main() {
       client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
     });
     await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
+    await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
+    await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {
