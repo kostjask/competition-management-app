@@ -1,30 +1,22 @@
 import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
-
-export const CreateJudgeBodySchema = z.object({
-  userId: IdSchema,
-  name: z.string().min(1, "Judge name is required"),
-  description: z.string().optional(),
-  country: z.string().optional(),
-  city: z.string().optional(),
-  eventId: IdSchema,
+const TextSchema = z.string().trim().min(1);
+const profileFields = {
+  name: TextSchema,
+  description: TextSchema.nullable().optional(),
+  country: TextSchema.nullable().optional(),
+  city: TextSchema.nullable().optional(),
+};
+export const CreateJudgeBodySchema = z.strictObject({ userId: IdSchema, ...profileFields });
+export const UpdateJudgeBodySchema = z.strictObject(profileFields).partial()
+  .refine((body) => Object.keys(body).length > 0, "At least one field is required");
+export const JudgeEventParamsSchema = z.object({ eventId: IdSchema });
+export const JudgeItemParamsSchema = JudgeEventParamsSchema.extend({ judgeId: IdSchema });
+export const JudgeSchema = z.strictObject({
+  id: IdSchema, eventId: IdSchema, userId: IdSchema, name: z.string(),
+  description: z.string().nullable(), country: z.string().nullable(), city: z.string().nullable(),
 });
-
-export const UpdateJudgeBodySchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  country: z.string().optional(),
-  city: z.string().optional(),
-  eventId: IdSchema,
-});
-
-export const JudgeIdParamsSchema = z.object({
-  id: IdSchema,
-});
-
-export const JudgeEventParamsSchema = z.object({
-  eventId: IdSchema,
-});
-
+export const JudgesSchema = z.array(JudgeSchema);
+export type Judge = z.infer<typeof JudgeSchema>;
 export type CreateJudgeInput = z.infer<typeof CreateJudgeBodySchema>;
 export type UpdateJudgeInput = z.infer<typeof UpdateJudgeBodySchema>;

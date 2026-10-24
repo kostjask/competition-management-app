@@ -78,6 +78,11 @@ export class StudioRegistrationsController extends BaseController {
       const registration = studio.registrations[0];
       if (!registration) throw new InternalServerError();
       return serialize(registration);
+    }).catch((error: unknown) => {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new ConflictError("Studio with this name already exists");
+      }
+      throw error;
     });
     res.status(201).json(result);
   }

@@ -9,3 +9,4 @@ export * from "./events.js";
 export * from "./studios.js";
 export * from "./dancers.js";
 export * from "./performances.js";
+export * from "./judges.js";

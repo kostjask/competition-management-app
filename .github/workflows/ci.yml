@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Placeholder used only for Prisma configuration, never an application database.
+  DATABASE_URL: postgresql://unused:unused@127.0.0.1:1/unused
+
+jobs:
+  checks:
+    name: Workspace checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm db:validate
+      - name: Check Prisma formatting
+        run: pnpm exec prisma format --check --schema apps/api/prisma/schema.prisma
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - name: Check whitespace
+        run: git diff --check HEAD^ HEAD
+
+  database:
+    name: PostgreSQL migrations and workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # All Compose calls, including calls inside test scripts, share this project.
+      COMPOSE_PROJECT_NAME: dance-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm build
+      - name: Start isolated PostgreSQL and wait for readiness
+        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml up -d --wait --wait-timeout 60 postgres
+      - name: Check fresh migrations and existing-data upgrades
+        shell: pwsh
+        run: ./scripts/test-migrations.ps1
+      - name: Check deployment, seed preservation and HTTP workflows
+        run: pnpm test:baseline
+      - name: Remove CI database fixtures
+        if: always()
+        run: docker compose -f docker/docker-compose.yml -f docker/docker-compose.ci.yml down --volumes --remove-orphans

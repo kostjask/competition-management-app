@@ -44,7 +44,8 @@ version prefix is implemented; these resource-specific repairs remain:
 | Resource | Current development path relative to `/api/v1` | Remaining work |
 | --- | --- | --- |
 | Events | `/events`, `/events/:eventId` | Shared DTO alignment |
-| Event setup | `/events/:eventId/judges`, `/categories`, `/formats`, `/age-groups` (each under the event) | Controller/error/contract consolidation |
+| Judges | `GET/POST /events/:eventId/judges`; `GET/PATCH/DELETE /events/:eventId/judges/:judgeId` | Controller, strict contracts/client helpers, scoped reads/admin writes, relationship and conflict checks implemented |
+| Event setup | `/events/:eventId/categories`, `/formats`, `/age-groups` (each under the event) | Controller/error/contract consolidation |
 | Studio registration | `GET/POST /events/:eventId/studio-registrations`; `PATCH/DELETE /events/:eventId/studio-registrations/:studioId` | Implemented with shared DTOs, transactions, and ownership/event-scope tests; existing-studio reuse awaits ADR-001 migration |
 | Studios | `GET /studios`; `GET/PATCH/DELETE /studios/:studioId`; approval and representative PATCH actions | Shared DTOs/client paths, member reads, scoped writes, active parents, and audited archive implemented |
 | Dancers | `GET/POST /studios/:studioId/dancers`; `GET/PATCH/DELETE /studios/:studioId/dancers/:dancerId` | Implemented with shared DTOs, event-derived permissions, active ownership, stage checks, and audited soft deletion |
@@ -53,7 +54,7 @@ version prefix is implemented; these resource-specific repairs remain:
 | Users | No implementation | `routes/users.ts` is empty; no user-management endpoint is claimed |
 | Scores | Reserved only | Scoring design and implementation in later phases |
 
-The web client's studio, registration, dancer, and performance operations follow
+The web client's studio, registration, dancer, performance, and judge operations follow
 canonical paths and shared contracts. Auth/event/setup DTO consolidation remains.
 Older implementation summaries do not supersede this current status or the ADR
 target. The maintained [registration workflow](REGISTRATION_API.md) links here
@@ -144,7 +145,14 @@ helpers now use the canonical contracts below.
 Old `/events/:eventId/studios` and `.../studios/:studioId/registration` handlers
 are removed. POST creates a new identity; it is not an idempotent retry operation
 and does not merge similarly named studios. Registration of an existing studio
-awaits the Phase 3 identity migration. Existing unique event/studio constraints
+awaits the Phase 3 identity migration. Duplicate active studio names return 409
+with code `CONFLICT` and message `Studio with this name already exists`, including
+concurrent creation and matches in other events or locations. The existing
+SQL-only index remains the authority: names are case-sensitive after input
+trimming, and archived names can be reused. Failed creation rolls back the studio,
+registration, and membership; existing records and roles remain unchanged. The
+response contains no conflicting studio identity or database details.
+Existing unique event/studio constraints
 remain unchanged; this feature adds no database migration or automatic backfill.
 
 ## Studio profile contract
@@ -181,8 +189,8 @@ case-sensitively, regardless of event, country, or city. Profile rename precheck
 now follow that index; database uniqueness conflicts (including competing
 renames) return 409 through the global envelope. Archived names can be reused.
 This repairs the previous location-dependent precheck; it adds no index or
-migration. Registration creation conflict/error consolidation remains separate
-Phase 1 work.
+migration. Registration creation now maps database uniqueness conflicts to the
+same global 409 response.
 
 `DELETE /api/v1/studios/:studioId` returns 204 after recording `deletedAt` and
 `deletedBy`. It retains the studio, memberships, registrations, dancers, and
@@ -347,6 +355,38 @@ relations; archived performances cannot be read, patched, or deleted again.
 No Prisma model/migration changed. Restore, order reuse, full concurrent editing,
 performance snapshots, and cross-event studio reuse remain later work.
 
+## Judge contract
+
+Authenticated collection operations use `GET/POST /api/v1/events/:eventId/judges`;
+item operations use `GET/PATCH/DELETE /api/v1/events/:eventId/judges/:judgeId`.
+Reads require admin or `event.manage` for that event or globally. Writes remain
+admin-only. All operations check event existence; missing events return 404,
+including collection reads. Item reads and mutations constrain both IDs, so a
+judge from another event returns 404 even for admins. Permission denials use the
+global 403 envelope. Existing event-stage behavior is unchanged.
+
+POST accepts `userId`, `name`, and optional nullable `description`, `country`,
+and `city`. The user must exist and be active (404/409 otherwise). The path is
+the only event selector. Text is trimmed and nonblank; unknown body fields are
+rejected. PATCH accepts a nonempty subset of the four profile fields. Omitted
+fields stay unchanged; explicit null clears optional text. Event/user links,
+scores, role, audit fields, and invented timestamps cannot be patched.
+
+Creation returns 201; list/detail/update return 200. DTOs contain only `id`,
+`eventId`, `userId`, `name`, nullable `description`, `country`, and `city`.
+No user credentials, relations, or timestamps are returned. Backend serialization
+and frontend helpers validate shared schemas. Helpers are exported through the
+web API barrel; no judge management screen is implemented by this slice.
+
+The existing unique user/event constraint returns 409, including concurrent
+assignment conflicts; the same user can judge different events. DELETE remains
+hard deletion for unscored records, returning 204 without a body. The actual
+Score foreign key restricts deletion: scored judges return 409 and retain scores.
+The previous route comment claiming cascade/soft deletion was incorrect. A
+concurrently missing item returns 404; foreign-key races return 409. No migration
+or automatic cleanup is introduced. CRUD neither grants nor removes UserRole;
+invitation acceptance and history-preserving staff offboarding remain Phase 2.
+
 ## Validation
 
 Run `pnpm.cmd build` followed by `pnpm.cmd --filter api test` for fresh HTTP tests
@@ -360,17 +400,23 @@ Eight additional registration HTTP tests cover roleless creation, admin behavior
 strict inputs/stages, list scope, approval roles, parent mismatches, cancellation,
 and retired paths. Seven dancer HTTP tests add CRUD/DTO, scope/ownership/approval,
 stage/review, parent substitution, strict calendar inputs, audit/archive, and
-retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. The API test total is 41.
+retired-path coverage. Five performance HTTP tests cover canonical CRUD/DTOs, authentication and permission/approval/stage gates, strict inputs, parent substitution, legacy participant guards, list scope, and retired paths. Six studio HTTP tests add profile DTOs, roleless/member access, scoped writes, stage locks, nullable/strict inputs, conflict mapping, self/parent checks, approval, audited archive, and retired URLs. Three judge HTTP tests add CRUD/DTOs, nullable/strict inputs, authentication, scoped reads/admin writes, missing parents/users, inactive assignment, parent substitution, and conflict/error mapping. A registration duplicate-name HTTP regression checks the global conflict envelope for applicants and admins without exposing database details. The API test total is 45.
 
 `pnpm.cmd test:baseline` separately creates an isolated Compose PostgreSQL
 database and starts the compiled server to verify deployment/seed preservation,
 health, versioned login/profile, and basic authorization. It also runs
 `scripts/check-studio-registrations.cjs` against that fixture: real creation and
 approval rollback, active membership, deleted studios, contradictory legacy event
-relationships, role idempotency, DTOs, and pending-only cancellation. A creation
+relationships, role idempotency, DTOs, pending-only cancellation, global duplicate-name conflicts, competing creation,
+case sensitivity, and archived-name reuse/preservation. A creation
 rollback fixture uses a signed nonexistent user under the current authentication
 behavior; active-user verification remains Phase 2 work. The runner cleans up its
 own fixture. The runner also executes `scripts/check-dancers.cjs` for real
 event/global permissions, cross-studio and cross-event denial, active records,
 stage/review rules, calendar-date persistence, partial updates, and audited soft
 deletion. The runner also executes `scripts/check-performances.cjs` for real CRUD/DTOs, event/global permission scope, cross-studio denial, active/approved records, configuration/participant checks, stage/review rules, nested-write rollback on order conflict, legacy guards, and audited archive/relationship preservation. The runner also executes `scripts/check-studios.cjs` for real studio profiles, roleless/member reads, event/global writes, SQL/JSON null handling, global name conflicts and competing renames, representative self/parent checks, approval isolation, stages, and archive/relationship preservation. Full API integration coverage remains in the development plan.
+
+The baseline runner also executes `scripts/check-judges.cjs`: real unique user/event
+conflicts, cross-event items, scoped reads/admin writes, nullable updates, missing
+and inactive users, unchanged roles, and score-restricted deletion with record
+preservation. These checks use the runner-owned disposable database.

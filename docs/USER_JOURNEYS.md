@@ -29,7 +29,7 @@ still creates an account without a studio or invitation.
 | Area | Current behavior | Required improvement |
 | --- | --- | --- |
 | Account creation | Generic registration, login, and verification pages/endpoints exist. Registration copy promises immediate login; login does not check email verification. | Replace generic signup with validated studio onboarding under ADR-006; align verification, recovery, and translated instructions in Phase 2. |
-| Email | Sending is a development stub. | Deliver real verification/invitation/recovery email before external onboarding; Phase 8 owns provider work. |
+| Email | Sending is a development stub. | P2-EMAIL provides real verification/invitation/recovery delivery before external onboarding; Phase 8 expands hardening. |
 | Continuing after authentication | Login can use route state; verification navigates to `/`. | Preserve the selected event and safe application destination through registration, verification, and session expiry. |
 | Event discovery | Event screens exist, but event API reads require authentication under ADR-002. | Explain sign-in requirements; public discovery requires a separate publication/DTO decision. |
 | Applying | Canonical registration API exists. Event links point to missing `/events/:id/register` and `/events/:id/studio` pages. | Implement the routes and an application home accessible to authenticated applicants without an assigned role. |
@@ -261,20 +261,23 @@ remain inaccessible to unauthorized viewers.
 
 | Decision needed before implementation | Owning phase |
 | --- | --- |
-| Studio-onboarding signup contract, generic-signup bypass prevention, pending-user access, and existing roleless-account recovery | ADR-006 direction accepted; Phase 2 enforcement with Phase 3 persistence decisions |
-| Atomic judge role/record acceptance, mandatory event staff scope, offboarding, and moderator versus organizer permissions | ADR-006; Phases 2–4 before staff UI release |
+| Studio-onboarding persistence/signup contract, pending-user permissions and existing-account transition | P2-ONBOARDING-MODEL and P2-PRIVACY before P2-SIGNUP; no later Phase 3 prerequisite |
+| Atomic judge role/record acceptance, required staff event scope, offboarding and moderator permissions | P2-STAFF-MODEL before P2-INVITE/JUDGE-ACCEPT/OFFBOARD and P4-STAFF; M4 gate |
 | Verification enforcement, resend/address correction, invitation account binding, token expiry, and recovery privacy policy | Phase 2 |
 | Safe return destination persistence across email tabs/devices and session expiry | Phase 2 |
-| Draft/submission/receipt model, retry idempotency, concurrent edits, correction scope/expiry, withdrawal/resubmission, and historical snapshots | Phase 3, lifecycle ADR before dependent Phase 5 work |
-| Age policy, event timezone, registration/entry/music deadlines, and required/optional music rules | Phase 3 model and Phase 4 configuration before Phase 5 validation |
+| Entry drafts/submission/receipt model, retry idempotency, concurrent edits, correction scope/expiry, withdrawal/resubmission, and historical snapshots | P3-ENTRIES before P5-ENTRIES/SUBMISSION; onboarding drafts are separately P2-ONBOARDING-MODEL |
+| Timezone/registration deadline and application transitions | P3-REGISTRATION before P4-CORE/REVIEW and P5-APPLICATION; M2 gate |
+| Age policy, entry/music deadlines, and required/optional music rules | P3-ENTRIES/MUSIC-MODEL before P4-ENTRY-CONFIG and P5 entry validation; M3 gate |
 | Reusable studio/roster edits across event locks and historical entries | Phase 3, ADR-001 prerequisite |
 | Public event discovery and result DTO/publication policy | Separate decision under ADR-002; current event reads remain authenticated |
 | Offline/reconnect, scoring locks, and correction/publication semantics | ADR-003/004 before Phases 6–7 |
-| Real email delivery, translated templates, delivery failure/retry behavior | Phase 8; release gate for external onboarding |
+| Real email delivery, translated onboarding templates, delivery failure/retry behavior | P2-EMAIL before external M2/M4; Phase 8 expands delivery hardening |
 
-The first onboarding UX milestone is: a new representative can create and verify
+The first onboarding UX milestone (M2) is: a studio applicant can create and verify
 an account, apply to one event, and always find their status and next action.
-It depends on Phase 1 stabilization, Phase 2 security, and relevant Phase 3–4
-prerequisites. This documentation task does not advance those phases or enable
-public registration. Real email is required before external onboarding even
-though provider implementation is grouped in Phase 8.
+It needs the plan's security, audit/privacy, onboarding model, real email, core
+organizer setup/review, and applicant UI gates. Entry/music rules (M3), staff UI
+(M4), and scoring/scheduling/live models (M5) do not block M2. Existing-studio reuse
+still requires ADR-001 migration, but a first single-event application does not.
+Browser, keyboard/mobile, ET/EN/RU, and staging release checks apply to the delivered
+milestone. These requirements do not claim runtime implementation is complete.

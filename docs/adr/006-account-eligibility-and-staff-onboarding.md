@@ -76,13 +76,21 @@ for an existing account. These operations do not form a complete staff journey.
 
 ## Delivery and verification
 
-Phase 1 still stabilizes judge/controller/contracts against current behavior.
-Phase 2 owns account eligibility, verification, invitation security, atomic judge
-onboarding, and consistent role-key checks. Phase 3 owns needed draft/lifecycle
-changes, moderation permissions, retention, and historical-data rules. Phase 4
-provides staff invitation/assignment administration; Phase 5 provides studio and
-additional-representative onboarding. Phase 8 email delivery remains a release
-gate before external onboarding. Do not claim these gates complete from this ADR.
+The revised development plan retains this product decision and changes delivery
+ordering. Phase 1 stabilizes judge/controller/contracts and introduces baseline
+CI. Phase 2A provides onboarding/assignment persistence decisions and required
+migrations, minimal durable audit, privacy/retention policy, moderator permissions,
+and real email. Phase 2B implements account eligibility, verification, invitation
+security, atomic judge acceptance, offboarding, and consistent role-key checks.
+It does not depend on later Phase 3 audit or draft-model work.
+
+Phase 3 handles registration/entry lifecycle, studio reuse, and historical-data
+rules. Phase 4 provides organizer application review and separately gated staff
+administration; Phase 5 provides applicant/entry and additional-representative UI.
+Core email is P2-EMAIL before external onboarding; Phase 8 expands delivery/media
+hardening. Scoring and live schema move to Phase 6 and do not block the first
+single-event studio application. Milestone prerequisites and stable task IDs in
+the plan govern execution; this ADR does not mark any runtime gate complete.
 
 Acceptance checks must cover direct generic-signup bypass, pending-user recovery,
 cross-studio/event access, prohibited global staff scope, unknown/disallowed roles,

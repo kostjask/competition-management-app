@@ -22,6 +22,7 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   } });
   const otherEvent = await client.event.create({ data: {
     name: 'Other registration event', startsAt: new Date('2026-11-01'), endsAt: new Date('2026-11-02'),
+    stage: 'REGISTRATION_OPEN',
   } });
   const root = `/events/${event.id}/studio-registrations`;
   const request = async (route, token, method = 'GET', body) => {
@@ -112,8 +113,52 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   assert.equal(adminCreated.status, 201);
   assert.equal(adminCreated.body.status, 'PENDING');
   assert.equal(await client.studioRepresentative.count({ where: { studioId: adminCreated.body.studioId } }), 0);
+  // The SQL-only partial index is global across event/location, not an application
+  // precheck. A rejected nested write must leave every existing record unchanged.
+  const snapshot = async () => Promise.all([
+    client.studio.findMany({ orderBy: { id: 'asc' } }),
+    client.studioRepresentative.findMany({ orderBy: { id: 'asc' } }),
+    client.studioEventRegistration.findMany({ orderBy: { id: 'asc' } }),
+    client.userRole.findMany({ orderBy: { id: 'asc' } }),
+  ]);
+  const beforeConflict = await snapshot();
+  for (const token of [applicantToken, adminToken]) {
+    for (const route of [root, `/events/${otherEvent.id}/studio-registrations`]) {
+      const duplicate = await request(route, token, 'POST', {
+        ...application, name: ' Applicant studio ', country: 'FI', city: 'Helsinki',
+      });
+      assert.equal(duplicate.status, 409);
+      assert.equal(duplicate.body.code, 'CONFLICT');
+      assert.equal(duplicate.body.error, 'Studio with this name already exists');
+      assert.deepEqual(await snapshot(), beforeConflict);
+    }
+  }
+  const counts = async () => Promise.all([
+    client.studio.count(), client.studioRepresentative.count(), client.studioEventRegistration.count(),
+  ]);
+  const beforeRace = await counts();
+  const raceBody = { ...application, name: 'Concurrent registration studio' };
+  const raced = await Promise.all([
+    request(root, applicantToken, 'POST', raceBody),
+    request(root, applicantToken, 'POST', raceBody),
+  ]);
+  assert.deepEqual(raced.map((r) => r.status).sort(), [201, 409]);
+  const winner = StudioRegistrationSchema.parse(raced.find((r) => r.status === 201).body);
+  assert.deepEqual(await counts(), beforeRace.map((n) => n + 1), 'Only one complete nested creation persists');
+  const archived = await client.studio.update({
+    where: { id: winner.studioId }, data: { deletedAt: new Date(), deletedBy: authUser.id },
+  });
+  const reused = await request(root, applicantToken, 'POST', raceBody);
+  assert.equal(reused.status, 201, 'Archived studio names are reusable');
+  assert.notEqual(reused.body.studioId, winner.studioId);
+  assert.deepEqual(await client.studio.findUnique({ where: { id: winner.studioId } }), archived);
+  assert.equal(await client.studioRepresentative.count({ where: { studioId: winner.studioId } }), 1);
+  assert.equal(await client.studioEventRegistration.count({ where: { studioId: winner.studioId } }), 1);
+  assert.equal((await request(root, applicantToken, 'POST', { ...application, name: 'applicant studio' })).status, 201,
+    'Name uniqueness remains case-sensitive');
+
   await client.event.update({ where: { id: event.id }, data: { stage: 'DATA_REVIEW' } });
   assert.equal((await request(root, applicantToken, 'POST', application)).status, 403);
   assert.equal((await request(root, applicantToken, 'POST', { ...application, studioId })).status, 400);
-  console.log('PASS: registration HTTP/database creation, DTOs, ownership/event scope, approval/role atomicity, rollback, active records, and pending-only cancellation.');
+  console.log('PASS: registration HTTP/database creation, DTOs, ownership/event scope, approval/role atomicity, rollback, active records, pending-only cancellation, duplicate-name conflicts, concurrent creation and archived-name reuse.');
 };

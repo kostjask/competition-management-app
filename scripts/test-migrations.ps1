@@ -12,6 +12,7 @@ $freshSchema = "migration_fresh_$suffix"
 $upgradeSchema = "migration_upgrade_$suffix"
 $expectedSqlPath = Join-Path ([IO.Path]::GetTempPath()) "migration_expected_$suffix.sql"
 $previousDatabaseUrl = $env:DATABASE_URL
+$pnpmCommand = if ($env:OS -eq 'Windows_NT') { 'pnpm.cmd' } else { 'pnpm' }
 
 function Invoke-TestSql([string]$Sql) {
     $Sql | docker compose -f docker/docker-compose.yml exec -T postgres psql -X -q -v ON_ERROR_STOP=1 -U $DatabaseUser -d $Database
@@ -21,7 +22,7 @@ function Invoke-TestSql([string]$Sql) {
 try {
     # Diff generation needs a datasource config, but never connects to this URL.
     $env:DATABASE_URL = 'postgresql://unused:unused@localhost:5432/unused'
-    pnpm.cmd exec prisma migrate diff --config apps/api/prisma.config.ts --from-empty --to-schema apps/api/prisma/schema.prisma --script --output $expectedSqlPath
+    & $pnpmCommand exec prisma migrate diff --config apps/api/prisma.config.ts --from-empty --to-schema apps/api/prisma/schema.prisma --script --output $expectedSqlPath
     if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $expectedSqlPath)) {
         throw 'Prisma did not generate the expected schema SQL.'
     }

@@ -109,11 +109,15 @@ Returning applicants should resume saved progress with the event and studio clea
 Show separate organization/event statuses and an actionable next step throughout.
 See the journey guide for detailed validation and recovery requirements.
 
-Phase 1 integration remains the immediate priority. Authentication/recovery belongs
-to Phase 2; state/model decisions to Phase 3; organizer review to Phase 4; applicant
-screens and entries to Phase 5. Production email is owned by Phase 8 and must be
-available before external onboarding. No current API test or this documentation
-establishes a complete production-ready onboarding experience.
+Phase 1 integration remains the immediate priority, with baseline CI added early.
+Phase 2A now supplies onboarding persistence decisions, audit/privacy foundations,
+and production email (P2-EMAIL) before Phase 2B authentication/signup behavior.
+Registration lifecycle is P3-REGISTRATION; core organizer review is Phase 4 and
+applicant UI is P5-APPLICATION. Together these gate M2, the first usable studio
+application journey. Scoring/scheduling are Phase 6 work, not M2 prerequisites.
+Phase 8 expands email/media hardening; it no longer owns initial email delivery.
+No current API test or this documentation establishes a complete production-ready
+onboarding experience. Use the plan's milestone gates and task IDs for exact scope.
 
 Staff target journey: admin selects event and judge/moderator → invitation →
 intended-account authentication or invited account setup → atomic acceptance and

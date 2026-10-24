@@ -102,7 +102,7 @@ test('public auth and invitation operations reach handlers without a bearer toke
 });
 
 test('versioned resources dispatch once using the injected authentication database', async (t) => {
-  const { request, calls } = await fixture(t);
+  const { request, calls, prisma } = await fixture(t);
   for (const [path, handler] of [
     ['/events', 'events'], ['/events/e/judges', 'judges'],
     ['/events/e/categories', 'categories'], ['/events/e/formats', 'formats'],
@@ -110,10 +110,14 @@ test('versioned resources dispatch once using the injected authentication databa
     ['/studios/s/dancers', 'dancers'], ['/invitations', 'invitations'],
   ]) {
     calls.length = 0;
+    if (handler === 'judges') prisma.event.findUnique = async (args) => {
+      calls.push({ name: 'event', args }); return { id: args.where.id };
+    };
     const result = await request(`/api/v1${path}`, { user: 'admin' });
     assert.equal(result.status, 200, path);
     assert.deepEqual(result.body, []);
-    assert.deepEqual(calls.map(({ name }) => name), path.endsWith('/dancers') ? ['roles', 'studio', handler] : ['roles', handler], path);
+    assert.deepEqual(calls.map(({ name }) => name), path.endsWith('/dancers') ? ['roles', 'studio', handler] :
+      handler === 'judges' ? ['roles', 'event', handler] : ['roles', handler], path);
   }
 });
 
@@ -254,6 +258,26 @@ test('admin registration also creates pending membership in the event without be
   assert.equal(data.representatives, undefined);
   assert.equal(data.registrations.create.status, 'PENDING');
   assert.equal(data.approvalStatus, 'PENDING');
+});
+
+test('registration creation maps database uniqueness failures to a private global conflict response', async (t) => {
+  const { request, prisma } = await registrationFixture(t);
+  const { Prisma } = require('@prisma/client');
+  prisma.studio.create = async () => {
+    throw new Prisma.PrismaClientKnownRequestError('Private database/index details', {
+      code: 'P2002', clientVersion: '7.10.1', meta: { target: ['name'] },
+    });
+  };
+  for (const user of ['applicant', 'admin']) {
+    const result = await request(registrationPath, { user, method: 'POST', body: application });
+    assert.equal(result.status, 409);
+    assert.equal(result.body.code, 'CONFLICT');
+    assert.equal(result.body.statusCode, 409);
+    assert.equal(result.body.error, 'Studio with this name already exists');
+    assert.ok(Number.isFinite(Date.parse(result.body.timestamp)));
+    assert.equal(JSON.stringify(result.body).includes('Private'), false);
+    assert.equal(JSON.stringify(result.body).includes('target'), false);
+  }
 });
 
 test('registration rejects whitespace, missing contacts, spoofed relationships and closed or missing events', async (t) => {
@@ -729,4 +753,98 @@ test('studio delete archives with actor and returns 204; missing/deleted resourc
   for (const [method, route, body] of [['PATCH', '/events/e/studios/s', { name: 'x' }],
     ['DELETE', '/events/e/studios/s', undefined], ['PATCH', '/studios/s/representative', { name: 'x' }]])
     assert.equal((await request(`/api/v1${route}`, { user: 'admin', method, body })).status, 404);
+});
+
+test('judge CRUD uses strict DTOs, nullable patch fields and immutable relationships', async (t) => {
+  const { request, prisma } = await fixture(t);
+  const { JudgeSchema } = require('@dance/schemas');
+  let stored;
+  const missing = () => new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
+    'Fixture missing', { code: 'P2025', clientVersion: 'test' });
+  prisma.event.findUnique = async ({ where }) => where.id === 'e' ? { id: 'e' } : null;
+  prisma.user.findUnique = async ({ where }) => where.id === 'u' ? { active: true } : null;
+  prisma.judge = {
+    create: async ({ data }) => (stored = { id: 'j', description: null, country: null, city: null, ...data }),
+    findMany: async ({ where }) => stored?.eventId === where.eventId ? [stored] : [],
+    findFirst: async ({ where }) => stored?.id === where.id && stored.eventId === where.eventId ? stored : null,
+    update: async ({ where, data }) => {
+      if (stored?.id !== where.id || stored.eventId !== where.eventId) throw missing();
+      return (stored = { ...stored, ...data });
+    },
+    delete: async ({ where }) => {
+      if (stored?.id !== where.id || stored.eventId !== where.eventId) throw missing();
+      stored = undefined;
+    },
+  };
+  const send = (path, method = 'GET', body, user = 'admin') => request(`/api/v1/events/${path}`, { user, method, body });
+  assert.equal((await send('e/judges', 'POST', { userId: 'u', name: ' Judge ' })).status, 201);
+  const created = JudgeSchema.parse((await send('e/judges/j')).body);
+  assert.equal(created.name, 'Judge'); assert.equal(created.description, null);
+  stored.password = 'must not be returned';
+  assert.deepEqual((await send('e/judges')).body, [created]);
+  assert.equal((await send('e/judges/j', 'PATCH', { description: ' Note ', country: ' EE ' })).body.description, 'Note');
+  assert.equal((await send('e/judges/j', 'PATCH', { description: null })).body.country, 'EE');
+  for (const body of [{}, { name: '  ' }, { city: '' }, { eventId: 'other' }, { userId: 'other' }, { scores: [] }]) {
+    const result = await send('e/judges/j', 'PATCH', body);
+    assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
+    assert.ok(result.body.details.fields);
+  }
+  for (const body of [{ userId: 'u', name: 'J', eventId: 'e' }, { userId: 'u', name: ' ' }, { name: 'J' }]) {
+    assert.equal((await send('e/judges', 'POST', body)).status, 400);
+  }
+  assert.equal((await send('e/judges', 'POST', { userId: 'missing', name: 'J' })).status, 404);
+  prisma.user.findUnique = async () => ({ active: false });
+  assert.equal((await send('e/judges', 'POST', { userId: 'u', name: 'J' })).status, 409);
+  for (const [method, path, body] of [['GET', 'missing/judges'], ['POST', 'missing/judges', { userId: 'u', name: 'J' }],
+    ['GET', 'missing/judges/j'], ['PATCH', 'missing/judges/j', { name: 'J' }], ['DELETE', 'missing/judges/j']]) {
+    assert.equal((await send(path, method, body)).status, 404);
+  }
+  prisma.event.findUnique = async ({ where }) => ({ id: where.id });
+  for (const method of ['GET', 'PATCH', 'DELETE']) {
+    const result = await send('other/judges/j', method, method === 'PATCH' ? { name: 'J' } : undefined);
+    assert.equal(result.status, 404); assert.equal(result.body.code, 'NOT_FOUND');
+  }
+  assert.equal((await send('e/judges/j', 'DELETE')).status, 204);
+  assert.equal((await send('e/judges/j')).status, 404);
+  assert.deepEqual((await send('e/judges')).body, []);
+});
+
+test('judge operations enforce authentication, event read scope and admin writes', async (t) => {
+  const { request, prisma, calls } = await fixture(t);
+  prisma.event.findUnique = async () => ({ id: 'allowed-event' });
+  prisma.judge.findFirst = async () => null;
+  for (const [method, suffix, body] of [['GET', ''], ['GET', '/j'], ['POST', '', { userId: 'u', name: 'J' }],
+    ['PATCH', '/j', { name: 'J' }], ['DELETE', '/j']]) {
+    const path = `/api/v1/events/allowed-event/judges${suffix}`;
+    assert.equal((await request(path, { method, body })).status, 401);
+    const denied = await request(path.replace('allowed-event', 'other-event'), { user: 'moderator', method, body });
+    assert.equal(denied.status, 403); assert.equal(denied.body.code, 'FORBIDDEN');
+    if (!['GET'].includes(method)) {
+      assert.equal((await request(path, { user: 'moderator', method, body })).body.code, 'FORBIDDEN');
+    }
+  }
+  assert.equal((await request('/api/v1/events/allowed-event/judges', { user: 'moderator' })).status, 200);
+  assert.equal((await request('/api/v1/events/allowed-event/judges/j', { user: 'moderator' })).status, 404);
+  prisma.userRole.findMany = async () => [{ eventId: null, role: { key: 'organizer',
+    permissions: [{ permission: { key: 'event.manage' } }] } }];
+  assert.equal((await request('/api/v1/events/other-event/judges', { user: 'organizer' })).status, 200);
+  assert.ok(calls.every(({ name }) => ['roles', 'judges'].includes(name)));
+});
+
+test('judge uniqueness, foreign key and concurrent disappearance use global errors', async (t) => {
+  const { request, prisma } = await fixture(t);
+  const { Prisma } = require('@prisma/client');
+  prisma.event.findUnique = async () => ({ id: 'e' });
+  prisma.user.findUnique = async () => ({ active: true });
+  for (const [method, code, expected] of [['POST', 'P2002', 409], ['POST', 'P2003', 409],
+    ['PATCH', 'P2025', 404], ['DELETE', 'P2025', 404], ['DELETE', 'P2003', 409]]) {
+    const operation = { POST: 'create', PATCH: 'update', DELETE: 'delete' }[method];
+    prisma.judge[operation] = async () => { throw new Prisma.PrismaClientKnownRequestError('Fixture', { code, clientVersion: 'test' }); };
+    const result = await request(`/api/v1/events/e/judges${method === 'POST' ? '' : '/j'}`, {
+      user: 'admin', method, body: method === 'POST' ? { userId: 'u', name: 'J' } : method === 'PATCH' ? { name: 'J' } : undefined,
+    });
+    assert.equal(result.status, expected); assert.equal(result.body.statusCode, expected);
+    assert.equal(result.body.code, expected === 409 ? 'CONFLICT' : 'NOT_FOUND');
+    assert.ok(Number.isFinite(Date.parse(result.body.timestamp)));
+  }
 });
