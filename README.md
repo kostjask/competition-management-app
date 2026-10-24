@@ -10,6 +10,12 @@ A TypeScript monorepo for dance competition administration, studio registration,
 
 Planned journeys are not implemented features. The development plan controls prerequisites and delivery order.
 
+Account policy: self-service onboarding is intended for studio applicants; judges
+and moderators join by event invitation, additional representatives by studio-bound
+invitation, and admins through controlled provisioning. Spectators need no account.
+See [ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md). Current
+public signup is still unrestricted; enforcement is planned, not implemented.
+
 ## Prerequisites
 
 - Node.js 24.x (validated with 24.22.1).

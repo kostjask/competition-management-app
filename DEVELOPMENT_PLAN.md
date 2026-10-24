@@ -27,6 +27,8 @@ The intended user roles are:
 
 ### User experience specification
 
+[ADR-006: account eligibility and staff onboarding](docs/adr/006-account-eligibility-and-staff-onboarding.md) records the accepted target: studio-focused self-service onboarding, invitation-only event judges/moderators, studio-bound additional representatives, controlled admin provisioning, and no spectator accounts. Generic public registration still exists; backend enforcement and transition work below are pending. Pending applicants remain legitimate users without approved representative privileges.
+
 [User journeys and UX requirements](docs/USER_JOURNEYS.md) defines intended account, application, approval, entry, invitation, and competition-day behavior, current gaps, and acceptance criteria. [Registration workflow](docs/REGISTRATION_API.md) separates account creation, event application, and final entry submission. These documents do not mark runtime features complete or override ADRs.
 
 The first onboarding UX milestone is an account holder who can verify their email, apply to one event, and always find their status and next action. Implement it only after applicable Phase 1–4 prerequisites. Real email delivery is a release gate before external onboarding, despite provider work being grouped in Phase 8.
@@ -86,10 +88,10 @@ The first onboarding UX milestone is an account holder who can verify their emai
 
 ### Partial or not integrated
 
-- `StudiosController` and `PerformancesController` exist as uncommitted work, but the controller migration is incomplete.
-- Performance routes contain both new controller-based handlers and old duplicate inline handlers.
-- The performance router is not mounted in the API entry point; `routes/users.ts` is empty and has no router implementation.
-- Frontend API modules exist for studios, dancers, and performances, but corresponding screens are absent and several URLs do not match backend routes.
+- Performance controller integration is complete; controller migration for other resources remains incomplete.
+- Resolved (2026-10-24): performance routes now compose one controller with no duplicate inline handlers.
+- The performance router is mounted under canonical event paths; `routes/users.ts` remains empty and user management is deferred.
+- Studio profile, registration, dancer, and performance clients match canonical routes/shared contracts; corresponding screens are absent. Auth/event/setup contracts still need alignment.
 - Auth and invitation routes now use `/api/v1` with explicit protected operations; duplicated invitation paths are removed. Invitation business/security and DTO cleanup remain.
 - Email sending is a development stub.
 - Storage provider configuration is documented, but the server always instantiates local storage.
@@ -124,11 +126,11 @@ These are stabilization blockers. Resolve them before adding major features.
 
 ### P0 — Route integration and contract mismatches
 
-- `performancesRouter` is not mounted in `apps/api/src/index.ts`. `routes/users.ts` is empty; no `usersRouter` implementation exists to mount.
+- Resolved (2026-10-24): `performancesRouter` is mounted once in versioned composition. `routes/users.ts` remains empty; no user-management endpoint is claimed.
 - Resolved (2026-10-24): dancer collection/item routes now use `/api/v1/studios/:studioId/dancers` and `/api/v1/studios/:studioId/dancers/:dancerId`. Controller checks derive event permissions from the studio, validate ownership/approval/stage and parent relationships, and use shared calendar-date DTOs.
-- The frontend calls `/studios/:studioId/performances`, but the performance router is not mounted and contains two competing URL designs.
+- Resolved (2026-10-24): performance client and backend now use `/api/v1/events/:eventId/performances` collection/item paths with an optional validated studio list filter.
 - Resolved (2026-10-24): studio registration now uses canonical `/api/v1/events/:eventId/studio-registrations` collection/item routes. Creation atomically saves studio, pending registration, and the non-admin applicant membership; approval/cancellation enforce event scope and ownership. Registration client contracts match; remaining studio detail/edit paths are separate work.
-- Frontend studio detail/update/delete paths use `/events/:eventId/studios/...`, while the active backend controller exposes `/studios/...` for those operations.
+- Resolved (2026-10-24): studio profile/detail/update/archive, representative, and organization-approval clients now use canonical `/api/v1/studios/...` paths with shared runtime-validated contracts.
 - Event detail links point to `/events/:id/register` and `/events/:id/studio`, but neither frontend route exists.
 - Event reads intentionally remain authenticated per ADR-002. Versioned resource middleware replaces the former global authentication mount; public event DTO/publication policy is deferred.
 
@@ -145,9 +147,9 @@ These are stabilization blockers. Resolve them before adding major features.
 
 ### P0 — Backend refactor defects
 
-- `PerformancesController.getPerformancesForStudio()` parses a create-performance request body on a GET request.
-- The same controller contains an accidental `zod/locales` import and incomplete method coverage.
-- Performance route logic is duplicated, making fixes likely to diverge.
+- Resolved (2026-10-24): performance list validates params/query only; complete CRUD uses shared schemas and explicit DTOs.
+- Resolved (2026-10-24): performance controller method coverage and accidental import are repaired.
+- Resolved (2026-10-24): duplicate performance route logic is removed; routes only compose controller calls.
 - Error handling is inconsistent: some modules throw typed errors, while others return raw Zod errors, empty `sendStatus` responses, or local ad-hoc JSON.
 - Resolved during baseline recovery: all API Prisma imports now use the standard generated `@prisma/client` entry, and error imports resolve at compiled runtime.
 - Several handlers use `any` or unsafe casts despite the repository's strict type-safety goal.
@@ -156,9 +158,9 @@ These are stabilization blockers. Resolve them before adding major features.
 ### P1 — Data-contract inconsistencies
 
 - Frontend event types expect `updatedAt`, but the Event model has no `updatedAt` field.
-- Frontend studio, dancer, and performance types expect timestamps that their Prisma models do not define.
+- Resolved (2026-10-24): studio, dancer, and performance DTOs omit nonexistent timestamps; nullable fields and representative/registration timestamps follow the actual stored model.
 - Event create/update schemas only accept name, dates, and stage, while the database and UI expect venue, location, description, limits, and image data.
-- Shared `packages/types` performance fields (`nominationId`, `participantCount`, `durationSeconds`) do not match the Prisma Performance model (`categoryId`, participant relation, `durationSec`).
+- Resolved (2026-10-24): performance contracts use current Prisma field names and explicit participant DTOs; the unused duplicate `packages/types` performance interface is removed. Legacy nomination cleanup remains.
 - Shared schemas contain both current and legacy naming (`nomination` versus category).
 - API response types are duplicated manually in the frontend instead of being derived from shared contracts.
 - Resolved during baseline recovery: web API fallback/example and root setup now consistently use port 4000. Historical endpoint guides still need reconciliation.
@@ -174,6 +176,9 @@ These are stabilization blockers. Resolve them before adding major features.
 
 ### P1 — Onboarding and workflow gaps
 
+- Generic public registration currently creates roleless accounts without studio context. Replace it with backend-validated, resumable studio onboarding under ADR-006; do not merely hide the signup link or delete existing roleless accounts.
+- Judge invitation acceptance assigns a role without an event Judge record; judge CRUD creates the record without the role. Staff invitation scope is optional. Atomic judge onboarding and mandatory judge/moderator event scope remain Phase 2 work.
+- Existing-account invitation acceptance requires name/password and returns a session without checking the existing password. Require intended-account authentication, prevent inactive-account reactivation, and distinguish pending-invite revocation from removing accepted access.
 - Registration copy promises immediate login, while the intended journey requires email verification; login currently does not enforce verification. Align instructions and backend enforcement in Phase 2.
 - Verification navigates to the homepage and loses the selected event. Safe return destinations and recoverable progress must survive authentication, email verification, and session expiry.
 - New applicants have active studio membership but no representative role until event approval. Their application home must not require that role; API ownership checks still apply.
@@ -191,7 +196,7 @@ These are stabilization blockers. Resolve them before adding major features.
 
 ## 5. Architecture Decisions
 
-ADR-001, ADR-002, and ADR-005 were accepted on 2026-10-23; their linked records govern Phase 1 stabilization and the later studio migration. They describe target behavior, not completed runtime changes. Record ADR-003 and ADR-004 before implementing their dependent features.
+ADR-001, ADR-002, and ADR-005 were accepted on 2026-10-23; their linked records govern Phase 1 stabilization and the later studio migration. ADR-006 adds accepted account eligibility/staff onboarding direction on 2026-10-24. Decisions describe target behavior, not completed runtime changes. Record ADR-003 and ADR-004 before implementing their dependent features.
 
 ### ADR-001: Studio identity and event registration
 
@@ -267,6 +272,8 @@ Accepted: [ADR-005: shared API contracts](docs/adr/005-shared-api-contracts.md).
 
 ## 6. Delivery Plan
 
+ADR-006 keeps current phase ordering: Phase 1 judge/controller/contract consolidation must not be described as completed staff onboarding. Implement the new account/invitation behavior with the Phase 2–5 tasks below and the required persistence/permission decisions; external release still requires real email.
+
 ### Phase 0 — Preserve and restore the development baseline (complete)
 
 Goal: obtain a reproducible, buildable checkout without losing current work.
@@ -290,30 +297,31 @@ Exit criteria:
 - Prisma validation, migration, generation, and seed commands work.
 - Current work is committed in reviewable units before broad refactoring.
 
-Progress (2026-10-23): all technical Phase 0 tasks pass; see [baseline validation](docs/BASELINE_VALIDATION.md) and [migration validation](docs/MIGRATION_VALIDATION.md). Existing work is preserved. Frozen installation, all-workspace build/typecheck, web lint, three API tests, Prisma validate/generate/format, isolated empty-database deployment/redeployment, full-record seed idempotency, compiled API health/login/profile and basic access-denial checks are verified. Setup is documented in README. The user authorized commits and the commit checkpoint is satisfied; Phase 0 is complete and Phase 1 is active. ADR-001/002/005 are now accepted. Versioned composition/app construction is now implemented for previously active routers. Canonical studio registration is now implemented. Dancer route integration is now complete. Next concrete action: canonical event-scoped performance routes with controller/duplicate/authorization repairs and matching contracts/tests. Existing studio approval defaults to `PENDING` and still requires operational review before a real upgrade; concurrent seeding and full endpoint authorization coverage are not claimed.
+Progress (2026-10-23): all technical Phase 0 tasks pass; see [baseline validation](docs/BASELINE_VALIDATION.md) and [migration validation](docs/MIGRATION_VALIDATION.md). Existing work is preserved. Frozen installation, all-workspace build/typecheck, web lint, three API tests, Prisma validate/generate/format, isolated empty-database deployment/redeployment, full-record seed idempotency, compiled API health/login/profile and basic access-denial checks are verified. Setup is documented in README. The user authorized commits and the commit checkpoint is satisfied; Phase 0 is complete and Phase 1 is active. ADR-001/002/005 are now accepted. Versioned composition/app construction is now implemented for previously active routers. Canonical studio registration is now implemented. Dancer route integration is now complete. Performance integration is now complete. Studio profile integration is now complete. Next concrete action: judge controller/shared DTOs and canonical client contracts with event-scope/authorization tests. Existing studio approval defaults to `PENDING` and still requires operational review before a real upgrade; concurrent seeding and full endpoint authorization coverage are not claimed.
 
 ### Phase 1 — Stabilize API contracts and finish the backend refactor (active)
 
 Goal: one coherent backend architecture and a frontend client that matches it.
 
-- [x] User-requested prerequisite before Phase 1 implementation: update all external dependency declarations to verified latest stable releases, regenerate the lockfile/client, apply TypeScript 7 and lint compatibility changes, and validate the baseline. See [stable dependency refresh](docs/DEPENDENCY_UPDATES.md). Prisma 8 RC is deliberately excluded; TypeScript compiler/API aliases follow the official compatibility setup. ADR prerequisites, versioned composition, and canonical studio registration are now complete; dancer routes are complete; next is performance route integration.
+- [x] User-requested prerequisite before Phase 1 implementation: update all external dependency declarations to verified latest stable releases, regenerate the lockfile/client, apply TypeScript 7 and lint compatibility changes, and validate the baseline. See [stable dependency refresh](docs/DEPENDENCY_UPDATES.md). Prisma 8 RC is deliberately excluded; TypeScript compiler/API aliases follow the official compatibility setup. ADR prerequisites, versioned composition, and canonical studio registration are now complete; dancer and performance routes are complete; studio profile contracts and clients are complete; next is judge controller/contract consolidation.
 
 - [x] Decide and document ADR-001, ADR-002, and ADR-005. Accepted reusable studio identities with separate organization/event approval, one versioned API layout, and shared Zod transport contracts with explicit DTO serialization. Runtime/schema migration remains in the tasks below.
 - [x] Add an `/api/v1` composition module and testable app factory, mount each previously active router exactly once, and attach explicit auth/invitation public/protected boundaries. Update the web base URL, examples, and compiled-server smoke check. Eight new HTTP tests verify mounts and access boundaries; [current API status](docs/API.md) lists remaining resource-specific repairs.
-- [ ] Finish resource integration under ADR-002 after the following registration/dancer/performance repairs; mount the performance router only after its duplicate/controller/authorization defects are resolved. `users.ts` is empty: user management remains explicitly deferred.
+- [x] Finish resource integration under ADR-002 after registration/dancer/performance repairs; performance router is mounted once with repaired controller/authorization/contracts. `users.ts` is empty: user management remains explicitly deferred; remaining DTO/controller consolidation is tracked below.
 - [x] Resolve studio registration URLs and atomically create studio/pending registration/applicable membership. Dedicated controller, strict shared input and serialized response schemas, runtime-validated frontend registration helpers, admin approval with transactional role assignment, and pending-only cancellation are implemented. Eight new HTTP tests plus isolated PostgreSQL workflow/rollback checks pass. Existing-studio reuse and legacy backfill remain Phase 3 work.
 - [x] Resolve dancer mount paths under `/api/v1/studios/:studioId/dancers`, including detail GET and studio-scoped item writes; shared schemas, client validation, event/global permissions, ownership/approval/stage checks, global errors, and audited soft deletion are implemented and tested.
-- [ ] Resolve canonical event-scoped performance mount paths with controller/duplicate/authorization repairs and matching frontend contracts/tests.
-- [ ] Remove duplicate performance handlers.
-- [ ] Complete controllers for studios, performances, judges, categories, formats, age groups, invitations, images, and users—or explicitly decide that simple CRUD remains in routes.
+- [x] Resolve canonical event-scoped performance mount paths with controller/duplicate/authorization repairs and matching shared/frontend contracts/tests. Full participant-set ownership, scoped permissions, active/approval/stage checks, transactional replacement, and audited soft deletion are implemented; validation is recorded below.
+- [x] Remove duplicate performance handlers.
+- [x] Consolidate studio collection/detail/update/archive, organization approval, and representative controller operations with strict shared inputs/DTOs, canonical frontend paths, active membership reads, event-derived write permissions, stage locks, audited archive, and global active-name conflict handling. Six HTTP tests plus isolated PostgreSQL workflow checks cover the slice.
+- [ ] Complete remaining controllers for judges, categories, formats, age groups, invitations, images, and users—or explicitly decide that simple CRUD remains in routes. Studio and performance controllers are complete; users remain explicitly deferred.
 - [ ] Ensure routes only compose middleware and controller calls.
 - [ ] Standardize all validation with shared Zod schemas.
-- [ ] Standardize all errors through the global error handler.
+- [ ] Standardize all errors through the global error handler. Studio profile rename conflicts now respect the SQL-only global active-name index; studio-registration creation still needs explicit 409 mapping and regression coverage for duplicate active names (no migration required).
 - [ ] Replace `any` and unsafe compound-key casts where possible (mixed Prisma imports were resolved during Phase 0).
-- [ ] Add explicit API response DTO schemas for auth, events, studios, dancers, and performances. Registration/studio-summary and dancer DTOs are complete; full studio detail and the other resource DTOs remain.
-- [ ] Align frontend API modules with canonical routes and DTOs. Registration and dancer helpers now use shared inferred contracts and runtime response validation; studio-detail/performance helpers remain.
-- [ ] Remove legacy nomination/performance types or migrate them to current terms.
-- [ ] Add request-level API integration tests for every mounted route. Canonical studio registration and dancers have HTTP and isolated PostgreSQL workflow coverage (including registration rollback and dancer audit/archive checks); broader operation-level coverage remains.
+- [ ] Add explicit API response DTO schemas for auth, events, studios, dancers, and performances. Studio profile/member/registration, dancer, and performance DTOs are complete; auth/event DTOs remain.
+- [ ] Align frontend API modules with canonical routes and DTOs. Studio, registration, dancer, and performance helpers now use shared inferred contracts and runtime response validation; auth/event/setup helpers remain.
+- [ ] Remove remaining legacy nomination types or migrate them to current terms. Performance schemas now use current names and the unused duplicate performance interface is removed.
+- [ ] Add request-level API integration tests for every mounted route. Studio profiles, canonical studio registration, dancers, and performances have HTTP tests and isolated PostgreSQL workflow checks (including registration rollback, audited archives, and performance participant replacement/order-conflict rollback); broader operation-level coverage remains. See latest validation progress for executed results.
 
 Exit criteria:
 
@@ -330,10 +338,18 @@ Progress (2026-10-24, studio registration): canonical GET/POST collection and PA
 
 Progress (2026-10-24, dancer integration): canonical studio-nested GET/POST collections and GET/PATCH/DELETE items use `DancersController`; legacy dancer handlers/mounts were replaced. Non-admins need event-derived or global `dancer.manage`, active ownership, organization approval, and the matching approved registration. Reads remain available during stage locks; writes follow existing stage/review rules. Admin bypass still requires active records and correct parent relationships. Strict shared inputs accept valid calendar-only birth dates, trim names, and reject spoofed/empty updates. Explicit DTOs and frontend runtime validation remove invented timestamps and private storage paths. New dates persist at UTC midnight; existing timestamps remain untouched and serialize their UTC day. Transactional writes and audited soft deletion retain rows/relations. No model/migration changes. Validation passed: build, typecheck, lint, fresh API tests/root test (30/30, including 7 new dancer HTTP tests), Prisma validate/generate/format check, and isolated migration/seed/compiled HTTP registration+dancer workflows. Database checks cover real event/global permission scope, cross-studio denial even for admins, inactive membership, approval/status gates, review/stage behavior, legacy time preservation, and audited archive visibility. Final local documentation links/anchor, UTF-8/new-file whitespace, and `git diff --check` passed. Full concurrent-update coverage, restore workflows, historical timezone corrections, upload authorization, and multi-event roster policy remain deferred. Next concrete task: canonical event-scoped performance routes, completing the controller and removing duplicate handlers with ownership/participant/event validation and matching shared/frontend contracts/tests. Phase 1 remains active.
 
+Progress (2026-10-24, performance integration): canonical event-scoped collection/item CRUD now mounts once and delegates to the complete performance controller; duplicate inline handlers and GET body parsing are removed. Strict shared inputs and explicit runtime-validated DTOs align the frontend client and remove invented timestamps/legacy performance naming. Non-admins need event/global permission, active studio membership, organization approval, and matching approved event registration. Writes honor registration/review stage rules; reads remain available during stage locks. Every participant must identify the same active event-owned studio, including for admin parent checks; mixed/empty legacy participant sets are excluded from lists and return 409 on item access pending the Phase 3 audit. Writes validate resulting event configuration and active same-studio dancers transactionally; nested participant replacement rolls back on stage-order conflict. Audited soft deletion retains participants and scores. Existing archived stage orders remain reserved. No schema/migration changes. Validation passed: build, all-workspace typecheck, web lint, fresh API/root tests (35/35), Prisma validate/generate/format check, and isolated PostgreSQL migration/seed/compiled HTTP workflows including performance order-conflict rollback, score/participant preservation on archive, and contradictory legacy studio/event denial. Local documentation links, changed-file UTF-8/whitespace checks, and final `git diff --check` passed. Docker initially was stopped; after launching Docker Desktop and starting the repository Compose service, the isolated runner passed and cleaned up its disposable database. Restore/order reuse, full concurrency coverage, cross-event studio identity/history policy, age eligibility/format limits, and legacy data repair remain in their owning phases. Phase 1 remains active. Next concrete task: finish studio detail/update/delete shared DTOs, align canonical frontend helpers, and consolidate the existing studio controller/routes.
+
+Progress (2026-10-24, studio profiles): studio collection/detail/profile PATCH/archive, organization approval, and representative PATCH now use explicit shared DTOs and strict inputs with canonical runtime-validated frontend helpers. Active owners can read pending profiles without roles; profile writes require stored-event or global studio.manage plus ownership. Admin bypass retains active studio/member and parent checks. Owner profile/representative/archive writes follow PRE_REGISTRATION/REGISTRATION_OPEN; dancer/performance review overrides do not unlock profiles. Existing organization-profile edits remain independent of approval gates; roleless profile editing remains gated on later onboarding permission policy. Nullable fields support explicit clearing, including SQL NULL for invoice details. Representative edits remain self-only for non-admins and never change login identity. Approval remains admin-only and does not modify event registration/roles. Archive returns 204 with actor/timestamp and preserves relations. The PostgreSQL test exposed the old location-dependent name precheck's mismatch with the SQL-only global active-name index; rename prechecks and P2002 conflict mapping now match it, including competing renames. No Prisma model/index/migration changes. Validation passed: fresh API tests (41/41), build, all-workspace typecheck, web lint, Prisma validate/generate/format check, and isolated deployment/seed/compiled HTTP workflows including studio read/write scopes, null persistence, uniqueness, representative self/parent checks, approval isolation, stages, and archive preservation. Root `pnpm.cmd test` also passed (41/41), as did final all-workspace typecheck/lint, maintained-document local links, changed-file UTF-8/whitespace checks, and `git diff --check`. Registration-creation duplicate-name error mapping, restore, full concurrent editing, cross-event identity/history/lock policy, and broader security hardening remain deferred. Phase 1 remains active. Next concrete task: consolidate judge routes into a controller with shared request/response DTOs, canonical client paths, and event-scope/authorization tests.
+
 ### Phase 2 — Authentication, authorization, and security foundation
 
 Goal: trustworthy event-scoped access before exposing management features.
 
+- [ ] Enforce ADR-006 studio-focused signup on the backend and UI: define validated onboarding context, required studio details, recoverable progress, canonical contracts, and duplicate/retry behavior with Phase 3 persistence decisions. Reject generic-signup bypass and public staff/admin role selection; do not require an approved representative role to apply.
+- [ ] Audit existing roleless accounts and define recovery/retention transition policy; preserve legitimate pending applications and do not automatically delete/deactivate users. Cleanup requires a separately reviewed policy.
+- [ ] Restrict staff invitations to validated assignable roles and require a valid event for judge/moderator. Keep controlled admin provisioning separate; reject global staff scope and disallowed/unknown role keys.
+- [ ] Make judge acceptance atomically create/reconcile the same-event Judge record, judge UserRole, and consumed invitation, with rollback, repeat/concurrent acceptance, and existing-assignment tests. Judge CRUD consolidation alone does not satisfy this task.
 - [ ] Use role keys, not display names, everywhere in frontend and backend checks.
 - [ ] Return permissions and event scopes in the profile DTO if the UI needs permission-aware controls.
 - [ ] Unify `RoleGate` and route guard behavior around one authorization helper.
@@ -349,6 +365,8 @@ Goal: trustworthy event-scoped access before exposing management features.
 - [ ] Add verification resend and a defined mistyped-email correction flow with throttling, safe account-recovery responses, invalid/used-link handling, and aligned ET/EN/RU account instructions.
 - [ ] Define and implement validated internal return destinations through sign-in, registration, verification, and session expiry, including email tab/device fallback; never expose credentials in redirect URLs.
 - [ ] Harden invitation acceptance for new/existing accounts and wrong-account sessions; prevent credential resets or role duplication on repeated acceptance. Add `/accept-invitation` UI with expiry/revoke/resend recovery after backend checks.
+- [ ] Require existing invitees to authenticate as the intended account; handle invited account setup separately, never silently reactivate inactive users, and prevent acceptance from resetting existing credentials.
+- [ ] Implement invitation lifecycle/status and separate accepted-access removal with audit records; revoke pending invitations without removing accepted roles implicitly, and preserve judge/score history when removing event access.
 - [ ] Decide whether JWT remains in localStorage or moves to secure same-site cookies; document the threat model.
 
 Exit criteria:
@@ -356,6 +374,7 @@ Exit criteria:
 - Authorization matrix tests cover each role and event scope.
 - A user cannot read or modify another event/studio through ID substitution.
 - Security-sensitive routes have rate limits and consistent audit events.
+- Generic signup bypass, self-selected staff roles, prohibited global staff invitations, wrong/inactive-account acceptance, concurrent acceptance, and atomic judge role/record rollback have regression coverage; pending studio applicants can recover and resume their own work.
 
 ### Phase 3 — Correct and harden the data model
 
@@ -368,6 +387,7 @@ Goal: support the full competition workflow without accumulating incompatible mi
 - [ ] Decide restore behavior for soft-deleted records and enforce `deletedAt: null` in standard queries.
 - [ ] Populate `deletedBy`/`deactivatedBy` consistently and model actor relations if useful.
 - [ ] Add AuditLog with actor, action, entity type/id, event id, timestamp, and safe metadata.
+- [ ] Define moderator stage-operation permissions separately from score submission; “manager” must resolve to moderator or a separately approved least-privilege organizer permission set, never an implicit global admin. Define assignment/access removal that preserves historical Judge/Score records.
 - [ ] Add lifecycle transition validation and an explicit live stage.
 - [ ] Define draft/final-submission/receipt and correction state in the lifecycle specification before Phase 5: server-backed persistence, retry idempotency (including application creation), concurrent edits, lock/reopen scope and expiry, withdrawal/resubmission, and historical snapshots. Keep these separate from organization/event approval statuses.
 - [ ] Define event timezone, age-calculation policy, registration/entry/music deadlines, and required music rules for Phase 4 configuration and Phase 5 validation.
@@ -391,7 +411,7 @@ Goal: administrators can prepare a complete event without direct database access
 - [ ] Expand event create/edit to venue, country, city, description, limits, image, timezone, and registration deadlines.
 - [ ] Build category, age-group, format, and scoring-template CRUD screens.
 - [ ] Validate overlapping age groups and format participant/duration limits.
-- [ ] Build judge/moderator invitation and assignment screens.
+- [ ] Build event-scoped judge/moderator invitation and assignment screens under ADR-006, showing invited/accepted/expired/revoked status, resend/revoke, missing assignment issues, and separate remove-access controls. Do not offer public staff signup or global staff scope.
 - [ ] Build studio and event-registration approval queues with separate organization/event decisions, next-action ownership, safe reasons/contact details, and correction-request scope/deadlines under the Phase 3 specification.
 - [ ] Prioritize pending reviews, corrections, incomplete entries, and missing music on the event dashboard; add an actionable setup checklist before opening registration.
 - [ ] Add event lifecycle transition controls with warnings and prerequisites.
@@ -413,6 +433,7 @@ Goal: a representative can complete registration without staff intervention exce
 - [ ] Build a resumable entry checklist with server-backed draft/save/error states and session/network recovery under the Phase 3 specification. Reconcile uncertain creation outcomes instead of blindly repeating non-idempotent POSTs.
 - [ ] Support selecting an existing owned studio and roster only after ADR-001 migration and cross-event lock/history rules; never auto-merge by name.
 - [ ] Build studio profile create/edit and representative-management screens.
+- [ ] Add studio-bound additional-representative invitations after defining authorized inviters, membership acceptance, and event-role/approval effects. Backend must verify the inviting admin or authorized member and exact studio; contact email/role alone cannot grant ownership.
 - [ ] Show studio and event-registration approval statuses separately as required by ADR-001; distinguish approval from submission and editing locks.
 - [ ] Build dancer list, create, edit, archive, restore, and optional CSV import.
 - [ ] Build performance create/edit/archive with category, age group, format, participants, duration, and title.
@@ -559,14 +580,17 @@ Journey regression scenarios: roleless application tracking; safe return after e
 - [ ] Add `docs/SECURITY.md` with authorization model and data-handling rules.
 - [ ] Add `docs/TESTING.md` and `docs/DEPLOYMENT.md`.
 - [x] Add ADR-001, ADR-002, and ADR-005 for studio identity, canonical paths, and shared contracts.
+- [x] Add ADR-006 for studio-focused signup and invitation-only staff onboarding; align journey, registration, API, root, and role guides. Runtime signup restrictions, atomic judge assignment, and invitation UI/security remain unchecked in their owning phases.
 - [ ] Add ADR-003 and ADR-004 for lifecycle and scoring before their dependent implementation.
 - [ ] Mark implementation summaries as historical or delete them after their useful content is merged into maintained guides.
 - [ ] Correct endpoint examples, ports, framework versions, file trees, and build/test claims.
 - [ ] Normalize all markdown to UTF-8.
 
-Documentation progress (2026-10-24, user journeys): added the UX specification, replaced obsolete registration/invitation examples with current API boundaries, and mapped follow-up work to Phases 2–9. No runtime behavior, approval semantics, schema, or phase completion changed. Public discovery, submission/correction state, cross-event reuse, and production email remain gated above. Documentation checks cover local links, UTF-8, and whitespace; runtime validation is not implied. Next concrete implementation task remains Phase 1 canonical event-scoped performance integration with authorization, shared contracts, and tests.
+Documentation progress (2026-10-24, user journeys): added the UX specification, replaced obsolete registration/invitation examples with current API boundaries, and mapped follow-up work to Phases 2–9. No runtime behavior, approval semantics, schema, or phase completion changed. Public discovery, submission/correction state, cross-event reuse, and production email remain gated above. Documentation checks cover local links, UTF-8, and whitespace; runtime validation is not implied. The performance task is now implemented; studio profile integration is now complete; next concrete task is Phase 1 judge controller/shared DTOs and canonical client contracts with event-scope/authorization tests.
 
 ## 9. Suggested Issue/Epic Breakdown
+
+Documentation progress (2026-10-24, account eligibility): accepted ADR-006 and replaced generic-signup/automatic-role guidance in registration, journey, and role documentation. Added backend signup eligibility, pending-account recovery, scoped staff invitations, atomic Judge/UserRole acceptance, additional-representative invitation, and history-preserving offboarding tasks in the owning phases. These are target requirements only; current unrestricted signup remains unchanged. Phase 1 is still active. Next concrete task remains judge controller/shared DTO and canonical client consolidation with event-scope/authorization tests; atomic staff onboarding remains separate Phase 2 work. Documentation validation uses UTF-8, local links, and whitespace checks; no runtime validation is claimed for this documentation-only change.
 
 | Epic | Scope | Depends on |
 | --- | --- | --- |
@@ -616,9 +640,9 @@ Use this at the start of a future development session.
 Start with Phase 0 and Phase 1, in this order:
 
 1. Phase 0 is complete, including the user-authorized commit checkpoint. Preserve the committed baseline.
-2. Read accepted ADR-001/002/005 and `docs/API.md`. Versioned composition and canonical registration are implemented. Dancer routing and contracts are implemented. Next concrete task: canonical event-scoped performance integration, controller/duplicate/authorization repairs, and matching shared/frontend contracts/tests.
+2. Read accepted ADR-001/002/005 and `docs/API.md`. Versioned composition and canonical registration are implemented. Dancer routing and contracts are implemented. Performance integration is implemented. Studio profile integration is implemented. Next concrete task: judge controller/shared DTOs and canonical client contracts with event-scope/authorization tests.
 3. Apply ADR-002 canonical paths and ADR-005 shared contracts incrementally with matching frontend/environment/example changes.
-4. Mount/fix all routers and remove duplicate performance code.
+4. Performance routers are mounted and duplicates removed. Continue controller and DTO consolidation for existing resources.
 5. Align frontend API clients with integration-tested routes.
 6. Fix role checks to use `role.key` consistently.
 7. Expand operation-level API integration coverage beyond the existing auth/event smoke and studio-registration workflow/rollback checks.

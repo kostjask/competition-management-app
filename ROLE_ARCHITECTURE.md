@@ -1,189 +1,76 @@
-# Role & Permission System - Architecture
+# Roles, permissions, and account onboarding
 
-## ✅ Database-Driven Approach
+Reviewed: 2026-10-24
 
-**Single Source of Truth**: The database controls all roles and permissions. No hardcoded enums.
+Role definitions and permission mappings are stored in the database. This does
+not make every role safe to self-select, automatically implement its screens, or
+replace backend ownership, active-record, approval, and event-scope checks.
 
----
+## Account entry policy
 
-## Database Schema
+[ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md) is the accepted
+target, with runtime implementation pending:
 
-```
-Role
-├── id: UUID (primary key)
-├── key: String (unique, e.g., "representative")
-├── name: String (display name, e.g., "Studio Representative")
-└── description: String (optional)
+| Account purpose | Entry path | Scope |
+| --- | --- | --- |
+| Pending studio applicant | Studio-focused self-service onboarding | Own recoverable progress/applications; no approved representative privileges. |
+| Representative | Approval or authorized additional-member invitation | Explicit studio membership and permitted event access under ADR-001. |
+| Judge | Admin invitation | Required event, judge role, and matching Judge record. |
+| Moderator/stage operator | Admin invitation | Required event and explicit operational permissions. |
+| Administrator | Controlled provisioning | Explicit administrative authority. |
+| Spectator | No account | Published information only after public-access implementation. |
 
-Permission
-├── id: UUID (primary key)
-├── key: String (unique, e.g., "event.register")
-├── name: String (display name)
-└── description: String (optional)
+Generic public registration still creates roleless accounts today. The target
+must be enforced through backend onboarding contracts, not just navigation or a
+client role flag. Pending applicants must not need a representative role before
+applying. Do not automatically delete existing roleless users.
 
-RolePermission (junction table)
-├── roleId: UUID (Role FK)
-└── permissionId: UUID (Permission FK)
+## Stored authorization model
 
-UserRole
-├── id: UUID (primary key)
-├── userId: UUID (User FK)
-├── roleId: UUID (Role FK)
-└── eventId: UUID? (Event FK, nullable for global roles)
-```
+- `Role`: stable `key`, display `name`, and description.
+- `Permission`: stable operation key and display metadata.
+- `RolePermission`: maps roles to permissions.
+- `UserRole`: associates user and role, optionally scoped by `eventId` today.
+- `StudioRepresentative`: explicit studio membership; a role is not ownership.
+- `StudioEventRegistration`: event approval and review-edit permission.
+- `Judge`: event-specific judge identity used by scores; not interchangeable with
+  a judge UserRole.
 
----
+Seeded role keys are `admin`, `representative`, `judge`, and `moderator`. No
+predefined `manager` role exists. Stage operators use `moderator`; organizer
+management needs a separately approved permission specification. Current seed
+moderator permission reuse of `score.submit` is not a complete stage-control policy.
 
-## How It Works
+## Current limitations and target repairs
 
-### 1. **Backend** (Single source of truth)
-- Roles defined in `Role` table
-- Permissions defined in `Permission` table
-- Mappings in `RolePermission` table
-- User assignments in `UserRole` table (can be event-specific)
+- Frontend `useRole` compares display names; `RequireRole` uses a separate fuzzy
+  name mapping. Phase 2 must unify checks around stable keys and event scopes.
+- Judge invitation acceptance and judge record creation are separate operations.
+  Target acceptance creates/reconciles both with invitation consumption in one
+  transaction, including rollback and concurrency handling.
+- Invitation role validation currently checks string syntax and event scope is
+  optional. Target staff invitation policy validates allowed assignments and
+  requires event scope for judge/moderator; global admin provisioning is separate.
+- Additional representatives need studio-bound invitations with explicit inviter
+  authority and membership rules. Contact details do not grant account ownership.
+- Revoking an unused invitation differs from removing accepted event access.
+  Offboarding must preserve judge/score history and be audited.
 
-### 2. **Shared Schema** (`packages/schemas`)
-```ts
-// Simple string validation - accepts any role from DB
-export const RoleKeySchema = z
-  .string()
-  .min(1)
-  .regex(/^[a-z_]+$/);
-```
+## Extending roles
 
-### 3. **Frontend** (`apps/web`)
-```ts
-// Hook checks user.roles[] from API
-const { hasRole, isAdmin } = useRole();
+Adding a database row alone does not implement a feature or secure its API.
+Before adding a role, define its operations, global/event scope, assignment and
+removal authority, backend enforcement, frontend navigation, localization, and
+negative authorization tests. Do not use manual SQL role assignment as a normal
+user onboarding workflow. Use the documented root seed command only for local
+fixtures; production administrators require controlled provisioning.
 
-// Accepts any role string from database
-<RoleGate roles={["representative"]}>
-  <RegisterButton />
-</RoleGate>
-```
+Frontend gates are usability controls. Backend authorization remains the security
+boundary. Admin bypass is operation-specific and must not bypass parent/child or
+active-record invariants. Public event discovery/results remain deferred under
+ADR-002 and must not be used to justify spectator signup.
 
----
-
-## Adding a New Role
-
-### Option 1: Via Seed File (Recommended)
-Edit `apps/api/prisma/seed.ts`:
-
-```ts
-const coordinatorRole = await prisma.role.upsert({
-  where: { key: "coordinator" },
-  create: {
-    key: "coordinator",
-    name: "Event Coordinator",
-    description: "Coordinates event logistics",
-  },
-});
-
-// Assign permissions
-await prisma.rolePermission.upsert({
-  where: {
-    roleId_permissionId: {
-      roleId: coordinatorRole.id,
-      permissionId: manageSchedulePermission.id,
-    },
-  },
-  create: {
-    roleId: coordinatorRole.id,
-    permissionId: manageSchedulePermission.id,
-  },
-});
-```
-
-Then run: `pnpm --filter api db:seed`
-
-### Option 2: Manual SQL
-```sql
--- 1. Create role
-INSERT INTO "Role" (id, key, name, description)
-VALUES (gen_random_uuid(), 'coordinator', 'Event Coordinator', 'Coordinates events');
-
--- 2. Assign permissions
-INSERT INTO "RolePermission" (role_id, permission_id)
-SELECT 
-  (SELECT id FROM "Role" WHERE key = 'coordinator'),
-  (SELECT id FROM "Permission" WHERE key = 'event.manage');
-```
-
-### Option 3: Via API (Future)
-Create an admin API endpoint to manage roles dynamically.
-
----
-
-## Frontend Usage
-
-### No code changes needed!
-Once the role exists in the database, the frontend automatically works:
-
-```tsx
-// Use string directly
-<RoleGate roles={["coordinator"]}>
-  <CoordinatorPanel />
-</RoleGate>
-
-// Or add to constants for autocomplete (optional)
-// apps/web/src/auth/roles.ts
-export const ROLES = {
-  // ...
-  COORDINATOR: "coordinator",
-} as const;
-
-// Then use constant
-<RoleGate roles={[ROLES.COORDINATOR]}>
-  <CoordinatorPanel />
-</RoleGate>
-```
-
----
-
-## Benefits
-
-✅ **No duplication**: Define role once in DB  
-✅ **No schema updates**: Add roles without touching code  
-✅ **Flexible permissions**: Fine-grained control via RolePermission  
-✅ **Event-specific roles**: UserRole can be scoped to events  
-✅ **Type-safe**: TypeScript accepts any string, but constants provide autocomplete  
-✅ **Future-proof**: New roles work immediately  
-
----
-
-## Migration Path
-
-If you have existing hardcoded role checks:
-
-### Before (hardcoded):
-```ts
-if (user.role === "admin" || user.role === "representative") {
-  // ...
-}
-```
-
-### After (database-driven):
-```ts
-const { hasAnyRole } = useRole();
-if (hasAnyRole(["admin", "representative"])) {
-  // ...
-}
-
-// Or use RoleGate
-<RoleGate roles={["admin", "representative"]}>
-  <Component />
-</RoleGate>
-```
-
----
-
-## Current Roles in Database
-
-From `apps/api/prisma/seed.ts`:
-
-1. **admin** - Full system access
-2. **representative** - Studio representative
-3. **judge** - Event judge
-4. **moderator** - Event moderator
-
-All new roles can be added to the database without any frontend code changes!
+See [registration workflow](docs/REGISTRATION_API.md),
+[user journeys](docs/USER_JOURNEYS.md),
+[frontend role guide](apps/web/ROLE_SYSTEM.md), and
+[development plan](DEVELOPMENT_PLAN.md) for current gaps and delivery order.

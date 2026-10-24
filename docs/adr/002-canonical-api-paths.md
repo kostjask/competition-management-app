@@ -3,7 +3,7 @@
 Date: 2026-10-23
 
 Status: Accepted; versioned composition/authentication boundaries implemented on
-2026-10-24. Canonical studio registration and dancer nesting are also implemented. Other
+2026-10-24. Canonical studio registration, dancer nesting, and event-scoped performances are also implemented. Other
 resource-specific integration remains in Phase 1; see
 [current API status](../API.md).
 
@@ -95,9 +95,11 @@ Route registration alone is insufficient evidence of safe integration.
 
 This intentionally changes development URLs. The ADR itself originally changed
 no runtime behavior. Versioned composition, studio registration, and dancer nesting
-with shared contracts and access checks are now implemented. Performance integration
-and broader DTO alignment remain explicitly tracked. Next is canonical event-scoped
-performance integration with duplicate/controller/authorization repairs.
+with shared contracts and access checks are now implemented. Event-scoped performance
+integration is also implemented with full participant ownership checks and transactional
+writes. Studio profile collection/detail/update/archive, approval, and representative
+updates now also follow canonical paths and shared DTOs with membership/scoped-write
+checks. Broader DTO alignment and controller consolidation remain Phase 1 work.
 
 Related: [studio identity](001-studio-identity-and-event-registration.md),
 [shared contracts](005-shared-api-contracts.md).

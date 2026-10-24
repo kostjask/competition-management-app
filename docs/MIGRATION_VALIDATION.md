@@ -11,7 +11,7 @@ The user confirmed that the three untracked February migrations are unpublished 
 - `20260221223825_add_user_deactivatedby` now renames `RegistrationStatus` to `EventRegistrationStatus` in place. All four labels, existing values, the `PENDING` default, column constraints, and registration metadata survive. It also adds nullable deletion/deactivation fields and `CANCELLED`. The original drop/recreate operation would have reset every registration to `PENDING`.
 - `20261023190000_add_event_max_performances` adds the missing nullable integer column. Existing events retain `NULL` (no configured limit); no existing limit is invented.
 
-The migration directories sort in dependency order. The SQL-only `Studio_name_active_unique` partial index is intentional; Prisma schema comparison must retain it. The controller's optional country/city name precheck still disagrees with the global database constraint and remains Phase 1 work.
+The migration directories sort in dependency order. The SQL-only `Studio_name_active_unique` partial index is intentional; Prisma schema comparison must retain it. Resolved (2026-10-24): studio profile renames now check global active names and translate database uniqueness races to 409. No index or migration changed. Registration-creation conflict/error consolidation remains Phase 1 work; see [current API contracts](API.md#studio-profile-contract).
 
 ## Repeatable regression check
 

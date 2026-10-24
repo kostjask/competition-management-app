@@ -8,11 +8,27 @@ The [development plan](../DEVELOPMENT_PLAN.md) controls delivery order;
 [API.md](API.md) describes implemented contracts. Accepted ADRs govern architecture.
 New domain decisions listed below must be resolved before dependent implementation.
 
+## Account eligibility and entry paths
+
+[ADR-006](adr/006-account-eligibility-and-staff-onboarding.md) replaces generic
+public signup as the target experience. Self-service onboarding is for studio
+applicants; judges and moderators join through admin invitations for a specific
+event. Additional representatives join an explicitly authorized studio by
+invitation. Administrators use controlled provisioning. Spectators need no account;
+public information/results still require the ADR-002 publication work.
+
+A pending applicant is legitimate even without a representative role. Backend
+onboarding must bind signup to recoverable studio-application progress and reject
+generic-signup bypasses; renaming a button or accepting an intent flag is insufficient.
+Do not grant representative privileges before approval or delete existing roleless
+accounts automatically. These are planned rules; current public registration
+still creates an account without a studio or invitation.
+
 ## Current implementation and gaps
 
 | Area | Current behavior | Required improvement |
 | --- | --- | --- |
-| Account creation | Registration, login, and verification pages/endpoints exist. Registration copy promises immediate login; the backend login handler does not check email verification. | Align backend verification enforcement, recovery, and translated instructions in Phase 2. |
+| Account creation | Generic registration, login, and verification pages/endpoints exist. Registration copy promises immediate login; login does not check email verification. | Replace generic signup with validated studio onboarding under ADR-006; align verification, recovery, and translated instructions in Phase 2. |
 | Email | Sending is a development stub. | Deliver real verification/invitation/recovery email before external onboarding; Phase 8 owns provider work. |
 | Continuing after authentication | Login can use route state; verification navigates to `/`. | Preserve the selected event and safe application destination through registration, verification, and session expiry. |
 | Event discovery | Event screens exist, but event API reads require authentication under ADR-002. | Explain sign-in requirements; public discovery requires a separate publication/DTO decision. |
@@ -21,7 +37,7 @@ New domain decisions listed below must be resolved before dependent implementati
 | Approval | Organization and event approval are independent; both start pending. Event approval assigns representative roles. | Explain both statuses and the next action; never treat a role as proof of approval. |
 | Dancers | Canonical API supports authorized CRUD with calendar birth dates, approval gates, stage locks, and soft deletion. | Build roster UI; eligibility, restore, and multi-event behavior remain future work. |
 | Invitations | Inspection/acceptance API exists; email links use `/accept-invitation`, which has no frontend route. | Build new/existing-account acceptance and expired/revoked-link recovery after backend hardening. |
-| Competition entries | Performance integration is incomplete; role dashboards are placeholders. | Complete Phase 1 contracts before building entries, music, submission, or live operations. |
+| Competition entries | Performance CRUD API/client contracts are integrated; role dashboards and entry screens remain placeholders/absent. | Finish remaining Phase 1 stabilization before entries, music, submission, or live operations. |
 
 ## Language and navigation
 
@@ -29,7 +45,7 @@ Use distinct actions throughout the interface:
 
 | Label | Meaning |
 | --- | --- |
-| Create account | Create a personal login; does not apply to an event. |
+| Register your studio | Start studio onboarding, including personal account access when needed; does not imply studio/event approval. |
 | Apply to competition | Request studio participation in the selected event. |
 | Add performance | Prepare one competition entry with its participants and music. |
 | Submit entries | Confirm a complete set of entries for review under the future submission policy. |
@@ -40,14 +56,16 @@ application deadline, entry deadline, music deadline, and event date if the even
 uses separate deadlines. Display exact times with the event timezone; do not
 promise deadlines or review turnaround that the organizer has not configured.
 
-## Journey 1: Create an account and continue
+## Journey 1: Register your studio and establish account access
 
-Starting point: a visitor selects a competition action or opens account creation.
+Starting point: a studio applicant selects “Register your studio,” optionally from
+a selected competition. Judges and staff use Journey 5 instead of public signup.
 
 1. Keep the event name and intended next action visible through onboarding.
-2. Ask only for the personal details needed to create the account. Studio,
-   director, and billing details belong to later steps; prefill repeated contact
-   details from the profile while allowing appropriate edits.
+2. Establish a valid studio-onboarding context on the backend, then collect the
+   personal details needed for account access. Define required studio context and
+   draft persistence before implementation; director and optional billing details
+   can follow later. Prefill repeated contact data without implying approval.
 3. Explain password requirements before submission and support password managers,
    paste, autocomplete, and a labelled show-password control.
 4. On success, show the destination email and verification instructions. Provide
@@ -66,6 +84,8 @@ Acceptance criteria:
 - A new user can resume the intended event after opening email in another tab;
   define a safe fallback when opening on another device.
 - Instructions and backend verification enforcement agree.
+- Direct API calls cannot bypass studio-focused signup or self-select staff roles;
+  incomplete legitimate applicants can resume without a representative role.
 - Expired links and existing accounts have a usable recovery path.
 - Session expiry preserves recoverable progress and returns to the same task
   after reauthentication, subject to current authorization.
@@ -176,6 +196,11 @@ database access. UI previews do not grant impersonation or bypass permissions.
 
 ## Journey 5: Accept an invitation
 
+Judges and moderators join only through admin invitations scoped to a valid event.
+“Manager” is not a separate predefined role: stage operators use `moderator`;
+organizer management permissions need an explicit decision. Additional studio
+representatives require studio-bound invitations and authorized inviters.
+
 Show the event, invited role, intended account, and expiry before acceptance.
 New users complete account setup; existing users authenticate as the intended
 account and accept without resetting their password. A wrong-account session
@@ -186,6 +211,14 @@ links need a safe explanation and resend/contact path.
 Acceptance criteria: account identity and event assignment are checked on the
 backend; repeated acceptance cannot duplicate roles or reset credentials.
 The acceptance page must exist before invitation delivery is enabled for users.
+
+For judges, acceptance must transactionally create/reconcile both the event Judge
+record and judge UserRole and consume the invitation. Today these are separate
+operations; neither record alone represents completed onboarding. Admins need
+invited/accepted/expired/revoked status, resend/revoke, and a separate remove-access
+action after acceptance. Removing access must preserve judge/score history.
+Inactive accounts are never silently reactivated. Role/scope validation, concurrent
+acceptance, rollback, and existing-assignment reconciliation require backend tests.
 
 ## Journey 6: Judge, moderate, and view results
 
@@ -228,6 +261,8 @@ remain inaccessible to unauthorized viewers.
 
 | Decision needed before implementation | Owning phase |
 | --- | --- |
+| Studio-onboarding signup contract, generic-signup bypass prevention, pending-user access, and existing roleless-account recovery | ADR-006 direction accepted; Phase 2 enforcement with Phase 3 persistence decisions |
+| Atomic judge role/record acceptance, mandatory event staff scope, offboarding, and moderator versus organizer permissions | ADR-006; Phases 2–4 before staff UI release |
 | Verification enforcement, resend/address correction, invitation account binding, token expiry, and recovery privacy policy | Phase 2 |
 | Safe return destination persistence across email tabs/devices and session expiry | Phase 2 |
 | Draft/submission/receipt model, retry idempotency, concurrent edits, correction scope/expiry, withdrawal/resubmission, and historical snapshots | Phase 3, lifecycle ADR before dependent Phase 5 work |

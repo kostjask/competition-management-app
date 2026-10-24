@@ -8,9 +8,24 @@ For exact paths, payloads, responses, and validation coverage, use
 use [USER_JOURNEYS.md](USER_JOURNEYS.md). Delivery order and blockers remain in the
 [development plan](../DEVELOPMENT_PLAN.md).
 
-## Three separate actions
+## Intended account eligibility
 
-1. **Create account:** establish a personal login and verify the email address.
+[ADR-006](adr/006-account-eligibility-and-staff-onboarding.md) establishes
+studio-focused self-service signup and invitation-only judges/moderators. There
+is no spectator-account use case. Pending studio applicants retain account access
+without receiving representative privileges before approval. Additional
+representatives require studio-bound invitations; admins use controlled provisioning.
+
+This direction is not implemented yet: the current public registration API still
+creates a roleless account without studio context. Backend signup enforcement,
+recoverable onboarding progress, and existing-account transition policy must be
+implemented together. A label change or client-supplied role is insufficient.
+
+## Three separate actions within studio onboarding
+
+1. **Register your studio / establish account access:** start validated studio
+   onboarding, establish a personal login, and verify the email address. Generic
+   account creation is current behavior, not the target entry path.
 2. **Apply to competition:** create a studio and pending event registration through
    the current API; request organization verification and event acceptance.
 3. **Submit entries:** confirm dancers, performances, and music for review. This
@@ -65,6 +80,8 @@ automatic identity merging.
 
 ## Current user-facing gaps
 
+- Public signup is unrestricted, contrary to the ADR-006 target. Keep existing
+  legitimate pending accounts recoverable; do not automatically delete roleless users.
 - Application routes `/events/:id/register` and `/events/:id/studio` are linked
   from event details but are not implemented. No application status screen exists.
 - New applicants have no assigned role and need an authenticated application home
@@ -75,12 +92,18 @@ automatic identity merging.
 - Email delivery is a development stub. Verification resend/address correction,
   password reset, invitation resend/revoke, and token-expiry behavior need work.
 - Invitation emails link to `/accept-invitation`, but that frontend page is missing.
+- Judge invitation acceptance assigns a role but does not create the event Judge
+  record; separate judge CRUD does not assign the role. Unify them transactionally.
+- Invitation scope is currently optional. Require event scope for judges/moderators,
+  validate assignable roles, and handle existing accounts through authentication
+  without resetting credentials. Add concurrency-safe acceptance and offboarding.
 - Entry submission, correction requests with reasons/deadlines, durable drafts,
   music handling, and submission receipts are planned rather than implemented.
 
 ## Intended onboarding and release gate
 
-Target journey: selected event → account creation/sign-in → verification → studio
+Target journey: register your studio (optionally in a selected event) → account
+access/sign-in → verification → studio
 application → application status → approved entry preparation → review and submit.
 Returning applicants should resume saved progress with the event and studio clear.
 Show separate organization/event statuses and an actionable next step throughout.
@@ -91,3 +114,9 @@ to Phase 2; state/model decisions to Phase 3; organizer review to Phase 4; appli
 screens and entries to Phase 5. Production email is owned by Phase 8 and must be
 available before external onboarding. No current API test or this documentation
 establishes a complete production-ready onboarding experience.
+
+Staff target journey: admin selects event and judge/moderator → invitation →
+intended-account authentication or invited account setup → atomic acceptance and
+assignment → event workspace. Provide status/resend/revoke and separate removal of
+accepted access. “Manager” must resolve to stage operation (`moderator`) or a
+separately designed organizer permission set; do not grant global admin by default.

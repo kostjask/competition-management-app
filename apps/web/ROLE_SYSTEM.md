@@ -1,217 +1,66 @@
-# Role-Based UI System - Usage Guide
+# Frontend roles and onboarding access
 
-This system is **database-driven**: roles are defined in the `Role` table, and permissions are managed through `RolePermission` relations.
+Reviewed: 2026-10-24
 
-**✅ Single source of truth: Database**  
-**✅ No schema updates needed when adding roles**  
-**✅ Frontend automatically works with any role from DB**
+This guide replaces older examples that gated first-time registration on the
+representative role or claimed arbitrary database roles automatically implement
+working UI. See [role architecture](../../ROLE_ARCHITECTURE.md) and
+[ADR-006](../../docs/adr/006-account-eligibility-and-staff-onboarding.md).
 
----
+## Navigation and account entry
 
-## Quick Start
+- Offer “Register your studio” for self-service studio onboarding, not generic
+  spectator signup. Backend eligibility enforcement is still pending.
+- Keep account verification/recovery, onboarding progress, and “My applications”
+  accessible to authenticated pending applicants without a representative role.
+  Backend queries must return only authorized memberships/applications.
+- Use representative/event permissions for approved management work, not as a
+  prerequisite for becoming an applicant.
+- Judges and moderators enter through event invitations; do not offer role
+  selection on public signup. Additional representatives use studio-bound invites.
+- Invitation acceptance must distinguish new users, existing users, wrong-account
+  sessions, and invalid/expired/revoked links. Existing users authenticate without
+  resetting their password. Never treat local UI success as proof of assignment.
+- Keep active event/studio visible and preserve a validated internal destination
+  across authentication. Published information requires no spectator account,
+  but public API publication remains future work.
 
-```tsx
-import { RoleGate, useRole, ROLES } from "@/auth";
-```
+## Current components and limitations
 
----
+`RoleGate`, `useRole`, `RequireAuth`, and `RequireRole` exist under `src/auth`.
+`RoleGate` supports authentication/guest/admin and role conditions. These are UI
+controls and cannot authorize API operations.
 
-## Approach 1: Using `<RoleGate>` Component (Recommended for UI)
+`useRole` currently compares role display names, while `RequireRole` uses fuzzy
+name matching against a fixed mapping. These disagree with stable role-key
+constants. Do not describe key-based or arbitrary-role checks as working until
+Phase 2 unifies the helpers, event scopes, and route guards with tests.
 
-### Admin-only content
-```tsx
-<RoleGate adminOnly>
-  <button>Delete All Events</button>
-</RoleGate>
-```
+Admin behavior also differs across helpers. Validate bypass per operation;
+frontend visibility does not remove backend parent/ownership/active-record checks.
+A database role added without routes, screens, permissions, and translations does
+not automatically create a usable workflow.
 
-### Specific role with type-safe constants
-```tsx
-<RoleGate roles={[ROLES.REPRESENTATIVE]}>
-  <button>Register Team</button>
-</RoleGate>
-```
+## Target implementation checklist
 
-### Multiple roles
-```tsx
-<RoleGate roles={[ROLES.JUDGE, ROLES.MODERATOR]}>
-  <button>View Scores</button>
-</RoleGate>
-```
+- Use `role.key` and explicit event scope consistently after the helper repair.
+- Keep one authorization helper for route guards and conditional navigation.
+- Derive permitted management actions from backend contracts, including studio
+  membership, approval, event registration, and stage restrictions.
+- Provide loading, unavailable, pending, denied, and recovery states; avoid
+  silently sending a pending applicant to a blank homepage.
+- Show staff invitation/assignment status in admin UI. A judge role without its
+  event Judge record is incomplete onboarding, not a ready judge.
+- Translate auth, invitation, status, and error text in ET/EN/RU and verify
+  keyboard/mobile use. Peer-score visibility follows the future scoring policy;
+  judge/moderator role labels alone must not expose all scores.
 
-### With fallback for non-authorized users
-```tsx
-<RoleGate 
-  roles={[ROLES.REPRESENTATIVE]} 
-  fallback={<button disabled>Login to Register</button>}
->
-  <button>Register Team</button>
-</RoleGate>
-```
+The currently available constants are `REPRESENTATIVE`, `JUDGE`, and `MODERATOR`
+in `src/auth/roles.ts`; admin handling uses existing dedicated checks. “Manager”
+is not a predefined role. Stage operation maps to `moderator`; organizer
+permissions need an explicit design before new navigation or assignments.
 
-### Any authenticated user
-```tsx
-<RoleGate requireAuth>
-  <button>View My Profile</button>
-</RoleGate>
-```
-
-### Guests only (not logged in)
-```tsx
-<RoleGate guestsOnly>
-  <button>Sign Up Now</button>
-</RoleGate>
-```
-
-### Future-proof: custom role strings work too
-```tsx
-<RoleGate roles={["new_custom_role"]}>
-  <button>Custom Feature</button>
-</RoleGate>
-```
-
----
-
-## Approach 2: Using `useRole()` Hook (Recommended for Logic)
-
-```tsx
-function MyComponent() {
-  const { isAdmin, isAuthenticated, hasRole, hasAnyRole } = useRole();
-
-  // Early return based on role
-  if (!hasRole(ROLES.REPRESENTATIVE)) {
-    return <div>Access denied</div>;
-  }
-
-  // Conditional rendering
-  return (
-    <div>
-      {isAdmin && <button>Admin Panel</button>}
-      {hasRole(ROLES.JUDGE) && <button>Score Performance</button>}
-      {hasAnyRole([ROLES.JUDGE, ROLES.MODERATOR]) && <button>View All Scores</button>}
-      {isAuthenticated && <button>Logout</button>}
-      
-      {/* Future-proof: any role string works */}
-      {hasRole("future_role") && <button>Future Feature</button>}
-    </div>
-  );
-}
-```
-
----
-
-## Approach 3: Event-Specific Roles
-
-```tsx
-function EventPanel({ eventId }: { eventId: string }) {
-  const { hasRoleInEvent } = useRole();
-
-  return (
-    <div>
-      {hasRoleInEvent(ROLES.JUDGE, eventId) && (
-        <button>Judge This Event</button>
-      )}
-    </div>
-  );
-}
-```
-
----
-
-## Best Practices
-
-1. ✅ **Database is truth**: Always define roles in the `Role` table first
-2. ✅ **Use `ROLES` constants**: For autocomplete and readability (but strings work too)
-3. ✅ **Use `<RoleGate>`**: For simple UI conditional rendering
-4. ✅ **Use `useRole()` hook**: When you need logic/early returns
-5. ✅ **Admin bypass**: Admin users automatically bypass all role checks
-6. ✅ **Permissions in DB**: Use `RolePermission` table for fine-grained access control
-
----
-
-## Adding a New Role
-
-### Step 1: Add to database
-Insert the new role into the `Role` table:
-
-```sql
-INSERT INTO "Role" (id, key, name, description)
-VALUES (gen_random_uuid(), 'coordinator', 'Coordinator', 'Event coordinator role');
-```
-
-### Step 2: Assign permissions (optional)
-Link permissions via `RolePermission` table:
-
-```sql
-INSERT INTO "RolePermission" (role_id, permission_id)
-VALUES (
-  (SELECT id FROM "Role" WHERE key = 'coordinator'),
-  (SELECT id FROM "Permission" WHERE key = 'manage_schedule')
-);
-```
-
-### Step 3: Add constant for convenience (optional)
-Edit `apps/web/src/auth/roles.ts`:
-
-```ts
-export const ROLES = {
-  REPRESENTATIVE: "representative",
-  JUDGE: "judge",
-  MODERATOR: "moderator",
-  COORDINATOR: "coordinator", // ← Add here for autocomplete
-} as const;
-```
-
-### Step 4: Use anywhere!
-```tsx
-<RoleGate roles={[ROLES.COORDINATOR]}>
-  <CoordinatorPanel />
-</RoleGate>
-
-// Or use the string directly
-<RoleGate roles={["coordinator"]}>
-  <CoordinatorPanel />
-</RoleGate>
-```
-
-**That's it!** No schema changes, no type updates. The frontend automatically accepts any role from the database.
-
----
-
-## Type Safety Features
-
-- **Database-driven**: Roles defined in `Role` table (single source of truth)
-- **Autocomplete**: Use `ROLES` constants for known roles
-- **Flexible**: Accepts any string role from database
-- **No duplication**: Add role once in DB, works everywhere
-- **Permission-based**: Uses `RolePermission` for fine-grained control
-
----
-
-## Role Management Architecture
-
-```
-Database (Single Source of Truth)
-├── Role table           → Defines all available roles
-├── Permission table     → Defines all available permissions
-└── RolePermission table → Maps which roles have which permissions
-
-Frontend
-├── useRole() hook       → Checks user.roles[] from API
-├── RoleGate component   → Conditional UI based on roles
-└── ROLES constants      → Convenience for autocomplete (optional)
-```
-
-**Key principle**: The database controls what roles exist and what they can do. The frontend just checks if a user has a specific role string.
-
----
-
-## Available Role Constants
-
-From `apps/web/src/auth/roles.ts`:
-
-- `ROLES.REPRESENTATIVE` - Studio representatives
-- `ROLES.JUDGE` - Event judges
-- `ROLES.MODERATOR` - Event moderators
-
-**Note**: These are just convenience constants. The actual roles come from the database, so any role string from the `Role` table will work in the frontend.
+See [user journeys](../../docs/USER_JOURNEYS.md),
+[API status](../../docs/API.md), and
+[development plan](../../DEVELOPMENT_PLAN.md). These requirements do not imply
+that onboarding screens or authorization repairs have been implemented.
