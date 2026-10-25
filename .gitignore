@@ -8,6 +8,9 @@ build/
 out/
 .next/
 coverage/
+test-results/
+playwright-report/
+deploy/staging.env
 *.tsbuildinfo
 
 # turbo

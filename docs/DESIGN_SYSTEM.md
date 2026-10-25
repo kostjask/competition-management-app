@@ -7,6 +7,15 @@ semantic-feedback code conventions; [API](API.md) owns DTOs/enums/permissions.
 
 ## Direction and adoption
 
+Foundation implementation (2026-10-25): semantic tokens in web/src/index.css and
+native controls in components/ui/Foundation.tsx are implemented and checked in
+the development-only /__fixtures/foundation route. ET/EN/RU fixtures, measured
+contrast and initial Chromium device/keyboard evidence are recorded in
+[foundation validation](PHASE_2A_VALIDATION.md). This validates those basic states;
+later workflow components, final branding, fluent and screen-reader review remain
+open. Static alert previews suppress live announcements; validation announces one
+error summary and links focus the relevant field.
+
 Required direction: calm, legible, predictable administration and live operation;
 clear action hierarchy and data identity across devices/languages. There is no
 approved brand identity, logo, artwork, dark theme or final palette. Do not invent
@@ -14,8 +23,9 @@ brand assets. The current app uses light slate surfaces, blue/amber accents,
 rounded cards, Sora body and Fraunces display fonts, with one-off gradients/shadows.
 Treat that as existing styling, not a validated system.
 
-All numeric/color/type/layout defaults below are **proposed** until verified in
-P2-UI-FOUNDATION. Accessibility/interaction/privacy requirements are **required**.
+Foundation token/basic-control defaults are verified for the synthetic states
+above; other numeric/type/layout defaults remain **proposed** until their owning
+workflow review. Accessibility/interaction/privacy requirements are **required**.
 Final branding is UX-D01. Adopt tokens and components incrementally in owning
 feature slices; do not broadly restyle unrelated screens or introduce a library
 without concrete need. This document adds no CSS or package dependency.

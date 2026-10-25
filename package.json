@@ -10,13 +10,14 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "typecheck": "turbo typecheck",
+    "typecheck": "turbo typecheck && tsc -p tsconfig.browser.json",
     "seed": "pnpm --filter api seed",
     "lint": "turbo lint",
     "db:generate": "pnpm --filter api prisma:generate",
     "db:validate": "pnpm --filter api prisma:validate",
     "db:migrate": "pnpm --filter api prisma:migrate",
     "test:baseline": "node scripts/test-baseline.cjs",
+    "test:browser": "playwright test",
     "test": "pnpm test:i18n && turbo test",
     "test:watch": "turbo watch test",
     "test:i18n": "node scripts/check-i18n.cjs"
@@ -26,9 +27,10 @@
   "license": "ISC",
   "packageManager": "pnpm@12.15.0",
   "devDependencies": {
-    "@typescript/native": "npm:typescript@^7.0.2",
+    "@playwright/test": "^1.64.1",
     "@types/express": "^5.0.6",
     "@types/node": "^26.6.5",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "nodemon": "^3.1.14",
     "tsx": "^4.23.15",
     "turbo": "2.11.10",

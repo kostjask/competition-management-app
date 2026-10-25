@@ -24,7 +24,8 @@ existing application environment file. Build/typecheck cover the four workspace
 packages and the API seed. Lint currently covers web only. The API uses Node's
 built-in test runner against the compiled application; pnpm test builds its
 dependencies first. The web test script uses the existing tsx runner for Node tests and static React
-component rendering. No interactive browser test infrastructure is claimed.
+component rendering. Initial Chromium browser infrastructure now checks the
+synthetic foundation fixture; full auth/domain journeys remain P9-BROWSER.
 
 Turbo may reuse unchanged local results. To run fresh HTTP tests after building,
 use pnpm --filter api test. In CI each job begins with a fresh checkout and
@@ -93,7 +94,8 @@ checks, and auth/profile DTOs with real global/event roles. Category checks incl
 strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
 competing creates, plus deletion preserving active/archived performances. Setup
 checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
-Invitation checks cover real scoped/global acceptance, concurrency and rollback.
+Invitation checks cover scoped acceptance, unsupported global/unclassified denial,
+concurrency and rollback.
 Scope-integrity checks additionally race direct global/event role and invitation
 writes, restrict deletion with assignments or invitation history, and replace
 expired links concurrently without losing old records. The baseline's isolated
@@ -183,7 +185,7 @@ to hide new strings; translate them or document a specific intentional-content
 exception. Catalogue completeness, placeholder and native plural checks run for
 ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
 
-The current suite has 76 API tests and 8 frontend tests. Frontend checks include
+The current suite has 87 API tests and 8 frontend tests. Frontend checks include
 all-locale component renders of the same stored error, field links, selector
 semantics, network/non-JSON/multipart/204 handling, response-schema failures and
 safe legacy/future fallback. Shared validation preserves root/nested rules and
@@ -191,12 +193,29 @@ bounds without input values. These are static component/transport checks, not
 interactive browser, keyboard/mobile/screen-reader or fluent-language review.
 Those remain per-workflow release checks under I18N-QA and P9-BROWSER.
 
-[api-coverage.json](api-coverage.json) inventories 56 mounted method/path operations
+[api-coverage.json](api-coverage.json) inventories 60 mounted method/path operations
 and their test evidence/non-applicable or Phase 2 exceptions. Tests compare runtime
 router registration to the inventory and reject unauthenticated access to every
 protected operation. /health and static files are infrastructure exceptions.
 The coverage inventory does not imply complete authorization hardening: upload
 ownership and invitation existing-account/scope policy are still Phase 2 gates.
+Account eligibility is tested across every protected inventory operation with
+missing/inactive/unverified subjects, before role resolution. PostgreSQL checks
+also retain issued JWTs while disabling, removing or unverifying their account,
+cover verified roleless/admin paths and prove denied operations preserve records.
+The development-mode API fixture resolves a persisted seed actor, exercises an
+invitation creator foreign key and rejects disabled/unverified seed identity.
+Configuration tests refuse DEV_AUTH outside development. Missing-identity
+registration now fails at 401; a database trigger under a valid identity preserves
+the original nested-write rollback coverage.
+Public recovery adds strict-body/neutral-acknowledgement, password proof,
+delivery availability/failure, session revision and shared-throttle HTTP tests.
+The baseline also runs check-auth-recovery.cjs in an isolated child with an injected
+mail fake: real PostgreSQL checks email collisions, identity/membership preservation,
+failed-send rollback, reset/rotation races, expiry/replay/wrong-purpose/inactive
+denial, database rollback and old-session rejection. Raw synthetic delivery secrets
+stay inside that test child. Migration upgrades verify default-zero revisions and
+negative-version rejection; SQL-only check parity includes sessionVersion.
 
 ## Incremental UI/UX acceptance and visual regression strategy
 
@@ -275,3 +294,26 @@ format eligibility, exact scoring/ties, permission aggregation; API identity/sco
 ownership, rollback/conflict/archive/restore and media compensation. Add browser
 journeys incrementally from signup/verify/apply/approve to entries, staff and live
 results. No unrelated future feature needs to be tested before its implementation.
+
+## Phase 2A browser and foundation checks
+
+Run `pnpm exec playwright install chromium`, then `pnpm test:browser`. CI installs
+Chromium with its OS dependencies. Playwright global setup owns an in-process Vite server on
+127.0.0.1:4177, refuses an occupied port and closes it after the run, avoiding
+Windows shell/process-tree teardown. Browser test TypeScript is checked strictly
+by tsconfig.browser.json as part of pnpm typecheck. The dev-only
+/__fixtures/foundation route uses synthetic data and makes no API mutations.
+Twelve ET/EN/RU cases cover 320/390/768/1440px, keyboard summary/field focus,
+input preservation across language switches, disabled/busy states, overflow and
+computed palette values. Screenshots/traces remain ignored under test-results.
+Web unit checks measure semantic color pairs; visual fixture review supplements
+these checks. This is initial Chromium coverage, not screen-reader/fluent review
+or evidence for unfinished auth/application/scoring journeys.
+
+The full baseline additionally invokes scripts/check-foundation.cjs in an isolated
+child with injected Resend-shaped provider credentials and a random encryption
+key. It makes no provider network calls. PostgreSQL proves immutable audit and
+bidirectional rollback, draft retry/cancel/verification retention, no intent grants,
+role/studio FKs and scope denial, and durable encrypted queue rollback/retries,
+worker concurrency, fixed provider request bodies and stale/expired cancellation.
+See [current evidence](PHASE_2A_VALIDATION.md).

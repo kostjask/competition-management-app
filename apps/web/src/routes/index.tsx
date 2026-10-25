@@ -24,6 +24,7 @@ const EventsList = lazy(() => import("../pages/events/EventsList.tsx"));
 const EventsCreate = lazy(() => import("../pages/events/EventsCreate.tsx"));
 const EventEdit = lazy(() => import("../pages/events/EventEdit.tsx"));
 const EventInfo = lazy(() => import("../pages/events/EventInfo.tsx"));
+const FoundationFixture = import.meta.env.DEV ? lazy(() => import("../components/ui/FoundationFixture.tsx")) : null;
 
 function LazyWrapper({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<FullPageLoading />}>{children}</Suspense>;
@@ -32,6 +33,7 @@ function LazyWrapper({ children }: { children: React.ReactNode }) {
 export function AppRoutes() {
   return (
     <Routes>
+      {FoundationFixture && <Route path="/__fixtures/foundation" element={<LazyWrapper><FoundationFixture /></LazyWrapper>} />}
       {/* Auth routes - isolated layout without navigation */}
       <Route
         path="/auth/login"
