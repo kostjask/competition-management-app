@@ -28,6 +28,10 @@ try {
     }
     $expectedSql = Get-Content -Raw -LiteralPath $expectedSqlPath
     $expectedSql = $expectedSql.Replace('CREATE SCHEMA IF NOT EXISTS "public";', '')
+    # Prisma cannot express these partial/null-safe indexes. Compare their exact
+    # definitions as well, rather than excluding them from the parity inventory.
+    $scopeSql = Get-Content -Raw apps/api/prisma/migrations/20261025000000_scope_integrity/migration.sql
+    $expectedSql += "`n" + ((($scopeSql -split "`n") | Where-Object { $_ -match '^CREATE UNIQUE INDEX' }) -join "`n")
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -52,7 +56,10 @@ INSERT INTO "StudioEventRegistration" (id, "studioId", "eventId", status, "updat
 '@
             }
             # Separate transactions permit use of enum values added by earlier migrations.
-            $sql += "`nBEGIN;`n$(Get-Content -Raw (Join-Path $migration.FullName 'migration.sql'))`nCOMMIT;`n"
+            $migrationSql = Get-Content -Raw (Join-Path $migration.FullName 'migration.sql')
+            # Each migration gets one transaction even when it declares its own.
+            $migrationSql = $migrationSql -replace '(?m)^(BEGIN|COMMIT);\r?$', ''
+            $sql += "`nBEGIN;`n$migrationSql`nCOMMIT;`n"
         }
         $sql += @'
 DO $$

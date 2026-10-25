@@ -63,6 +63,7 @@ async function main() {
     psql(`CREATE DATABASE ${database};`);
     created = true;
     pnpm('db:migrate');
+    require('./check-scope-upgrade.cjs')(database);
     client = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
     const migrations = await client.$queryRaw`SELECT count(*)::int AS count FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     const { readdirSync } = require('node:fs');
@@ -125,6 +126,7 @@ async function main() {
     await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-setup.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-invitations.cjs')({ client, baseUrl, adminToken: token });
+    await require('./check-scope-integrity.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-categories.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-events.cjs')({ client, baseUrl, adminToken: token });

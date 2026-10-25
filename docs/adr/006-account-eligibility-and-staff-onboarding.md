@@ -82,8 +82,10 @@ access and must enforce a deliberate null-safe uniqueness/history policy.
 P2-IDENTITY-TOKENS supplies consistent email canonicalization with collision
 review, purpose-bound token digests, expiry/consumption/revocation and safe legacy
 link transition before signup/invitation handlers change. P2-STAFF-MODEL adds
-explicit studio scope for member invitations. These are planned fixes; current
-schema/token storage and APIs remain unchanged. See [database review](../DATABASE_REVIEW.md).
+explicit studio scope for member invitations. Scope-integrity schema/index/history
+changes are implemented under ADR-008;
+deployment provenance review remains P2-SCOPE-DEPLOY. Identity/token and staff
+model fixes are still planned. See [database review](../DATABASE_REVIEW.md).
 
 The revised development plan retains this product decision and changes delivery
 ordering. Phase 1 stabilizes judge/controller/contracts and introduces baseline

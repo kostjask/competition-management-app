@@ -1222,6 +1222,7 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
   prisma.role = { findUnique: async ({ where }) => where.key === 'missing' ? null : { id: 'role' } };
   prisma.event.findUnique = async ({ where }) => where.id === 'missing' ? null : { id: where.id, name: 'Event' };
   prisma.userRole.findFirst = async () => null;
+  prisma.invitation.updateMany = async () => ({ count: 0 });
   prisma.invitation.findFirst = async () => null;
   let stored;
   prisma.invitation.create = async ({ data }) => stored = { id: 'invite', ...data, createdAt: new Date('2026-01-01'), usedAt: null };
@@ -1274,6 +1275,22 @@ test('invitation acceptance returns an explicit session and atomically links rol
   assert.equal(user.name, 'New'); assert.notEqual(user.password, 'fixture-password'); assert.equal(used, true);
   assert.deepEqual(assignment, { userId: 'new', roleId: 'role', eventId: 'e' });
   assert.equal((await accept({ token: 'fixture', name: 'New', password: 'fixture-password' })).body.reason, 'invitationUsed');
+});
+
+test('superseded invitation links cannot be inspected or accepted even with future expiry', async (t) => {
+  const { request, prisma } = await fixture(t);
+  prisma.invitation.findUnique = async () => ({ id: 'superseded', usedAt: null,
+    supersededAt: new Date(), expiresAt: new Date(Date.now() + 60000) });
+  prisma.user.findUnique = async () => assert.fail('Superseded links must not reach account handling');
+  for (const result of [
+    await request('/api/v1/invitations/superseded'),
+    await request('/api/v1/invitations/accept', { method: 'POST', body: {
+      token: 'superseded', name: 'Fixture', password: 'fixture-password',
+    } }),
+  ]) {
+    assert.equal(result.status, 400);
+    assert.equal(result.body.reason, 'invitationExpired');
+  }
 });
 
 test('all image routes use strict DTOs and standard input/error contracts with storage fakes', async (t) => {

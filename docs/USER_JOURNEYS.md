@@ -1,303 +1,61 @@
-# User journeys and UX requirements
+# User journey outcomes
 
-Reviewed: 2026-10-24
+Target product behavior; use the [checkpoint](../DEVELOPMENT_PLAN.md) for actual
+delivery. [Domain](DOMAIN.md) owns terminology/current model, accepted ADRs own
+decisions, [flows](USER_FLOWS.md) own detailed steps/recovery/acceptance,
+[UI_UX](UI_UX.md) owns screens/navigation, and [DESIGN_SYSTEM](DESIGN_SYSTEM.md)
+owns components. Do not duplicate those inventories here.
 
-This guide describes the intended user experience and its acceptance criteria.
-It is a product specification, not a claim that these screens or workflows exist.
-The [development plan](../DEVELOPMENT_PLAN.md) controls delivery order;
-[API.md](API.md) describes implemented contracts. Accepted ADRs govern architecture.
-New domain decisions listed below must be resolved before dependent implementation.
+## Account eligibility and terminology
 
-## Account eligibility and entry paths
-
-[ADR-006](adr/006-account-eligibility-and-staff-onboarding.md) replaces generic
-public signup as the target experience. Self-service onboarding is for studio
-applicants; judges and moderators join through admin invitations for a specific
-event. Additional representatives join an explicitly authorized studio by
-invitation. Administrators use controlled provisioning. Spectators need no account;
-public information/results still require the ADR-002 publication work.
-
-A pending applicant is legitimate even without a representative role. Backend
-onboarding must bind signup to recoverable studio-application progress and reject
-generic-signup bypasses; renaming a button or accepting an intent flag is insufficient.
-Do not grant representative privileges before approval or delete existing roleless
-accounts automatically. These are planned rules; current public registration
-still creates an account without a studio or invitation.
-
-## Current implementation and gaps
-
-| Area | Current behavior | Required improvement |
-| --- | --- | --- |
-| Account creation | Generic registration, login, and verification pages/endpoints exist. Registration copy promises immediate login; login does not check email verification. | Replace generic signup with validated studio onboarding under ADR-006; align verification, recovery, and translated instructions in Phase 2. |
-| Email | Sending is a development stub. | P2-EMAIL provides real verification/invitation/recovery delivery before external onboarding; Phase 8 expands hardening. |
-| Continuing after authentication | Login can use route state; verification navigates to `/`. | Preserve the selected event and safe application destination through registration, verification, and session expiry. |
-| Event discovery | Event screens exist, but event API reads require authentication under ADR-002. | Explain sign-in requirements; public discovery requires a separate publication/DTO decision. |
-| Applying | Canonical registration API exists. Event links point to missing `/events/:id/register` and `/events/:id/studio` pages. | Implement the routes and an application home accessible to authenticated applicants without an assigned role. |
-| Registration availability | Event UI treats `DATA_REVIEW` as open for new applications; non-admin creation only permits `PRE_REGISTRATION` and `REGISTRATION_OPEN`. | Match backend rules and explain closed registration and permitted corrections separately. |
-| Approval | Organization and event approval are independent; both start pending. Event approval assigns representative roles. | Explain both statuses and the next action; never treat a role as proof of approval. |
-| Dancers | Canonical API supports authorized CRUD with calendar birth dates, approval gates, stage locks, and soft deletion. | Build roster UI; eligibility, restore, and multi-event behavior remain future work. |
-| Invitations | Inspection/acceptance API exists; email links use `/accept-invitation`, which has no frontend route. | Build new/existing-account acceptance and expired/revoked-link recovery after backend hardening. |
-| Competition entries | Performance CRUD API/client contracts are integrated; role dashboards and entry screens remain placeholders/absent. | Finish remaining Phase 1 stabilization before entries, music, submission, or live operations. |
-| Entry ownership and scheduling | Owner is inferred from participant dancers; current creation requires complete fields and unique orderOnStage. | P3-PERFORMANCE-OWNER/ENTRIES introduces explicit ownership and incomplete unscheduled drafts; stage position is later schedule work. |
-| Studio identity and names | Studios remain event-owned and active names are globally unique. | ADR-001 migration gates reuse; P3-STUDIO-NAMES decides display-name policy before any index change. |
-
-## Language and navigation
-
-Use distinct actions throughout the interface:
+[ADR-006](adr/006-account-eligibility-and-staff-onboarding.md): self-service is for
+studio applicants; event judges/moderators and additional studio representatives
+join by scoped invitation; administrators use controlled provisioning; spectators
+need no account. Pending roleless applicants must recover their own progress.
+Current signup is still unrestricted. Backend context must enforce eligibility;
+relabeling a button or trusting an intent flag is insufficient.
 
 | Label | Meaning |
 | --- | --- |
-| Register your studio | Start studio onboarding, including personal account access when needed; does not imply studio/event approval. |
-| Apply to competition | Request studio participation in the selected event. |
-| Add performance | Prepare one competition entry with its participants and music. |
-| Submit entries | Confirm a complete set of entries for review under the future submission policy. |
-| Cancel application | Cancel a pending event application; does not delete the studio or account. |
+| Register your studio | Start studio onboarding and personal account access; no approval implied |
+| Apply to competition | Request studio participation in one event |
+| Add performance | Prepare one entry and participants/music |
+| Submit entries | Confirm complete entries for review; future contract |
+| Cancel application | Cancel pending event application, retaining studio/account |
 
-Always show the active event and studio on management screens. Distinguish the
-application deadline, entry deadline, music deadline, and event date if the event
-uses separate deadlines. Display exact times with the event timezone; do not
-promise deadlines or review turnaround that the organizer has not configured.
+## Journey map
 
-## Journey 1: Register your studio and establish account access
-
-Starting point: a studio applicant selects “Register your studio,” optionally from
-a selected competition. Judges and staff use Journey 5 instead of public signup.
-
-1. Keep the event name and intended next action visible through onboarding.
-2. Establish a valid studio-onboarding context on the backend, then collect the
-   personal details needed for account access. Define required studio context and
-   draft persistence before implementation; director and optional billing details
-   can follow later. Prefill repeated contact data without implying approval.
-3. Explain password requirements before submission and support password managers,
-   paste, autocomplete, and a labelled show-password control.
-4. On success, show the destination email and verification instructions. Provide
-   resend with throttling and a defined correction path for a mistyped address.
-5. After verification, offer a clear continue action to the selected event.
-   Without an event destination, open the application home or event selection.
-6. Provide password reset and clear invalid/expired/already-used link recovery.
-   Existing-account links should guide the user to sign in or recover access.
-
-Only permit validated internal return destinations; never trust an arbitrary
-redirect URL. Do not put credentials or verification tokens into return URLs.
-Recovery responses must follow the account-enumeration policy defined in Phase 2.
-
-Acceptance criteria:
-
-- A new user can resume the intended event after opening email in another tab;
-  define a safe fallback when opening on another device.
-- Instructions and backend verification enforcement agree.
-- Direct API calls cannot bypass studio-focused signup or self-select staff roles;
-  incomplete legitimate applicants can resume without a representative role.
-- Expired links and existing accounts have a usable recovery path.
-- Session expiry preserves recoverable progress and returns to the same task
-  after reauthentication, subject to current authorization.
-
-## Journey 2: Apply and track approval
-
-Starting point: an authenticated applicant chooses an event accepting applications.
-
-1. Show entry requirements, relevant deadlines, organizer contact, and an explicit
-   explanation that applying is separate from submitting performances.
-2. Collect studio details and representative contact information. Explain required
-   fields and postpone optional billing information until needed.
-3. Submit once, show confirmation only after server success, and open the
-   application's status page. Prevent duplicate clicks. An uncertain network
-   result must be reconciled before retrying creation; the current POST is not
-   idempotent.
-4. Show organization verification and event approval as separate rows with
-   explanations and next actions. Do not promise access to roster or entry editing
-   while approval requirements are unmet.
-5. Let the applicant return through “My applications” without a representative
-   role. Backend access remains restricted to active owned memberships or admins.
-6. Offer pending cancellation with a confirmation explaining that the studio is
-   retained. For approved/locked applications, explain the applicable policy and
-   organizer contact rather than offering the unsupported pending-only action.
-
-| State or condition | User-facing explanation | Next action |
+| Outcome | Detailed flows | Essential invariant |
 | --- | --- | --- |
-| No application | You have not applied to this competition. | Apply if registration is open. |
-| Organization pending | Your studio is awaiting verification. | Check submitted details and organizer contact; show review timing only if configured. |
-| Organization approved, event pending | Your studio is verified; this competition application is awaiting review. | Follow application status. |
-| Event approved | Your studio is accepted for this competition. | Prepare entries when the event stage permits. |
-| Rejected | The application or studio was not approved. Identify which decision applies. | Show a safe review reason/contact; resubmission requires an agreed policy. |
-| Locked or stage-restricted | Editing is closed for this application or event. | View saved data and any granted correction permission. |
+| Establish/recover account and verify email | F01 | Safe internal return through email tabs/devices; truthful delivery; no staff self-selection or lost authorized progress |
+| Find event, apply, track independent approvals | F02/F03 | Roleless applicant sees own status/next action; organization approval differs from event approval; reconcile uncertain creates |
+| Prepare roster, entries and music; submit/correct | F04/F07/F10 | Authorized unscheduled drafts after model work; server eligibility checks; preserved old media/history; scoped audited corrections |
+| Configure event and review applications | F05/F03 | Actionable checklist/queues; correct studio/event decisions; scoring setup does not block application opening |
+| Accept invitation and remove access | F06 | Intended-account authentication; atomic Judge/role/consume; pending revoke differs from removal; retain scores/history |
+| Moderate, score and publish | F08/F09/F10 | Correct stage/performance, acknowledged versions, no duplicate actions, explicit privacy-safe publication and recovery rehearsal |
 
-These explanations are UI conditions, not new persisted status values. Keep
-organization approval, event registration, entry submission, and event lifecycle
-separate. “Corrections requested” and “entries submitted” need their own approved
-model; do not silently map them to registration `PENDING` or `LOCKED`.
+Always show active event/studio and who acts next. Separate application, entry,
+music deadlines and event date where configured; show exact event-timezone times,
+not invented deadlines or turnaround promises. Studio/contact edits never change
+login identity. Never merge identities by name/email. Entry identity/submission
+must remain independent of schedule position.
 
-Acceptance criteria:
+## Delivery and acceptance
 
-- A roleless applicant can see only their own applications and the next action.
-- Closed registration never offers a working-looking new application action.
-- A delayed response, refresh, or retry cannot silently create duplicate studios.
-- Approval changes become visible after refresh; email is supplementary to the
-  application status page.
+First usable onboarding milestone is M2: verify via real email → apply to one
+event → organizer decisions → returning applicant sees both statuses/next action.
+M3 adds entries/music/corrections; M4 staff readiness can proceed independently
+after its own prerequisites; M5 adds live operation/results. The checkpoint owns
+the sole milestone dependency table. Reuse/member extensions, CSV import, copying
+performances and admin view previews are optional separately gated backlog.
 
-## Journey 3: Prepare and submit entries
+Each delivered journey needs complete loading/empty/error/success/disabled/denied
+and recovery states, ET/EN/RU including emails, semantic keyboard/focus access,
+phone/tablet/desktop layouts, and negative scope/session/stage/retry tests. Preserve
+work under the agreed privacy/retention policy; do not promise drafts/offline
+support before storage/conflict contracts exist. Public views/logs/URLs must exclude
+private birth/contact/billing data. [TESTING](TESTING.md) owns evidence requirements.
 
-Starting point: an approved studio representative opens an editable competition.
-
-Use a resumable checklist: studio details, dancers, performances, music, review,
-and submission. Show completion and blocking issues for each section. Users may
-revisit saved sections; avoid forcing all roster work into a single long form.
-
-Drafts must have explicit authorized studio/event ownership even before dancers
-are selected. Representatives must be able to save incomplete entries without a
-stage number; explain missing required data at review/submission. These are target
-requirements: current create validation requires full fields and orderOnStage.
-P3-ENTRIES must define storage/contracts before the UI promises draft support.
-
-- Show save-in-progress, saved, unsaved, and failed-save states accurately.
-  Preserve form values after validation/network errors. Warn before leaving
-  unsaved work and define server-backed draft persistence before promising autosave.
-- Make dancer selection searchable. Display birth dates in a locale-appropriate
-  format and explain the event's age calculation date and policy. Validate
-  participant relationships and eligibility again on the backend.
-- Show participant count and music/performance duration against format limits.
-  Explain a specific conflict, for example “This format allows up to 8 dancers;
-  you selected 9.”
-- Show accepted music types and size/duration limits before upload. Provide
-  upload progress, retry, playback preview, and replacement confirmation. Retain
-  the previous working file until replacement succeeds.
-- Review all performances before submission. Link each blocking issue directly
-  to its field or entry; distinguish warnings from submission blockers.
-- Explain what submitting will lock and whether later edits are permitted. Show
-  a server-confirmed receipt with event, studio, entry summary, submission time,
-  and next action. Repeated submission must not duplicate entries or receipts.
-- For corrections, show the affected entry/field, organizer reason, deadline,
-  and permitted editing scope. Preserve unaffected entries and audit changes.
-
-Returning studios should select an existing owned studio and reuse their roster
-only after ADR-001 migration and historical-data/lock policies are implemented.
-Never match or merge studios automatically by name. Copying a previous performance
-is optional future scope and requires rechecking eligibility, configuration, and
-music; it is not part of the first registration milestone.
-
-Acceptance criteria:
-
-- An approved representative can resume saved work on a later visit.
-- Ineligible participants, invalid duration/count, missing required music, and
-  cross-studio relationships cannot pass final server validation.
-- A deadline/stage change during editing produces an actionable response without
-  falsely reporting a successful save or discarding visible form values.
-- Concurrent edits are detected and resolved without silently overwriting changes.
-- Corrections are permitted only for the authorized event, scope, and stage.
-- Changing a roster/profile/configuration after submission does not silently
-  rewrite the historical entry; snapshots/versions preserve agreed submitted
-  facts under the privacy policy. Corrections create an explicit audited revision.
-- Schedule generation, slot assignment, or slot changes never become a prerequisite
-  for saving an otherwise authorized draft; final validation still rejects missing
-  entry requirements. Archived-slot reuse follows a defined scheduling policy.
-
-## Journey 4: Organize and review
-
-The admin home should prioritize applications awaiting review, requested
-corrections, incomplete entries, and missing music for the selected event.
-Keep organization verification separate from event acceptance, even when the
-screens link between them. Show who must act next and the relevant deadline.
-
-Before opening registration, provide a setup checklist covering event details,
-timezone/deadlines, categories, age rules, formats, contact information, and
-required scoring configuration. Prevent invalid lifecycle transitions with
-specific missing prerequisites. Review decisions and correction requests need
-reasons where required by the agreed policy, safe notifications, and audit records.
-
-Acceptance criteria: an administrator can configure an event, find pending work,
-review the correct studio/event, and communicate the decision without direct
-database access. UI previews do not grant impersonation or bypass permissions.
-
-## Journey 5: Accept an invitation
-
-Judges and moderators join only through admin invitations scoped to a valid event.
-“Manager” is not a separate predefined role: stage operators use `moderator`;
-organizer management permissions need an explicit decision. Additional studio
-representatives require studio-bound invitations and authorized inviters.
-
-Show the event, invited role, intended account, and expiry before acceptance.
-New users complete account setup; existing users authenticate as the intended
-account and accept without resetting their password. A wrong-account session
-must offer account switching without assigning the invitation to that account.
-After acceptance, open the relevant event workspace. Expired, revoked, or used
-links need a safe explanation and resend/contact path.
-
-Acceptance criteria: account identity and event assignment are checked on the
-backend; repeated acceptance cannot duplicate roles or reset credentials.
-The acceptance page must exist before invitation delivery is enabled for users.
-
-For judges, acceptance must transactionally create/reconcile both the event Judge
-record and judge UserRole and consume the invitation. Today these are separate
-operations; neither record alone represents completed onboarding. Admins need
-invited/accepted/expired/revoked status, resend/revoke, and a separate remove-access
-action after acceptance. Removing access must preserve judge/score history.
-Inactive accounts are never silently reactivated. Role/scope validation, concurrent
-acceptance, rollback, and existing-assignment reconciliation require backend tests.
-
-## Journey 6: Judge, moderate, and view results
-
-Judges need a touch-friendly current-performance view with rubric limits, draft
-save status, and an explicit final submission action. After reconnect, show the
-server-confirmed state and reconcile pending work before advancing. Never display
-“submitted” based only on local state. Peer-score visibility follows the scoring ADR.
-
-Moderators need current/next performances, stage/session context, judge completion,
-and connection status. Advancing, skipping, reopening, and correcting require
-clear authorization and confirmation appropriate to the action. Provide a manual
-fallback/export procedure for network failure; offline scoring support remains
-an explicit design decision, not a current guarantee.
-
-Result views must distinguish provisional, finalized, published, and corrected
-results under the scoring/publication specification. Public access requires
-approved public DTOs and publication controls. Show correction explanations and
-publication time when applicable without exposing private dancer/contact data.
-
-Acceptance criteria: reconnect does not lose acknowledged submissions or duplicate
-stage actions; users see the correct assigned performance; unpublished results
-remain inaccessible to unauthorized viewers.
-
-## Cross-cutting acceptance criteria
-
-- Provide loading, empty, error, success, and disabled states with a clear next
-  action. A failed request must not look like an empty successful list.
-- Use semantic forms, associated labels, keyboard navigation, visible focus,
-  field errors, and an error summary linked to fields. Announce asynchronous
-  status changes accessibly; never rely on color alone.
-- Translate all screens, errors, emails, and status explanations in ET/EN/RU.
-  Preserve the selected language through authentication and invitations.
-- Verify layouts on phone/tablet and desktop, including long translated text.
-- Keep birth dates, billing data, and contact details out of public views,
-  analytics, URLs, and routine logs; use authorized DTOs for private views.
-- Test network failure, refresh, session expiry, stage changes, repeated actions,
-  keyboard-only use, and cross-event/cross-studio access for each relevant journey.
-
-## Decisions and delivery gates
-
-| Decision needed before implementation | Owning phase |
-| --- | --- |
-| Studio-onboarding persistence/signup contract, pending-user permissions and existing-account transition | P2-ONBOARDING-MODEL and P2-PRIVACY before P2-SIGNUP; no later Phase 3 prerequisite |
-| Atomic judge role/record acceptance, required staff event scope, offboarding and moderator permissions | P2-STAFF-MODEL before P2-INVITE/JUDGE-ACCEPT/OFFBOARD and P4-STAFF; M4 gate |
-| Verification enforcement, resend/address correction, invitation account binding, token expiry, and recovery privacy policy | Phase 2 |
-| Safe return destination persistence across email tabs/devices and session expiry | Phase 2 |
-| Entry drafts/submission/receipt model, retry idempotency, concurrent edits, correction scope/expiry, withdrawal/resubmission, and historical snapshots | P3-ENTRIES before P5-ENTRIES/SUBMISSION; onboarding drafts are separately P2-ONBOARDING-MODEL |
-| Timezone/registration deadline and application transitions | P3-REGISTRATION before P4-CORE/REVIEW and P5-APPLICATION; M2 gate |
-| Age policy, entry/music deadlines, and required/optional music rules | P3-ENTRIES/MUSIC-MODEL before P4-ENTRY-CONFIG and P5 entry validation; M3 gate |
-| Reusable studio/roster edits across event locks and historical entries | Phase 3, ADR-001 prerequisite |
-| Public event discovery and result DTO/publication policy | Separate decision under ADR-002; current event reads remain authenticated |
-| Offline/reconnect, scoring locks, and correction/publication semantics | ADR-003/004 before Phases 6–7 |
-| Real email delivery, translated onboarding templates, delivery failure/retry behavior | P2-EMAIL before external M2/M4; Phase 8 expands delivery hardening |
-| Scope-preserving event removal, null-safe assignments, identity normalization and token storage | P2-SCOPE-INTEGRITY and P2-IDENTITY-TOKENS before M1/auth/invitation release |
-| Explicit performance ownership, unscheduled drafts, historical/revision state and database event consistency | P3-PERFORMANCE-OWNER, P3-ENTRIES, P3-HISTORY, P3-CONSTRAINTS before M3 |
-| Date/time storage, query indexes and studio display-name policy | P3-CALENDAR-DATES/INDEXES/STUDIO-NAMES with migration/decision gates in the database review |
-
-See [database integrity and UX review](DATABASE_REVIEW.md) for current schema
-limitations, pending model choices, and direct PostgreSQL verification requirements.
-
-The first onboarding UX milestone (M2) is: a studio applicant can create and verify
-an account, apply to one event, and always find their status and next action.
-It needs the plan's security, audit/privacy, onboarding model, real email, core
-organizer setup/review, and applicant UI gates. Entry/music rules (M3), staff UI
-(M4), and scoring/scheduling/live models (M5) do not block M2. Existing-studio reuse
-still requires ADR-001 migration, but a first single-event application does not.
-Browser, keyboard/mobile, ET/EN/RU, and staging release checks apply to the delivered
-milestone. These requirements do not claim runtime implementation is complete.
+Unresolved domain choices are in [database review](DATABASE_REVIEW.md),
+[DOMAIN](DOMAIN.md#pending-model-decisions) and UI_UX's UX-D01–D10 register.
+Resolve the owning choice before dependent code; product targets are not API guarantees.

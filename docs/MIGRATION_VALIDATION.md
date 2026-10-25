@@ -1,5 +1,20 @@
 # Phase 0 migration validation
 
+> Historical evidence. Read only to investigate a past change. Current priority/status:
+> [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).
+
+
+Scope-integrity follow-up (2026-10-25): the new
+20261025000000_scope_integrity migration and API behavior follow
+[ADR-008](adr/008-event-scope-integrity.md). The regression suite compares exact
+SQL-only scope indexes and restrictive foreign keys. The isolated baseline adds
+full-record legacy upgrade preservation, duplicate-upgrade refusal/rollback,
+concurrent null/event uniqueness and expired-invitation replacement checks. These
+fixtures do not constitute a deployed-data audit. Before deploying, run
+scripts/audit-scope-integrity.sql and complete the authorized null-scope provenance
+review; resolve ambiguous duplicates explicitly. Never infer lost scope. The
+initial validation session below remains historical.
+
 Validated on 2026-10-23 against PostgreSQL 16 in the repository's Docker Compose service.
 
 The user confirmed that the three untracked February migrations are unpublished and disposable. The local `dance_comp` database has no `_prisma_migrations` table. No existing application tables were changed by this validation.
@@ -11,7 +26,7 @@ The user confirmed that the three untracked February migrations are unpublished 
 - `20260221223825_add_user_deactivatedby` now renames `RegistrationStatus` to `EventRegistrationStatus` in place. All four labels, existing values, the `PENDING` default, column constraints, and registration metadata survive. It also adds nullable deletion/deactivation fields and `CANCELLED`. The original drop/recreate operation would have reset every registration to `PENDING`.
 - `20261023190000_add_event_max_performances` adds the missing nullable integer column. Existing events retain `NULL` (no configured limit); no existing limit is invented.
 
-The migration directories sort in dependency order. The SQL-only `Studio_name_active_unique` partial index is intentional; Prisma schema comparison must retain it. Resolved (2026-10-24): studio profile renames now check global active names and translate database uniqueness races to 409. No index or migration changed. Registration-creation conflict/error consolidation remains Phase 1 work; see [current API contracts](API.md#studio-profile-contract).
+The migration directories sort in dependency order. The SQL-only `Studio_name_active_unique` partial index is intentional; Prisma schema comparison must retain it. Resolved (2026-10-24): studio profile renames now check global active names and translate database uniqueness races to 409. No index or migration changed. Registration-creation conflict/error consolidation remains Phase 1 work; see [current API contracts](api/studios.md).
 
 ## Repeatable regression check
 

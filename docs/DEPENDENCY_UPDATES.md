@@ -1,5 +1,9 @@
 # Stable dependency refresh
 
+> Historical evidence. Read only to investigate a past change. Current priority/status:
+> [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).
+
+
 Verified against the npm registry on 2026-10-23 before Phase 1 implementation. The working tree was clean at the start. All 42 external dependency declarations now match the verified stable versions, including the documented TypeScript compiler/API split. Workspace dependencies remain workspace:*; packages/types has no external dependencies to update. pnpm 12.15.0 and Turbo 2.11.10 were already current and remain unchanged.
 
 ## Version changes

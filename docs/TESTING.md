@@ -63,6 +63,12 @@ strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
 competing creates, plus deletion preserving active/archived performances. Setup
 checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
 Invitation checks cover real scoped/global acceptance, concurrency and rollback.
+Scope-integrity checks additionally race direct global/event role and invitation
+writes, restrict deletion with assignments or invitation history, and replace
+expired links concurrently without losing old records. The baseline's isolated
+upgrade schemas verify full-field role/invitation preservation and atomic refusal
+of ambiguous legacy duplicates. Migration parity compares both scope SQL-only
+indexes exactly as well as Prisma-derived columns and foreign keys.
 It stops its server
 and drops its own database in a
 finally block. The migration suite creates random schemas in dance_comp, checks
@@ -121,7 +127,7 @@ to hide new strings; translate them or document a specific intentional-content
 exception. Catalogue completeness, placeholder and native plural checks run for
 ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
 
-The current suite has 72 API tests and 8 frontend tests. Frontend checks include
+The current suite has 73 API tests and 8 frontend tests. Frontend checks include
 all-locale component renders of the same stored error, field links, selector
 semantics, network/non-JSON/multipart/204 handling, response-schema failures and
 safe legacy/future fallback. Shared validation preserves root/nested rules and
@@ -135,3 +141,81 @@ router registration to the inventory and reject unauthenticated access to every
 protected operation. /health and static files are infrastructure exceptions.
 The coverage inventory does not imply complete authorization hardening: upload
 ownership and invitation existing-account/scope policy are still Phase 2 gates.
+
+## Incremental UI/UX acceptance and visual regression strategy
+
+Planned infrastructure, not a claim of installed browser/screenshot tooling.
+Start P9-BROWSER/P9-UI-REGRESSION with P2-UI-FOUNDATION/SHELL, then extend alongside
+each functional slice; do not wait for the final quality phase. Use
+[UI_UX](UI_UX.md) S01–S17 contracts, [USER_FLOWS](USER_FLOWS.md) F01–F10 acceptance
+and [DESIGN_SYSTEM](DESIGN_SYSTEM.md) component states as test identifiers.
+
+| Layer | Evidence and scope |
+| --- | --- |
+| Existing unit/API/database checks | Keep current contract, authorization, ownership, stage, transaction, migration and localization checks. Browser visibility never replaces backend negative tests. |
+| Interactive components | Add meaningful form submission, field/summary focus, dialog cancel/restore, navigation/role gates, keyboard selection and async status tests with the first shared/auth UI slice. Extend score/file/table behavior when those components arrive. |
+| Browser user flows | M2: eligible signup → real/fake-provider verification → apply → independent admin approvals → returning roleless/approved status. M3: roster/entry/music/submit/scoped correction. M4: new/existing/wrong/inactive-account staff acceptance and access removal. M5: schedule → moderate → assigned scoring/autosave/submit/lock → publish/public view. Use provider fakes in CI; real email staging remains a separate release gate. |
+| Recovery and abuse cases | Invalid fields, cross-event/studio URLs and commands, inactive/removed membership, expired session/link, stage/deadline change mid-edit, lost mutation response, repeated action, offline/reconnect and stale revisions as applicable. Assert authoritative result and preserved work, not only a success toast. |
+| Visual regression | Reviewed synthetic state fixtures for phone 390px plus 320px reflow, portrait tablet 768px and desktop 1440px; ET/EN/RU including long labels. Cover default/focus/invalid/loading/empty/error/denied/locked and live reconnect states per component/page. Stabilize clock/data/fonts, disable nonessential animation; never put private dancer/contact/billing data or tokens into screenshots/artifacts. |
+| Accessibility and language | Automated semantics/contrast checks plus manual keyboard, screen-reader announcements, focus restoration, touch, zoom/reflow/text-spacing and fluent ET/EN/RU review. Verify locale switching preserves work and displayed feedback, calendar birth dates do not shift and event timezone is explicit. Target complete delivered processes at WCAG 2.2 AA; snapshots alone cannot establish conformance. |
+
+Select the smallest appropriate browser/visual tool during implementation based
+on the concrete coverage gap; no new dependency is authorized merely by listing
+this strategy. Check in reviewed baselines only after inspection. A visual change
+must be explained and approved through normal code review; do not blindly update
+all snapshots to make CI pass. Keep behavior, permission and golden calculation
+assertions independent of screenshots. Record revision, S/F ID, role, locale,
+viewport, browser/device, network fixture and manual-review evidence for each
+released milestone. Exact runner commands and CI jobs must be documented when
+the infrastructure is implemented, not invented as passing commands here.
+
+
+## Audit correction evidence
+
+The [audit correction map](AUDIT_FOLLOWUP.md) links each finding to its owning task
+and required cases. For each correction, record finding/task ID, revision,
+permitted/denied scenarios, exact commands/results and verification limits. Add
+a failing-before-fix regression where practical and confirm it passes with the
+fix. Convert synthetic audit probes into maintained tests; do not change the
+baseline to accept a vulnerability.
+
+Security cases need HTTP boundary tests plus isolated PostgreSQL checks when
+identity/role/token consumption, migration, concurrency or rollback is involved.
+Use synthetic accounts/files; assert rejected requests leave credentials, tokens,
+access, records and media unchanged. Content checks include accepted-image HTTP
+retrieval behavior, not only MIME declarations. Never log real secrets.
+
+Interactive guards/navigation/forms need browser evidence for direct URLs,
+wrong-account/event, expiry, retry and delivered loading/error/empty/success/
+disabled states. Include keyboard/focus and ET/EN/RU coverage, then required
+manual review. Existing static tests do not satisfy browser evidence; provider
+fakes do not replace real staging delivery evidence.
+
+Close an owning task/finding only after required implementation, tests, migrations
+and docs are complete. Record containment separately from a full fix; keep
+deployed-data provenance, hosted CI and unperformed human/browser checks open.
+
+## Documentation-only changes
+
+Run from the repository root:
+
+```text
+node --check scripts/check-docs.cjs
+node scripts/check-docs.cjs
+git diff --check
+```
+
+The dependency-free checker validates repository Markdown UTF-8, local file links,
+Markdown heading/explicit anchors, code fences and trailing whitespace. It skips
+generated/dependency directories and external URLs; it does not validate external
+websites, domain truth or every Markdown extension. Review changed claims against
+source, preserve task IDs/status and inspect the final diff separately.
+Application build/typecheck/lint/tests and Prisma/database commands are not required
+for prose/link changes alone; run them when executable behavior/contracts change.
+Historical runtime reports are not fresh validation.
+
+Feature tests stay with their owning tasks: lifecycle/stage permissions, age/date/
+format eligibility, exact scoring/ties, permission aggregation; API identity/scope/
+ownership, rollback/conflict/archive/restore and media compensation. Add browser
+journeys incrementally from signup/verify/apply/approve to entries, staff and live
+results. No unrelated future feature needs to be tested before its implementation.

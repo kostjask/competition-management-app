@@ -3,11 +3,15 @@
 Date: 2026-10-23
 
 Status: Accepted; versioned composition/authentication boundaries implemented on
-2026-10-24. Canonical studio registration, dancer nesting, and event-scoped performances are also implemented. Other
-resource-specific integration remains in Phase 1; see
+2026-10-24. All mounted business resources completed Phase 1 integration,
+including studio registration, dancer nesting and event-scoped performances.
+Future users/scoring and public publication remain deferred. See
 [current API status](../API.md).
 
 ## Context and alternatives
+
+Historical context at decision time (2026-10-23); these integration defects are
+resolved for mounted resources.
 
 `apps/api/src/index.ts` mounts unversioned routers individually. Performance
 handlers compete under studio/event path variants and are unmounted. The users
@@ -99,7 +103,8 @@ with shared contracts and access checks are now implemented. Event-scoped perfor
 integration is also implemented with full participant ownership checks and transactional
 writes. Studio profile collection/detail/update/archive, approval, and representative
 updates now also follow canonical paths and shared DTOs with membership/scoped-write
-checks. Broader DTO alignment and controller consolidation remain Phase 1 work.
+checks. Phase 1 DTO alignment/controller consolidation is complete for mounted business
+resources. Security and workflow gates remain separate.
 
 Related: [studio identity](001-studio-identity-and-event-registration.md),
 [shared contracts](005-shared-api-contracts.md).

@@ -1,73 +1,29 @@
-# React + TypeScript + Vite
+# Web application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
+[setup](../../README.md#local-setup) starts API and web together. API reads remain
+authenticated; role dashboards are placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
-Currently, two official plugins are available:
+From the repository root: pnpm --filter web dev (port 5173), build, typecheck,
+lint or test. Tests use tsx/Node plus static React rendering; interactive browser
+coverage remains planned. [Test commands and scope](../../docs/TESTING.md).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+VITE_API_URL must include /api/v1 (local http://localhost:4000/api/v1).
+Restart Vite after environment changes. Shared @dance/schemas emits runtime JS;
+build it and restart the API after contract changes.
 
-## React Compiler
+## Where to work
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Concern | Source / guide |
+| --- | --- |
+| Mounted pages | src/routes/index.tsx; proposed routes are in [UI_UX](../../docs/UI_UX.md) |
+| HTTP and DTO decoding | src/api; [client conventions](src/api/README.md) |
+| Session / route gates | src/auth; [known role issues](ROLE_SYSTEM.md) |
+| Translation / feedback | src/i18n, ErrorFeedback; [LOCALIZATION](../../docs/LOCALIZATION.md) |
+| Shared layout / future controls | src/components; [DESIGN_SYSTEM](../../docs/DESIGN_SYSTEM.md) |
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Use shared clients/schemas, semantic forms, complete feedback/loading/empty/denied
+states, keyboard/focus access and responsive ET/EN/RU text. Backend authorizes
+every operation. Read only the relevant screen/flow sections before feature work;
+their targets do not mean the corresponding route/API already exists.
+Do not add a UI/state library without a concrete need.

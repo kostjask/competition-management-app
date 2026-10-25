@@ -1,5 +1,9 @@
 # Development history through 2026-10-24
 
+> Historical evidence. Read only to investigate a past change. Current priority/status:
+> [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).
+
+
 Archived progress entries from the development plan. These are historical reports,
 not current priorities or freshly rerun validation. Statements such as “next task,”
 phase ownership, and unresolved gaps describe their recorded checkpoint and may

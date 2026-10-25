@@ -1,8 +1,12 @@
 # P0 repository and build baseline
 
+> Historical evidence. Read only to investigate a past change. Current priority/status:
+> [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).
+
+
 Validated on 2026-10-23 with Node 24.22.1, pnpm 12.15.0, Turbo 2.11.10, and the Compose PostgreSQL 16 service.
 
-A subsequent [stable dependency refresh](DEPENDENCY_UPDATES.md) updated the toolchain and runtime packages, including TypeScript 7, Vite 8, ESLint 10, and Prisma 7.10.1. The original baseline results below are retained as history; the dependency report records the current seven-test validation.
+A subsequent [stable dependency refresh](DEPENDENCY_UPDATES.md) updated the toolchain and runtime packages, including TypeScript 7, Vite 8, ESLint 10, and Prisma 7.10.1. The original baseline results below are retained as history; the dependency report records its then-current seven-test validation.
 
 ## Changes
 

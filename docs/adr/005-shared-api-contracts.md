@@ -2,9 +2,13 @@
 
 Date: 2026-10-23
 
-Status: Accepted; pending incremental Phase 1 implementation.
+Status: Accepted; Phase 1 implemented for mounted business resources.
+ADR-007 extends the feedback envelope. Later domain/workflow contracts remain gated.
 
 ## Context and alternatives
+
+Historical context at decision time (2026-10-23); examples below describe the
+pre-migration contract problems.
 
 `packages/schemas` already owns request schemas, but the web API modules duplicate
 request and response interfaces. Event/studio/dancer/performance frontend types
@@ -77,6 +81,7 @@ and exclusion of private fields. Request tests must also cover unauthorized and
 cross-scope requests. Run shared/web/API typechecks and builds after each slice;
 add contract generation/OpenAPI later without duplicating definitions.
 
-This ADR changes no runtime payloads. It records the migration rules and accepts
-temporary duplication only in resources not yet migrated. Domain data migration
+The original ADR specified migration rules without changing runtime payloads.
+Those rules now apply to all mounted business resource contracts; see API.md
+for current payloads and ADR-007 for semantic feedback additions. Domain data migration
 requirements remain in [ADR-001](001-studio-identity-and-event-registration.md).

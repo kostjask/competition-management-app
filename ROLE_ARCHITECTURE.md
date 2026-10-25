@@ -1,85 +1,43 @@
-# Roles, permissions, and account onboarding
+# Roles and account entry
 
-Reviewed: 2026-10-24
+Database roles/permissions do not implement screens or replace membership,
+approval, event scope and active-record checks. [Security status](docs/SECURITY.md)
+owns current gaps; [ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md)
+owns target account policy.
 
-Role definitions and permission mappings are stored in the database. This does
-not make every role safe to self-select, automatically implement its screens, or
-replace backend ownership, active-record, approval, and event-scope checks.
+| Actor | Target entry and authority |
+| --- | --- |
+| Studio applicant | Recoverable studio onboarding; own pending work without representative privileges |
+| Representative | Active studio membership plus approved permitted event access; additional members need studio-bound invite |
+| Judge | Event invitation; matching UserRole and Judge; scoring assignment separately |
+| Moderator | Event invitation and explicit stage-operation permission |
+| Administrator | Controlled provisioning; explicit authority |
+| Spectator | No account; only approved published DTOs after public-access implementation |
 
-## Account entry policy
+## Stored relationships
 
-[ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md) is the accepted
-target, with runtime implementation pending:
+Role has stable key and display name; RolePermission maps Permission operation
+keys; UserRole binds user/role with nullable event scope (null means global).
+StudioRepresentative is membership, StudioEventRegistration is event approval/
+review permission, and Judge is score-linked event identity. They are not interchangeable.
 
-| Account purpose | Entry path | Scope |
-| --- | --- | --- |
-| Pending studio applicant | Studio-focused self-service onboarding | Own recoverable progress/applications; no approved representative privileges. |
-| Representative | Approval or authorized additional-member invitation | Explicit studio membership and permitted event access under ADR-001. |
-| Judge | Admin invitation | Required event, judge role, and matching Judge record. |
-| Moderator/stage operator | Admin invitation | Required event and explicit operational permissions. |
-| Administrator | Controlled provisioning | Explicit administrative authority. |
-| Spectator | No account | Published information only after public-access implementation. |
+Seeded keys: admin, representative, judge, moderator. No predefined manager role.
+Moderator's current score.submit reuse is not an adequate stage-control policy.
+New organizer authority requires an explicit least-privilege decision.
 
-Generic public registration still creates roleless accounts today. The target
-must be enforced through backend onboarding contracts, not just navigation or a
-client role flag. Pending applicants must not need a representative role before
-applying. Do not automatically delete existing roleless users.
+The new ADR-008 migration restricts event deletion and enforces null-safe role/
+outstanding-invitation uniqueness while preserving history. Deployment/global-scope
+provenance review is still P2-SCOPE-DEPLOY; never infer lost scope.
 
-## Stored authorization model
+## Extending access
 
-- `Role`: stable `key`, display `name`, and description.
-- `Permission`: stable operation key and display metadata.
-- `RolePermission`: maps roles to permissions.
-- `UserRole`: associates user and role, optionally scoped by `eventId` today.
-- `StudioRepresentative`: explicit studio membership; a role is not ownership.
-- `StudioEventRegistration`: event approval and review-edit permission.
-- `Judge`: event-specific judge identity used by scores; not interchangeable with
-  a judge UserRole.
+Before adding a role define operations, scope, assignment/removal authority,
+backend checks, navigation, translations and negative tests. A database row alone
+does not create a feature. Judge acceptance must eventually reconcile role/record/
+invitation atomically; offboarding retains scores. Contact email grants no ownership.
+Generic signup still exists; do not delete legitimate roleless applicants.
 
-Seeded role keys are `admin`, `representative`, `judge`, and `moderator`. No
-predefined `manager` role exists. Stage operators use `moderator`; organizer
-management needs a separately approved permission specification. Current seed
-moderator permission reuse of `score.submit` is not a complete stage-control policy.
-
-## Current limitations and target repairs
-
-- Event-scope foreign keys currently use ON DELETE SET NULL; null role scope is
-  interpreted as global by authorization. P2-SCOPE-INTEGRITY must prevent physical
-  event removal from broadening assignments/invitations and enforce null-safe
-  uniqueness. Existing unrelated foreign keys may restrict deletion but are not a
-  substitute for an intentional scope policy. No live exploitation is claimed.
-- Email identity and invitation/verification token storage need P2-IDENTITY-TOKENS
-  canonicalization/collision review, digest/expiry/lifecycle metadata, and safe
-  legacy transition. No automatic account merge or ownership change is allowed.
-- Frontend `useRole` compares display names; `RequireRole` uses a separate fuzzy
-  name mapping. Phase 2 must unify checks around stable keys and event scopes.
-- Judge invitation acceptance and judge record creation are separate operations.
-  Target acceptance creates/reconciles both with invitation consumption in one
-  transaction, including rollback and concurrency handling.
-- Invitation role validation currently checks string syntax and event scope is
-  optional. Target staff invitation policy validates allowed assignments and
-  requires event scope for judge/moderator; global admin provisioning is separate.
-- Additional representatives need studio-bound invitations with explicit inviter
-  authority and membership rules. Contact details do not grant account ownership.
-- Revoking an unused invitation differs from removing accepted event access.
-  Offboarding must preserve judge/score history and be audited.
-
-## Extending roles
-
-Adding a database row alone does not implement a feature or secure its API.
-Before adding a role, define its operations, global/event scope, assignment and
-removal authority, backend enforcement, frontend navigation, localization, and
-negative authorization tests. Do not use manual SQL role assignment as a normal
-user onboarding workflow. Use the documented root seed command only for local
-fixtures; production administrators require controlled provisioning.
-
-Frontend gates are usability controls. Backend authorization remains the security
-boundary. Admin bypass is operation-specific and must not bypass parent/child or
-active-record invariants. Public event discovery/results remain deferred under
-ADR-002 and must not be used to justify spectator signup.
-
-See [registration workflow](docs/REGISTRATION_API.md),
-[database review](docs/DATABASE_REVIEW.md),
-[user journeys](docs/USER_JOURNEYS.md),
-[frontend role guide](apps/web/ROLE_SYSTEM.md), and
-[development plan](DEVELOPMENT_PLAN.md) for current gaps and delivery order.
+Use local seed fixtures only for development, not manual SQL as normal onboarding.
+Frontend helpers currently disagree on display-name matching; P2-ROLES must unify
+stable keys/scopes. [Frontend guide](apps/web/ROLE_SYSTEM.md) ·
+[workflow](docs/REGISTRATION_API.md) · [checkpoint](DEVELOPMENT_PLAN.md).

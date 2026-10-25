@@ -270,24 +270,25 @@ model UserRole {
 
   user  User   @relation(fields: [userId], references: [id])
   role  Role   @relation(fields: [roleId], references: [id])
-  event Event? @relation(fields: [eventId], references: [id])
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
   @@unique([userId, roleId, eventId])
 }
 
 model Invitation {
-  id        String    @id @default(uuid())
-  email     String
-  roleKey   String // "judge", "moderator", etc.
-  eventId   String?
-  token     String    @unique
-  createdBy String
-  createdAt DateTime  @default(now())
-  expiresAt DateTime
-  usedAt    DateTime?
+  id           String    @id @default(uuid())
+  email        String
+  roleKey      String // "judge", "moderator", etc.
+  eventId      String?
+  token        String    @unique
+  createdBy    String
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime
+  usedAt       DateTime?
+  supersededAt DateTime? // Expired invitation replaced; retained as history.
 
   creator User   @relation("CreatedInvitations", fields: [createdBy], references: [id])
-  event   Event? @relation(fields: [eventId], references: [id])
+  event   Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
-  @@unique([email, roleKey, eventId])
+  // SQL-only Invitation_outstanding_unique: null-safe, unused, not superseded.
 }

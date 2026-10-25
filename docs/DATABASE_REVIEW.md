@@ -14,12 +14,21 @@ scheduling, scoring, or history model. This guide records current limitations an
 recommended targets; it introduces no implemented schema, endpoint, or permission.
 The [development plan](../DEVELOPMENT_PLAN.md) owns priority and completion status.
 
+Implemented follow-up (2026-10-25): P2-SCOPE-INTEGRITY adds restrictive event
+foreign keys, global-role uniqueness and null-safe outstanding-invitation
+uniqueness in a new migration. Expired invitation replacements retain history.
+The first two findings below reflect the implemented follow-up; their selected
+policy and rollout requirements are now [ADR-008](adr/008-event-scope-integrity.md).
+No deployed data was inspected, repaired or migrated. Run the read-only preflight
+and provenance review before deployment; local fixtures cannot establish whether
+an existing null scope was intentional.
+
 ## Findings and delivery gates
 
 | Area | Current structure and consequence | Target and owning task |
 | --- | --- | --- |
-| Event permission scope | UserRole.eventId and Invitation.eventId foreign keys use ON DELETE SET NULL. Authorization interprets a null role event as global. Physical event deletion could broaden a role or remove invitation scope if other references allow deletion. | P2-SCOPE-INTEGRITY, before M1: adopt explicit restriction/archive or transactional assignment-removal policy; never convert event access into global access. No current event-delete endpoint or live exploitation is claimed. |
-| Global uniqueness | UserRole and Invitation composite unique indexes include nullable eventId. Ordinary PostgreSQL uniqueness permits repeated null-scoped combinations. | P2-SCOPE-INTEGRITY: choose/test null-safe global/event uniqueness, audit duplicates before adding constraints, and reconcile Prisma queries with any SQL-only indexes. Invitation resend/history must remain possible under an explicit lifecycle policy. |
+| Event permission scope | New migration uses RESTRICT for UserRole/Invitation event references; null still means global. | P2-SCOPE-INTEGRITY technically complete (ADR-008). P2-SCOPE-DEPLOY provenance review/rollout remains required before deployment/M1. No event-delete endpoint. |
+| Global uniqueness | New SQL-only indexes enforce global-role and null-safe outstanding-invitation uniqueness; used/superseded history remains. | P2-SCOPE-INTEGRITY technically complete; deployed duplicate/provenance review is P2-SCOPE-DEPLOY. Token/resend/revoke lifecycle remains P2-IDENTITY-TOKENS/INVITE. |
 | Identity and tokens | User email is text-unique without normalization in the shared input schema; verificationToken has no expiry metadata, and invitation tokens are stored directly. Invitations cannot reference a studio. | P2-IDENTITY-TOKENS: define email canonicalization/collision resolution and purpose-specific token digest, expiry, consumption/revocation, and rotation. P2-STAFF-MODEL/P5-MEMBERS define studio-bound invitation scope. |
 | Studio identity | Studio belongs directly to one Event as well as having event registrations. | P3-STUDIO-IDENTITY: implement accepted ADR-001 with preserved memberships, approvals and history; multi-event reuse stays disabled until ready. |
 | Studio names | SQL-only Studio_name_active_unique enforces global, case-sensitive active-name uniqueness. This can block unrelated organizations sharing a display name. | P3-STUDIO-NAMES: record the identity/duplicate-review policy before any new migration. Recommended target is non-unique display names with stable ID identity; no automatic merging or silent relaxation of current behavior. |
@@ -34,13 +43,10 @@ The [development plan](../DEVELOPMENT_PLAN.md) owns priority and completion stat
 
 ## Required design decisions before migrations
 
-- Choose event archive/deletion behavior and global/event assignment representation.
-  RESTRICT versus explicit assignment removal is an implementation decision, but
-  scope broadening is never valid. Review existing null-scoped assignments without
-  guessing whether their original scope was lost.
-- Choose null-safe indexes/constraints for global roles and invitation lifecycle.
-  A permanent one-invitation-per-email/role/event rule must not prevent resend or
-  retention of accepted/revoked history. Expiry/retry/concurrency rules need tests.
+- ADR-008 selects restricted deletion and null-safe uniqueness/history. Review
+  existing null-scoped assignments without guessing whether scope was lost;
+  complete P2-SCOPE-DEPLOY before rollout. Broader revoke/resend lifecycle remains
+  P2-IDENTITY-TOKENS/INVITE; preserve accepted/revoked history.
 - Specify email normalization across signup, login, invitations, and contact
   matching. Audit collisions first; never merge accounts or change ownership based
   on normalized email alone. Keep login identity distinct from editable contact data.

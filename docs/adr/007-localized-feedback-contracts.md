@@ -2,7 +2,8 @@
 
 Date: 2026-10-24
 
-Status: Accepted for Phase 1 implementation under the localization workstream.
+Status: Accepted; Phase 1 feedback/dictionary/validation foundation implemented.
+Workflow/browser/fluent-language acceptance remains open.
 
 The application needs equivalent feedback in Estonian, English and Russian,
 including errors already visible when a user changes language. Translating server

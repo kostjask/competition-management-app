@@ -23,9 +23,9 @@ export class InvitationsController extends BaseController {
       throw error;
     }
   }
-  private valid(invitation: { usedAt: Date | null; expiresAt: Date }) {
+  private valid(invitation: { usedAt: Date | null; expiresAt: Date; supersededAt: Date | null }) {
     if (invitation.usedAt) throw new ValidationError("Invitation already used", undefined, "invitationUsed");
-    if (invitation.expiresAt <= new Date()) throw new ValidationError("Invitation expired", undefined, "invitationExpired");
+    if (invitation.supersededAt || invitation.expiresAt <= new Date()) throw new ValidationError("Invitation expired", undefined, "invitationExpired");
   }
   async list(req: Request, res: Response): Promise<void> {
     this.admin(req);
@@ -40,11 +40,15 @@ export class InvitationsController extends BaseController {
     const role = await this.prisma.role.findUnique({ where: { key: body.roleKey }, select: { id: true } });
     if (!role) throw new NotFoundError("Role");
     const invitation = await this.mutation(() => this.prisma.$transaction(async tx => {
-      const existing = await tx.invitation.findFirst({ where: { email: body.email, roleKey: body.roleKey, eventId: body.eventId ?? null, usedAt: null, expiresAt: { gt: new Date() } } });
+      const now = new Date();
+      const scope = { email: body.email, roleKey: body.roleKey, eventId: body.eventId ?? null };
+      const existing = await tx.invitation.findFirst({ where: { ...scope, usedAt: null, supersededAt: null, expiresAt: { gt: now } } });
       if (existing) throw new ConflictError("Active invitation already exists", undefined, "invitationExists");
       if (body.roleKey !== "representative" && await tx.userRole.findFirst({ where: { user: { email: body.email }, roleId: role.id, eventId: body.eventId ?? null } })) {
         throw new ValidationError("User already has this role", undefined, "roleAssigned");
       }
+      // Retain expired links as history and free the outstanding invitation slot atomically.
+      await tx.invitation.updateMany({ where: { ...scope, usedAt: null, supersededAt: null, expiresAt: { lte: now } }, data: { supersededAt: now } });
       return tx.invitation.create({ data: { email: body.email, roleKey: body.roleKey, eventId: body.eventId ?? null, token: crypto.randomBytes(32).toString("hex"), createdBy: this.getUserId(req), expiresAt: new Date(Date.now() + 7 * 86400000) } });
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
     await sendInvitationEmail({ to: invitation.email, token: invitation.token, roleKey: invitation.roleKey, eventName: event?.name });
@@ -73,7 +77,7 @@ export class InvitationsController extends BaseController {
       else if (!user.password) user = await tx.user.update({ where: { id: user.id }, data: { password, emailVerified: true, active: true } });
       const where = { userId: user.id, roleId: role.id, eventId: invitation.eventId };
       if (!await tx.userRole.findFirst({ where })) await tx.userRole.create({ data: where });
-      await tx.invitation.update({ where: { id: invitation.id, usedAt: null }, data: { usedAt: new Date() } });
+      await tx.invitation.update({ where: { id: invitation.id, usedAt: null, supersededAt: null }, data: { usedAt: new Date() } });
       return user;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
     res.status(201).json(serializeDto(AcceptInvitationResponseSchema, { message: "Account created successfully", messageId: "invitationAccepted", token: jwt.sign({ userId: user.id }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }), tokenType: "Bearer", user: { id: user.id, email: user.email, name: user.name } }));

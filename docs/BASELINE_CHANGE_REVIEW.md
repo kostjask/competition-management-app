@@ -1,5 +1,9 @@
 # Phase 0 baseline change review
 
+> Historical evidence. Read only to investigate a past change. Current priority/status:
+> [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).
+
+
 Reviewed: 2026-10-23
 
 Base commit: `7dfc5935a365b4de0ff1a28795cca92e2f9bb56b`

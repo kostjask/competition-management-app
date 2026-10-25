@@ -98,8 +98,8 @@ cross-event and cross-studio substitution, inactive representatives/deleted
 studios, independent organization/event approvals, and preservation of existing
 approval/lock/review values. The migration must pass fresh and existing-data
 checks. The ADR originally changed no runtime behavior. See
-[current registration contracts and checks](../API.md#studio-registration-contract)
-for the completed Phase 1 slice; no schema migration has been applied.
+[current registration contracts and checks](../api/registrations.md)
+for the completed Phase 1 slice; no reusable-studio-identity migration is claimed.
 
 Related: [API paths](002-canonical-api-paths.md),
 [shared contracts](005-shared-api-contracts.md).
