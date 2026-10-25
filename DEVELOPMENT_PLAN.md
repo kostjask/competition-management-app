@@ -6,21 +6,22 @@ find its contracts/specifications. Historical reports are reference only.
 
 ## Next action
 
-**Active work: Phase 2B security slices; Phase 2A foundations remain open.
-Next: P2-AUTH** in [foundation tasks](docs/roadmap/foundation.md): enforce
-existing/active/verified account eligibility at login and protected requests,
-then deliver safe verification/resend/recovery under the documented token policy.
-Its identity-token prerequisite and P2-SCHEMA-AUDIT are technically complete locally;
-deployment collision/scope review, other foundation and auth/email/session gates remain open.
+**Active work: Phase 2A local foundations implemented; external operational gates remain open.**
+Next actionable development task: **P2-INVITE-IDENTITY**, applying the now-recorded
+staff scope and durable audit policy to existing-account acceptance. P2-AUTH is
+technically complete locally. P2-SCOPE-DEPLOY and real staging mail remain open;
+no hosting/domain/Resend account exists. The user requested staging preparation;
+[STAGING](docs/STAGING.md) provides an isolated local rehearsal and hosted rollout
+steps. Phase 2A and external milestones are not closed by local fixture results.
 
 Audit correction order and all 15 finding owners: [correction plan](docs/AUDIT_FOLLOWUP.md).
-After the required foundations, prioritize P2-AUTH, P2-INVITE-IDENTITY,
+With P2-AUTH and the local foundations complete, prioritize P2-INVITE-IDENTITY,
 P2-ROLES-ADMIN-SCOPE and P2-BOUNDARIES-UPLOADS. These close currently reachable
 security defects before external API exposure; invitation identity must not wait
 for M4 administration, and image content/ownership must not wait for music work.
 Independent fixes may proceed when their own prerequisites pass.
 
-UI track: **P2-UI-FOUNDATION**, then P2-UI-SHELL with P2-ROLES. Fixture work can
+UI track: **P2-UI-FOUNDATION is technically complete**, then P2-UI-SHELL with P2-ROLES. Fixture work can
 proceed while security foundations are built; gated management features cannot
 ship early. See [design system](docs/DESIGN_SYSTEM.md).
 
@@ -43,10 +44,12 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
 - Phases 0 and 1 are complete for their technical scope. Mounted business
   resources have controllers, shared DTOs, canonical paths and validated clients.
 - Schema review adds token digest/lifetime/state CHECKs and closes the
-  active-studio-name-index parity exclusion. The migrated target has 19 business
-  tables, 27 restrictive foreign keys and eight CHECKs. Synthetic plans support
+  active-studio-name-index parity exclusion. The current migrated fixture additionally includes durable audit, onboarding
+  drafts, staff references/removal state, recipient locale and encrypted mail queue
+  storage with SQL-only checks/triggers. Synthetic plans support
   retaining foundation indexes; reverse-key candidates remain P3-INDEXES.
-  Compose metadata still reflects older migrations; no application rows were
+  Development Compose metadata still reflects older migrations; local staging
+  has the current 26-migration chain. No development application rows were
   migrated/reset. Verify the intended target and preflights before local rollout.
 - Email identity now uses shared ASCII-space trimming/lowercasing for accounts
   and invitations, with collision-refusing migration and direct-write checks.
@@ -55,9 +58,17 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
 - Purpose-bound verification/recovery/invitation digests, expiry, atomic
   rotation/consumption and legacy-link invalidation are implemented. Verification
   and invitations reject inactive identities; recovery helpers do not mint sessions.
-  Public recovery/resend and invitation management still need their owning tasks.
+  Public recovery/resend/correction/reset now use these primitives; invitation
+  management remains open. ADR-011 adds sessionVersion and strict JWT revision
+  matching; reset/correction revoke older sessions and legacy JWTs require sign-in.
+  Uniform 202 request acknowledgements explicitly leave delivery unconfirmed.
+  Injected synchronous failures roll back email/token changes. Real Resend dispatch
+  now uses a transactional encrypted queue and bounded idempotent retries; real
+  staging inbox delivery and email-link UI remain gated.
 - ET/EN/RU semantic feedback, shared validation and dictionary foundations exist.
-  UI migration, formatting, email preferences and human/browser review remain.
+  Recipient locale policy/storage and basic component/browser fixtures now pass.
+  UI migration, formatting, preference reconciliation and human/full-journey
+  browser review remain.
 - P2-SCOPE-INTEGRITY is technically complete: restrictive event foreign keys,
   null-safe role/invitation uniqueness and history-preserving expired replacement.
   **P2-SCOPE-DEPLOY remains open** before deployment/M1: audit intended global
@@ -65,23 +76,37 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
 - Auth/event screens and backend studio/dancer/performance CRUD exist. Role
   dashboards are placeholders; application, staff acceptance, music, scoring,
   live operation and results journeys are unfinished. No external milestone is complete.
-- Public signup remains unrestricted; login accepts unverified accounts. Upload
-  ownership, active-user request checks, role guards and CORS/rate limits remain
-  security work. The email fake is silent; production rejects unavailable delivery;
+- Public signup remains unrestricted. Login requires active/verified accounts;
+  protected requests reject missing/inactive/unverified subjects before roles,
+  including existing admin JWTs. Verified roleless users retain permitted access.
+  DEV_AUTH uses a real eligible development account and actual stored roles;
+  startup refuses DEV_AUTH=true outside development. C2 is corrected locally.
+  Global-admin bypass now requires null event scope and active assignment; removed
+  assignments/global staff are ignored. Intended-account invitation proof, upload
+  ownership, frontend role guards and broader CORS/rate limits remain security work.
+  The email fake is silent; production rejects unavailable delivery;
   storage is always local. Event reads require authentication.
 - Baseline CI exists; first hosted-run evidence and required-check settings need
   operator follow-up. Technical completion does not imply workflow/release readiness.
+- Local staging rehearsal is running on 127.0.0.1:8080, with an independent empty
+  database/upload volumes, 26 migrations and production fake mail. Container build,
+  SPA/health and guest/mail-unavailable smoke checks pass. Generated staging secrets
+  remain in ignored deploy/staging.env; development data was not migrated/reset.
+  Hosted ingress, domain/provider setup, real mail and restore evidence remain open.
 
-Latest **recorded** runtime validation (2026-10-25): schema audit/foundation fixes passed
-build/typecheck/web lint, 76 API + 8 frontend tests and localization guard,
-Prisma checks, full SQL-only migration parity and isolated PostgreSQL workflows,
-including six token CHECKs, invalid-data upgrade refusal and preservation.
-Synthetic catalog/query plans were collected separately. See
-[schema evidence](docs/SCHEMA_SUITABILITY_AUDIT.md),
-[lifecycle evidence](docs/IDENTITY_TOKEN_VALIDATION.md) and earlier
-[email evidence](docs/EMAIL_IDENTITY_VALIDATION.md). Earlier scope validation's
-baseline readiness timeout did not recur here; [scope evidence](docs/SCOPE_INTEGRITY_VALIDATION.md)
-retains that historical result.
+Latest **recorded** runtime validation (2026-10-25): Phase 2A workspace build,
+typecheck, web lint, 92 API + 9 frontend tests, localization guard, Prisma checks,
+fresh/upgrade migration parity (including SQL-only checks/functions/triggers), and
+the complete isolated PostgreSQL baseline pass. New fixtures prove immutable and
+transactional audit, recoverable onboarding, role/studio scope constraints,
+removed/scoped-admin denial and encrypted email rollback/retry/stale-link expiry.
+Twelve Chromium fixture cases cover three languages at four widths, keyboard,
+focus and overflow, with measured contrast and visual review. See
+[foundation evidence](docs/PHASE_2A_VALIDATION.md). Previous recovery/session and
+eligibility evidence remain in [recovery](docs/AUTH_RECOVERY_VALIDATION.md) and
+[eligibility](docs/AUTH_ELIGIBILITY_VALIDATION.md); earlier schema/token/scope
+reports retain their dated findings. Operational deployment/real delivery and
+full journey/human review evidence remain open.
 The [implementation audit](docs/REPOSITORY_AUDIT.md) reran workspace/Prisma/database
 checks and additional security probes; it records cache use and verification limits.
 The subsequent correction-planning update changed documentation only and did not
@@ -160,5 +185,6 @@ Repository implementation audit (2026-10-25): [findings and fresh validation](do
 Workspace, Prisma and isolated PostgreSQL checks pass; reachable invitation,
 inactive-account and upload security defects remain M1 blockers. No implementation
 was changed by this audit. Subsequent identity/token work is recorded above;
-critical request, intended-account and upload defects remain for
-P2-AUTH/INVITE/BOUNDARIES before external exposure.
+request eligibility was subsequently corrected under P2-AUTH-ELIGIBILITY.
+Public auth recovery is now delivered technically. Intended-account invitation,
+upload and other boundary/session/provider work remains before external exposure.

@@ -19,6 +19,7 @@ own checkboxes. Dated reports record past evidence, never fresh validation.
 | HTTP contract | [API index](API.md), selected resource under api/ | packages/schemas/src, matching router/controller/client |
 | Error / translation | [Errors](ERROR_HANDLING.md), [localization](LOCALIZATION.md) | errors/, web i18n/, ErrorFeedback |
 | Security / roles / invitations | [Security](SECURITY.md), [roles](../ROLE_ARCHITECTURE.md), ADR-006/008 | auth middleware, permission helpers, invitation controller |
+| Audit / privacy / onboarding foundation | [Privacy](PRIVACY.md), ADR-012/013/014, [validation](PHASE_2A_VALIDATION.md) | services/audit, onboarding, staffPolicy, emailQueue; schema/migrations |
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001 | registration/studio controllers, schema.prisma |
 | Database migration | [Current schema audit](SCHEMA_SUITABILITY_AUDIT.md), [database review](DATABASE_REVIEW.md), owning ADR, [testing](TESTING.md#postgresql-checks) | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
@@ -27,8 +28,9 @@ own checkboxes. Dated reports record past evidence, never fresh validation.
 | Storage / images | [Storage](STORAGE.md), [image contract](api/images.md) | storage services, ImagesController, upload middleware |
 
 Paths in the source column are relative to their corresponding app unless qualified.
-No deployment runbook exists yet; P9-DEPLOY owns it. Do not infer production setup
-from provider variables or historical examples.
+[Staging preparation](STAGING.md) now includes a local isolated Docker rehearsal
+and protected hosted rollout checklist. P9-DEPLOY still owns hosting, ingress,
+deployment/rollback evidence; provider variables alone do not establish readiness.
 
 ## Audit corrections
 
@@ -47,7 +49,11 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [007](adr/007-localized-feedback-contracts.md) | Locale-independent feedback; foundation implemented, full journey review pending |
 | [008](adr/008-event-scope-integrity.md) | Scope/history preservation; local technical slice implemented, deployment audit pending |
 | [009](adr/009-email-identity.md) | Canonical account/invitation email; collision refusal and local checks implemented, deployment review pending |
-| [010](adr/010-identity-token-lifecycle.md) | Purpose-bound digests, atomic lifecycle and invalidated old links; public recovery/resend and real delivery remain gated |
+| [010](adr/010-identity-token-lifecycle.md) | Purpose-bound digests and atomic lifecycle; ADR-011 supplies public recovery, while real delivery remains gated |
+| [011](adr/011-public-account-recovery.md) | Public recovery acknowledgements, password-proven correction, session revision and process-local recovery limits; real email/UI remain gated |
+| [012](adr/012-durable-domain-audit.md) | Minimal transactional immutable audit and privacy-safe actor/metadata policy |
+| [013](adr/013-onboarding-staff-and-recipient-locale.md) | Recoverable drafts, referenced staff/studio scope, removal history and recipient locale policy |
+| [014](adr/014-transactional-email-dispatch.md) | Resend, encrypted durable dispatch, bounded idempotent retries and truthful acknowledgement |
 
 ADR-003 lifecycle and ADR-004 scoring are reserved, unaccepted decisions. Their
 required scope is in [DOMAIN](DOMAIN.md#pending-model-decisions); no files or

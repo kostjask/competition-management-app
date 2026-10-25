@@ -3,17 +3,23 @@
 Updated: 2026-10-25. Source evidence: [repository audit](REPOSITORY_AUDIT.md).
 Priority and milestone gates: [checkpoint](../DEVELOPMENT_PLAN.md).
 Implementation checkboxes live in the owning roadmap; this table maps findings
-to those tasks and their acceptance evidence. H2 is technically corrected locally
-by P2-IDENTITY-TOKENS; the other 14 findings remain unresolved. Current evidence:
-[identity lifecycle](IDENTITY_TOKEN_VALIDATION.md). Historical audit probes remain
-dated evidence, not a description of the subsequently corrected token behavior.
+to those tasks and their acceptance evidence. H2 and C2 are technically corrected
+locally by P2-IDENTITY-TOKENS and P2-AUTH-ELIGIBILITY; the other 13 findings remain
+unresolved. Current evidence: [identity lifecycle](IDENTITY_TOKEN_VALIDATION.md)
+and [account eligibility](AUTH_ELIGIBILITY_VALIDATION.md). Historical audit probes remain
+dated evidence, not a description of the subsequently corrected token/account behavior.
 
 ## Order and release gates
 
 1. P2-IDENTITY-TOKENS is locally complete: canonical identity/collision refusal,
-   legacy invalidation, digests, expiry and atomic consume/rotation. Complete the
-   queued P2-SCHEMA-AUDIT and minimal AUDIT/PRIVACY/staff-policy foundations needed
-   by the next security slices; independent fixes retain their own prerequisites.
+   legacy invalidation, digests, expiry and atomic consume/rotation. The
+   schema audit, account eligibility and public recovery are also technically
+   complete. Minimal AUDIT/PRIVACY/staff-policy foundations are now implemented
+   under ADR-012/013. Resend/queue/UI fixture foundations pass locally; real delivery
+   and hosted deployment remain open. Next is P2-INVITE-IDENTITY; independent fixes
+   retain their own prerequisites. H1's bypass predicate is corrected locally,
+   with full provenance/inventory acceptance still open. See
+   [foundation evidence](PHASE_2A_VALIDATION.md).
 2. Close critical request/identity/upload boundaries and scoped-admin escalation
    through P2-AUTH, INVITE-IDENTITY, ROLES-ADMIN-SCOPE and BOUNDARIES-UPLOADS. Run
    independent upload work as soon as its own prerequisites pass; it need not wait
