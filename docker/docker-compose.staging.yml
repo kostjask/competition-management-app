@@ -1,0 +1,65 @@
+name: dance-staging
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: dance_staging
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?Set a new hexadecimal database password}
+      POSTGRES_DB: dance_staging
+    volumes:
+      - staging_db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U dance_staging -d dance_staging]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    image: dance-staging-api
+    working_dir: /workspace
+    command: [pnpm, db:migrate]
+    environment:
+      DATABASE_URL: postgresql://dance_staging:${STAGING_DB_PASSWORD}@postgres:5432/dance_staging
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  api:
+    image: dance-staging-api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: api
+    environment:
+      NODE_ENV: production
+      DEV_AUTH: "false"
+      DATABASE_URL: postgresql://dance_staging:${STAGING_DB_PASSWORD}@postgres:5432/dance_staging
+      JWT_SECRET: ${STAGING_JWT_SECRET:?Set an independent JWT secret}
+      EMAIL_PROVIDER: ${STAGING_EMAIL_PROVIDER:-fake}
+      EMAIL_FROM: ${STAGING_EMAIL_FROM:-staging@example.invalid}
+      RESEND_API_KEY: ${STAGING_RESEND_API_KEY:-}
+      EMAIL_QUEUE_KEY: ${STAGING_EMAIL_QUEUE_KEY:?Set an independent queue encryption key}
+      WEB_ORIGIN: ${STAGING_WEB_ORIGIN:-https://staging.example.invalid}
+      STORAGE_PUBLIC_URL: ${STAGING_WEB_ORIGIN:-http://localhost:8080}
+    volumes:
+      - staging_uploads:/workspace/apps/api/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  web:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: web
+    ports:
+      - 127.0.0.1:8080:80
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  staging_db:
+  staging_uploads:

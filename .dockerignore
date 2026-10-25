@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+**/.env*
+deploy/staging.env
+.git
+.codex
+.agents
+.aws
+.turbo
+**/.turbo
+**/*.tsbuildinfo
+**/uploads
+test-results
+playwright-report
+*.log
