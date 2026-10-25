@@ -6,6 +6,12 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Phase 2A — Onboarding decisions, audit/privacy, and email foundations
 
+Apply the [disposable-data policy](../TESTING.md#development-database-and-disposable-data)
+to current development fixtures. Identity/token transition, audit/backfill and
+preservation requirements do not require retaining disposable rows or adding
+legacy machinery solely for them; domain correctness, synthetic negative tests
+and protection of any retained/non-disposable data remain required.
+
 Entry: Phase 1 contracts/localization foundations are stabilized. These are prerequisites for Phase 2B,
 not later Phase 3 work. Each model change needs reviewed migrations, preservation
 checks, and shared contracts before dependent runtime work.
@@ -14,7 +20,9 @@ checks, and shared contracts before dependent runtime work.
 
 - [x] P2-SCOPE-INTEGRITY (technical slice, 2026-10-25): ADR-008 chooses restrictive event deletion, SQL-only global-role and null-safe outstanding-invitation uniqueness, and atomic expired-invitation replacement with superseded history. New migration preserves all rows and refuses ambiguous duplicates. Typed Prisma predicates remain null-safe. Isolated PostgreSQL tests prove concurrent duplicate rejection, full-record upgrades/refusal rollback, restricted deletion and history preservation. Read-only aggregate preflight is provided; deployed-data review is explicitly P2-SCOPE-DEPLOY, not claimed by fixture tests. See [validation](../SCOPE_INTEGRITY_VALIDATION.md).
 - [ ] P2-SCOPE-DEPLOY (operational gate before deployment/M1 or event deletion): run scripts/audit-scope-integrity.sql on the intended deployment, review global role/invitation provenance through authorized tooling, explicitly resolve duplicate groups, verify backup and migration parity, and coordinate stopped writers/migration/API rollout under ADR-008. Never infer lost scope, merge accounts or automatically delete rows. No deployed database is available to this implementation task; this gate remains open.
-- [ ] P2-IDENTITY-TOKENS: before P2-AUTH/INVITE/SIGNUP, define one email canonicalization/collision policy across accounts and invitations; audit before migration, never auto-merge users or change ownership. Add purpose-bound verification/recovery/invitation token digests, expiry, consumed/revoked state and atomic rotation/resend semantics. Define transition of existing links; keep raw secrets out of normal DTOs, logs and audits. Test case variants, collision handling, expiry, wrong-purpose/replay/concurrent consumption, and safe account recovery.
+- [x] P2-IDENTITY-TOKENS (technical foundation, 2026-10-25): email and lifecycle slices below pass. ADR-009/010 define canonical identity/collision refusal and purpose-bound digests, expiry, consumed/revoked state, atomic rotation/consumption and legacy-link invalidation without merging users or changing ownership. Raw link secrets are absent from normal DTOs, persistence and email logs. Recovery/resend primitives are internal; public handlers, request eligibility, session policy and real email retain their P2-AUTH/SESSION/INVITE/EMAIL gates. Intended-deployment collision/scope audit remains operational work. No external milestone closes.
+- [x] P2-IDENTITY-TOKENS-EMAIL (2026-10-25, first technical slice of the parent): ADR-009 defines ASCII-space trimming/lowercasing without provider alias folding. Shared inputs, aggregate deployment preflight, collision-refusing migration and SQL-only direct-write checks are implemented. Synthetic upgrades preserve every non-email field and refuse account/global/event invitation collisions atomically. HTTP case variants and duplicate-account preservation pass. See [evidence](../EMAIL_IDENTITY_VALIDATION.md). Actual deployment audit is still required; current disposable development data was not reset.
+- [x] P2-IDENTITY-TOKENS-LIFECYCLE (2026-10-25): implemented verification/recovery AccountToken history, invitation digests/revocation, active/issuance-email binding, atomic rotation and consumption, safe password recovery primitives and plaintext-column removal/old-link invalidation. Verification and inactive-invite denial are wired into mounted handlers; email fake is silent and production rejects unavailable delivery. Wrong-purpose, expiry, replay, concurrent verification/recovery/rotation, rollback, inactive identity, direct uniqueness and secret-free logs pass. See [evidence](../IDENTITY_TOKEN_VALIDATION.md). Public recovery/resend/revoke and real delivery remain with their owning tasks.
 - [ ] P2-ONBOARDING-MODEL: specify studio-focused account/onboarding context, verification/draft persistence, required details, intended-event return handling, pending-user read/edit/cancel scope, retry/idempotency, and retention. Preserve existing roleless accounts; reject an intent flag as proof of privilege. Implement the minimal required storage/contracts before P2-SIGNUP; apply P2-IDENTITY-TOKENS account/token contracts.
 - [ ] P2-AUDIT: define safe audit metadata and implement minimal durable AuditLog/actor support for account, invitation, access, and approval changes. Preserve domain data and exclude tokens, passwords, private contact/billing payloads. Include transaction/rollback tests; later audit coverage grows with each feature.
 - [ ] P2-PRIVACY: document data minimization, authorized viewers, birth-date/photo/contact handling, retention/deletion/export responsibilities, and existing-account transition policy before new dancer/media workflows. Do not automatically delete/deactivate roleless users. No cleanup until its policy is reviewed.
@@ -30,6 +38,39 @@ lifecycle/identity transition tests pass. Onboarding/invitation persistence and 
 minimal audit/model migrations preserve data; privacy requirements are recorded;
 the email integration is tested and staging delivery evidence is recorded before
 an external milestone. No dependency on future scoring or multi-event migration.
+
+### Database schema suitability review
+
+- [x] P2-SCHEMA-AUDIT (2026-10-25): reviewed all 19 models and migrated PostgreSQL catalog, SQL-only objects, source contracts/relationships and representative synthetic plans. Added six ADR-010 token row CHECKs and full studio-index parity; direct SQL, valid upgrade preservation, atomic invalid-data refusal, existing HTTP/database workflows and workspace/Prisma checks pass. [Findings and evidence](../SCHEMA_SUITABILITY_AUDIT.md) prioritize current security work and route later identity/ownership/draft/date/scoring/index changes to their existing owners. Existing Compose metadata is behind the working tree; application rows were not migrated/reset. Next: P2-AUTH; Phase 2A and external milestone gates remain open.
+
+Audit scope and acceptance retained below; current decisions/results are in the report.
+
+Review Prisma models, actual PostgreSQL schema/migration parity (including
+SQL-only objects), entity ownership and event/studio/user relationships,
+normalization/redundancy, nullability/defaults, uniqueness, foreign keys/referential
+actions, CHECK constraints, date/time and numeric types, soft deletion/audit/history,
+and indexes for concrete queries. Assess fitness for onboarding, registration,
+entries, staff, media and future scoring/results without inventing undecided
+domain rules or implementing later workflows early. Use representative synthetic
+data and query plans where index recommendations need evidence.
+
+Produce a prioritized findings/decision record with source evidence, proposed
+target model, reasons to change or retain each area, dependencies and migration/
+reset strategy. Explain materially ambiguous domain/architecture options first;
+record broad decisions in an ADR before dependent code. Coordinate findings with
+P2 identity/onboarding/staff/audit/privacy work, P3-STUDIO-IDENTITY/NAMES,
+PERFORMANCE-OWNER/CONSTRAINTS/HISTORY/CALENDAR-DATES/INDEXES/DATA-HYGIENE and
+P6-SCORING-MODEL instead of duplicating tasks or bypassing their gates.
+
+Implement necessary, justified current-foundation fixes in bounded slices with
+aligned migrations, shared schemas/types, DTOs, controllers, clients and fixtures.
+Place later-scope improvements in their owning phase with explicit acceptance
+checks/dependencies. Exit: current review and decisions documented; required
+in-scope fixes implemented (or explicitly blocked, leaving this task open);
+fresh migration application/parity, applicable API/database/negative/concurrency
+tests, Prisma format/validate/generate, typecheck/lint/build pass as applicable;
+seed/setup and roadmap/checkpoint reflect the result. A documented no-change
+conclusion is valid when supported by evidence. Do not mark planned fixes as done.
 
 ## Phase 2B — Authentication, authorization, and onboarding behavior
 
@@ -50,7 +91,8 @@ before its implementation; M1 uses the security foundation tasks listed in the c
 
 ### Audit correction slices and acceptance
 
-All findings remain open. [Correction mapping](../AUDIT_FOLLOWUP.md) owns the
+H2 is technically corrected locally by P2-IDENTITY-TOKENS; other findings remain
+open. [Correction mapping](../AUDIT_FOLLOWUP.md) owns the
 finding-to-task evidence requirements; the checkboxes here own implementation
 status. Parent task IDs and completed Phase 1 scope remain unchanged. These
 security slices are explicit M1 requirements, not future UI or M4-only work.

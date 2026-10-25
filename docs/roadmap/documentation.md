@@ -4,6 +4,8 @@
 
 ## Tasks
 
+- [x] DOCS-DISPOSABLE-DATA (2026-10-25): record the user's confirmation that the current development database contains only disposable test data. Add standing scoped reset/reseed/fixture permission and target verification in AGENTS/TESTING; clarify plan/foundation/audit preservation requirements without changing domain safeguards, migration publication rules or active-task priority. Documentation only; no database reset or implementation changes.
+
 - [x] AUDIT-FOLLOWUP-PLAN (2026-10-25): map all 15 repository findings to owning roadmap tasks, prerequisites, milestone gates and correction/regression evidence in [the correction plan](../AUDIT_FOLLOWUP.md). Add explicit M1 security slices and M2 reapplication recovery, reconcile security/testing/checkpoint guidance and retain every implementation finding as unresolved. Documentation checks passed for 83 Markdown files/420 local links, checker syntax and final whitespace; runtime checks were not rerun for this prose-only update. Next implementation task remains P2-IDENTITY-TOKENS.
 
 - [x] Rewrite the root README as the short entry point: product, prerequisites, startup, scripts, architecture links, and current maturity.

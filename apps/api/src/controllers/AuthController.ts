@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import crypto from "node:crypto";
 import { Prisma } from "@prisma/client";
 import {
   RegisterSchema, LoginSchema, VerifyEmailSchema, RegisterResponseSchema,
@@ -12,6 +11,7 @@ import { sendVerificationEmail } from "../utils/email";
 import { config } from "../config/env";
 import { ConflictError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from "../errors";
 import { BaseController } from "./BaseController";
+import { newIdentitySecret, verifyAccountEmail } from "../services/identityTokens";
 
 const identitySelect = { id: true, email: true, name: true } satisfies Prisma.UserSelect;
 const profileSelect = {
@@ -42,11 +42,12 @@ export class AuthController extends BaseController {
     const existing = await this.prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
     if (existing) throw new ConflictError("Email already registered", undefined, "emailRegistered");
     const hashedPassword = await bcrypt.hash(body.password, 10);
-    const verificationToken = crypto.randomBytes(32).toString("hex");
+    const verification = newIdentitySecret("VERIFY_EMAIL");
     let user: Prisma.UserGetPayload<{ select: typeof identitySelect }>;
     try {
       user = await this.prisma.user.create({
-        data: { email: body.email, name: body.name, password: hashedPassword, verificationToken, emailVerified: false },
+        data: { email: body.email, name: body.name, password: hashedPassword, emailVerified: false,
+          accountTokens: { create: { email: body.email, purpose: "VERIFY_EMAIL", digest: verification.digest, expiresAt: verification.expiresAt } } },
         select: identitySelect,
       });
     } catch (error) {
@@ -55,7 +56,7 @@ export class AuthController extends BaseController {
       }
       throw error;
     }
-    await sendVerificationEmail({ to: user.email, token: verificationToken, name: user.name });
+    await sendVerificationEmail({ to: user.email, token: verification.raw, name: user.name });
     res.status(201).json(response(RegisterResponseSchema, {
       message: "Registration successful. Please check your email to verify your account.", messageId: "registered", userId: user.id,
     }));
@@ -63,12 +64,7 @@ export class AuthController extends BaseController {
 
   async verifyEmail(req: Request, res: Response): Promise<void> {
     const { token } = VerifyEmailSchema.parse(req.body);
-    const user = await this.prisma.user.findUnique({
-      where: { verificationToken: token }, select: { ...identitySelect, emailVerified: true },
-    });
-    if (!user) throw new NotFoundError("Verification token");
-    if (user.emailVerified) throw new ForbiddenError("Email already verified", "emailVerified");
-    await this.prisma.user.update({ where: { id: user.id }, data: { emailVerified: true, verificationToken: null } });
+    const user = await verifyAccountEmail(this.prisma, token);
     res.json(response(VerifyEmailResponseSchema, { message: "Email verified successfully", messageId: "emailVerified", ...session(user) }));
   }
 

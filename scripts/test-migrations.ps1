@@ -28,10 +28,18 @@ try {
     }
     $expectedSql = Get-Content -Raw -LiteralPath $expectedSqlPath
     $expectedSql = $expectedSql.Replace('CREATE SCHEMA IF NOT EXISTS "public";', '')
+    $studioSql = Get-Content -Raw apps/api/prisma/migrations/20260219175019_studio_approval_status_and_soft_delete_name_rule/migration.sql
+    $expectedSql += "`n" + ((($studioSql -split "`n") | Where-Object { $_ -match '^CREATE UNIQUE INDEX' }) -join "`n")
     # Prisma cannot express these partial/null-safe indexes. Compare their exact
     # definitions as well, rather than excluding them from the parity inventory.
     $scopeSql = Get-Content -Raw apps/api/prisma/migrations/20261025000000_scope_integrity/migration.sql
     $expectedSql += "`n" + ((($scopeSql -split "`n") | Where-Object { $_ -match '^CREATE UNIQUE INDEX' }) -join "`n")
+    $emailSql = Get-Content -Raw apps/api/prisma/migrations/20261025010000_email_identity/migration.sql
+    $expectedSql += "`n" + ((($emailSql -split "`n") | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
+    $tokenSql = Get-Content -Raw apps/api/prisma/migrations/20261025020000_identity_tokens/migration.sql
+    $expectedSql += "`n" + ((($tokenSql -split "`n") | Where-Object { $_ -match '^CREATE UNIQUE INDEX "AccountToken_outstanding_unique"' }) -join "`n")
+    $tokenChecksSql = Get-Content -Raw apps/api/prisma/migrations/20261025030000_identity_token_checks/migration.sql
+    $expectedSql += "`n" + ((($tokenChecksSql -split "`n") | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -91,7 +99,7 @@ FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace
 WHERE n.nspname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema')
 UNION ALL
 SELECT schemaname, 'index', indexname, replace(indexdef, schemaname || '.', '')
-FROM pg_indexes WHERE schemaname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema') AND indexname <> 'Studio_name_active_unique';
+FROM pg_indexes WHERE schemaname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema');
 DO `$`$
 DECLARE actual_schema text;
 BEGIN

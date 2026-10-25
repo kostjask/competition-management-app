@@ -8,7 +8,7 @@ module.exports = async function checkAuth({ client, baseUrl, login }) {
   const template = await client.user.findUniqueOrThrow({ where: { email: 'admin@test.com' } });
   const user = await client.user.create({ data: {
     email: 'auth-profile-contract@example.invalid', name: 'Profile contract', password: template.password,
-    emailVerified: true, verificationToken: 'private-auth-profile-fixture', photoPath: 'private-auth-profile-path',
+    emailVerified: true, photoPath: 'private-auth-profile-path',
   } });
   const token = await login(baseUrl, user.email);
   const getProfile = async suffix => {
@@ -37,9 +37,16 @@ module.exports = async function checkAuth({ client, baseUrl, login }) {
   assert.equal(JSON.stringify(profile).includes('private-auth-profile'), false);
   const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: user.email, password: 'password123' }), signal: AbortSignal.timeout(5000),
+    body: JSON.stringify({ email: '  ' + user.email.toUpperCase() + '  ', password: 'password123' }), signal: AbortSignal.timeout(5000),
   });
   assert.equal(response.status, 200); AuthResponseSchema.parse(await response.json());
+  const beforeDuplicate = await client.user.findUniqueOrThrow({ where: { id: user.id } });
+  const duplicate = await fetch(`${baseUrl}/api/v1/auth/register`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: '  ' + user.email.toUpperCase() + '  ', name: 'Duplicate', password: 'different-password' }), signal: AbortSignal.timeout(5000),
+  });
+  assert.equal(duplicate.status, 409);
+  assert.deepEqual(await client.user.findUniqueOrThrow({ where: { id: user.id } }), beforeDuplicate);
   await client.user.update({ where: { id: user.id }, data: { active: false } });
   const disabled = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

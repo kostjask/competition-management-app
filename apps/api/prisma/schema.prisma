@@ -28,6 +28,11 @@ enum StudioApprovalStatus {
   REJECTED
 }
 
+enum AccountTokenPurpose {
+  VERIFY_EMAIL
+  PASSWORD_RECOVERY
+}
+
 model Event {
   id              String     @id @default(cuid())
   name            String
@@ -215,22 +220,38 @@ model Score {
 }
 
 model User {
-  id                String   @id @default(uuid())
-  email             String   @unique
-  name              String
-  password          String? // Optional for now (supports OAuth later)
-  emailVerified     Boolean  @default(false)
-  verificationToken String?  @unique
-  createdAt         DateTime @default(now())
-  active            Boolean  @default(true)
-  deactivatedBy     String?
-  photoUrl          String?
-  photoPath         String?
+  id            String   @id @default(uuid())
+  email         String   @unique
+  name          String
+  password      String? // Optional for now (supports OAuth later)
+  emailVerified Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  active        Boolean  @default(true)
+  deactivatedBy String?
+  photoUrl      String?
+  photoPath     String?
 
   roles                 UserRole[]
   studioRepresentatives StudioRepresentative[]
   createdInvitations    Invitation[]           @relation("CreatedInvitations")
   judges                Judge[]
+  accountTokens         AccountToken[]
+}
+
+model AccountToken {
+  id         String              @id @default(uuid())
+  userId     String
+  email      String
+  purpose    AccountTokenPurpose
+  digest     String              @unique
+  createdAt  DateTime            @default(now())
+  expiresAt  DateTime
+  consumedAt DateTime?
+  revokedAt  DateTime?
+  user       User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  // SQL-only AccountToken_outstanding_unique: one unconsumed/unrevoked per purpose.
+  // SQL-only CHECKs enforce digest format, positive lifetime and exclusive terminal states.
 }
 
 model Role {
@@ -280,15 +301,17 @@ model Invitation {
   email        String
   roleKey      String // "judge", "moderator", etc.
   eventId      String?
-  token        String    @unique
+  tokenDigest  String?   @unique // Null only for invalidated legacy links.
   createdBy    String
   createdAt    DateTime  @default(now())
   expiresAt    DateTime
   usedAt       DateTime?
   supersededAt DateTime? // Expired invitation replaced; retained as history.
+  revokedAt    DateTime?
 
   creator User   @relation("CreatedInvitations", fields: [createdBy], references: [id])
   event   Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
 
   // SQL-only Invitation_outstanding_unique: null-safe, unused, not superseded.
+  // SQL-only CHECKs enforce digest format, invalidated legacy links and superseded revocation.
 }

@@ -46,8 +46,9 @@ production readiness. Setting smtp or s3 will not make email or cloud storage wo
 - Database: start the checked-in Compose service; match its example URL/port.
 - JWT expiry: use a positive number with an explicit lowercase compact unit;
   unitless, spaced, zero/negative and long-form durations fail validation.
-- Email: non-production stub logs links/tokens; production performs no delivery.
-  Treat token logs as sensitive; do not use them as an external onboarding flow.
+- Email: the non-production stub is a silent fake; it never logs recipients,
+  secrets or links. Production throws unavailable until P2-EMAIL integrates a
+  provider. Test delivery via injected fakes; no external onboarding flow exists.
 - Uploads: local files are publicly served from /uploads. Check
   [storage behavior](STORAGE.md); configuring a provider does not change that.
 

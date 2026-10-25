@@ -3,7 +3,12 @@ import { ErrorReasonSchema, FieldIssueSchema, MessageParamsSchema } from "./mess
 
 export const IdSchema = z.string().min(1, "ID is required");
 
-export const EmailSchema = z.email("Invalid email address");
+// ADR-009: ASCII spaces only, matching PostgreSQL btrim(..., ' ').
+// Keep provider-specific dots and plus tags; they are distinct identities.
+export const EmailSchema = z.string()
+  .regex(/^[\x20-\x7e]*$/, "Invalid email address")
+  .transform(value => value.replace(/^ +| +$/g, "").toLowerCase())
+  .pipe(z.email("Invalid email address"));
 
 export const NamedEntitySchema = z.object({
   id: IdSchema,

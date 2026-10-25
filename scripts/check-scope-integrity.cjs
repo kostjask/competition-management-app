@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { randomUUID } = require('node:crypto');
+const { newIdentitySecret } = require('../apps/api/dist/services/identityTokens.js');
 
 module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToken }) {
   const user = await client.user.create({ data: { email: 'scope-integrity@example.invalid', name: 'Scope fixture' } });
@@ -19,7 +19,7 @@ module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToke
   const roles = await client.userRole.findMany({ where: { userId: user.id }, orderBy: { id: 'asc' } });
   assert.equal(roles.length, 3, 'Global and different-event assignments must coexist');
   const invite = (eventId, extra = {}) => ({ email: 'scope-invitation@example.invalid', roleKey: 'moderator', eventId,
-    createdBy: user.id, token: randomUUID(), expiresAt: new Date(Date.now() + 60000), ...extra });
+    createdBy: user.id, tokenDigest: newIdentitySecret('INVITATION').digest, expiresAt: new Date(Date.now() + 60000), ...extra });
   for (const eventId of [null, events[1].id, events[2].id]) {
     await race(() => client.invitation.create({ data: invite(eventId) }));
     await client.invitation.create({ data: invite(eventId, { usedAt: new Date() }) });
@@ -43,8 +43,9 @@ module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToke
     return { status: response.status, body: await response.json() };
   };
   for (const eventId of [null, events[1].id]) {
+    const secret = newIdentitySecret('INVITATION');
     const expired = await client.invitation.create({ data: invite(eventId, {
-      email: 'replace-expired@example.invalid', expiresAt: new Date('2020-01-01'),
+      email: 'replace-expired@example.invalid', expiresAt: new Date('2020-01-01'), tokenDigest: secret.digest,
     }) });
     const body = { email: expired.email, roleKey: expired.roleKey, ...(eventId && { eventId }) };
     const results = await Promise.all([request(body), request(body)]);
@@ -54,7 +55,7 @@ module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToke
     assert.ok(preserved.supersededAt);
     assert.deepEqual({ ...preserved, supersededAt: null }, expired, 'Replacement must preserve the full expired row');
     assert.equal(await client.invitation.count({ where: { email: body.email, roleKey: body.roleKey, eventId, usedAt: null, supersededAt: null } }), 1);
-    const response = await fetch(baseUrl + '/api/v1/invitations/' + expired.token);
+    const response = await fetch(baseUrl + '/api/v1/invitations/' + secret.raw);
     assert.equal(response.status, 400);
     assert.equal((await response.json()).reason, 'invitationExpired');
   }

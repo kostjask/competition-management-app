@@ -84,8 +84,9 @@ review, purpose-bound token digests, expiry/consumption/revocation and safe lega
 link transition before signup/invitation handlers change. P2-STAFF-MODEL adds
 explicit studio scope for member invitations. Scope-integrity schema/index/history
 changes are implemented under ADR-008;
-deployment provenance review remains P2-SCOPE-DEPLOY. Identity/token and staff
-model fixes are still planned. See [database review](../DATABASE_REVIEW.md).
+deployment provenance review remains P2-SCOPE-DEPLOY. Identity/token technical
+foundations are implemented under ADR-009/010; public auth workflows and staff
+model fixes remain planned. See [database review](../DATABASE_REVIEW.md).
 
 The revised development plan retains this product decision and changes delivery
 ordering. Phase 1 stabilizes judge/controller/contracts and introduces baseline

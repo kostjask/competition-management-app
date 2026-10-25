@@ -30,6 +30,37 @@ Turbo may reuse unchanged local results. To run fresh HTTP tests after building,
 use pnpm --filter api test. In CI each job begins with a fresh checkout and
 installation; the workflow does not restore build outputs or a Turbo cache.
 
+## Development database and disposable data
+
+User-confirmed baseline (2026-10-25): the current project development database
+contains only disposable test data; no real user or production data needs
+preservation. Development tasks may adjust the schema/model, reset/reseed this
+database and replace fixtures to improve the project. Prefer a clean model over
+legacy compatibility or data-conversion work needed only to retain these rows.
+This is standing authorization within the selected task, not an instruction to
+reset a database during every task or this documentation update.
+
+Before a destructive operation, verify the resolved host/port/database/schema or
+Compose project/service/volume identifies the intended disposable target. Inspect
+connection details locally without printing passwords, URLs containing secrets or
+private records. If the target cannot be established, resolve that uncertainty
+before proceeding. The statement does not authorize deleting other databases,
+environments, source changes or unrelated files.
+
+Use new migrations by default. A migration applied only to confirmed disposable
+environments may be replaced/reworked when unpublished and unused elsewhere;
+reset/rebuild the target and regenerate Prisma/fixtures consistently. Do not infer
+publication/deployment state from the local database containing test data. Keep
+fresh-install/parity and applicable upgrade/rollback tests meaningful, and report
+the reset/reseed and migration strategy in the handoff.
+
+Roadmap references to preserving identity, credentials, history or ambiguous data
+describe required domain behavior and safeguards for retained/non-disposable data;
+they do not require retaining the current test rows or building unnecessary legacy
+transition machinery. Use synthetic fixtures to test the required invariants.
+Reassess and update this policy before real data or a non-disposable deployment is
+introduced; production retention, backup/restore and deployment gates remain open.
+
 ## PostgreSQL checks
 
 Start the repository's local PostgreSQL 16 service and build before testing:
@@ -69,6 +100,31 @@ expired links concurrently without losing old records. The baseline's isolated
 upgrade schemas verify full-field role/invitation preservation and atomic refusal
 of ambiguous legacy duplicates. Migration parity compares both scope SQL-only
 indexes exactly as well as Prisma-derived columns and foreign keys.
+Email-identity fixtures also verify canonical email upgrades, full-field preservation,
+account/global/event invitation collision refusal and direct-write checks under
+ADR-009. Migration parity includes the SQL-only canonical email CHECK constraints;
+HTTP workflows exercise case/space variants and duplicate-account preservation.
+Token fixtures cover legacy plaintext removal/link invalidation, account/access/
+invitation-history preservation, purpose/expiry/replay/rotation/revocation,
+concurrent verification/recovery, inactive/changed-email denial and real database
+failure rollback after token claim. Recovery primitives run against the disposable
+database; they are not public endpoints. The SQL-only outstanding-account-token
+unique index is included in migration parity. Secret-free development and failed
+production email stubs have unit regressions.
+Schema-audit fixtures additionally validate six token storage CHECKs, refusal of
+each invalid preexisting state with all checks rolled back, full-record valid
+upgrade preservation and direct SQL rejection. Expired account-token fixtures
+retain a positive historical issuance/expiry interval. Exact parity now includes
+the SQL-only active-studio-name index without excluding it from signatures.
+
+For reproducible schema suitability and synthetic query-plan evidence, run
+`node scripts/audit-schema-fixture.cjs` with the Compose PostgreSQL service running.
+It creates a random schema in the checked-in dance_comp fixture database, applies
+all migrations, loads synthetic data and prints only catalog/plan metadata, then
+drops its own schema. It never reads application environment files or application
+rows. This one-off audit is separate from normal CI baseline checks; it does not
+establish production latency or deployment parity. Findings and current results:
+[schema audit](SCHEMA_SUITABILITY_AUDIT.md).
 It stops its server
 and drops its own database in a
 finally block. The migration suite creates random schemas in dance_comp, checks
@@ -127,7 +183,7 @@ to hide new strings; translate them or document a specific intentional-content
 exception. Catalogue completeness, placeholder and native plural checks run for
 ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
 
-The current suite has 73 API tests and 8 frontend tests. Frontend checks include
+The current suite has 76 API tests and 8 frontend tests. Frontend checks include
 all-locale component renders of the same stored error, field links, selector
 semantics, network/non-JSON/multipart/204 handling, response-schema failures and
 safe legacy/future fallback. Shared validation preserves root/nested rules and

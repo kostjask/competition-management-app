@@ -20,6 +20,21 @@ No dependency downgrade/new library without concrete need. Record broad or hard
 to reverse architecture choices in docs/adr before dependent work. If ambiguity
 materially changes domain behavior/architecture, explain options and recommendation first.
 
+## Development database policy
+
+The user confirmed on 2026-10-25 that the current development database contains
+only disposable test data, with no real user/production data to preserve. Choose
+the schema/model best suited to the project; reset/reseed that database and
+replace fixtures when useful within the selected task. Do not add legacy
+compatibility, backfills or preservation complexity solely for existing test rows.
+Before destructive database work, verify the resolved connection target is this
+disposable development/test database without exposing credentials; do not assume
+other environments are disposable. Applied migration history may be rewritten
+only after confirming it is unpublished and unused by non-disposable environments.
+Domain integrity/history behavior and meaningful migration tests still apply;
+existing source/Git edits must always be preserved. Operational details:
+[TESTING](docs/TESTING.md#development-database-and-disposable-data).
+
 ## Contracts and backend
 
 - Keep strict TypeScript; no any, unsafe casts or implicit unknown handling.

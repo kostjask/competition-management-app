@@ -20,7 +20,7 @@ own checkboxes. Dated reports record past evidence, never fresh validation.
 | Error / translation | [Errors](ERROR_HANDLING.md), [localization](LOCALIZATION.md) | errors/, web i18n/, ErrorFeedback |
 | Security / roles / invitations | [Security](SECURITY.md), [roles](../ROLE_ARCHITECTURE.md), ADR-006/008 | auth middleware, permission helpers, invitation controller |
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001 | registration/studio controllers, schema.prisma |
-| Database migration | [Database review](DATABASE_REVIEW.md), owning ADR, [testing](TESTING.md#postgresql-checks) | schema, migration SQL, scripts/check-*.cjs |
+| Database migration | [Current schema audit](SCHEMA_SUITABILITY_AUDIT.md), [database review](DATABASE_REVIEW.md), owning ADR, [testing](TESTING.md#postgresql-checks) | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
 | Tests / CI / release evidence | [Testing](TESTING.md) | workspace scripts, tests, .github/workflows/ci.yml |
@@ -46,6 +46,8 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [006](adr/006-account-eligibility-and-staff-onboarding.md) | Studio signup / invitation-only staff; enforcement pending |
 | [007](adr/007-localized-feedback-contracts.md) | Locale-independent feedback; foundation implemented, full journey review pending |
 | [008](adr/008-event-scope-integrity.md) | Scope/history preservation; local technical slice implemented, deployment audit pending |
+| [009](adr/009-email-identity.md) | Canonical account/invitation email; collision refusal and local checks implemented, deployment review pending |
+| [010](adr/010-identity-token-lifecycle.md) | Purpose-bound digests, atomic lifecycle and invalidated old links; public recovery/resend and real delivery remain gated |
 
 ADR-003 lifecycle and ADR-004 scoring are reserved, unaccepted decisions. Their
 required scope is in [DOMAIN](DOMAIN.md#pending-model-decisions); no files or

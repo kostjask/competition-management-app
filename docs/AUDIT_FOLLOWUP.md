@@ -3,14 +3,17 @@
 Updated: 2026-10-25. Source evidence: [repository audit](REPOSITORY_AUDIT.md).
 Priority and milestone gates: [checkpoint](../DEVELOPMENT_PLAN.md).
 Implementation checkboxes live in the owning roadmap; this table maps findings
-to those tasks and their acceptance evidence. All 15 findings remain unresolved.
-Planning a correction does not mark the defect fixed or rerun historical tests.
+to those tasks and their acceptance evidence. H2 is technically corrected locally
+by P2-IDENTITY-TOKENS; the other 14 findings remain unresolved. Current evidence:
+[identity lifecycle](IDENTITY_TOKEN_VALIDATION.md). Historical audit probes remain
+dated evidence, not a description of the subsequently corrected token behavior.
 
 ## Order and release gates
 
-1. Start P2-IDENTITY-TOKENS: canonical email/collision policy, non-merging audit,
-   legacy-link transition, digests, expiry and atomic consume/rotation. Build the
-   minimal AUDIT/PRIVACY and staff-policy foundations needed by the next slices.
+1. P2-IDENTITY-TOKENS is locally complete: canonical identity/collision refusal,
+   legacy invalidation, digests, expiry and atomic consume/rotation. Complete the
+   queued P2-SCHEMA-AUDIT and minimal AUDIT/PRIVACY/staff-policy foundations needed
+   by the next security slices; independent fixes retain their own prerequisites.
 2. Close critical request/identity/upload boundaries and scoped-admin escalation
    through P2-AUTH, INVITE-IDENTITY, ROLES-ADMIN-SCOPE and BOUNDARIES-UPLOADS. Run
    independent upload work as soon as its own prerequisites pass; it need not wait
@@ -49,6 +52,14 @@ because this correction plan exists.
 | L1: inert profile Edit | Foundation: P2-UI-SHELL | Remove/disable the unsupported Edit action with truthful translated wording; label read-only profile navigation accordingly. Only add editing after its backend contract exists. Test visible actions and keyboard navigation. | Delivered shell |
 
 ## Closure and preservation
+
+Current development rows are disposable under the user-confirmed
+[database policy](TESTING.md#development-database-and-disposable-data). Preservation
+and transition criteria here apply to domain invariants and retained/non-disposable
+data, not mandatory retention of current fixtures. Reset/reseed and replace
+fixtures when that yields the better model; avoid unnecessary legacy machinery.
+The policy governs the applied-history restriction below; it does not permit
+weakening security/history behavior or discarding source work to pass tests.
 
 Use [TESTING](TESTING.md#audit-correction-evidence) for evidence requirements.
 A finding closes only after implementation, applicable regression/validation and

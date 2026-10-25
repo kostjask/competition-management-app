@@ -6,10 +6,12 @@ find its contracts/specifications. Historical reports are reference only.
 
 ## Next action
 
-**Active phase: 2A. Next: P2-IDENTITY-TOKENS** in
-[foundation tasks](docs/roadmap/foundation.md): decide email canonicalization and
-collision handling; audit without merging identities; implement purpose-bound
-token digests, expiry, atomic consumption/rotation and preservation tests.
+**Active work: Phase 2B security slices; Phase 2A foundations remain open.
+Next: P2-AUTH** in [foundation tasks](docs/roadmap/foundation.md): enforce
+existing/active/verified account eligibility at login and protected requests,
+then deliver safe verification/resend/recovery under the documented token policy.
+Its identity-token prerequisite and P2-SCHEMA-AUDIT are technically complete locally;
+deployment collision/scope review, other foundation and auth/email/session gates remain open.
 
 Audit correction order and all 15 finding owners: [correction plan](docs/AUDIT_FOLLOWUP.md).
 After the required foundations, prioritize P2-AUTH, P2-INVITE-IDENTITY,
@@ -22,10 +24,38 @@ UI track: **P2-UI-FOUNDATION**, then P2-UI-SHELL with P2-ROLES. Fixture work can
 proceed while security foundations are built; gated management features cannot
 ship early. See [design system](docs/DESIGN_SYSTEM.md).
 
+P2-SCHEMA-AUDIT is complete: [findings and validation](docs/SCHEMA_SUITABILITY_AUDIT.md).
+Broader model changes retain their owning tasks and ADR gates. Current test data
+may be reset/reseeded under the disposable-data policy; no reset was needed here.
+
 ## Current state
+
+- User-confirmed database baseline (2026-10-25): the current development database
+  contains only disposable test data. Schema/model improvements may reset/reseed
+  it and replace fixtures; do not add legacy compatibility solely to retain test
+  rows. Follow the target-verification/migration rules in
+  [AGENTS](AGENTS.md#development-database-policy) and
+  [TESTING](docs/TESTING.md#development-database-and-disposable-data).
+  Preservation requirements below concern domain behavior and retained/real data;
+  they do not require keeping current fixtures. No database was reset by this
+  policy update; active task priority and implementation status are unchanged.
 
 - Phases 0 and 1 are complete for their technical scope. Mounted business
   resources have controllers, shared DTOs, canonical paths and validated clients.
+- Schema review adds token digest/lifetime/state CHECKs and closes the
+  active-studio-name-index parity exclusion. The migrated target has 19 business
+  tables, 27 restrictive foreign keys and eight CHECKs. Synthetic plans support
+  retaining foundation indexes; reverse-key candidates remain P3-INDEXES.
+  Compose metadata still reflects older migrations; no application rows were
+  migrated/reset. Verify the intended target and preflights before local rollout.
+- Email identity now uses shared ASCII-space trimming/lowercasing for accounts
+  and invitations, with collision-refusing migration and direct-write checks.
+  IDs, ownership and all non-email fields are preserved; no identities are merged.
+  Intended-deployment preflight remains open.
+- Purpose-bound verification/recovery/invitation digests, expiry, atomic
+  rotation/consumption and legacy-link invalidation are implemented. Verification
+  and invitations reject inactive identities; recovery helpers do not mint sessions.
+  Public recovery/resend and invitation management still need their owning tasks.
 - ET/EN/RU semantic feedback, shared validation and dictionary foundations exist.
   UI migration, formatting, email preferences and human/browser review remain.
 - P2-SCOPE-INTEGRITY is technically complete: restrictive event foreign keys,
@@ -36,16 +66,22 @@ ship early. See [design system](docs/DESIGN_SYSTEM.md).
   dashboards are placeholders; application, staff acceptance, music, scoring,
   live operation and results journeys are unfinished. No external milestone is complete.
 - Public signup remains unrestricted; login accepts unverified accounts. Upload
-  ownership, active-user request checks, role guards, CORS/rate limits, plaintext
-  token lifecycle and email-stub logging remain security work. Email is a stub;
+  ownership, active-user request checks, role guards and CORS/rate limits remain
+  security work. The email fake is silent; production rejects unavailable delivery;
   storage is always local. Event reads require authentication.
 - Baseline CI exists; first hosted-run evidence and required-check settings need
   operator follow-up. Technical completion does not imply workflow/release readiness.
 
-Latest **recorded** runtime validation (2026-10-25): build/typecheck/web lint,
-73 API + 8 frontend tests and localization guard, Prisma checks, migration parity
-and isolated PostgreSQL workflows. The first baseline readiness timeout was not
-reproduced on standalone rerun. See [scope evidence](docs/SCOPE_INTEGRITY_VALIDATION.md).
+Latest **recorded** runtime validation (2026-10-25): schema audit/foundation fixes passed
+build/typecheck/web lint, 76 API + 8 frontend tests and localization guard,
+Prisma checks, full SQL-only migration parity and isolated PostgreSQL workflows,
+including six token CHECKs, invalid-data upgrade refusal and preservation.
+Synthetic catalog/query plans were collected separately. See
+[schema evidence](docs/SCHEMA_SUITABILITY_AUDIT.md),
+[lifecycle evidence](docs/IDENTITY_TOKEN_VALIDATION.md) and earlier
+[email evidence](docs/EMAIL_IDENTITY_VALIDATION.md). Earlier scope validation's
+baseline readiness timeout did not recur here; [scope evidence](docs/SCOPE_INTEGRITY_VALIDATION.md)
+retains that historical result.
 The [implementation audit](docs/REPOSITORY_AUDIT.md) reran workspace/Prisma/database
 checks and additional security probes; it records cache use and verification limits.
 The subsequent correction-planning update changed documentation only and did not
@@ -123,5 +159,6 @@ Runtime priorities and completion states are unchanged.
 Repository implementation audit (2026-10-25): [findings and fresh validation](docs/REPOSITORY_AUDIT.md).
 Workspace, Prisma and isolated PostgreSQL checks pass; reachable invitation,
 inactive-account and upload security defects remain M1 blockers. No implementation
-was changed by this audit. Next remains P2-IDENTITY-TOKENS, with critical negative
-cases carried into P2-AUTH/INVITE/BOUNDARIES before external exposure.
+was changed by this audit. Subsequent identity/token work is recorded above;
+critical request, intended-account and upload defects remain for
+P2-AUTH/INVITE/BOUNDARIES before external exposure.

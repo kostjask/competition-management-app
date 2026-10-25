@@ -31,6 +31,7 @@ async function fixture(t) {
       },
     },
     user: { findUnique: record('user', null) },
+    accountToken: { findUnique: record('account-token', null) },
     event: { findMany: record('events', []), findUnique: record('event', null) },
     judge: { findMany: record('judges', []) },
     danceCategory: { findMany: record('categories', []) },
@@ -957,6 +958,7 @@ async function authFixture(t) {
   const deliveries = [];
   t.mock.method(email, 'sendVerificationEmail', async data => { deliveries.push(data); });
   let user;
+  let accountToken;
   f.prisma.user = {
     findUnique: async ({ where, select }) => {
       f.calls.push({ name: 'auth-user', where, select });
@@ -964,16 +966,32 @@ async function authFixture(t) {
     },
     create: async ({ data, select }) => {
       f.calls.push({ name: 'auth-create', data, select });
+      accountToken = { id: 'token', userId: 'account', consumedAt: null, revokedAt: null, ...data.accountTokens?.create };
       return (user = { id: 'account', active: true, createdAt: new Date('2026-01-02'), roles: [], ...data });
     },
     update: async ({ data }) => (user = { ...user, ...data }),
+    updateMany: async ({ where, data }) => {
+      if (!user || !Object.entries(where).every(([key, value]) => user[key] === value)) return { count: 0 };
+      Object.assign(user, data); return { count: 1 };
+    },
   };
-  return { ...f, deliveries, stored: () => user, setUser: value => { user = value; } };
+  f.prisma.accountToken = {
+    findUnique: async ({ where }) => accountToken?.digest === where.digest ? accountToken : null,
+    updateMany: async ({ where, data }) => {
+      if (!accountToken || !Object.entries(where).every(([key, value]) => key === 'expiresAt'
+        ? accountToken.expiresAt > value.gt : accountToken[key] === value)) return { count: 0 };
+      Object.assign(accountToken, data); return { count: 1 };
+    },
+  };
+  return { ...f, deliveries, storedToken: () => accountToken,
+    setToken: raw => { accountToken = { id: 'token', userId: 'account', email: authInput.email, purpose: 'VERIFY_EMAIL',
+      digest: require('../dist/services/identityTokens.js').tokenDigest('VERIFY_EMAIL', raw), expiresAt: new Date(Date.now() + 60000), consumedAt: null, revokedAt: null }; },
+    stored: () => user, setUser: value => { user = value; } };
 }
 const authInput = { email: 'auth-contract@example.invalid', name: ' Account ', password: 'fixture-password' };
 
 test('auth registration validates explicit response and private fields, hashes passwords and maps duplicates', async (t) => {
-  const { request, deliveries, stored, prisma } = await authFixture(t);
+  const { request, deliveries, stored, storedToken, prisma } = await authFixture(t);
   const { RegisterResponseSchema, ErrorResponseSchema } = require('@dance/schemas');
   const created = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
   assert.equal(created.status, 201);
@@ -982,7 +1000,9 @@ test('auth registration validates explicit response and private fields, hashes p
   assert.equal(stored().name, 'Account'); assert.equal(stored().emailVerified, false);
   assert.notEqual(stored().password, authInput.password);
   assert.ok(await require('bcrypt').compare(authInput.password, stored().password));
-  assert.equal(deliveries.length, 1); assert.equal(deliveries[0].token, stored().verificationToken);
+  assert.equal(deliveries.length, 1); assert.equal(stored().verificationToken, undefined);
+  assert.equal(require('../dist/services/identityTokens.js').tokenDigest('VERIFY_EMAIL', deliveries[0].token), storedToken().digest);
+  assert.ok(!JSON.stringify(stored()).includes(deliveries[0].token));
   const duplicate = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
   assert.equal(duplicate.status, 409); ErrorResponseSchema.parse(duplicate.body);
   prisma.user.findUnique = async () => null;
@@ -1031,18 +1051,19 @@ test('auth login returns only a validated bearer session and preserves credentia
   assert.equal((await login(authInput.password)).status, 401);
 });
 
-test('auth verification returns its explicit session contract and clears the stored token', async (t) => {
-  const { request, setUser, stored } = await authFixture(t);
+test('auth verification returns its explicit session contract and atomically consumes the token', async (t) => {
+  const { request, setUser, stored, setToken, storedToken } = await authFixture(t);
   const { VerifyEmailResponseSchema, ErrorResponseSchema } = require('@dance/schemas');
   const verify = token => request('/api/v1/auth/verify-email', { method: 'POST', body: { token } });
   const missing = await verify('missing'); assert.equal(missing.status, 404); ErrorResponseSchema.parse(missing.body);
-  setUser({ id: 'account', email: authInput.email, name: 'Account', emailVerified: true, verificationToken: 'fixture' });
+  setUser({ id: 'account', email: authInput.email, name: 'Account', active: true, emailVerified: true });
+  setToken('fixture');
   assert.equal((await verify('fixture')).status, 403);
   stored().emailVerified = false;
   const success = await verify('fixture'); assert.equal(success.status, 200);
   const session = VerifyEmailResponseSchema.parse(success.body);
   assert.equal(jwt.verify(session.token, process.env.JWT_SECRET).userId, 'account');
-  assert.equal(stored().emailVerified, true); assert.equal(stored().verificationToken, null);
+  assert.equal(stored().emailVerified, true); assert.ok(storedToken().consumedAt);
   assert.equal((await verify('fixture')).status, 404);
 });
 
@@ -1218,7 +1239,8 @@ for (const setup of [
 test('invitation contracts validate relationships, dates, DTOs and global errors', async (t) => {
   const { request, prisma } = await fixture(t);
   const schemas = require('@dance/schemas'); const { Prisma } = require('@prisma/client');
-  require('../dist/utils/email.js').sendInvitationEmail = async () => {};
+  let deliveredToken;
+  t.mock.method(require('../dist/utils/email.js'), 'sendInvitationEmail', async data => { deliveredToken = data.token; });
   prisma.role = { findUnique: async ({ where }) => where.key === 'missing' ? null : { id: 'role' } };
   prisma.event.findUnique = async ({ where }) => where.id === 'missing' ? null : { id: where.id, name: 'Event' };
   prisma.userRole.findFirst = async () => null;
@@ -1226,7 +1248,7 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
   prisma.invitation.findFirst = async () => null;
   let stored;
   prisma.invitation.create = async ({ data }) => stored = { id: 'invite', ...data, createdAt: new Date('2026-01-01'), usedAt: null };
-  prisma.invitation.findUnique = async ({ where }) => where.token === stored?.token ? { ...stored, event: stored.eventId ? { id: stored.eventId, name: 'Event' } : null } : null;
+  prisma.invitation.findUnique = async ({ where }) => where.tokenDigest === stored?.tokenDigest ? { ...stored, event: stored.eventId ? { id: stored.eventId, name: 'Event' } : null } : null;
   prisma.invitation.findMany = async () => stored ? [stored] : [];
   const create = body => request('/api/v1/invitations', { user: 'admin', method: 'POST', body });
   const body = { email: 'invite@example.invalid', roleKey: 'judge', eventId: 'e' };
@@ -1237,11 +1259,12 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
   assert.equal(created.body.token, undefined); assert.equal(stored.eventId, 'e');
   const listed = await request('/api/v1/invitations', { user: 'admin' }); schemas.InvitationsSchema.parse(listed.body);
   assert.equal(listed.body[0].token, undefined); assert.equal(listed.body[0].createdBy, undefined);
-  const preview = await request('/api/v1/invitations/' + stored.token); schemas.InvitationPreviewSchema.parse(preview.body);
+  assert.notEqual(stored.tokenDigest, deliveredToken); assert.equal(stored.token, undefined);
+  const preview = await request('/api/v1/invitations/' + deliveredToken); schemas.InvitationPreviewSchema.parse(preview.body);
   assert.equal(preview.body.token, undefined); assert.equal(preview.body.event.id, 'e');
-  stored.usedAt = new Date(); const used = await request('/api/v1/invitations/' + stored.token); assert.equal(used.status, 400); assert.equal(used.body.reason, 'invitationUsed');
+  stored.usedAt = new Date(); const used = await request('/api/v1/invitations/' + deliveredToken); assert.equal(used.status, 400); assert.equal(used.body.reason, 'invitationUsed');
   stored.usedAt = null; stored.expiresAt = new Date('2020-01-01');
-  assert.equal((await request('/api/v1/invitations/' + stored.token)).body.reason, 'invitationExpired');
+  assert.equal((await request('/api/v1/invitations/' + deliveredToken)).body.reason, 'invitationExpired');
   prisma.invitation.findFirst = async () => stored;
   assert.equal((await create(body)).status, 409);
   prisma.invitation.findFirst = async () => null;

@@ -64,6 +64,9 @@ async function main() {
     created = true;
     pnpm('db:migrate');
     require('./check-scope-upgrade.cjs')(database);
+    require('./check-email-upgrade.cjs')(database);
+    require('./check-token-upgrade.cjs')(database);
+    require('./check-token-constraints.cjs')(database);
     client = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
     const migrations = await client.$queryRaw`SELECT count(*)::int AS count FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     const { readdirSync } = require('node:fs');
@@ -131,6 +134,7 @@ async function main() {
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-auth.cjs')({ client, baseUrl, login });
+    await require('./check-identity-tokens.cjs')({ client, baseUrl });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {
