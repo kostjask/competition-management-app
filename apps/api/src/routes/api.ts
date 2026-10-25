@@ -13,13 +13,14 @@ import { studiosRouter } from "./studios";
 import { dancersRouter } from "./dancers";
 import { imagesRouter } from "./images";
 import { performancesRouter } from "./performances";
+import type { RecoveryDelivery } from "../services/authRecovery";
 
-export function apiRouter(prisma: PrismaClient) {
+export function apiRouter(prisma: PrismaClient, recoveryDelivery?: RecoveryDelivery) {
   const router = Router();
   const authenticate = createAuthMiddleware(prisma);
 
   // These routers attach authentication to their protected operations explicitly.
-  router.use("/auth", authRouter(prisma, authenticate));
+  router.use("/auth", authRouter(prisma, authenticate, recoveryDelivery));
   router.use("/invitations", invitationsRouter(prisma, authenticate));
 
   // Every operation in these resource routers requires authentication.

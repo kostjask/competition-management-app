@@ -16,6 +16,7 @@ const env = {
   DATABASE_URL: `postgresql://dance_user:dance_pass@localhost:5432/${database}`,
   JWT_SECRET: randomBytes(32).toString('hex'),
   EMAIL_FROM: 'baseline@example.invalid',
+  EMAIL_PROVIDER: 'fake',
   NODE_ENV: 'test', DEV_AUTH: 'false', HOST: '127.0.0.1',
 };
 let created = false;
@@ -134,7 +135,11 @@ async function main() {
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-auth.cjs')({ client, baseUrl, login });
+    await require('./check-auth-eligibility.cjs')({ client, baseUrl, login });
     await require('./check-identity-tokens.cjs')({ client, baseUrl });
+    await require('./check-dev-auth.cjs')({ client, serverEnv: env });
+    require('./check-auth-recovery.cjs')({ serverEnv: env });
+    require('./check-foundation.cjs')({ serverEnv: env });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {

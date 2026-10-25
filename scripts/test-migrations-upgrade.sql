@@ -1,5 +1,13 @@
 DO $$
 BEGIN
+    IF NOT EXISTS (SELECT FROM "User" WHERE id = 'user' AND "sessionVersion" = 0) THEN
+        RAISE EXCEPTION 'Existing user session revision default was not preserved';
+    END IF;
+    BEGIN
+        UPDATE "User" SET "sessionVersion" = -1 WHERE id = 'user';
+        RAISE EXCEPTION 'Negative session revision was accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
     IF (SELECT count(*) FROM "StudioEventRegistration" WHERE status::text = CASE WHEN id = 'registration' THEN 'LOCKED' ELSE id END) <> 4 THEN
         RAISE EXCEPTION 'Existing registration status was changed';
     END IF;

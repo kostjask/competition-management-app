@@ -4,6 +4,10 @@ Reviewed: 2026-10-25. Task: P2-SCHEMA-AUDIT. Evidence refers to the working tree
 including pending migrations, not a committed/deployed revision. This supersedes
 the structural status in the dated [database review](DATABASE_REVIEW.md).
 
+Subsequent ADR-011 adds User.sessionVersion (int/default/check). The catalog
+counts below are the audit's earlier snapshot; the current target has one extra
+column and CHECK. Current validation and rollout: [recovery evidence](AUTH_RECOVERY_VALIDATION.md).
+
 ## Conclusion and scope
 
 Retain the relational foundation and existing canonical APIs. Implemented two

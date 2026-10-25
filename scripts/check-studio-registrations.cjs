@@ -54,18 +54,31 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   assert.equal((await request(item, applicantToken, 'PATCH', { status: 'APPROVED' })).status, 403);
   assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 403);
 
-  // A roleless but cryptographically valid unknown identity causes a nested FK
-  // failure under current auth behavior. Prove the entire creation rolls back.
+  // A correctly signed JWT for an unknown identity must fail before any write.
   const before = await Promise.all([
     client.studio.count(), client.studioRepresentative.count(), client.studioEventRegistration.count(),
   ]);
-  const missingUserToken = jwt.sign({ userId: randomUUID() }, jwtSecret);
+  const missingUserToken = jwt.sign({ userId: randomUUID(), sessionVersion: 0 }, jwtSecret);
   const failed = await request(root, missingUserToken, 'POST', { ...application, name: 'Rollback studio' });
-  assert.equal(failed.status, 409);
-  assert.equal(failed.body.reason, "relationshipConflict");
+  assert.equal(failed.status, 401);
+  assert.equal(failed.body.reason, "authenticationRequired");
   assert.deepEqual(await Promise.all([
     client.studio.count(), client.studioRepresentative.count(), client.studioEventRegistration.count(),
-  ]), before, 'A failed membership write must not leave a studio or registration');
+  ]), before, 'A missing identity must fail before membership writes');
+  // Keep real nested-write rollback coverage now that missing users cannot get
+  // past authentication to provoke the old membership foreign-key failure.
+  await client.$executeRawUnsafe(`CREATE FUNCTION reject_membership_fixture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'Synthetic membership rollback'; END $$`);
+  await client.$executeRawUnsafe(`CREATE TRIGGER reject_membership_fixture BEFORE INSERT ON "StudioRepresentative" FOR EACH ROW WHEN (NEW.email = 'rollback-membership@example.invalid') EXECUTE FUNCTION reject_membership_fixture()`);
+  try {
+    const rollback = await request(root, applicantToken, 'POST', { ...application, name: 'Rollback studio', representativeEmail: 'rollback-membership@example.invalid' });
+    assert.equal(rollback.status, 500);
+    assert.deepEqual(await Promise.all([
+      client.studio.count(), client.studioRepresentative.count(), client.studioEventRegistration.count(),
+    ]), before, 'A failed membership write must not leave a studio or registration');
+  } finally {
+    await client.$executeRawUnsafe('DROP TRIGGER reject_membership_fixture ON "StudioRepresentative"');
+    await client.$executeRawUnsafe('DROP FUNCTION reject_membership_fixture()');
+  }
 
   await client.studioRepresentative.update({ where: { id: stored.representatives[0].id }, data: { active: false } });
   assert.deepEqual((await request(root, applicantToken)).body, []);

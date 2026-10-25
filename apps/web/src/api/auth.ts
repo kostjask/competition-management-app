@@ -3,6 +3,9 @@ import {
   RegisterResponseSchema, AuthResponseSchema, VerifyEmailResponseSchema, UserProfileSchema,
   type RegisterInput, type LoginInput, type VerifyEmailInput,
   type RegisterResponse, type AuthResponse, type VerifyEmailResponse, type UserProfile,
+  ResendVerificationSchema, CorrectEmailSchema, RequestPasswordResetSchema, ResetPasswordSchema,
+  AuthRequestAcceptedSchema, ResetPasswordResponseSchema,
+  type ResendVerificationInput, type CorrectEmailInput, type RequestPasswordResetInput, type ResetPasswordInput,
 } from "@dance/schemas";
 import { apiClient, setToken, removeToken } from "./client.js";
 
@@ -34,4 +37,16 @@ export const verifyEmail = async (data: VerifyEmailData): Promise<VerifyEmailRes
   const response = decode(VerifyEmailResponseSchema, await apiClient.post<VerifyEmailData>("/auth/verify-email", data));
   setToken(response.token);
   return response;
+};
+
+export const resendVerification = async (data: ResendVerificationInput) =>
+  decode(AuthRequestAcceptedSchema, await apiClient.post("/auth/resend-verification", ResendVerificationSchema.parse(data)));
+export const correctEmail = async (data: CorrectEmailInput) =>
+  decode(AuthRequestAcceptedSchema, await apiClient.post("/auth/correct-email", CorrectEmailSchema.parse(data)));
+export const requestPasswordReset = async (data: RequestPasswordResetInput) =>
+  decode(AuthRequestAcceptedSchema, await apiClient.post("/auth/request-password-reset", RequestPasswordResetSchema.parse(data)));
+export const resetPassword = async (data: ResetPasswordInput) => {
+  const result = decode(ResetPasswordResponseSchema, await apiClient.post("/auth/reset-password", ResetPasswordSchema.parse(data)));
+  removeToken();
+  return result;
 };

@@ -20,6 +20,7 @@ async function fixture(t) {
   };
   const prisma = {
     $queryRaw: record('health', []),
+    auditLog: { create: async ({ data }) => ({ id: 'audit', ...data }) },
     userRole: {
       findMany: async ({ where }) => {
         calls.push({ name: 'roles', userId: where.userId });
@@ -30,7 +31,7 @@ async function fixture(t) {
           ] } }];
       },
     },
-    user: { findUnique: record('user', null) },
+    user: { findUnique: record('user', null), findFirst: async ({ where }) => ({ id: where.id }) },
     accountToken: { findUnique: record('account-token', null) },
     event: { findMany: record('events', []), findUnique: record('event', null) },
     judge: { findMany: record('judges', []) },
@@ -53,7 +54,7 @@ async function fixture(t) {
   }));
   const request = async (path, { user, method = 'GET', body, token, form } = {}) => {
     const headers = {};
-    if (user || token) headers.Authorization = `Bearer ${token || jwt.sign({ userId: user }, process.env.JWT_SECRET)}`;
+    if (user || token) headers.Authorization = `Bearer ${token || jwt.sign({ userId: user, sessionVersion: 0 }, process.env.JWT_SECRET)}`;
     if (body !== undefined && !form) headers['Content-Type'] = 'application/json';
     const response = await fetch(`http://127.0.0.1:${server.address().port}${path}`, {
       method, headers, body: form ?? (body === undefined ? undefined : JSON.stringify(body)),
@@ -227,7 +228,7 @@ async function registrationFixture(t) {
     deleteMany: async (args) => { calls.push({ name: 'cancel', args }); return { count: 1 }; },
   };
   prisma.role = { findUnique: async () => ({ id: 'representative-role' }) };
-  prisma.userRole.upsert = async (args) => calls.push({ name: 'assign', args });
+  prisma.userRole.upsert = async (args) => { calls.push({ name: 'assign', args }); return { id: 'assignment', ...args.create }; };
   return context;
 }
 
@@ -960,6 +961,7 @@ async function authFixture(t) {
   let user;
   let accountToken;
   f.prisma.user = {
+    findFirst: async ({ where }) => user?.id === where.id && user.active && user.emailVerified ? { id: user.id } : null,
     findUnique: async ({ where, select }) => {
       f.calls.push({ name: 'auth-user', where, select });
       return user && Object.entries(where).every(([key, value]) => user[key] === value) ? user : null;
@@ -967,7 +969,7 @@ async function authFixture(t) {
     create: async ({ data, select }) => {
       f.calls.push({ name: 'auth-create', data, select });
       accountToken = { id: 'token', userId: 'account', consumedAt: null, revokedAt: null, ...data.accountTokens?.create };
-      return (user = { id: 'account', active: true, createdAt: new Date('2026-01-02'), roles: [], ...data });
+      return (user = { id: 'account', sessionVersion: 0, active: true, createdAt: new Date('2026-01-02'), roles: [], ...data });
     },
     update: async ({ data }) => (user = { ...user, ...data }),
     updateMany: async ({ where, data }) => {
@@ -986,7 +988,7 @@ async function authFixture(t) {
   return { ...f, deliveries, storedToken: () => accountToken,
     setToken: raw => { accountToken = { id: 'token', userId: 'account', email: authInput.email, purpose: 'VERIFY_EMAIL',
       digest: require('../dist/services/identityTokens.js').tokenDigest('VERIFY_EMAIL', raw), expiresAt: new Date(Date.now() + 60000), consumedAt: null, revokedAt: null }; },
-    stored: () => user, setUser: value => { user = value; } };
+    stored: () => user, setUser: value => { user = { sessionVersion: 0, active: true, emailVerified: true, ...value }; } };
 }
 const authInput = { email: 'auth-contract@example.invalid', name: ' Account ', password: 'fixture-password' };
 
@@ -996,7 +998,8 @@ test('auth registration validates explicit response and private fields, hashes p
   const created = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
   assert.equal(created.status, 201);
   assert.equal(RegisterResponseSchema.parse(created.body).userId, 'account');
-  assert.deepEqual(Object.keys(created.body).sort(), ['message', 'messageId', 'userId']);
+  assert.deepEqual(Object.keys(created.body).sort(), ['delivery', 'message', 'messageId', 'userId']);
+  assert.equal(created.body.delivery, 'unconfirmed');
   assert.equal(stored().name, 'Account'); assert.equal(stored().emailVerified, false);
   assert.notEqual(stored().password, authInput.password);
   assert.ok(await require('bcrypt').compare(authInput.password, stored().password));
@@ -1039,6 +1042,10 @@ test('auth login returns only a validated bearer session and preserves credentia
   setUser({ id: 'account', email: authInput.email, name: 'Account', active: true, emailVerified: false,
     password: await require('bcrypt').hash(authInput.password, 4), verificationToken: 'private', photoPath: 'private' });
   const invalid = await login('incorrect'); assert.equal(invalid.status, 401); ErrorResponseSchema.parse(invalid.body);
+  const unverified = await login(authInput.password);
+  assert.equal(unverified.status, 403); assert.equal(unverified.body.reason, 'emailVerificationRequired');
+  assert.equal(unverified.body.token, undefined);
+  stored().emailVerified = true;
   const success = await login(authInput.password);
   assert.equal(success.status, 200); const session = AuthResponseSchema.parse(success.body);
   const claims = jwt.verify(session.token, process.env.JWT_SECRET);
@@ -1060,6 +1067,11 @@ test('auth verification returns its explicit session contract and atomically con
   setToken('fixture');
   assert.equal((await verify('fixture')).status, 403);
   stored().emailVerified = false;
+  stored().active = false;
+  const inactive = await verify('fixture');
+  assert.equal(inactive.status, 403); assert.equal(inactive.body.token, undefined);
+  assert.equal(storedToken().consumedAt, null);
+  stored().active = true;
   const success = await verify('fixture'); assert.equal(success.status, 200);
   const session = VerifyEmailResponseSchema.parse(success.body);
   assert.equal(jwt.verify(session.token, process.env.JWT_SECRET).userId, 'account');
@@ -1072,7 +1084,7 @@ test('auth profile constrains identity to the caller and explicitly serializes r
   const { UserProfileSchema, ErrorResponseSchema } = require('@dance/schemas');
   assert.equal((await request('/api/v1/auth/profile')).status, 401);
   const missing = await request('/api/v1/auth/profile', { user: 'account' });
-  assert.equal(missing.status, 404); ErrorResponseSchema.parse(missing.body);
+  assert.equal(missing.status, 401); ErrorResponseSchema.parse(missing.body);
   setUser({ id: 'account', email: authInput.email, name: 'Account', createdAt: new Date('2026-01-02'),
     password: 'private', verificationToken: 'private', photoPath: 'private', roles: [
       { id: 'global', userId: 'account', eventId: null, roleId: 'r',
@@ -1088,7 +1100,13 @@ test('auth profile constrains identity to the caller and explicitly serializes r
   const lookup = calls.filter(c => c.name === 'auth-user').at(-1);
   assert.deepEqual(lookup.where, { id: 'account' }); assert.equal(lookup.select.roles.select.role.select.key, true);
   assert.equal(lookup.select.password, undefined);
-  assert.equal((await request('/api/v1/auth/profile?userId=account', { user: 'someone-else' })).status, 404);
+  const roleReads = calls.filter(call => call.name === 'roles').length;
+  for (const state of [{ active: false, emailVerified: true }, { active: true, emailVerified: false }]) {
+    setUser({ id: 'account', email: authInput.email, name: 'Account', ...state });
+    assert.equal((await request('/api/v1/auth/profile', { user: 'account' })).status, 401);
+    assert.equal(calls.filter(call => call.name === 'roles').length, roleReads);
+  }
+  assert.equal((await request('/api/v1/auth/profile?userId=account', { user: 'someone-else' })).status, 401);
 });
 
 
@@ -1254,7 +1272,7 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
   const body = { email: 'invite@example.invalid', roleKey: 'judge', eventId: 'e' };
   for (const input of [{}, { ...body, extra: true }, { ...body, email: 'bad' }]) assert.equal((await create(input)).status, 400);
   assert.equal((await create({ ...body, eventId: 'missing' })).status, 404);
-  assert.equal((await create({ ...body, roleKey: 'missing' })).status, 404);
+  assert.equal((await create({ ...body, roleKey: 'missing' })).status, 400);
   const created = await create(body); assert.equal(created.status, 201); schemas.CreateInvitationResponseSchema.parse(created.body);
   assert.equal(created.body.token, undefined); assert.equal(stored.eventId, 'e');
   const listed = await request('/api/v1/invitations', { user: 'admin' }); schemas.InvitationsSchema.parse(listed.body);
@@ -1280,21 +1298,22 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
 
 test('invitation acceptance returns an explicit session and atomically links role scope', async (t) => {
   const { request, prisma } = await fixture(t); const schemas = require('@dance/schemas');
-  const invitation = { id: 'i', email: 'new@example.invalid', roleKey: 'judge', eventId: 'e', token: 'fixture', usedAt: null, expiresAt: new Date(Date.now() + 60000) };
+  const invitation = { id: 'i', email: 'new@example.invalid', roleKey: 'judge', roleId: 'role', studioId: null, eventId: 'e', token: 'fixture', usedAt: null, expiresAt: new Date(Date.now() + 60000) };
   let user; let assignment; let used = false;
   prisma.invitation.findUnique = async () => invitation;
   prisma.invitation.update = async ({ where, data }) => { assert.equal(where.usedAt, null); used = true; invitation.usedAt = data.usedAt; };
   prisma.event.findUnique = async () => ({ id: 'e' });
   prisma.role = { findUnique: async () => ({ id: 'role' }) };
   prisma.user.findUnique = async () => user ?? null;
-  prisma.user.create = async ({ data }) => user = { id: 'new', ...data };
+  prisma.user.create = async ({ data }) => user = { id: 'new', sessionVersion: 0, ...data };
   prisma.userRole.findFirst = async () => assignment ?? null;
-  prisma.userRole.create = async ({ data }) => assignment = data;
+  prisma.userRole.create = async ({ data }) => { assignment = data; return { id: 'assignment', ...data }; };
   const accept = body => request('/api/v1/invitations/accept', { method: 'POST', body });
   assert.equal((await accept({ token: 'fixture', name: ' New ', password: 'fixture-password', roleKey: 'admin' })).status, 400);
   const result = await accept({ token: 'fixture', name: ' New ', password: 'fixture-password' });
   assert.equal(result.status, 201); schemas.AcceptInvitationResponseSchema.parse(result.body);
   assert.equal(result.body.user.password, undefined); assert.equal(result.body.messageId, 'invitationAccepted');
+  assert.equal(jwt.verify(result.body.token, process.env.JWT_SECRET).sessionVersion, 0);
   assert.equal(user.name, 'New'); assert.notEqual(user.password, 'fixture-password'); assert.equal(used, true);
   assert.deepEqual(assignment, { userId: 'new', roleId: 'role', eventId: 'e' });
   assert.equal((await accept({ token: 'fixture', name: 'New', password: 'fixture-password' })).body.reason, 'invitationUsed');

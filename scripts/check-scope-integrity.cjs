@@ -42,7 +42,8 @@ module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToke
       body: JSON.stringify(body), signal: AbortSignal.timeout(10000) });
     return { status: response.status, body: await response.json() };
   };
-  for (const eventId of [null, events[1].id]) {
+  assert.equal((await request({ email: 'unsupported-global@example.invalid', roleKey: 'moderator' })).status, 400);
+  for (const eventId of [events[1].id]) {
     const secret = newIdentitySecret('INVITATION');
     const expired = await client.invitation.create({ data: invite(eventId, {
       email: 'replace-expired@example.invalid', expiresAt: new Date('2020-01-01'), tokenDigest: secret.digest,

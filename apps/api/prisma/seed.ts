@@ -66,6 +66,10 @@ async function main() {
           description: "Submit performance scores",
         },
       }),
+      prisma.permission.upsert({
+        where: { key: "stage.manage" }, update: {},
+        create: { key: "stage.manage", name: "Manage Stage", description: "Control stage flow without submitting scores" },
+      }),
     ]);
     console.log(`✅ Created ${permissions.length} permissions\n`);
 
@@ -107,7 +111,7 @@ async function main() {
       create: {
         key: "moderator",
         name: "Moderator",
-        description: "Controls stage flow and validates scores",
+        description: "Controls event stage flow without submitting scores",
       },
     });
     console.log("✅ Created 4 roles\n");
@@ -122,6 +126,7 @@ async function main() {
       { roleId: adminRole.id, permissionId: permissions[3].id },
       { roleId: adminRole.id, permissionId: permissions[4].id },
       { roleId: adminRole.id, permissionId: permissions[5].id },
+      { roleId: adminRole.id, permissionId: permissions[6].id },
 
       // Representative
       { roleId: representativeRole.id, permissionId: permissions[1].id }, // studio.manage
@@ -133,9 +138,11 @@ async function main() {
       { roleId: judgeRole.id, permissionId: permissions[5].id }, // score.submit
 
       // Moderator
-      { roleId: moderatorRole.id, permissionId: permissions[5].id }, // score.submit (to view)
+      { roleId: moderatorRole.id, permissionId: permissions[6].id }, // stage.manage
     ];
 
+    // Named built-in policy: score submission must not be used as a viewing grant.
+    await prisma.rolePermission.deleteMany({ where: { roleId: moderatorRole.id, permissionId: permissions[5].id } });
     for (const rp of rolePermissions) {
       await prisma.rolePermission.upsert({
         where: {

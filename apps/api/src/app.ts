@@ -5,10 +5,12 @@ import type { PrismaClient } from "@prisma/client";
 import { apiRouter } from "./routes/api";
 import { errorHandler } from "./errors/handler";
 import { NotFoundError } from "./errors";
+import type { RecoveryDelivery } from "./services/authRecovery";
 
 // Construction has no listener, process handlers, or database/storage initialization.
-export function createApp(prisma: PrismaClient) {
+export function createApp(prisma: PrismaClient, recoveryDelivery?: RecoveryDelivery) {
   const app = express();
+  app.set("trust proxy", false);
   app.use(cors({ origin: "*" }));
   app.use(express.json());
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -22,7 +24,7 @@ export function createApp(prisma: PrismaClient) {
     }
   });
 
-  app.use("/api/v1", apiRouter(prisma));
+  app.use("/api/v1", apiRouter(prisma, recoveryDelivery));
   app.use((_req, _res, next) => next(new NotFoundError("Route")));
   app.use(errorHandler);
   return app;

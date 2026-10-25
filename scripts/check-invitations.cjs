@@ -20,6 +20,10 @@ module.exports = async function checkInvitations({ client, baseUrl, adminToken }
   const accepts = await Promise.all([request('/accept', 'POST', { token: raw, name: 'Invited', password: 'fixture-password' }, null), request('/accept', 'POST', { token: raw, name: 'Invited', password: 'fixture-password' }, null)]);
   assert.equal(accepts.filter(result => result.status === 201).length, 1); assert.ok(accepts.every(result => [201, 400, 409].includes(result.status)));
   const user = await client.user.findUniqueOrThrow({ where: { email: body.email } });
+  const acceptedSession = accepts.find(result => result.status === 201).body.token;
+  const acceptedProfile = await fetch(baseUrl + '/api/v1/auth/profile', { headers: { Authorization: 'Bearer ' + acceptedSession } });
+  assert.equal(acceptedProfile.status, 200, 'Invitation-issued JWT must carry the current session revision');
+  assert.equal((await acceptedProfile.json()).id, user.id);
   assert.notEqual(user.password, 'fixture-password');
   const role = await client.role.findUniqueOrThrow({ where: { key: 'judge' } });
   assert.equal(await client.userRole.count({ where: { userId: user.id, roleId: role.id, eventId: event.id } }), 1);
@@ -30,11 +34,12 @@ module.exports = async function checkInvitations({ client, baseUrl, adminToken }
     const row = await client.invitation.create({ data: { email: scope ? 'rollback-invite@example.invalid' : 'global-invite@example.invalid', roleKey: scope ? 'missing_role' : 'moderator', eventId: scope, tokenDigest: secret.digest, expiresAt: secret.expiresAt, createdBy: creator.id } });
     const result = await request('/accept', 'POST', { token: secret.raw, name: 'Invited', password: 'fixture-password' }, null);
     if (scope) {
-      assert.equal(result.status, 404); assert.equal(await client.user.count({ where: { email: row.email } }), 0); assert.equal((await client.invitation.findUniqueOrThrow({ where: { id: row.id } })).usedAt, null);
+      assert.equal(result.status, 400); assert.equal(await client.user.count({ where: { email: row.email } }), 0); assert.equal((await client.invitation.findUniqueOrThrow({ where: { id: row.id } })).usedAt, null);
     } else {
-      assert.equal(result.status, 201); const globalUser = await client.user.findUniqueOrThrow({ where: { email: row.email } });
-      assert.equal(await client.userRole.count({ where: { userId: globalUser.id, eventId: null } }), 1);
+      assert.equal(result.status, 400);
+      assert.equal(await client.user.count({ where: { email: row.email } }), 0);
+      assert.equal((await client.invitation.findUniqueOrThrow({ where: { id: row.id } })).usedAt, null);
     }
   }
-  console.log('Invitation DTOs, real scoped/global acceptance, replay/concurrency and missing-role rollback passed.');
+  console.log('Invitation DTOs, scoped acceptance, historical/global denial, replay/concurrency and rollback passed.');
 };

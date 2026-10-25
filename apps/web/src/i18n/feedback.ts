@@ -1,6 +1,16 @@
 import type { ErrorReason, FieldIssue, SuccessMessageId } from "@dance/schemas";
 import type { Locale } from "./locale";
 export const errorMessages = {
+  "authDeliveryUnavailable": {
+    "et": "Kirja saatmine ei ole praegu saadaval. Proovi hiljem uuesti.",
+    "en": "Email delivery is unavailable. Please try again later.",
+    "ru": "Отправка писем сейчас недоступна. Повторите попытку позже."
+  },
+  "tooManyRequests": {
+    "et": "Liiga palju päringuid. Proovi hiljem uuesti.",
+    "en": "Too many requests. Please try again later.",
+    "ru": "Слишком много запросов. Повторите попытку позже."
+  },
   "unexpected": {
     "et": "Midagi läks valesti. Proovi uuesti.",
     "en": "Something went wrong. Please try again.",
@@ -50,6 +60,11 @@ export const errorMessages = {
     "et": "Konto on keelatud. Võta ühendust korraldajaga.",
     "en": "This account is disabled. Contact the organizer.",
     "ru": "Учётная запись отключена. Свяжитесь с организатором."
+  },
+  "emailVerificationRequired": {
+    "et": "Enne sisselogimist kinnita oma e-posti aadress.",
+    "en": "Verify your email address before signing in.",
+    "ru": "Подтвердите адрес электронной почты перед входом."
   },
   "emailRegistered": {
     "et": "See e-post on juba registreeritud.",
@@ -255,20 +270,30 @@ export const validationMessages = {
   }
 } satisfies Record<FieldIssue["rule"], Record<Locale, string>>;
 export const successMessages = {
+  "authRequestAccepted": {
+    "et": "Taotlus on vastu võetud. E-kirja kohaletoimetamine ei ole kinnitatud.",
+    "en": "Request accepted. Email delivery is unconfirmed.",
+    "ru": "Запрос принят. Доставка письма не подтверждена."
+  },
+  "passwordReset": {
+    "et": "Parool on muudetud. Logi uuesti sisse.",
+    "en": "Password changed. Please sign in again.",
+    "ru": "Пароль изменён. Войдите снова."
+  },
   "registered": {
-    "et": "Konto on loodud. Kinnita e-post saadetud lingi kaudu.",
-    "en": "Account created. Use the emailed link to verify your email.",
-    "ru": "Учётная запись создана. Подтвердите почту по отправленной ссылке."
+    "et": "Konto on loodud. Kirja kohaletoimetamine ei ole kinnitatud.",
+    "en": "Account created. Email delivery is unconfirmed.",
+    "ru": "Учётная запись создана. Доставка письма не подтверждена."
   },
   "emailVerified": {
     "et": "E-post on kinnitatud.",
     "en": "Email verified.",
     "ru": "Адрес почты подтверждён."
   },
-  "invitationSent": {
-    "et": "Kutse on saadetud.",
-    "en": "Invitation sent.",
-    "ru": "Приглашение отправлено."
+  "invitationCreated": {
+    "et": "Kutse on loodud. Kirja kohaletoimetamine ei ole kinnitatud.",
+    "en": "Invitation created. Email delivery is unconfirmed.",
+    "ru": "Приглашение создано. Доставка письма не подтверждена."
   },
   "invitationAccepted": {
     "et": "Kutse on vastu võetud.",

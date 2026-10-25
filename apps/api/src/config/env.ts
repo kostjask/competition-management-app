@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { EmailSchema } from "@dance/schemas";
 
 /**
  * Environment variable validation schema
@@ -48,17 +49,15 @@ const EnvSchema = z.object({
   GCS_KEY_FILE: z.string().optional(),
 
   // Email configuration
-  EMAIL_PROVIDER: z.enum(["smtp", "resend", "sendgrid"]).default("smtp"),
-  SMTP_HOST: z.string().optional(),
-  SMTP_PORT: z.coerce.number().int().optional(),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASSWORD: z.string().optional(),
+  EMAIL_PROVIDER: z.enum(["fake", "resend"]).default("fake"),
+  WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
+  EMAIL_QUEUE_KEY: z.string().regex(/^[0-9a-f]{64}$/i).optional(),
   RESEND_API_KEY: z.string().optional(),
-  SENDGRID_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().email("EMAIL_FROM must be a valid email address"),
 
   // Development/Debug
   DEV_AUTH: z.enum(["true", "false"]).default("false"),
+  DEV_AUTH_EMAIL: EmailSchema.default("admin@test.com"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
   // CORS
@@ -67,6 +66,19 @@ const EnvSchema = z.object({
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+}).superRefine((values, ctx) => {
+  if (values.DEV_AUTH === "true" && values.NODE_ENV !== "development") {
+    ctx.addIssue({ code: "custom", path: ["DEV_AUTH"], message: "DEV_AUTH may only be enabled in development" });
+  }
+  if (values.EMAIL_PROVIDER === "resend") {
+    if (!values.RESEND_API_KEY?.startsWith("re_")) ctx.addIssue({ code: "custom", path: ["RESEND_API_KEY"], message: "A Resend API key is required" });
+    if (!values.EMAIL_QUEUE_KEY) ctx.addIssue({ code: "custom", path: ["EMAIL_QUEUE_KEY"], message: "A dedicated 32-byte hexadecimal queue key is required" });
+    const parsedOrigin = z.url().safeParse(values.WEB_ORIGIN);
+    const origin = parsedOrigin.success ? new URL(parsedOrigin.data) : null;
+    if (!origin || origin.protocol !== "https:" || origin.pathname !== "/" || origin.search || origin.hash || origin.username || origin.password) {
+      ctx.addIssue({ code: "custom", path: ["WEB_ORIGIN"], message: "Real email requires an HTTPS web origin without a path or credentials" });
+    }
+  }
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -156,26 +168,18 @@ export const config = {
   email: {
     provider: env.EMAIL_PROVIDER,
     from: env.EMAIL_FROM,
-    smtp: {
-      host: env.SMTP_HOST,
-      port: env.SMTP_PORT,
-      user: env.SMTP_USER,
-      password: env.SMTP_PASSWORD,
-      enabled: env.EMAIL_PROVIDER === "smtp",
-    },
+    webOrigin: env.WEB_ORIGIN,
+    queueKey: env.EMAIL_QUEUE_KEY,
     resend: {
       apiKey: env.RESEND_API_KEY,
       enabled: env.EMAIL_PROVIDER === "resend",
-    },
-    sendgrid: {
-      apiKey: env.SENDGRID_API_KEY,
-      enabled: env.EMAIL_PROVIDER === "sendgrid",
     },
   },
 
   // Development
   dev: {
     authBypass: env.DEV_AUTH === "true",
+    authEmail: env.DEV_AUTH_EMAIL,
     logLevel: env.LOG_LEVEL,
   },
 

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { AuthResponseSchema } from "./auth.schema.js";
 import { EmailSchema, IdSchema } from "./common.schema.js";
+import { RecipientLocaleSchema } from "./onboarding.schema.js";
 
 /**
  * Role key validation.
@@ -14,8 +15,9 @@ export const RoleKeySchema = z
 
 export const CreateInvitationSchema = z.strictObject({
   email: EmailSchema,
-  roleKey: RoleKeySchema,
-  eventId: IdSchema.optional(),
+  roleKey: z.enum(["judge", "moderator"]),
+  eventId: IdSchema,
+  locale: RecipientLocaleSchema.optional(),
 });
 
 export const AcceptInvitationSchema = z.strictObject({
@@ -36,7 +38,7 @@ export const InvitationSchema = z.strictObject({
 });
 export const InvitationsSchema = z.array(InvitationSchema);
 export const InvitationPreviewSchema = z.strictObject({ email: EmailSchema, roleKey: RoleKeySchema, event: EventSummarySchema.nullable(), expiresAt: z.iso.datetime() });
-export const CreateInvitationResponseSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationSent"), invitationId: IdSchema });
+export const CreateInvitationResponseSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationCreated"), invitationId: IdSchema, delivery: z.literal("unconfirmed") });
 export const AcceptInvitationResponseSchema = AuthResponseSchema.extend({ message: z.string(), messageId: z.literal("invitationAccepted") });
 export type Invitation = z.infer<typeof InvitationSchema>;
 export type InvitationPreview = z.infer<typeof InvitationPreviewSchema>;

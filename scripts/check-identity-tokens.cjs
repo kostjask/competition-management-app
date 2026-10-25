@@ -13,7 +13,7 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
   const issue = (user, purpose = 'VERIFY_EMAIL') => tokens.identityTransaction(client, tx => tokens.rotateAccountToken(tx, user.id, purpose));
   const registration = await post('auth/register', { email: 'registered-token@example.invalid', name: 'Registered fixture', password: 'fixture-password' });
   assert.equal(registration.status, 201);
-  assert.deepEqual(Object.keys(registration.body).sort(), ['message', 'messageId', 'userId']);
+  assert.deepEqual(Object.keys(registration.body).sort(), ['delivery', 'message', 'messageId', 'userId']);
   const registeredTokens = await client.accountToken.findMany({ where: { userId: registration.body.userId } });
   assert.equal(registeredTokens.length, 1); assert.equal(registeredTokens[0].purpose, 'VERIFY_EMAIL');
   assert.match(registeredTokens[0].digest, /^[a-f0-9]{64}$/);
@@ -94,7 +94,7 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
   assert.equal(outcomes.filter(result => result.status === 'fulfilled').length, 1);
   const recovered = await client.user.findUniqueOrThrow({ where: { id: user.id } });
   assert.ok(await bcrypt.compare('replacement-password', recovered.password));
-  assert.deepEqual({ ...recovered, password: user.password }, { ...user, emailVerified: true });
+  assert.deepEqual({ ...recovered, password: user.password }, { ...user, emailVerified: true, sessionVersion: 1 });
   assert.equal(await client.userRole.count({ where: { userId: user.id } }), 0);
   assert.equal(await client.accountToken.count({ where: { userId: user.id, consumedAt: null, revokedAt: null } }), 0);
 
@@ -129,8 +129,10 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
 
   // Invitation tokens cannot be used as verification/recovery tokens or after rotation/revocation.
   const secret = tokens.newIdentitySecret('INVITATION');
+    const staffEvent = await client.event.create({ data: { name: 'Token staff fixture', startsAt: new Date('2026-11-01'), endsAt: new Date('2026-11-02') } });
+    const staffRole = await client.role.findUniqueOrThrow({ where: { key: 'moderator' } });
   const invitation = await client.invitation.create({ data: { email: 'lifecycle-invite@example.invalid', roleKey: 'moderator',
-    createdBy: user.id, tokenDigest: secret.digest, expiresAt: secret.expiresAt } });
+      roleId: staffRole.id, eventId: staffEvent.id, createdBy: user.id, tokenDigest: secret.digest, expiresAt: secret.expiresAt } });
   assert.equal((await verify(secret.raw)).status, 404);
   await assert.rejects(tokens.recoverAccountPassword(client, secret.raw, 'replacement-password'));
   const inspect = async raw => (await fetch(baseUrl + '/api/v1/invitations/' + raw)).status;
@@ -160,7 +162,7 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
   const inactive = await client.user.create({ data: { email: 'inactive-invite-token@example.invalid', name: 'Inactive', active: false } });
   const inactiveSecret = tokens.newIdentitySecret('INVITATION');
   const inactiveInvitation = await client.invitation.create({ data: { email: inactive.email, roleKey: 'moderator', createdBy: user.id,
-    tokenDigest: inactiveSecret.digest, expiresAt: inactiveSecret.expiresAt } });
+      roleId: staffRole.id, eventId: staffEvent.id, tokenDigest: inactiveSecret.digest, expiresAt: inactiveSecret.expiresAt } });
   assert.equal((await post('invitations/accept', { token: inactiveSecret.raw, name: 'Changed', password: 'fixture-password' })).status, 403);
   assert.deepEqual(await client.user.findUniqueOrThrow({ where: { id: inactive.id } }), inactive);
   assert.deepEqual(await client.invitation.findUniqueOrThrow({ where: { id: inactiveInvitation.id } }), inactiveInvitation);

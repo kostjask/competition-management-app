@@ -16,49 +16,34 @@ export function createAuthMiddleware(prisma: PrismaClient) {
     res: Response,
     next: NextFunction,
   ) {
-    // DEV_AUTH shortcut for development
+    let identity: { id: string; sessionVersion: number } | { email: string };
     if (config.dev.authBypass) {
-      req.auth = {
-        userId: "dev-admin",
-        isAdmin: true,
-        permissionsByEvent: new Map([
-          [
-            null,
-            new Set([
-              "event.manage",
-              "studio.manage",
-              "dancer.manage",
-              "performance.manage",
-              "event.register",
-              "score.submit",
-            ]),
-          ],
-        ]),
-      };
-      return next();
+      identity = { email: config.dev.authEmail };
+    } else {
+      const authHeader = req.headers.authorization ?? "";
+      if (!authHeader.startsWith("Bearer ")) return next(new UnauthorizedError());
+      const token = authHeader.slice("Bearer ".length).trim();
+      if (!token) return next(new UnauthorizedError());
+      try {
+        const payload = jwt.verify(token, config.auth.jwtSecret);
+        if (typeof payload !== "object" || typeof payload.userId !== "string" || !payload.userId) throw new Error("Invalid identity");
+        if (typeof payload.sessionVersion !== "number" || !Number.isInteger(payload.sessionVersion) || payload.sessionVersion < 0 || payload.sessionVersion > 2147483647) throw new Error("Invalid session revision");
+        identity = { id: payload.userId, sessionVersion: payload.sessionVersion };
+      } catch {
+        return next(new UnauthorizedError());
+      }
     }
 
-    const authHeader = req.headers.authorization ?? "";
-    if (!authHeader.startsWith("Bearer ")) {
-      return next(new UnauthorizedError("Unauthorized"));
-    }
-
-    const token = authHeader.slice("Bearer ".length).trim();
-    if (!token) {
-      return next(new UnauthorizedError("Unauthorized"));
-    }
-
-    let userId: string;
-    try {
-      const payload = jwt.verify(token, config.auth.jwtSecret);
-      if (typeof payload !== "object" || typeof payload.userId !== "string" || !payload.userId) throw new Error("Invalid identity");
-      userId = payload.userId;
-    } catch {
-      return next(new UnauthorizedError("Unauthorized"));
-    }
+    // Eligibility is checked on every request, before any role/admin bypass.
+    // A valid JWT alone cannot keep a deleted, disabled or unverified account active.
+    const user = await prisma.user.findFirst({
+      where: { ...identity, active: true, emailVerified: true }, select: { id: true },
+    });
+    if (!user) return next(new UnauthorizedError());
+    const userId = user.id;
 
     const roles = await prisma.userRole.findMany({
-      where: { userId },
+      where: { userId, removedAt: null },
       include: {
         role: { include: { permissions: { include: { permission: true } } } },
       },
@@ -68,10 +53,11 @@ export function createAuthMiddleware(prisma: PrismaClient) {
     let isAdmin = false;
 
     for (const ur of roles) {
-      if (ur.role.key === "admin") {
+      if (ur.role.key === "admin" && ur.eventId === null) {
         isAdmin = true;
         break;
       }
+      if (ur.role.key === "admin" || (["judge", "moderator"].includes(ur.role.key) && ur.eventId === null)) continue;
       const eventKey = ur.eventId ?? null;
       if (!permissionsByEvent.has(eventKey))
         permissionsByEvent.set(eventKey, new Set());

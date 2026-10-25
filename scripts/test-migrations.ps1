@@ -40,6 +40,14 @@ try {
     $expectedSql += "`n" + ((($tokenSql -split "`n") | Where-Object { $_ -match '^CREATE UNIQUE INDEX "AccountToken_outstanding_unique"' }) -join "`n")
     $tokenChecksSql = Get-Content -Raw apps/api/prisma/migrations/20261025030000_identity_token_checks/migration.sql
     $expectedSql += "`n" + ((($tokenChecksSql -split "`n") | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
+    $sessionSql = Get-Content -Raw apps/api/prisma/migrations/20261025040000_account_session_version/migration.sql
+    $expectedSql += "`n" + ((($sessionSql -split "`n") | Where-Object { $_ -match '^ALTER TABLE.*ADD CONSTRAINT' }) -join "`n")
+    $auditSql = Get-Content -Raw apps/api/prisma/migrations/20261025050000_domain_audit/migration.sql
+    $expectedSql += "`n" + (($auditSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $foundationSql = Get-Content -Raw apps/api/prisma/migrations/20261025060000_onboarding_staff_locale/migration.sql
+    $expectedSql += "`n" + (($foundationSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $deliverySql = Get-Content -Raw apps/api/prisma/migrations/20261025070000_email_delivery/migration.sql
+    $expectedSql += "`n" + (($deliverySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -99,7 +107,15 @@ FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace
 WHERE n.nspname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema')
 UNION ALL
 SELECT schemaname, 'index', indexname, replace(indexdef, schemaname || '.', '')
-FROM pg_indexes WHERE schemaname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema');
+FROM pg_indexes WHERE schemaname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema')
+UNION ALL
+SELECT n.nspname, 'trigger', t.tgname, replace(pg_get_triggerdef(t.oid), n.nspname || '.', '')
+FROM pg_trigger t JOIN pg_class c ON c.oid=t.tgrelid JOIN pg_namespace n ON n.oid=c.relnamespace
+WHERE NOT t.tgisinternal AND n.nspname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema')
+UNION ALL
+SELECT n.nspname, 'function', p.proname, replace(pg_get_functiondef(p.oid), n.nspname || '.', '')
+FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+WHERE n.nspname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema');
 DO `$`$
 DECLARE actual_schema text;
 BEGIN

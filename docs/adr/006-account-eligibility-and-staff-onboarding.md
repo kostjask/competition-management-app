@@ -76,6 +76,24 @@ for an existing account. These operations do not form a complete staff journey.
 
 ## Delivery and verification
 
+P2-AUTH eligibility decision (2026-10-25): credential login requires an existing,
+active, email-verified account. Wrong credentials return 401; correct credentials
+for an inactive or unverified account return translated 403 reasons. Every
+protected request checks the current account before resolving roles, including
+admin operations. Missing, inactive or unverified accounts invalidate existing
+bearer sessions with 401 so clients clear stale credentials. Verified roleless
+users remain eligible; resource permissions/ownership remain separate checks.
+Pending users can verify through the public token endpoint; public resend,
+email correction and reset handlers are now delivered under ADR-011 with neutral
+acknowledgements, password proof, atomic recovery and session-revision invalidation.
+
+DEV_AUTH may skip bearer entry only in NODE_ENV=development. It resolves the
+configured DEV_AUTH_EMAIL (default seeded admin@test.com) to a real active,
+verified user and uses that user's actual roles. It never creates an account,
+reactivates it, verifies it or fabricates administrative permissions. Missing or
+ineligible seed identity fails closed. Production and test configurations refuse
+DEV_AUTH=true. Seed remains explicit and idempotent; no credentials are logged.
+
 Database review adds prerequisites without changing account eligibility:
 P2-SCOPE-INTEGRITY must ensure event removal never nulls staff scope into global
 access and must enforce a deliberate null-safe uniqueness/history policy.

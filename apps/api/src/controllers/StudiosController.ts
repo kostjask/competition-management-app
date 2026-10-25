@@ -7,6 +7,7 @@ import {
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
 import { BaseController } from "./BaseController";
+import { appendAudit } from "../services/audit";
 
 const representativeSelect = {
   id: true, studioId: true, userId: true, name: true, email: true, active: true, createdAt: true,
@@ -153,10 +154,12 @@ export class StudiosController extends BaseController {
     const { studioId } = StudioIdParamsSchema.parse(req.params);
     const body = UpdateStudioApprovalBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
-      await this.requireAccess(req, db, studioId);
-      return serialize(await db.studio.update({
+      const current = await this.requireAccess(req, db, studioId);
+      const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null }, data: { approvalStatus: body.status }, select: studioSelect,
-      }));
+      });
+      await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status } });
+      return serialize(updated);
     });
     res.json(result);
   }

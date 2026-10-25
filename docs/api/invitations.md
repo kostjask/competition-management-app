@@ -4,11 +4,13 @@
 
 GET/POST /api/v1/invitations are authenticated admin operations. GET
 /api/v1/invitations/:token and POST /api/v1/invitations/accept remain public.
-Create accepts strict email/roleKey/optional eventId. Email follows the shared
+Create accepts strict email, roleKey (judge/moderator), required eventId and
+optional recipient locale (et/en/ru). Locale resolves explicit value, existing
+recipient account preference, then et; never the inviter's UI. Email follows the shared
 ASCII-space trimming/lowercasing policy in [ADR-009](../adr/009-email-identity.md),
 also used by account registration and login. The role and supplied event
 must exist; submitted audit/token fields are rejected. The create response is
-message/messageId (invitationSent)/invitationId; no raw token is returned. List
+message/messageId (invitationCreated)/invitationId/delivery (unconfirmed); no raw token is returned. List
 DTOs expose only id, email, roleKey, nullable eventId, UTC createdAt/expiresAt and
 nullable UTC usedAt. Inspect exposes email/roleKey, nullable event id/name and UTC
 expiry. Storage digests, creators and unrestricted relations are excluded.
@@ -37,11 +39,15 @@ Event deletion is restricted while roles or invitations reference it, preserving
 scope and history; no event-delete endpoint is introduced. See
 [ADR-008](../adr/008-event-scope-integrity.md) for indexes and deployment preflight.
 
-Scope remains optional, including global scope, and role existence is not an
-assignable-role policy. Existing-account acceptance still lacks intended-account
+ADR-013 adds restrictive Role and studio/event composite references. New bound
+invitations require supported role scope; representative invitations need matching
+studio/event scope and remain unavailable in staff creation until P5-MEMBERS.
+Historical unclassified rows are preserved but cannot be accepted or rotated.
+Global/admin invitations are rejected; removed assignments need reviewed restoration.
+Existing-account acceptance still lacks intended-account
 authentication enforcement for active users. No Judge record is created automatically.
-The silent development email fake does not deliver or log links; production throws
-unavailable and returns a private 500, potentially after invitation persistence.
-Real delivery/retry, safe existing-account acceptance, mandatory staff scope and
-atomic Judge reconciliation remain Phase 2 release gates. This contract slice
+The silent development email fake does not deliver or log links. Real email is
+queued encrypted inside the creation transaction, with bounded retries and provider
+idempotency under ADR-014. Unavailable delivery rolls back creation. Staging delivery,
+safe existing-account acceptance and atomic Judge reconciliation remain release gates. This contract slice
 does not authorize external onboarding.

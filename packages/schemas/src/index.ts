@@ -13,3 +13,5 @@ export * from "./studio-registration.schema.js";
 export * from "./message.schema.js";
 export * from "./validation.js";
 export * from "./image.schema.js";
+export * from "./audit.schema.js";
+export * from "./onboarding.schema.js";

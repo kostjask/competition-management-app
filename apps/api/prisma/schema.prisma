@@ -33,6 +33,34 @@ enum AccountTokenPurpose {
   PASSWORD_RECOVERY
 }
 
+enum RecipientLocale {
+  et
+  en
+  ru
+}
+
+enum OnboardingStatus {
+  DRAFT
+  CANCELLED
+  COMPLETED
+}
+
+model EmailDelivery {
+  id            String    @id
+  ciphertext    String?
+  bindingDigest String?
+  purpose       String?
+  state         String    @default("PENDING")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  acceptedAt    DateTime?
+  providerId    String?
+
+  @@index([state, nextAttemptAt])
+}
+
 model Event {
   id              String     @id @default(cuid())
   name            String
@@ -58,6 +86,7 @@ model Event {
   userRoles           UserRole[]
   studioRegistrations StudioEventRegistration[]
   invitations         Invitation[]
+  onboardingDrafts    OnboardingDraft[]
 }
 
 model DanceCategory {
@@ -111,6 +140,9 @@ model Studio {
   event           Event                     @relation(fields: [eventId], references: [id])
   representatives StudioRepresentative[]
   registrations   StudioEventRegistration[]
+  invitations     Invitation[]
+
+  @@unique([id, eventId])
 }
 
 model StudioRepresentative {
@@ -220,22 +252,60 @@ model Score {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  name          String
-  password      String? // Optional for now (supports OAuth later)
-  emailVerified Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  active        Boolean  @default(true)
-  deactivatedBy String?
-  photoUrl      String?
-  photoPath     String?
+  id             String   @id @default(uuid())
+  email          String   @unique
+  name           String
+  password       String? // Optional for now (supports OAuth later)
+  emailVerified  Boolean  @default(false)
+  sessionVersion Int      @default(0)
+  // SQL-only User_session_version_nonnegative; reset/correction revoke prior JWT revisions.
+  createdAt      DateTime @default(now())
+  active         Boolean  @default(true)
+  deactivatedBy  String?
+  photoUrl       String?
+  photoPath      String?
 
   roles                 UserRole[]
   studioRepresentatives StudioRepresentative[]
   createdInvitations    Invitation[]           @relation("CreatedInvitations")
   judges                Judge[]
   accountTokens         AccountToken[]
+  auditActions          AuditLog[]             @relation("AuditActor")
+  preferredLocale       RecipientLocale?
+  onboardingDraft       OnboardingDraft?
+}
+
+model OnboardingDraft {
+  id              String           @id @default(uuid())
+  userId          String           @unique
+  intendedEventId String?
+  status          OnboardingStatus @default(DRAFT)
+  revision        Int              @default(1)
+  operationId     String           @db.Uuid
+  details         Json
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict)
+  intendedEvent   Event?           @relation(fields: [intendedEventId], references: [id], onDelete: Restrict)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  actorKind  String
+  actorId    String?
+  targetType String
+  targetId   String
+  eventId    String?
+  studioId   String?
+  metadata   Json
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+  // SQL-only immutable trigger and actor-kind check; no public read/write endpoint.
+
+  @@index([targetType, targetId, createdAt, id])
+  @@index([actorId])
+  @@index([eventId, createdAt])
 }
 
 model AccountToken {
@@ -262,6 +332,9 @@ model Role {
 
   permissions RolePermission[]
   users       UserRole[]
+  invitations Invitation[]
+
+  @@unique([id, key])
 }
 
 model Permission {
@@ -284,10 +357,11 @@ model RolePermission {
 }
 
 model UserRole {
-  id      String  @id @default(uuid())
-  userId  String
-  roleId  String
-  eventId String?
+  id        String    @id @default(uuid())
+  userId    String
+  roleId    String
+  eventId   String?
+  removedAt DateTime?
 
   user  User   @relation(fields: [userId], references: [id])
   role  Role   @relation(fields: [roleId], references: [id])
@@ -297,20 +371,25 @@ model UserRole {
 }
 
 model Invitation {
-  id           String    @id @default(uuid())
+  id           String          @id @default(uuid())
   email        String
   roleKey      String // "judge", "moderator", etc.
   eventId      String?
-  tokenDigest  String?   @unique // Null only for invalidated legacy links.
+  tokenDigest  String?         @unique // Null only for invalidated legacy links.
   createdBy    String
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime        @default(now())
   expiresAt    DateTime
   usedAt       DateTime?
   supersededAt DateTime? // Expired invitation replaced; retained as history.
   revokedAt    DateTime?
+  roleId       String? // Unclassified historical invitations cannot be accepted.
+  studioId     String?
+  locale       RecipientLocale @default(et)
 
-  creator User   @relation("CreatedInvitations", fields: [createdBy], references: [id])
-  event   Event? @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  creator User    @relation("CreatedInvitations", fields: [createdBy], references: [id])
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  role    Role?   @relation(fields: [roleId, roleKey], references: [id, key], onDelete: Restrict)
+  studio  Studio? @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict)
 
   // SQL-only Invitation_outstanding_unique: null-safe, unused, not superseded.
   // SQL-only CHECKs enforce digest format, invalidated legacy links and superseded revocation.

@@ -49,7 +49,8 @@ reviewed restore. No automatic account merge, activation or deletion is allowed.
 The email stub becomes a silent development fake; production throws unavailable
 instead of silently accepting a delivery it cannot perform. P2-EMAIL still owns
 real providers, truthful delivery/retry contracts and localized templates.
-JWT session invalidation after password change remains a P2-SESSION decision;
+ADR-011 subsequently implements session-version invalidation after password
+change. Broader session storage/return handling remains P2-SESSION;
 recovery does not mint a session or reactivate an account.
 
 Schema-audit amendment (2026-10-25): enforce the existing storage rules with

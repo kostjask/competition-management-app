@@ -10,6 +10,7 @@ import {
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError, ValidationError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
+import { appendAudit } from "../services/audit";
 
 const registrationSelect = {
   id: true,
@@ -135,12 +136,14 @@ export class StudioRegistrationsController extends BaseController {
         const role = await tx.role.findUnique({ where: { key: "representative" }, select: { id: true } });
         if (!role) throw new InternalServerError("Representative role is not configured");
         for (const representative of studio.representatives) {
-          await tx.userRole.upsert({
+          const assignment = await tx.userRole.upsert({
             where: { userId_roleId_eventId: { userId: representative.userId, roleId: role.id, eventId } },
             create: { userId: representative.userId, roleId: role.id, eventId }, update: {},
           });
+          await appendAudit(tx, { action: "ACCESS_RECONCILED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "USER_ROLE", targetId: assignment.id, eventId, studioId, metadata: { roleKey: "representative" } });
         }
       }
+      await appendAudit(tx, { action: "REGISTRATION_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: registration.id, eventId, studioId, metadata: { fromStatus: registration.status, toStatus: body.status } });
       return serialize(updated);
     });
     res.json(result);

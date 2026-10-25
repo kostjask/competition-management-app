@@ -29,7 +29,7 @@
         "authentication": "N/A: public operation",
         "permission": "N/A: public operation",
         "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "N/A: active-account verification policy is P2-AUTH",
+        "inactiveRecord": "auth verification returns its explicit session contract",
         "conflict": "auth verification returns its explicit session contract"
       }
     },
@@ -61,7 +61,7 @@
         "authentication": "auth profile constrains identity to the caller",
         "permission": "N/A: any authenticated identity is allowed by the current contract",
         "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "N/A: active-user request verification is P2-AUTH",
+        "inactiveRecord": "auth profile constrains identity to the caller",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -843,7 +843,7 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
         "crossParent": "N/A: no event/studio parent selector",
         "inactiveRecord": "all image routes use strict DTOs",
         "conflict": "all image routes use strict DTOs"
@@ -859,7 +859,7 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
         "crossParent": "N/A: no event/studio parent selector",
         "inactiveRecord": "all image routes use strict DTOs",
         "conflict": "all image routes use strict DTOs"
@@ -875,7 +875,7 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
         "crossParent": "N/A: no event/studio parent selector",
         "inactiveRecord": "all image routes use strict DTOs",
         "conflict": "all image routes use strict DTOs"
@@ -891,10 +891,74 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/active-user eligibility is explicitly P2-BOUNDARIES; authentication is tested",
+        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
         "crossParent": "N/A: no event/studio parent selector",
         "inactiveRecord": "all image routes use strict DTOs",
         "conflict": "all image routes use strict DTOs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/resend-verification",
+      "tests": {
+        "success": "recovery requests return neutral acknowledgements",
+        "invalidInput": "public recovery contracts reject invalid bodies",
+        "authentication": "N/A: public credential/token-proof operation",
+        "permission": "N/A: grants no roles or privileged pending session",
+        "crossParent": "N/A: no event/studio selector; account proof checked",
+        "inactiveRecord": "scripts/check-auth-recovery.cjs",
+        "conflict": "scripts/check-auth-recovery.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/correct-email",
+      "tests": {
+        "success": "email correction requires password proof",
+        "invalidInput": "public recovery contracts reject invalid bodies",
+        "authentication": "N/A: public credential/token-proof operation",
+        "permission": "N/A: grants no roles or privileged pending session",
+        "crossParent": "N/A: no event/studio selector; account proof checked",
+        "inactiveRecord": "scripts/check-auth-recovery.cjs",
+        "conflict": "scripts/check-auth-recovery.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/request-password-reset",
+      "tests": {
+        "success": "recovery requests return neutral acknowledgements",
+        "invalidInput": "public recovery contracts reject invalid bodies",
+        "authentication": "N/A: public credential/token-proof operation",
+        "permission": "N/A: grants no roles or privileged pending session",
+        "crossParent": "N/A: no event/studio selector; account proof checked",
+        "inactiveRecord": "scripts/check-auth-recovery.cjs",
+        "conflict": "scripts/check-auth-recovery.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/reset-password",
+      "tests": {
+        "success": "password reset has an explicit no-session response",
+        "invalidInput": "public recovery contracts reject invalid bodies",
+        "authentication": "N/A: public credential/token-proof operation",
+        "permission": "N/A: grants no roles or privileged pending session",
+        "crossParent": "N/A: no event/studio selector; account proof checked",
+        "inactiveRecord": "scripts/check-auth-recovery.cjs",
+        "conflict": "scripts/check-auth-recovery.cjs"
       }
     }
   ]
