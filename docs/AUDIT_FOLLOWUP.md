@@ -1,11 +1,12 @@
 # Repository audit correction plan
 
-Updated: 2026-10-25. Source evidence: [repository audit](REPOSITORY_AUDIT.md).
+Updated: 2026-11-01. Source evidence: [repository audit](REPOSITORY_AUDIT.md).
 Priority and milestone gates: [checkpoint](../DEVELOPMENT_PLAN.md).
 Implementation checkboxes live in the owning roadmap; this table maps findings
-to those tasks and their acceptance evidence. H2 and C2 are technically corrected
-locally by P2-IDENTITY-TOKENS and P2-AUTH-ELIGIBILITY; the other 13 findings remain
-unresolved. Current evidence: [identity lifecycle](IDENTITY_TOKEN_VALIDATION.md)
+to those tasks and their acceptance evidence. C1/C2/C3/C4/H2 are technically corrected
+locally by P2-INVITE-IDENTITY, P2-AUTH-ELIGIBILITY, P2-BOUNDARIES-UPLOADS and
+P2-IDENTITY-TOKENS; the other 10 findings retain open scope. Current evidence:
+[image boundaries](IMAGE_BOUNDARIES_VALIDATION.md), [invitation identity](INVITATION_IDENTITY_VALIDATION.md), [identity lifecycle](IDENTITY_TOKEN_VALIDATION.md)
 and [account eligibility](AUTH_ELIGIBILITY_VALIDATION.md). Historical audit probes remain
 dated evidence, not a description of the subsequently corrected token/account behavior.
 
@@ -16,17 +17,20 @@ dated evidence, not a description of the subsequently corrected token/account be
    schema audit, account eligibility and public recovery are also technically
    complete. Minimal AUDIT/PRIVACY/staff-policy foundations are now implemented
    under ADR-012/013. Resend/queue/UI fixture foundations pass locally; real delivery
-   and hosted deployment remain open. Next is P2-INVITE-IDENTITY; independent fixes
-   retain their own prerequisites. H1's bypass predicate is corrected locally,
-   with full provenance/inventory acceptance still open. See
+   and hosted deployment remain open. P2-INVITE-IDENTITY is now locally complete;
+   P2-ROLES-ADMIN-SCOPE is now technically complete, including the writer and
+   18-operation negative inventory. P2-BOUNDARIES-UPLOADS is technically complete;
+   next are remaining P2-BOUNDARIES transport/abuse controls. Independent fixes
+   retain their own prerequisites. H1's actual deployment provenance remains open
+   under P2-SCOPE-DEPLOY; see [scope evidence](ADMIN_SCOPE_VALIDATION.md). See
    [foundation evidence](PHASE_2A_VALIDATION.md).
 2. Close critical request/identity/upload boundaries and scoped-admin escalation
    through P2-AUTH, INVITE-IDENTITY, ROLES-ADMIN-SCOPE and BOUNDARIES-UPLOADS. Run
    independent upload work as soon as its own prerequisites pass; it need not wait
    for the entire staff invitation model, UI, music or scoring roadmap.
 3. Complete the remaining M1 boundary/session controls, parser errors and actual
-   deployment scope preflight. Full invitation management remains an M4 task, but
-   the currently mounted acceptance identity defect is an M1 blocker.
+   deployment scope preflight. Full invitation management remains an M4 task;
+   the mounted acceptance identity defect is corrected locally with M1 evidence.
 4. Deliver truthful email and auth/navigation UI, then gated application/staff
    journeys, including same-studio cancellation/reapplication. Add browser,
    accessibility and ET/EN/RU evidence alongside each delivered flow.

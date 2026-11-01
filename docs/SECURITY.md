@@ -1,6 +1,6 @@
 # Authorization and security status
 
-Working-tree audit: 2026-10-25. This describes current boundaries and open work,
+Working-tree status: 2026-11-01. This describes current boundaries and open work,
 not a production-readiness or deployed-data audit. Task priority: [checkpoint](../DEVELOPMENT_PLAN.md).
 
 ## Current model
@@ -15,7 +15,8 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
 - Active studio membership is distinct from a representative role. Organization
   approval and event approval are separate; entry operations also check stage.
 - Event reads require authentication. Auth register/login/verify and invitation
-  inspect/accept are public. Other mounted business operations require auth plus
+  inspection/new-account setup are public; existing-account acceptance requires
+  the intended eligible session and never issues a replacement JWT. Other mounted business operations require auth plus
   their specific checks. [API](API.md) owns exact endpoint boundaries.
 - Login requires correct credentials and an active, verified account. Protected
   requests with missing/inactive/unverified subjects return 401 before any role
@@ -26,6 +27,12 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
 - New scope migration restricts event deletion and enforces null-safe assignment/
   outstanding-invitation uniqueness. It retains history and refuses ambiguous
   duplicates. **Deployment still needs P2-SCOPE-DEPLOY** and [ADR-008](adr/008-event-scope-integrity.md).
+- P2-ROLES-ADMIN-SCOPE completes the backend writer/operation inventory and
+  HTTP/PostgreSQL scope evidence for all 18 admin-only operations. The judge seed
+  now binds new access to its event; historical records remain unchanged. Read-only
+  deployment preflight flags active scoped admin/global staff and removed admin
+  assignments. See [scope evidence](ADMIN_SCOPE_VALIDATION.md); intended-deployment
+  provenance/repair remains P2-SCOPE-DEPLOY.
 - ADR-009/010 supply canonical email and purpose-bound token digests, expiry,
   atomic consumption/rotation and legacy-link invalidation. Verification/recovery
   reject inactive accounts; invitation acceptance also refuses inactive invitees.
@@ -40,21 +47,30 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   revision, revokes older sessions and returns no session or access grants.
   Recovery routes share process-local IP limits; real staging delivery, UI, distributed
   throttling and other session controls remain separate release gates.
+- P2-BOUNDARIES-UPLOADS now enforces ownership/scope, active parents, resource
+  stage/approval and fresh transactional access on all four image endpoints.
+  Raster content is decoded/re-encoded into bounded metadata-free WebP; private
+  authenticated retrieval requires live references and uses safe headers/no-store.
+  Reference/audit rollback and new-file cleanup are tested. Unreachable orphan
+  cleanup and provider expansion remain P8-MEDIA; see [image evidence](IMAGE_BOUNDARIES_VALIDATION.md).
 
 ## Known gaps and owning tasks
 
 The [audit correction map](AUDIT_FOLLOWUP.md) tracks all 15 findings to roadmap
-owners and acceptance evidence. H2 and C2 are technically corrected locally under
-P2-IDENTITY-TOKENS and P2-AUTH-ELIGIBILITY; the other findings and parent P2-AUTH
+owners and acceptance evidence. C1/C2/C3/C4/H2 are technically corrected locally
+under P2-INVITE-IDENTITY, P2-AUTH-ELIGIBILITY, P2-BOUNDARIES-UPLOADS and
+P2-IDENTITY-TOKENS; other findings
 remain open. M1 explicitly includes P2-INVITE-IDENTITY,
 P2-ROLES-ADMIN-SCOPE and P2-BOUNDARIES-UPLOADS/ERRORS. Mounted API security cannot
 be deferred until its UI or the full M4 staff workflow exists.
 
-Verified impacts include arbitrary-password invitation session issuance for an
-existing active account, roleless
-foreign-image mutation and public HTML delivery through image upload. An
+The arbitrary-password existing-account invitation session defect is corrected
+with transactional identity/revision checks and durable audit; see
+[invitation evidence](INVITATION_IDENTITY_VALIDATION.md). Foreign-image mutation and
+public HTML through upload are now corrected locally under ADR-015. An
 event-scoped admin assignment no longer receives the global bypass under ADR-013;
-the full H1 task's assignment-provenance and inventory evidence remains open.
+H1's local backend inventory/evidence is complete; actual deployment provenance
+remains open under P2-SCOPE-DEPLOY.
 Correct remaining defects under the mapped preservation/regression
 requirements before external exposure; no production exploit or deployed occurrence
 is inferred from the local probes.
@@ -62,16 +78,16 @@ is inferred from the local probes.
 | Gap | Owner |
 | --- | --- |
 | Public signup lacks validated studio context; legitimate roleless accounts need recovery | P2-ONBOARDING-MODEL/SIGNUP |
-| Existing-account invitation acceptance can mint a session without authenticating the intended account; full invitation management remains incomplete | P2-INVITE-IDENTITY (M1); P2-STAFF-MODEL/INVITE for full workflow |
-| Scoped-admin bypass predicate corrected locally; full assignment provenance/negative inventory review remains | P2-ROLES-ADMIN-SCOPE; P2-SCOPE-DEPLOY |
+| Intended-account acceptance corrected locally; invitation management and acceptance UI remain incomplete | P2-INVITE / P2-UI-AUTH; P2-JUDGE-ACCEPT |
+| Scoped-admin bypass and backend inventory corrected locally; actual deployment assignment provenance/repair remains | P2-SCOPE-DEPLOY; frontend guards remain P2-ROLES |
 | Judge role and Judge record are separate; accepted-access removal/history policy incomplete | P2-JUDGE-ACCEPT/OFFBOARD |
-| Image routes check identity/existence, not resource ownership/permission | P2-BOUNDARIES-UPLOADS (M1) |
+| Image ownership/content/private retrieval corrected locally; image UI and actual rollout remain gated | Owning UI workflows; P9 operations |
 | CORS hardcodes *; configured process-local limits cover recovery only; other auth/invite/upload limits and production boundary hardening pending | P2-BOUNDARIES |
 | Frontend guards disagree on display-name matching rather than stable keys/scope | P2-ROLES |
 | Credential-reset JWT revision checks exist; bearer storage/cookie and safe email/reauth return policy remain undecided | P2-SESSION |
 | Minimal immutable transactional audit/privacy policy implemented; per-feature coverage and organizational retention review continue | Owning feature tasks; P9 operations |
 | Resend/queue/templates/retries implemented locally; real staging inbox evidence and link UI remain open | P2-EMAIL / P2-UI-AUTH |
-| Disguised HTML is accepted and served publicly; provider/cleanup lifecycle also incomplete | P2-BOUNDARIES-UPLOADS before API exposure (M1); P8-MEDIA extends provider/private-access lifecycle |
+| Durable orphan cleanup/retry and cloud/private media provider lifecycle remain incomplete | P8-MEDIA; current raster authorization/content/retrieval are delivered under ADR-015 |
 
 ## Change requirements
 

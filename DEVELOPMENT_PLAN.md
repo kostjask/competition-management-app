@@ -1,24 +1,26 @@
 # Development checkpoint
 
-Updated: 2026-10-25. This file owns current status, priority and milestone gates.
+Updated: 2026-11-01. This file owns current status, priority and milestone gates.
 Read the selected task's roadmap file next; use [docs/README](docs/README.md) to
 find its contracts/specifications. Historical reports are reference only.
 
 ## Next action
 
 **Active work: Phase 2A local foundations implemented; external operational gates remain open.**
-Next actionable development task: **P2-INVITE-IDENTITY**, applying the now-recorded
-staff scope and durable audit policy to existing-account acceptance. P2-AUTH is
-technically complete locally. P2-SCOPE-DEPLOY and real staging mail remain open;
+Next actionable development task: **P2-BOUNDARIES**, completing configured CORS,
+security headers, production validation and login/invitation/upload rate limits.
+P2-BOUNDARIES-UPLOADS is technically complete locally under ADR-015.
+P2-ROLES-ADMIN-SCOPE, P2-INVITE-IDENTITY and P2-AUTH are technically complete locally.
+P2-SCOPE-DEPLOY and real staging mail remain open;
 no hosting/domain/Resend account exists. The user requested staging preparation;
 [STAGING](docs/STAGING.md) provides an isolated local rehearsal and hosted rollout
 steps. Phase 2A and external milestones are not closed by local fixture results.
 
 Audit correction order and all 15 finding owners: [correction plan](docs/AUDIT_FOLLOWUP.md).
-With P2-AUTH and the local foundations complete, prioritize P2-INVITE-IDENTITY,
-P2-ROLES-ADMIN-SCOPE and P2-BOUNDARIES-UPLOADS. These close currently reachable
-security defects before external API exposure; invitation identity must not wait
-for M4 administration, and image content/ownership must not wait for music work.
+With P2-AUTH, P2-INVITE-IDENTITY, P2-ROLES-ADMIN-SCOPE and the local foundations
+complete, continue remaining P2-BOUNDARIES transport/abuse controls. Upload image
+ownership/content and private retrieval are now implemented. Intended-deployment
+assignment provenance remains P2-SCOPE-DEPLOY.
 Independent fixes may proceed when their own prerequisites pass.
 
 UI track: **P2-UI-FOUNDATION is technically complete**, then P2-UI-SHELL with P2-ROLES. Fixture work can
@@ -82,8 +84,19 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
   DEV_AUTH uses a real eligible development account and actual stored roles;
   startup refuses DEV_AUTH=true outside development. C2 is corrected locally.
   Global-admin bypass now requires null event scope and active assignment; removed
-  assignments/global staff are ignored. Intended-account invitation proof, upload
-  ownership, frontend role guards and broader CORS/rate limits remain security work.
+  assignments/global staff are ignored. All 18 admin-only operations have maintained
+  own/other-event HTTP/PostgreSQL denial coverage. Assignment writers are inventoried;
+  the judge seed now creates event-scoped access and preserves historical rows.
+  Aggregate deployment preflight flags unsupported active scopes without repair.
+  Intended-account invitation proof is now
+  enforced with transactional revision/eligibility checks, credential preservation
+  and USER audit attribution; existing accounts receive no replacement session.
+  New-account setup remains available. All four image uploads now enforce stored
+  ownership/scope, active parents and existing resource stage/approval gates,
+  fully decode/re-encode matching JPEG/PNG/WebP, and commit reference/audit atomically.
+  Image retrieval requires authentication, current reference and read access;
+  public static serving is removed. Frontend role guards and broader CORS/rate
+  limits remain security work.
   The email fake is silent; production rejects unavailable delivery;
   storage is always local. Event reads require authentication.
 - Baseline CI exists; first hosted-run evidence and required-check settings need
@@ -94,7 +107,33 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
   remain in ignored deploy/staging.env; development data was not migrated/reset.
   Hosted ingress, domain/provider setup, real mail and restore evidence remain open.
 
-Latest **recorded** runtime validation (2026-10-25): Phase 2A workspace build,
+Latest **recorded** runtime validation (2026-11-01): P2-BOUNDARIES-UPLOADS workspace
+build/typecheck/lint, localization guard, 99 API + 10 frontend tests, Prisma checks,
+fresh/upgrade migrations with historical audit preservation/parity and complete
+isolated PostgreSQL/image baseline pass. Negative ownership/content regressions
+fail against the original handler and pass with the fix. Private retrieval,
+metadata/content bounds, transactional audit rollback, refreshed authorization,
+concurrent replacement and unreachable-orphan behavior pass. Migration 27 expands
+audit allowlists only; no application data/reset/legacy file cleanup was performed.
+Sharp is the new raster decoder dependency. See [image evidence](docs/IMAGE_BOUNDARIES_VALIDATION.md)
+and [ADR-015](docs/adr/015-image-boundaries.md). The staging rehearsal remains on
+its previously recorded code/schema; actual rollout/provider/cleanup gates remain.
+Previous P2-ROLES-ADMIN-SCOPE validation (2026-11-01): workspace
+build/typecheck/lint, 95 API tests, localization guard, Prisma generate/validate/
+format, migration parity and complete isolated PostgreSQL baseline pass. Nine
+unchanged frontend tests were reused from the local cache. The 18-operation scope
+matrix proves scoped/removed/global-staff denial with unchanged records, active
+global-admin success, immediate removal denial and aggregate preflight behavior.
+See [scope evidence](docs/ADMIN_SCOPE_VALIDATION.md). No schema migration or
+application-data reset was needed; actual deployment provenance remains open.
+Previous P2-INVITE-IDENTITY validation (2026-11-01): workspace
+build/typecheck/lint, 93 API + 9 frontend tests, localization guard, Prisma
+generation/validation/format, fresh/upgrade migration parity and complete isolated
+PostgreSQL baseline pass. Regressions cover intended/wrong/no/stale/ineligible
+identity, preserved credentials/unrelated access, audit attribution, rollback and
+concurrent acceptance. No schema migration or application-data reset was needed.
+See [invitation evidence](docs/INVITATION_IDENTITY_VALIDATION.md).
+Previous Phase 2A validation (2026-10-25): workspace build,
 typecheck, web lint, 92 API + 9 frontend tests, localization guard, Prisma checks,
 fresh/upgrade migration parity (including SQL-only checks/functions/triggers), and
 the complete isolated PostgreSQL baseline pass. New fixtures prove immutable and
@@ -186,5 +225,7 @@ Workspace, Prisma and isolated PostgreSQL checks pass; reachable invitation,
 inactive-account and upload security defects remain M1 blockers. No implementation
 was changed by this audit. Subsequent identity/token work is recorded above;
 request eligibility was subsequently corrected under P2-AUTH-ELIGIBILITY.
-Public auth recovery is now delivered technically. Intended-account invitation,
-upload and other boundary/session/provider work remains before external exposure.
+Public auth recovery and intended-account invitation acceptance are now delivered
+technically. Image ownership/content/private retrieval is now delivered under
+P2-BOUNDARIES-UPLOADS. Remaining boundary/session/provider and actual deployment
+work remains before external exposure.

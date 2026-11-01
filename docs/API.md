@@ -3,7 +3,8 @@
 Reviewed: 2026-10-25. Local base: http://localhost:4000/api/v1.
 VITE_API_URL includes /api/v1; restart Vite after changes. Frontend page routes
 are separate. No unversioned business aliases exist; /health and /uploads remain
-at server root.
+at server root. /uploads is authenticated resource-scoped image retrieval, with
+no public static fallback; see [images](api/images.md).
 
 ## Composition and authentication
 
@@ -12,7 +13,8 @@ creating dependencies. routes/api.ts mounts each resource once. Startup/storage/
 signals live in index.ts. Controllers use the injected Prisma client.
 
 Public operations: POST /auth/register, /auth/login, /auth/verify-email;
-GET /invitations/:token; POST /invitations/accept. Profile and invitation admin
+GET /invitations/:token; POST /invitations/accept for new-account setup only
+(existing recipients require their intended eligible session). Profile and invitation admin
 handlers attach auth directly; other resource routers require auth at their mount.
 **Event reads remain authenticated.** Unknown routes use global 404 errors.
 Exact permissions/ownership/stages are in each resource contract.

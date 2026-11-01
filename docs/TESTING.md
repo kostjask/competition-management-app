@@ -94,8 +94,12 @@ checks, and auth/profile DTOs with real global/event roles. Category checks incl
 strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
 competing creates, plus deletion preserving active/archived performances. Setup
 checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
-Invitation checks cover scoped acceptance, unsupported global/unclassified denial,
-concurrency and rollback.
+Invitation checks cover scoped new-account setup and intended existing-account
+authentication, unsupported global/unclassified denial, wrong/no/stale/inactive/
+unverified session denial, full-field credential/access/invitation preservation,
+USER audit attribution, concurrent acceptance and consumption/audit failure rollback.
+Existing-account success issues no new JWT. See
+[invitation identity evidence](INVITATION_IDENTITY_VALIDATION.md).
 Scope-integrity checks additionally race direct global/event role and invitation
 writes, restrict deletion with assignments or invitation history, and replace
 expired links concurrently without losing old records. The baseline's isolated
@@ -185,7 +189,7 @@ to hide new strings; translate them or document a specific intentional-content
 exception. Catalogue completeness, placeholder and native plural checks run for
 ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
 
-The current suite has 87 API tests and 8 frontend tests. Frontend checks include
+The current suite has 99 API tests and 10 frontend tests. Frontend checks include
 all-locale component renders of the same stored error, field links, selector
 semantics, network/non-JSON/multipart/204 handling, response-schema failures and
 safe legacy/future fallback. Shared validation preserves root/nested rules and
@@ -196,9 +200,35 @@ Those remain per-workflow release checks under I18N-QA and P9-BROWSER.
 [api-coverage.json](api-coverage.json) inventories 60 mounted method/path operations
 and their test evidence/non-applicable or Phase 2 exceptions. Tests compare runtime
 router registration to the inventory and reject unauthenticated access to every
-protected operation. /health and static files are infrastructure exceptions.
-The coverage inventory does not imply complete authorization hardening: upload
-ownership and invitation existing-account/scope policy are still Phase 2 gates.
+protected operation. /health is an infrastructure exception; protected GET
+/uploads/:resource/:filename is tested separately in the image baseline.
+The coverage inventory does not imply complete authorization hardening:
+frontend role guards and remaining transport/abuse controls are still Phase 2 gates.
+Intended-account invitation proof is implemented under P2-INVITE-IDENTITY;
+management, acceptance UI and Judge reconciliation remain separate gates.
+The globalAdmin evidence field marks all 18 mounted admin-only operations.
+Maintained HTTP tests deny own/other-event scoped admins, removed admins,
+unsupported global staff and similarly named roles. check-admin-scope.cjs repeats
+the inventory matrix against PostgreSQL, compares full domain/audit snapshots,
+checks immediate removal using the same JWT and tests unsupported invitation
+creation/inspection/acceptance/rotation. The exact aggregate scope preflight runs
+against synthetic historical rows without exposing account details. Fresh seed
+checks require an event-bound judge and no newly created global judge; seed
+idempotency and all existing migration/HTTP fixtures remain required. See
+[admin scope evidence](ADMIN_SCOPE_VALIDATION.md). Actual deployment provenance
+remains P2-SCOPE-DEPLOY; fixture counts cannot close that gate.
+Image checks additionally run check-image-boundaries.cjs in an isolated child with
+real PostgreSQL, a temporary local storage root and synthetic raster images.
+They verify ownership/event/member/approval/stage denial before storage, archived
+parents, genuine uploads and private retrieval headers, no static fallback, live
+reference checks, IMAGE_REPLACED audit rollback, fresh authorization after storage,
+concurrent replacement and cleanup-failure orphan denial. The child deletes only
+its verified temporary root. Raster unit tests cover PNG/JPEG/WebP decoding,
+metadata stripping, MIME/extension/content mismatch, malformed/animated input and
+pixel/output bounds. Client tests restrict bearer downloads to canonical API-origin
+images with no redirects or credential query parameters. Migration parity includes
+expanded audit allowlists and preserves a historical audit row. See
+[image evidence](IMAGE_BOUNDARIES_VALIDATION.md). No image UI/browser flow is claimed.
 Account eligibility is tested across every protected inventory operation with
 missing/inactive/unverified subjects, before role resolution. PostgreSQL checks
 also retain issued JWTs while disabling, removing or unverifying their account,
