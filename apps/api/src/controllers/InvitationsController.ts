@@ -41,6 +41,7 @@ export class InvitationsController extends BaseController {
     if (body.eventId && !event) throw new NotFoundError("Event");
     const role = await this.prisma.role.findUnique({ where: { key: body.roleKey }, select: { id: true } });
     if (!role) throw new NotFoundError("Role");
+    assertStaffScope({ roleId: role.id, roleKey: body.roleKey, eventId: body.eventId, studioId: null });
     const recipient = await this.prisma.user.findUnique({ where: { email: body.email }, select: { preferredLocale: true } });
     const locale = recipientLocale(body.locale, recipient?.preferredLocale);
     const secret = newIdentitySecret("INVITATION");

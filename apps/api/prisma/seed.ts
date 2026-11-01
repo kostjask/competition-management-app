@@ -239,23 +239,6 @@ async function main() {
       });
     }
 
-    // Judge role (global)
-    const existingJudgeRole = await prisma.userRole.findFirst({
-      where: {
-        userId: judgeUser.id,
-        roleId: judgeRole.id,
-        eventId: null,
-      },
-    });
-    if (!existingJudgeRole) {
-      await prisma.userRole.create({
-        data: {
-          userId: judgeUser.id,
-          roleId: judgeRole.id,
-          eventId: null,
-        },
-      });
-    }
     console.log("✅ Assigned roles to users\n");
 
     // 6. Create test event
@@ -271,6 +254,24 @@ async function main() {
         stage: "PRE_REGISTRATION",
       },
     });
+
+    // Judge role is event-scoped; retain any historical global row unchanged.
+    const existingJudgeRole = await prisma.userRole.findFirst({
+      where: {
+        userId: judgeUser.id,
+        roleId: judgeRole.id,
+        eventId: event.id,
+      },
+    });
+    if (!existingJudgeRole) {
+      await prisma.userRole.create({
+        data: {
+          userId: judgeUser.id,
+          roleId: judgeRole.id,
+          eventId: event.id,
+        },
+      });
+    }
 
     // 7. Create categories, age groups, formats for the event
     console.log("Creating event configuration...");

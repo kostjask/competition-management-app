@@ -78,7 +78,8 @@
         "permission": "invitation contracts validate relationships",
         "crossParent": "invitation contracts validate relationships",
         "inactiveRecord": "invitation contracts validate relationships",
-        "conflict": "N/A: read-only operation"
+        "conflict": "N/A: read-only operation",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -94,7 +95,8 @@
         "permission": "invitation contracts validate relationships",
         "crossParent": "invitation contracts validate relationships",
         "inactiveRecord": "invitation contracts validate relationships",
-        "conflict": "invitation contracts validate relationships"
+        "conflict": "invitation contracts validate relationships",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -174,7 +176,8 @@
         "permission": "event operations require authentication",
         "crossParent": "N/A: collection has no parent selector",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "event missing records and transaction conflicts"
+        "conflict": "event missing records and transaction conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -190,7 +193,8 @@
         "permission": "event operations require authentication",
         "crossParent": "event missing records and transaction conflicts",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "event missing records and transaction conflicts"
+        "conflict": "event missing records and transaction conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -238,7 +242,8 @@
         "permission": "registration mutations reject wrong event scope",
         "crossParent": "registration mutations reject wrong event scope",
         "inactiveRecord": "registration lists require active ownership",
-        "conflict": "approval requires admin and organization approval"
+        "conflict": "approval requires admin and organization approval",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -286,7 +291,8 @@
         "permission": "judge operations enforce authentication",
         "crossParent": "judge operations enforce authentication",
         "inactiveRecord": "judge CRUD uses strict DTOs",
-        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -318,7 +324,8 @@
         "permission": "judge operations enforce authentication",
         "crossParent": "judge operations enforce authentication",
         "inactiveRecord": "judge CRUD uses strict DTOs",
-        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -334,7 +341,8 @@
         "permission": "judge operations enforce authentication",
         "crossParent": "judge operations enforce authentication",
         "inactiveRecord": "judge CRUD uses strict DTOs",
-        "conflict": "judge uniqueness, foreign key and concurrent disappearance"
+        "conflict": "judge uniqueness, foreign key and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -366,7 +374,8 @@
         "permission": "category operations enforce authentication",
         "crossParent": "category CRUD validates strict names",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -398,7 +407,8 @@
         "permission": "category operations enforce authentication",
         "crossParent": "category CRUD validates strict names",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -414,7 +424,8 @@
         "permission": "category operations enforce authentication",
         "crossParent": "category CRUD validates strict names",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "category uniqueness, foreign keys and concurrent disappearance"
+        "conflict": "category uniqueness, foreign keys and concurrent disappearance",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -446,7 +457,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -478,7 +490,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -494,7 +507,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -526,7 +540,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -558,7 +573,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -574,7 +590,8 @@
         "permission": "every operation enforces authentication, scoped reads and admin writes",
         "crossParent": "CRUD validates DTOs, resulting partial ranges and parent IDs",
         "inactiveRecord": "N/A: model has no active/archive field",
-        "conflict": "maps uniqueness, relationship and serialization conflicts"
+        "conflict": "maps uniqueness, relationship and serialization conflicts",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {
@@ -734,7 +751,8 @@
         "permission": "studio writes derive permissions from the stored event",
         "crossParent": "N/A: studio scope is derived from the stored studio; ownership tests cover substitution",
         "inactiveRecord": "studio delete archives with actor",
-        "conflict": "studio PATCH trims text"
+        "conflict": "studio PATCH trims text",
+        "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
     {

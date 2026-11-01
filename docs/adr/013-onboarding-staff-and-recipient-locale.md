@@ -36,9 +36,14 @@ pending. Pending revocation does not remove accepted access. UserRole.removedAt
 retains assignments for offboarding; restoration must reuse the unique assignment
 and audit its transition. Middleware ignores removed assignments, scoped admin and
 global judge/moderator assignments. Only an active global admin bypasses scope.
+P2-ROLES-ADMIN-SCOPE reviewed the assignment writers and admin-only route inventory
+on 2026-11-01; [role architecture](../../ROLE_ARCHITECTURE.md) records the exact
+scope policy, inherited representative/custom-permission behavior and deployment
+limits. The development judge seed is event-scoped; historical assignments are
+retained without inferred repair. No new production role-provisioning API is added.
 Acceptance must reconcile role/access and consumption in one serializable
-transaction. Intended existing-account authentication and Judge reconciliation
-remain P2-INVITE-IDENTITY/P2-JUDGE-ACCEPT; these models do not close those journeys.
+transaction. Intended existing-account authentication is now enforced under
+P2-INVITE-IDENTITY; Judge reconciliation remains P2-JUDGE-ACCEPT.
 Moderator stage control uses stage.manage, separate from judge score.submit;
 score viewing needs its own later permission, never score submission as a proxy.
 

@@ -3,6 +3,15 @@
 BEGIN READ ONLY;
 SELECT 'global_roles_for_review' AS finding, count(*) AS count FROM "UserRole" WHERE "eventId" IS NULL
 UNION ALL
+SELECT 'active_scoped_admin_assignments', count(*) FROM "UserRole" ur JOIN "Role" r ON r.id = ur."roleId"
+WHERE r.key = 'admin' AND ur."eventId" IS NOT NULL AND to_jsonb(ur)->>'removedAt' IS NULL
+UNION ALL
+SELECT 'active_global_staff_assignments', count(*) FROM "UserRole" ur JOIN "Role" r ON r.id = ur."roleId"
+WHERE r.key IN ('judge', 'moderator') AND ur."eventId" IS NULL AND to_jsonb(ur)->>'removedAt' IS NULL
+UNION ALL
+SELECT 'removed_admin_assignments', count(*) FROM "UserRole" ur JOIN "Role" r ON r.id = ur."roleId"
+WHERE r.key = 'admin' AND to_jsonb(ur)->>'removedAt' IS NOT NULL
+UNION ALL
 SELECT 'global_invitations_for_review', count(*) FROM "Invitation" WHERE "eventId" IS NULL
 UNION ALL
 SELECT 'duplicate_role_groups', count(*) FROM (

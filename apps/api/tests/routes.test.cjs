@@ -139,6 +139,56 @@ test('invalid tokens and wrong-event permissions cannot reach resource handlers'
   assert.deepEqual(calls.map(({ name }) => name), ['roles']);
 });
 
+test('scoped admin cannot use any mounted global-admin operation', async t => {
+  const { request, prisma } = await fixture(t);
+  const { operations } = require('../../../docs/api-coverage.json');
+  const adminOperations = operations.filter(row => row.tests.globalAdmin);
+  assert.equal(adminOperations.length, 18);
+  let assignments;
+  prisma.userRole.findMany = async ({ where }) => {
+    assert.deepEqual(where, { userId: 'actor', removedAt: null });
+    return assignments.filter(row => row.removedAt === null);
+  };
+  const assignment = (key, eventId, removedAt = null) => ({ eventId, removedAt,
+    role: { key, name: 'Administrator', permissions: [{ permission: { key: 'event.manage' } }] } });
+  for (const rows of [
+    [], [assignment('admin', 'allowed-event')],
+    [assignment('admin', null, new Date())],
+    [assignment('judge', null)], [assignment('moderator', null)],
+    [assignment('administrator', 'allowed-event')],
+    [assignment('admin', 'allowed-event'), assignment('moderator', 'allowed-event')],
+  ]) {
+    assignments = rows;
+    for (const row of adminOperations) for (const eventId of ['allowed-event', 'other-event']) {
+      const url = '/api/v1' + row.mount + (row.path === '/' ? '' : row.path)
+        .replace(':eventId', eventId).replace(/:[A-Za-z]+/g, 'fixture');
+      const result = await request(url, { user: 'actor', method: row.method,
+        ...(row.method !== 'GET' && { body: {} }) });
+      assert.equal(result.status, 403, `${row.method} ${url}`);
+      assert.equal(result.body.code, 'FORBIDDEN');
+    }
+  }
+});
+
+test('role resolution preserves supported event permissions without scope escalation', async t => {
+  const { request, prisma } = await fixture(t);
+  const assignment = (key, eventId) => ({ eventId, role: { key, name: 'Administrator',
+    permissions: [{ permission: { key: 'event.manage' } }] } });
+  let assignments = [assignment('admin', 'allowed-event'), assignment('moderator', 'other-event')];
+  prisma.userRole.findMany = async () => assignments;
+  prisma.event.findUnique = async ({ where }) => ({ id: where.id });
+  prisma.judge.findMany = async () => [];
+  assert.equal((await request('/api/v1/events/allowed-event/judges', { user: 'actor' })).status, 403);
+  assert.equal((await request('/api/v1/events/other-event/judges', { user: 'actor' })).status, 200);
+  assignments = [assignment('judge', null), assignment('moderator', null)];
+  assert.equal((await request('/api/v1/events/other-event/judges', { user: 'actor' })).status, 403);
+  assignments = [assignment('admin', null)];
+  assert.equal((await request('/api/v1/events/allowed-event/judges', { user: 'actor' })).status, 200);
+  assignments = [assignment('administrator', 'allowed-event')];
+  assert.equal((await request('/api/v1/events/allowed-event/judges', { user: 'actor' })).status, 200, 'Custom roles retain explicit scoped permissions, never the admin bypass');
+  assert.equal((await request('/api/v1/events/other-event/judges', { user: 'actor' })).status, 403);
+});
+
 test('studio ownership checks remain behind the versioned mount', async (t) => {
   const { request, prisma } = await fixture(t);
   prisma.userRole.findMany = async () => [{ eventId: null, role: {
