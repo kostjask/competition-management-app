@@ -6,6 +6,7 @@ import { config } from "../config/env";
 
 export interface AuthContext {
   userId: string;
+  sessionVersion: number;
   isAdmin: boolean;
   permissionsByEvent: Map<string | null, Set<string>>;
 }
@@ -37,7 +38,7 @@ export function createAuthMiddleware(prisma: PrismaClient) {
     // Eligibility is checked on every request, before any role/admin bypass.
     // A valid JWT alone cannot keep a deleted, disabled or unverified account active.
     const user = await prisma.user.findFirst({
-      where: { ...identity, active: true, emailVerified: true }, select: { id: true },
+      where: { ...identity, active: true, emailVerified: true }, select: { id: true, sessionVersion: true },
     });
     if (!user) return next(new UnauthorizedError());
     const userId = user.id;
@@ -66,7 +67,7 @@ export function createAuthMiddleware(prisma: PrismaClient) {
       }
     }
 
-    req.auth = { userId, isAdmin, permissionsByEvent };
+    req.auth = { userId, sessionVersion: user.sessionVersion, isAdmin, permissionsByEvent };
 
     return next();
   };

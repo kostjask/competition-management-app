@@ -11,9 +11,11 @@ AuditLog stores an action, target type/ID, optional event/studio IDs, actor kind
 and optional persisted actor ID, timestamp and strict allowlisted metadata.
 USER actors reference User with restrictive deletion; SYSTEM and ANONYMOUS have
 no actor ID. Email/token request callers are anonymous unless credentials or a
-purpose-bound link prove their account. The currently public invitation accept
-handler must not attribute an unauthenticated existing-account acceptance to the
-victim; it records ANONYMOUS until P2-INVITE-IDENTITY enforces intended identity.
+purpose-bound link prove their account. P2-INVITE-IDENTITY now requires the intended
+eligible session for existing-account acceptance; invitation possession alone
+cannot authenticate that account. Acceptance/access records use USER attribution
+for that authenticated identity, or for the newly created identity whose verified
+setup is proven by the invitation. Both records commit with acceptance.
 
 Metadata contains only known role keys, token purpose and approval status changes.
 Never include emails, names, passwords, token values/digests, URLs, private paths,

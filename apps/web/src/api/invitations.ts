@@ -6,5 +6,6 @@ export const getInvitation = async (token: string) => decode(InvitationPreviewSc
 export const createInvitation = async (body: CreateInvitationInput) => decode(CreateInvitationResponseSchema, await apiClient.post<CreateInvitationInput>("/invitations", body));
 export const acceptInvitation = async (body: AcceptInvitationInput) => {
   const result = decode(AcceptInvitationResponseSchema, await apiClient.post<AcceptInvitationInput>("/invitations/accept", body));
-  setToken(result.token); return result;
+  if (result.accountCreated) setToken(result.token);
+  return result;
 };

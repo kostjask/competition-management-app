@@ -3,7 +3,9 @@
 [API index](../API.md) · Paths are relative to `/api/v1` unless shown in full.
 
 GET/POST /api/v1/invitations are authenticated admin operations. GET
-/api/v1/invitations/:token and POST /api/v1/invitations/accept remain public.
+/api/v1/invitations/:token is public. POST /api/v1/invitations/accept permits
+unauthenticated new-account setup; existing recipients must authenticate as the
+intended active, verified account. Any supplied Authorization header is validated.
 Create accepts strict email, roleKey (judge/moderator), required eventId and
 optional recipient locale (et/en/ru). Locale resolves explicit value, existing
 recipient account preference, then et; never the inviter's UI. Email follows the shared
@@ -16,11 +18,25 @@ nullable UTC usedAt. Inspect exposes email/roleKey, nullable event id/name and U
 expiry. Storage digests, creators and unrestricted relations are excluded.
 Only purpose-bound SHA-256 digests are persisted, with seven-day issuance expiry.
 
-Accept requires token, trimmed name and password. It returns a validated bearer
-session with explicit user identity, message and invitationAccepted messageId.
+Accept takes either `{ token }` for an authenticated existing recipient, or
+`{ token, name, password }` for new-account setup. New names/passwords follow the
+shared registration validation, including the bcrypt UTF-8 byte limit. Extra fields
+and incomplete setup pairs are rejected. Existing recipients may send the setup
+shape, but its name/password never modify the account or prove identity.
+New-account success returns accountCreated=true, a validated bearer session,
+explicit user identity, message and invitationAccepted messageId. Existing-account
+success returns accountCreated=false, user/message/messageId and no token/tokenType;
+the client retains its current session. Both return 201.
+No session returns 401 for an active existing recipient; a different eligible
+account (including an admin) returns 403. Invalid, stale, inactive or unverified
+sessions return 401. A signed-in unrelated account cannot create the invitee.
+Account identity, eligibility and session revision are rechecked and locked in
+the serializable acceptance transaction. Existing password/name/verification,
+locale, session revision and unrelated assignments remain unchanged, including
+for passwordless accounts. Only newly created accounts receive verified setup.
 Lookups/role assignment/consumption are serializable and use typed null-aware
 predicates, avoiding Prisma nullable-compound assertions. Missing records return
-404, used/expired invitations and an already-assigned role return 400, active
+404, used/expired invitations and creating an already-assigned role return 400, active
 invitation/constraint/serialization conflicts return 409. Missing role failures
 roll back without creating accounts or consuming invitations. One outstanding
 invitation per canonical email/role/scope is enforced in PostgreSQL, including global
@@ -44,10 +60,11 @@ invitations require supported role scope; representative invitations need matchi
 studio/event scope and remain unavailable in staff creation until P5-MEMBERS.
 Historical unclassified rows are preserved but cannot be accepted or rotated.
 Global/admin invitations are rejected; removed assignments need reviewed restoration.
-Existing-account acceptance still lacks intended-account
-authentication enforcement for active users. No Judge record is created automatically.
+Acceptance enforces intended-account authentication and writes USER-attributed
+access/acceptance audit records in the same transaction. Failed access, consumption
+or audit writes roll back the entire acceptance. No Judge record is created automatically.
 The silent development email fake does not deliver or log links. Real email is
 queued encrypted inside the creation transaction, with bounded retries and provider
 idempotency under ADR-014. Unavailable delivery rolls back creation. Staging delivery,
-safe existing-account acceptance and atomic Judge reconciliation remain release gates. This contract slice
+acceptance UI and atomic Judge reconciliation remain release gates. This contract slice
 does not authorize external onboarding.

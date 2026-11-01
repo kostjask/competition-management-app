@@ -1310,6 +1310,10 @@ test('invitation acceptance returns an explicit session and atomically links rol
   prisma.userRole.create = async ({ data }) => { assignment = data; return { id: 'assignment', ...data }; };
   const accept = body => request('/api/v1/invitations/accept', { method: 'POST', body });
   assert.equal((await accept({ token: 'fixture', name: ' New ', password: 'fixture-password', roleKey: 'admin' })).status, 400);
+  assert.equal((await accept({ token: 'fixture' })).status, 400, 'New recipients require setup details');
+  assert.equal((await accept({ token: 'fixture', name: 'New', password: 'я'.repeat(37) })).status, 400, 'Bcrypt byte limit');
+  assert.equal((await request('/api/v1/invitations/accept', { user: 'admin', method: 'POST', body: { token: 'fixture', name: 'New', password: 'fixture-password' } })).status, 403);
+  assert.equal(user, undefined); assert.equal(used, false);
   const result = await accept({ token: 'fixture', name: ' New ', password: 'fixture-password' });
   assert.equal(result.status, 201); schemas.AcceptInvitationResponseSchema.parse(result.body);
   assert.equal(result.body.user.password, undefined); assert.equal(result.body.messageId, 'invitationAccepted');
@@ -1333,6 +1337,59 @@ test('superseded invitation links cannot be inspected or accepted even with futu
     assert.equal(result.status, 400);
     assert.equal(result.body.reason, 'invitationExpired');
   }
+});
+
+test('existing invitation recipients require intended eligible identity and receive no new session', async t => {
+  const { request, prisma } = await fixture(t);
+  const recipient = { id: 'recipient', email: 'recipient@example.invalid', name: 'Original', password: 'original-hash', active: true, emailVerified: true, sessionVersion: 2 };
+  const invitation = { id: 'i', email: recipient.email, roleId: 'role', roleKey: 'judge', studioId: null, eventId: 'e', usedAt: null, expiresAt: new Date(Date.now() + 60000) };
+  const writes = [];
+  const locks = [];
+  prisma.invitation.findUnique = async () => invitation;
+  prisma.event.findUnique = async () => ({ id: 'e' });
+  prisma.role = { findUnique: async () => ({ id: 'role' }) };
+  prisma.user.findUnique = async () => recipient;
+  prisma.user.findFirst = async ({ where }) => where.id === 'other' ? { id: 'other', sessionVersion: 0 } :
+    recipient.active && recipient.emailVerified && where.sessionVersion === recipient.sessionVersion ? recipient : null;
+  prisma.user.updateMany = async ({ where, data }) => {
+    locks.push({ where, data }); return { count: 1 };
+  };
+  prisma.user.update = prisma.user.create = async () => assert.fail('Existing credentials and identity must remain unchanged');
+  prisma.userRole.findFirst = async () => null;
+  prisma.userRole.create = async ({ data }) => { writes.push('access'); return { id: 'assignment', ...data }; };
+  prisma.invitation.update = async () => { writes.push('consume'); };
+  prisma.auditLog.create = async ({ data }) => { writes.push(data); return data; };
+  const session = () => jwt.sign({ userId: recipient.id, sessionVersion: recipient.sessionVersion }, process.env.JWT_SECRET);
+  const accept = (options = {}, body = { token: 'fixture', name: 'Overwrite', password: 'arbitrary-password' }) =>
+    request('/api/v1/invitations/accept', { method: 'POST', body, ...options });
+  assert.equal((await accept()).status, 401, 'Invitation alone cannot authenticate an existing account');
+  assert.equal((await accept({ user: 'other' })).status, 403);
+  assert.equal((await accept({ token: 'malformed' })).status, 401);
+  assert.equal((await accept({ user: recipient.id })).status, 401, 'Stale revision');
+  const eligibleToken = session();
+  for (const field of ['active', 'emailVerified']) {
+    recipient[field] = false;
+    assert.equal((await accept({ token: eligibleToken })).status, 401);
+    recipient[field] = true;
+  }
+  assert.deepEqual(writes, []);
+  // Eligibility can change after middleware but before the transactional lock.
+  const lock = prisma.user.updateMany;
+  prisma.user.updateMany = async () => ({ count: 0 });
+  assert.equal((await accept({ token: eligibleToken })).status, 401);
+  assert.deepEqual(writes, []);
+  prisma.user.updateMany = lock;
+  const result = await accept({ token: eligibleToken }, { token: 'fixture' });
+  assert.equal(result.status, 201); require('@dance/schemas').AcceptInvitationResponseSchema.parse(result.body);
+  assert.equal(result.body.accountCreated, false); assert.equal(result.body.token, undefined);
+  assert.equal(result.body.tokenType, undefined); assert.equal(recipient.password, 'original-hash');
+  assert.deepEqual(locks, [{ where: { id: recipient.id, email: recipient.email, active: true, emailVerified: true, sessionVersion: 2 }, data: { active: true } }]);
+  assert.equal(recipient.name, 'Original');
+  for (const audit of writes.filter(value => typeof value === 'object')) assert.deepEqual([audit.actorKind, audit.actorId], ['USER', recipient.id]);
+  assert.deepEqual(writes.filter(value => typeof value === 'string'), ['access', 'consume']);
+  recipient.password = null;
+  assert.equal((await accept({ token: eligibleToken })).status, 201);
+  assert.equal(recipient.password, null, 'Passwordless existing accounts cannot be set up through invitations');
 });
 
 test('all image routes use strict DTOs and standard input/error contracts with storage fakes', async (t) => {

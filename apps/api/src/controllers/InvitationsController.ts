@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import { CreateInvitationSchema, AcceptInvitationSchema, InvitationTokenParamsSchema, InvitationSchema, InvitationPreviewSchema, CreateInvitationResponseSchema, AcceptInvitationResponseSchema } from "@dance/schemas";
 import { config } from "../config/env";
 import { sendInvitationEmail } from "../utils/email";
-import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../errors";
+import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../errors";
 import { BaseController } from "./BaseController";
 import { newIdentitySecret, tokenDigest } from "../services/identityTokens";
 import { appendAudit } from "../services/audit";
@@ -71,8 +71,7 @@ export class InvitationsController extends BaseController {
   }
   async accept(req: Request, res: Response): Promise<void> {
     const body = AcceptInvitationSchema.parse(req.body);
-    const password = await bcrypt.hash(body.password, 10);
-    const user = await this.mutation(() => this.prisma.$transaction(async tx => {
+    const result = await this.mutation(() => this.prisma.$transaction(async tx => {
       const digest = tokenDigest("INVITATION", body.token);
       const invitation = await tx.invitation.findUnique({ where: { tokenDigest: digest } });
       if (!invitation) throw new NotFoundError("Invitation");
@@ -82,26 +81,40 @@ export class InvitationsController extends BaseController {
       const role = await tx.role.findUnique({ where: { key: invitation.roleKey }, select: { id: true } });
       if (!role) throw new NotFoundError("Role");
       if (role.id !== invitation.roleId) throw new ValidationError("Invitation role changed");
-      // Existing-account identity and eligibility policy is P2-INVITE, unchanged here.
       let user = await tx.user.findUnique({ where: { email: invitation.email } });
-      if (user && !user.active) throw new ForbiddenError("Account is disabled", "accountDisabled");
-      if (user && (await tx.user.updateMany({ where: { id: user.id, active: true }, data: { active: true } })).count !== 1) {
-        throw new ForbiddenError("Account is disabled", "accountDisabled");
+      const accountCreated = !user;
+      if (user) {
+        if (!user.active) throw new ForbiddenError("Account is disabled", "accountDisabled");
+        if (!req.auth) throw new UnauthorizedError();
+        if (req.auth.userId !== user.id) throw new ForbiddenError();
+        // Recheck and lock inside the transaction, serializing acceptance with
+        // deactivation, email correction and credential/session revision changes.
+        const locked = await tx.user.updateMany({ where: { id: user.id, email: invitation.email,
+          active: true, emailVerified: true, sessionVersion: req.auth.sessionVersion }, data: { active: true } });
+        if (locked.count !== 1) throw new UnauthorizedError();
+      } else {
+        if (req.auth) throw new ForbiddenError();
+        if (!("name" in body)) throw new ValidationError("New accounts require name and password");
+        const password = await bcrypt.hash(body.password, 10);
+        user = await tx.user.create({ data: { email: invitation.email, name: body.name, password, emailVerified: true, active: true, preferredLocale: invitation.locale } });
       }
-      if (!user) user = await tx.user.create({ data: { email: invitation.email, name: body.name, password, emailVerified: true, active: true, preferredLocale: invitation.locale } });
-      else if (!user.password) user = await tx.user.update({ where: { id: user.id }, data: { password, emailVerified: true } });
+      const actor = { kind: "USER", userId: user.id } as const;
       const where = { userId: user.id, roleId: role.id, eventId: invitation.eventId };
       const existing = await tx.userRole.findFirst({ where });
       if (existing?.removedAt) throw new ConflictError("Removed access requires reviewed restoration");
       if (!existing) {
         const assignment = await tx.userRole.create({ data: where });
-        await appendAudit(tx, { action: "ACCESS_GRANTED", actor: { kind: "ANONYMOUS" }, targetType: "USER_ROLE", targetId: assignment.id, eventId: invitation.eventId });
+        await appendAudit(tx, { action: "ACCESS_GRANTED", actor, targetType: "USER_ROLE", targetId: assignment.id, eventId: invitation.eventId });
       }
       await tx.invitation.update({ where: { id: invitation.id, tokenDigest: digest, usedAt: null, supersededAt: null,
         revokedAt: null, expiresAt: { gt: new Date() } }, data: { usedAt: new Date() } });
-      await appendAudit(tx, { action: "INVITATION_ACCEPTED", actor: { kind: "ANONYMOUS" }, targetType: "INVITATION", targetId: invitation.id, eventId: invitation.eventId });
-      return user;
+      await appendAudit(tx, { action: "INVITATION_ACCEPTED", actor, targetType: "INVITATION", targetId: invitation.id, eventId: invitation.eventId });
+      return { user, accountCreated };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
-    res.status(201).json(serializeDto(AcceptInvitationResponseSchema, { message: "Account created successfully", messageId: "invitationAccepted", token: jwt.sign({ userId: user.id, sessionVersion: user.sessionVersion }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }), tokenType: "Bearer", user: { id: user.id, email: user.email, name: user.name } }));
+    const { user, accountCreated } = result;
+    res.status(201).json(serializeDto(AcceptInvitationResponseSchema, {
+      message: "Invitation accepted", messageId: "invitationAccepted", user: { id: user.id, email: user.email, name: user.name },
+      ...(accountCreated ? { accountCreated: true, token: jwt.sign({ userId: user.id, sessionVersion: user.sessionVersion }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }), tokenType: "Bearer" } : { accountCreated: false }),
+    }));
   }
 }

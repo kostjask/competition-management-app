@@ -8,6 +8,11 @@ export function invitationsRouter(prisma: PrismaClient, authenticate: RequestHan
   router.get("/", authenticate, asyncHandler((req, res) => controller.list(req, res)));
   router.post("/", authenticate, asyncHandler((req, res) => controller.create(req, res)));
   router.get("/:token", asyncHandler((req, res) => controller.inspect(req, res)));
-  router.post("/accept", asyncHandler((req, res) => controller.accept(req, res)));
+  router.post("/accept", (req, res, next) => {
+    // New recipients may set up an account without a session. Supplied sessions
+    // must pass the same eligibility/revision checks as protected routes.
+    if (req.headers.authorization !== undefined) return authenticate(req, res, next);
+    next();
+  }, asyncHandler((req, res) => controller.accept(req, res)));
   return router;
 }

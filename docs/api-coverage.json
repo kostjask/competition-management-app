@@ -122,11 +122,11 @@
       "tests": {
         "success": "invitation acceptance returns an explicit session",
         "invalidInput": "invitation contracts validate relationships",
-        "authentication": "N/A: public operation",
-        "permission": "N/A: public operation",
+        "authentication": "N/A: public new-account setup; existing-account sessions covered by existing invitation recipients require intended eligible identity",
+        "permission": "existing invitation recipients require intended eligible identity",
         "crossParent": "invitation contracts validate relationships",
-        "inactiveRecord": "N/A: existing-account eligibility is explicitly P2-INVITE",
-        "conflict": "invitation contracts validate relationships"
+        "inactiveRecord": "existing invitation recipients require intended eligible identity",
+        "conflict": "scripts/check-invitations.cjs"
       }
     },
     {

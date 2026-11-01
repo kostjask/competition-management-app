@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AuthResponseSchema } from "./auth.schema.js";
+import { AuthResponseSchema, AuthUserSchema, RegisterSchema } from "./auth.schema.js";
 import { EmailSchema, IdSchema } from "./common.schema.js";
 import { RecipientLocaleSchema } from "./onboarding.schema.js";
 
@@ -20,11 +20,11 @@ export const CreateInvitationSchema = z.strictObject({
   locale: RecipientLocaleSchema.optional(),
 });
 
-export const AcceptInvitationSchema = z.strictObject({
-  token: z.string().min(1, "Token is required"),
-  name: z.string().trim().min(2, "Name must be at least 2 characters"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-});
+const InvitationSecretSchema = z.string().min(1, "Token is required");
+export const AcceptInvitationSchema = z.union([
+  z.strictObject({ token: InvitationSecretSchema }),
+  z.strictObject({ token: InvitationSecretSchema, name: RegisterSchema.shape.name, password: RegisterSchema.shape.password }),
+]);
 
 export type CreateInvitationInput = z.infer<typeof CreateInvitationSchema>;
 export type AcceptInvitationInput = z.infer<typeof AcceptInvitationSchema>;
@@ -39,7 +39,11 @@ export const InvitationSchema = z.strictObject({
 export const InvitationsSchema = z.array(InvitationSchema);
 export const InvitationPreviewSchema = z.strictObject({ email: EmailSchema, roleKey: RoleKeySchema, event: EventSummarySchema.nullable(), expiresAt: z.iso.datetime() });
 export const CreateInvitationResponseSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationCreated"), invitationId: IdSchema, delivery: z.literal("unconfirmed") });
-export const AcceptInvitationResponseSchema = AuthResponseSchema.extend({ message: z.string(), messageId: z.literal("invitationAccepted") });
+const AcceptanceMessageSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationAccepted") });
+export const AcceptInvitationResponseSchema = z.union([
+  AuthResponseSchema.extend({ ...AcceptanceMessageSchema.shape, accountCreated: z.literal(true) }),
+  AcceptanceMessageSchema.extend({ user: AuthUserSchema, accountCreated: z.literal(false) }),
+]);
 export type Invitation = z.infer<typeof InvitationSchema>;
 export type InvitationPreview = z.infer<typeof InvitationPreviewSchema>;
 export type CreateInvitationResponse = z.infer<typeof CreateInvitationResponseSchema>;
