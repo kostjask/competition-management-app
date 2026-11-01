@@ -861,10 +861,11 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
-        "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "all image routes use strict DTOs",
-        "conflict": "all image routes use strict DTOs"
+        "permission": "scripts/check-image-boundaries.cjs",
+        "crossParent": "scripts/check-image-boundaries.cjs",
+        "inactiveRecord": "scripts/check-image-boundaries.cjs",
+        "conflict": "scripts/check-image-boundaries.cjs",
+        "content": "image boundaries reject disguised active content before storage"
       }
     },
     {
@@ -877,10 +878,11 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
-        "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "all image routes use strict DTOs",
-        "conflict": "all image routes use strict DTOs"
+        "permission": "scripts/check-image-boundaries.cjs",
+        "crossParent": "scripts/check-image-boundaries.cjs",
+        "inactiveRecord": "scripts/check-image-boundaries.cjs",
+        "conflict": "scripts/check-image-boundaries.cjs",
+        "content": "image boundaries reject disguised active content before storage"
       }
     },
     {
@@ -893,10 +895,11 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
-        "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "all image routes use strict DTOs",
-        "conflict": "all image routes use strict DTOs"
+        "permission": "scripts/check-image-boundaries.cjs",
+        "crossParent": "scripts/check-image-boundaries.cjs",
+        "inactiveRecord": "scripts/check-image-boundaries.cjs",
+        "conflict": "scripts/check-image-boundaries.cjs",
+        "content": "image boundaries reject disguised active content before storage"
       }
     },
     {
@@ -909,10 +912,11 @@
         "success": "all image routes use strict DTOs",
         "invalidInput": "all image routes use strict DTOs",
         "authentication": "all image routes use strict DTOs",
-        "permission": "N/A: resource authorization/content is P2-BOUNDARIES; shared middleware checks account eligibility",
-        "crossParent": "N/A: no event/studio parent selector",
-        "inactiveRecord": "all image routes use strict DTOs",
-        "conflict": "all image routes use strict DTOs"
+        "permission": "scripts/check-image-boundaries.cjs",
+        "crossParent": "scripts/check-image-boundaries.cjs",
+        "inactiveRecord": "scripts/check-image-boundaries.cjs",
+        "conflict": "scripts/check-image-boundaries.cjs",
+        "content": "image boundaries reject disguised active content before storage"
       }
     },
     {

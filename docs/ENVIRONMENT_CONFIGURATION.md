@@ -22,7 +22,8 @@ apps/api; dotenv reads its .env and shell values take precedence.
 | DEV_AUTH | true / false; false | Skips bearer entry only in development; refuses startup in test/production when true. Uses a real active, verified account and its actual roles. Keep false for real login. |
 | DEV_AUTH_EMAIL | Canonical email; admin@test.com | Development account selected when DEV_AUTH=true; explicit seed/provisioning required. Missing/ineligible accounts fail closed; no automatic activation, verification or role grants. |
 | VITE_API_URL | Web setting; http://localhost:4000/api/v1 | API base, including version; restart Vite |
-| STORAGE_PUBLIC_URL | Local provider reads directly; http://localhost:4000 | Public image URL origin; outside EnvSchema |
+| STORAGE_PUBLIC_URL | Optional URL in EnvSchema; unset by default | Image URL base; use API origin for protected browser downloads. Unset returns /uploads/...; does not grant public access |
+| STORAGE_PATH | ./uploads | Local file root resolved against API working directory; used by read/write/delete |
 | APP_BASE_URL | Not consumed | Use WEB_ORIGIN for email links; safe session/return UI remains P2-SESSION |
 
 Generate a new secret locally and put it directly in the environment file; do not
@@ -32,7 +33,7 @@ paste it into logs/reports. Never copy an example over an existing environment.
 
 | Settings | Actual behavior / owning task |
 | --- | --- |
-| STORAGE_TYPE: local/s3/gcs; STORAGE_PATH: ./uploads | Startup always constructs LocalStorageService using cwd/uploads. Neither setting selects a provider/path today. P8-MEDIA. |
+| STORAGE_TYPE: local/s3/gcs | Startup always constructs LocalStorageService; cloud selection remains P8-MEDIA. STORAGE_PATH is active separately above. |
 | AWS_REGION / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY / AWS_S3_BUCKET | Optional schema fields; no S3 implementation or conditional requirement checks. |
 | GCS_PROJECT_ID / GCS_BUCKET / GCS_KEY_FILE | Optional schema fields; no GCS implementation or conditional requirement checks. |
 | CORS_ORIGIN: * | App currently hardcodes *; setting is not enforced. P2-BOUNDARIES. |
@@ -64,7 +65,8 @@ and [staging setup](STAGING.md) for queue key backup/rotation, retries and rollo
   older workers must not continue accepting revoked or unversioned sessions.
 - Proxy trust is false. Recovery limits use the socket IP, ignoring forwarded IP
   headers; review deployment/shared limits under P2-BOUNDARIES before external use.
-- Uploads: local files are publicly served from /uploads. Check
-  [storage behavior](STORAGE.md); configuring a provider does not change that.
+- Images: /uploads requires a current eligible bearer identity, a live reference
+  and resource read permission. No static fallback or public publication is enabled.
+  Check [storage behavior](STORAGE.md) before introducing any cloud/public provider.
 
 [Security gaps](SECURITY.md) · [Validation commands](TESTING.md)

@@ -6,6 +6,7 @@
  */
 
 export interface StorageProvider {
+  readFile(path: string): Promise<Buffer>;
   /**
    * Upload a file and return the public URL
    * @param file - File buffer and metadata

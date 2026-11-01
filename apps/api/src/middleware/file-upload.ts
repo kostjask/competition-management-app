@@ -18,16 +18,6 @@ const DEFAULT_MAX_SIZE = 10 * 1024 * 1024; // 10MB
 const DEFAULT_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 /**
- * Generate a unique filename with timestamp
- */
-export function generateUniqueFilename(originalName: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  const ext = originalName.split(".").pop() || "bin";
-  return `${timestamp}-${random}.${ext}`;
-}
-
-/**
  * Create a file upload middleware
  */
 export function createFileUploadMiddleware(options: FileUploadOptions) {
@@ -38,7 +28,7 @@ export function createFileUploadMiddleware(options: FileUploadOptions) {
 
   const upload = multer({
     storage,
-    limits: { fileSize: maxSize },
+    limits: { fileSize: maxSize, files: 1, fields: 0, parts: 2 },
     fileFilter: (_req: Request, file: Express.Multer.File, callback: multer.FileFilterCallback) => {
       if (!allowedMimes.includes(file.mimetype)) {
         return callback(

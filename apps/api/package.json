@@ -22,6 +22,7 @@
     "@dance/schemas": "workspace:*",
     "bcrypt": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
-    "multer": "^2.5.0"
+    "multer": "^2.5.0",
+    "sharp": "^0.35.5"
   }
 }

@@ -225,7 +225,7 @@ test('profile and upload operations dispatch after authentication; health errors
   const upload = await request('/api/v1/images/events/e', { method: 'POST', user: 'admin' });
   assert.equal(upload.status, 404, 'Authorized upload must reach resource lookup');
   assert.equal(upload.body.code, 'NOT_FOUND');
-  assert.deepEqual(calls.map(({ name }) => name), ['roles', 'event']);
+  assert.deepEqual(calls.map(({ name }) => name), ['roles', 'roles', 'event']);
   prisma.$queryRaw = async () => { throw new Error('Private database connection details'); };
   assert.deepEqual(await request('/health'), { status: 500, body: { status: 'error' } });
 });
@@ -1442,21 +1442,60 @@ test('existing invitation recipients require intended eligible identity and rece
   assert.equal(recipient.password, null, 'Passwordless existing accounts cannot be set up through invitations');
 });
 
+test('image boundaries reject foreign replacement before storage', async t => {
+  const { request, prisma } = await fixture(t);
+  const { setStorageProvider } = require('../dist/services/storage.js');
+  let writes = 0;
+  prisma.user.findUnique = async () => ({ id: 'victim', active: true, photoPath: null });
+  prisma.user.update = async () => { writes++; };
+  setStorageProvider({ uploadFile: async () => { writes++; return 'users/fixture.png'; },
+    getFileUrl: key => '/uploads/' + key, deleteFile: async () => { writes++; } });
+  const form = new FormData(); form.set('photo', new Blob(['<html><script>active()</script></html>'], { type: 'image/png' }), 'fixture.png');
+  const result = await request('/api/v1/images/users/victim', { user: 'stranger', method: 'POST', form });
+  assert.equal(result.status, 403, 'A session must not authorize foreign photo replacement');
+  assert.equal(writes, 0);
+});
+
+test('image boundaries reject disguised active content before storage', async t => {
+  const { request, prisma } = await fixture(t);
+  const { setStorageProvider } = require('../dist/services/storage.js');
+  let writes = 0;
+  prisma.user.findUnique = async () => ({ id: 'victim', active: true, photoPath: null });
+  prisma.user.update = async () => { writes++; };
+  setStorageProvider({ uploadFile: async () => { writes++; return 'users/fixture.png'; },
+    getFileUrl: key => '/uploads/' + key, deleteFile: async () => { writes++; } });
+  const adminForm = new FormData(); adminForm.set('photo', new Blob(['<html><script>active()</script></html>'], { type: 'image/png' }), 'fixture.png');
+  const adminResult = await request('/api/v1/images/users/victim', { user: 'admin', method: 'POST', form: adminForm });
+  assert.equal(adminResult.status, 400, 'Declared raster MIME must not authorize active content');
+  assert.equal(writes, 0);
+});
+
 test('all image routes use strict DTOs and standard input/error contracts with storage fakes', async (t) => {
   const { request, prisma } = await fixture(t); const { setStorageProvider } = require('../dist/services/storage.js');
+  const sharp = require('sharp');
+  const png = await sharp({ create: { width: 2, height: 2, channels: 3, background: 'red' } }).png().toBuffer();
   const actions = [];
-  setStorageProvider({ uploadFile: async (_file, directory) => { actions.push('upload'); return directory + '/new.png'; }, getFileUrl: path => '/uploads/' + path, deleteFile: async path => { actions.push('delete:' + path); } });
-  const form = (field, type = 'image/png') => { const value = new FormData(); value.set(field, new Blob(['fixture'], { type }), 'fixture.png'); return value; };
+  setStorageProvider({ uploadFile: async (file, directory, filename) => {
+    assert.equal((await sharp(file.buffer).metadata()).format, 'webp'); assert.equal(file.mimetype, 'image/webp');
+    assert.match(filename, /^[0-9a-f-]+\.webp$/); actions.push('upload'); return directory + '/new.webp';
+  }, getFileUrl: key => '/uploads/' + key, deleteFile: async key => { actions.push('delete:' + key); } });
+  const form = (field, type = 'image/png', bytes = png, name = 'fixture.png') => { const value = new FormData(); value.set(field, new Blob([bytes], { type }), name); return value; };
   for (const [resource, delegate, field, prefix, schema] of [['events', 'event', 'image', 'image', 'ImageUploadResponseSchema'], ['users', 'user', 'photo', 'photo', 'PhotoUploadResponseSchema'], ['dancers', 'dancer', 'photo', 'photo', 'PhotoUploadResponseSchema'], ['studios', 'studio', 'logo', 'logo', 'LogoUploadResponseSchema']]) {
-    let active = true;
-    let archived = false;
-    prisma[delegate].findUnique = async () => active ? { id: 'id', [prefix + 'Path']: 'old.png', deletedAt: archived ? new Date() : null } : null;
+    let active = true; let archived = false;
+    const record = () => active && !archived ? { id: 'id', active: true, studioId: 's', eventId: 'e', [prefix + 'Path']: 'old.png', event: { stage: 'REGISTRATION_OPEN' }, representatives: [], registrations: [] } : null;
+    prisma[delegate].findUnique = async () => record();
+    if (['dancers', 'studios'].includes(resource)) prisma[delegate].findFirst = async () => record();
+    if (resource === 'dancers') prisma.studio.findFirst = async () => ({ eventId: 'e', event: { stage: 'REGISTRATION_OPEN' }, representatives: [], registrations: [] });
     prisma[delegate].update = async ({ data }) => { actions.push('update'); return data; };
     const url = '/api/v1/images/' + resource + '/id';
     assert.equal((await request(url, { method: 'POST', form: form(field) })).status, 401);
     const missingFile = await request(url, { user: 'admin', method: 'POST' }); assert.equal(missingFile.body.reason, 'uploadMissing');
-    const invalid = await request(url, { user: 'admin', method: 'POST', form: form(field, 'text/plain') }); assert.equal(invalid.body.reason, 'uploadType');
+    assert.equal((await request(url, { user: 'admin', method: 'POST', form: form(field, 'text/plain') })).body.reason, 'uploadType');
     actions.length = 0;
+    for (const invalidForm of [form(field, 'image/png', Buffer.from('<html>active</html>')), form(field, 'image/png', png, 'payload.html')]) {
+      assert.equal((await request(url, { user: 'admin', method: 'POST', form: invalidForm })).body.reason, 'uploadType');
+      assert.deepEqual(actions, []);
+    }
     const result = await request(url, { user: 'admin', method: 'POST', form: form(field) });
     assert.equal(result.status, 200); require('@dance/schemas')[schema].parse(result.body); assert.equal(result.body[prefix + 'Path'], undefined);
     assert.deepEqual(actions, ['upload', 'update', 'delete:old.png']);
@@ -1466,7 +1505,7 @@ test('all image routes use strict DTOs and standard input/error contracts with s
     actions.length = 0;
     prisma[delegate].update = async () => { throw new Error('Private storage details'); };
     const failed = await request(url, { user: 'admin', method: 'POST', form: form(field) }); assert.equal(failed.status, 500); assert.equal(failed.body.reason, 'unexpected');
-    assert.deepEqual(actions, ['upload', 'delete:' + resource + '/new.png']); assert.ok(!JSON.stringify(failed.body).includes('Private'));
+    assert.deepEqual(actions, ['upload', 'delete:' + resource + '/new.webp']); assert.ok(!JSON.stringify(failed.body).includes('Private'));
   }
 });
 

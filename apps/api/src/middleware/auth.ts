@@ -50,25 +50,31 @@ export function createAuthMiddleware(prisma: PrismaClient) {
       },
     });
 
-    const permissionsByEvent = new Map<string | null, Set<string>>();
-    let isAdmin = false;
-
-    for (const ur of roles) {
-      if (ur.role.key === "admin" && ur.eventId === null) {
-        isAdmin = true;
-        break;
-      }
-      if (ur.role.key === "admin" || (["judge", "moderator"].includes(ur.role.key) && ur.eventId === null)) continue;
-      const eventKey = ur.eventId ?? null;
-      if (!permissionsByEvent.has(eventKey))
-        permissionsByEvent.set(eventKey, new Set());
-      for (const rp of ur.role.permissions) {
-        permissionsByEvent.get(eventKey)!.add(rp.permission.key);
-      }
-    }
+    const { isAdmin, permissionsByEvent } = resolveRoleAccess(roles);
 
     req.auth = { userId, sessionVersion: user.sessionVersion, isAdmin, permissionsByEvent };
 
     return next();
   };
+}
+
+export function resolveRoleAccess(roles: readonly { eventId: string | null; role: { key: string; permissions: readonly { permission: { key: string } }[] } }[]) {
+  const permissionsByEvent = new Map<string | null, Set<string>>();
+  let isAdmin = false;
+
+  for (const ur of roles) {
+    if (ur.role.key === "admin" && ur.eventId === null) {
+      isAdmin = true;
+      break;
+    }
+    if (ur.role.key === "admin" || (["judge", "moderator"].includes(ur.role.key) && ur.eventId === null)) continue;
+    const eventKey = ur.eventId ?? null;
+    if (!permissionsByEvent.has(eventKey))
+      permissionsByEvent.set(eventKey, new Set());
+    for (const rp of ur.role.permissions) {
+      permissionsByEvent.get(eventKey)!.add(rp.permission.key);
+    }
+  }
+
+  return { isAdmin, permissionsByEvent };
 }

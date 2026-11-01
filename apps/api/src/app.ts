@@ -1,11 +1,13 @@
 import express from "express";
 import cors from "cors";
-import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import { apiRouter } from "./routes/api";
 import { errorHandler } from "./errors/handler";
 import { NotFoundError } from "./errors";
 import type { RecoveryDelivery } from "./services/authRecovery";
+import { createAuthMiddleware } from "./middleware/auth";
+import { ImagesController } from "./controllers/ImagesController";
+import { asyncHandler } from "./errors/handler";
 
 // Construction has no listener, process handlers, or database/storage initialization.
 export function createApp(prisma: PrismaClient, recoveryDelivery?: RecoveryDelivery) {
@@ -13,7 +15,8 @@ export function createApp(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
   app.set("trust proxy", false);
   app.use(cors({ origin: "*" }));
   app.use(express.json());
-  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+  const images = new ImagesController(prisma);
+  app.get("/uploads/:resource/:filename", createAuthMiddleware(prisma), asyncHandler((req, res) => images.retrieve(req, res)));
 
   app.get("/health", async (_req, res) => {
     try {

@@ -8,27 +8,38 @@ Current implementation is local only. Sources:
 ## Current behavior
 
 - Startup installs LocalStorageService regardless of STORAGE_TYPE.
-- Files live under `process.cwd()/uploads`; normal scoped API execution uses
-  apps/api/uploads. STORAGE_PATH does not change it today.
-- Express serves `/uploads` publicly. STORAGE_PUBLIC_URL supplies the URL origin
-  (default http://localhost:4000); it does not add private access or authorization.
-- Multer buffers one file in memory, limiting it to 10 MiB and declared MIME
-  image/jpeg, image/png or image/webp. Content sniffing is not implemented.
-- Upload writes the new file, updates the row, then removes the previous file.
-  Database failure attempts new-file cleanup and retains the old file. Durable
-  provider compensation, orphan cleanup and retry handling remain incomplete.
+- Files live under configured STORAGE_PATH, resolved against the API working
+  directory (default ./uploads, normally apps/api/uploads). Strict canonical keys
+  and containment checks protect reads/writes/deletes. New keys use forward slashes
+  on every platform and exclusive creation; client filenames are never stored.
+- `/uploads/:resource/:filename` requires current authentication, live reference
+  and resource read access. No public static serving remains. STORAGE_PUBLIC_URL
+  is an optional validated URL base; default image URLs are origin-relative. Use
+  the API origin for the browser's protected Blob download helper.
+- Multer buffers one file, limited to 10 MiB with no extra fields/files. JPEG/PNG/
+  WebP extension/MIME/signature/decoded format must match. Sharp fully decodes and
+  re-encodes metadata-free WebP with a 16-megapixel input and 2048px output edge
+  bound; malformed, vector and animated input is rejected. See ADR-015.
+- Authorization precedes storage and is refreshed in the serializable reference/
+  audit transaction. Failed mutation attempts new-file cleanup and preserves the
+  old file. Successful commit precedes old-file cleanup; unreachable orphan files
+  may remain after crashes/cleanup failures. Superseded/orphan files are never
+  served. Durable compensation/cleanup/retry remains P8-MEDIA.
+- Existing legacy files are retained on disk, but noncanonical keys are no longer
+  served. Re-upload permitted images; no legacy transformation/deletion is run.
 - Current image routes target events, **users**, dancers and studios. There is
   no judge-image endpoint; old judge/storage-path response examples were obsolete.
 
 Exact paths, multipart field names and response DTOs:
 [image contract](api/images.md). All routes require authentication; resource
-ownership/permission enforcement is still P2-BOUNDARIES. Do not expose management
-upload UI before that gate. Entity deletion does not guarantee media cleanup.
+ownership/permission/content enforcement is implemented under P2-BOUNDARIES-UPLOADS.
+Image UI and full workflow release checks remain open. Entity deletion does not
+guarantee media cleanup.
 
 ## Future providers
 
-P8-MEDIA owns production/private provider selection, content validation, safe
-replacement and orphan handling; P3-MUSIC-MODEL owns music metadata/ownership.
+P8-MEDIA extends private provider selection, music validation and durable cleanup/
+retry; current raster protection is delivered in P2. P3-MUSIC-MODEL owns music metadata/ownership.
 Cloud-provider env fields are optional parsed settings, not installed adapters or
 conditional credential checks. Adding an SDK/import alone does not complete
 private access, deployment, backup, URL and migration policy. No cloud pricing or

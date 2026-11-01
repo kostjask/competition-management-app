@@ -1,90 +1,42 @@
-/**
- * Local File Storage Service
- * 
- * Free, self-hosted storage implementation. Files are stored on the server's filesystem.
- * Can be easily migrated to AWS S3 or other cloud providers later.
- */
-
-import { promises as fs } from "fs";
-import path from "path";
-import { StorageProvider } from "./storage";
-
-const UPLOAD_BASE_DIR = path.join(process.cwd(), "uploads");
-const PUBLIC_URL_BASE = process.env.STORAGE_PUBLIC_URL || "http://localhost:4000";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+import type { StorageProvider } from "./storage";
+import { config } from "../config/env";
+import { NotFoundError } from "../errors";
+import { canonicalImageName } from "./rasterImage";
 
 export class LocalStorageService implements StorageProvider {
-  async uploadFile(
-    file: { buffer: Buffer; mimetype: string },
-    directory: string,
-    filename: string,
-  ): Promise<string> {
-    // Validate inputs
-    if (!file.buffer || file.buffer.length === 0) {
-      throw new Error("File buffer is empty");
-    }
+  private readonly root: string;
+  constructor(root = config.storage.local.path) { this.root = path.resolve(root); }
 
-    if (!directory || !filename) {
-      throw new Error("Directory and filename are required");
-    }
-
-    // Sanitize filename to prevent directory traversal
-    const sanitizedFilename = path.basename(filename);
-    const dirPath = path.join(UPLOAD_BASE_DIR, directory);
-    const filePath = path.join(dirPath, sanitizedFilename);
-
-    // Ensure path is within upload directory
-    const resolvedPath = path.resolve(filePath);
-    const resolvedBase = path.resolve(UPLOAD_BASE_DIR);
-    if (!resolvedPath.startsWith(resolvedBase)) {
-      throw new Error("Invalid file path");
-    }
-
-    try {
-      // Create directory if it doesn't exist
-      await fs.mkdir(dirPath, { recursive: true });
-
-      // Write file
-      await fs.writeFile(filePath, file.buffer);
-
-      // Return relative path for storage
-      const relativePath = path.relative(UPLOAD_BASE_DIR, filePath);
-      return relativePath;
-    } catch (err) {
-      console.error("File upload error:", err);
-      throw new Error("Failed to upload file");
+  private location(key: string) {
+    const parts = key.split("/");
+    if (parts.length !== 2 || !["events", "users", "studios", "dancers"].includes(parts[0]!) || !canonicalImageName.test(parts[1]!)) throw new NotFoundError("Image");
+    const resolved = path.resolve(this.root, ...parts);
+    if (path.relative(this.root, resolved).startsWith("..") || path.isAbsolute(path.relative(this.root, resolved))) throw new NotFoundError("Image");
+    return resolved;
+  }
+  async uploadFile(file: { buffer: Buffer; mimetype: string }, directory: string, filename: string) {
+    if (file.mimetype !== "image/webp" || file.buffer.length === 0) throw new Error("Invalid canonical image");
+    const key = directory + "/" + filename;
+    const fullPath = this.location(key);
+    await fs.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.writeFile(fullPath, file.buffer, { flag: "wx" });
+    return key;
+  }
+  async readFile(key: string) {
+    try { return await fs.readFile(this.location(key)); }
+    catch (error) {
+      if (error instanceof Error && "code" in error && error.code === "ENOENT") throw new NotFoundError("Image");
+      throw error;
     }
   }
-
-  async deleteFile(filePath: string): Promise<void> {
-    if (!filePath) {
-      return; // Silently ignore empty paths
-    }
-
-    const fullPath = path.join(UPLOAD_BASE_DIR, filePath);
-
-    // Ensure path is within upload directory
-    const resolvedPath = path.resolve(fullPath);
-    const resolvedBase = path.resolve(UPLOAD_BASE_DIR);
-    if (!resolvedPath.startsWith(resolvedBase)) {
-      throw new Error("Invalid file path");
-    }
-
-    try {
-      await fs.unlink(fullPath);
-    } catch (err) {
-      // Silently ignore if file doesn't exist
-      if (!(err instanceof Error && "code" in err && err.code === "ENOENT")) {
-        console.error("File deletion error:", err);
-        throw new Error("Failed to delete file");
-      }
-    }
+  async deleteFile(key: string) {
+    try { await fs.unlink(this.location(key)); }
+    catch (error) { if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error; }
   }
-
-  getFileUrl(filePath: string): string {
-    if (!filePath) {
-      return "";
-    }
-    // Return the public URL path for serving
-    return `${PUBLIC_URL_BASE}/uploads/${filePath}`;
+  getFileUrl(key: string) {
+    this.location(key);
+    return (config.storage.publicUrl?.replace(/\/$/, "") ?? "") + "/uploads/" + key;
   }
 }

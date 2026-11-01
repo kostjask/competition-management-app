@@ -48,11 +48,18 @@ try {
     $expectedSql += "`n" + (($foundationSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $deliverySql = Get-Content -Raw apps/api/prisma/migrations/20261025070000_email_delivery/migration.sql
     $expectedSql += "`n" + (($deliverySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $imageAuditSql = Get-Content -Raw apps/api/prisma/migrations/20261101000000_image_audit/migration.sql
+    $expectedSql += "`n" + (($imageAuditSql -split "`n" | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
         $sql += "CREATE SCHEMA $testSchema; SET search_path TO $testSchema;`n"
         foreach ($migration in $migrations) {
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261101000000_image_audit') {
+                $sql += @'
+INSERT INTO "AuditLog" (id, action, "actorKind", "targetType", "targetId", metadata, "createdAt") VALUES ('image-audit-upgrade', 'ACCOUNT_REGISTERED', 'SYSTEM', 'USER', 'user', '{}', '2026-01-01');
+'@
+            }
             if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20260219173645_added_deleted_by_column') {
                 $sql += @'
 INSERT INTO "Event" (id, name, "startsAt", "endsAt") VALUES ('event', 'Fixture', '2026-01-01', '2026-01-02');
@@ -87,6 +94,11 @@ END $$;
 '@
         if ($testSchema -eq $upgradeSchema) {
             $sql += Get-Content -Raw scripts/test-migrations-upgrade.sql
+            $sql += @'
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM "AuditLog" WHERE id = 'image-audit-upgrade' AND action = 'ACCOUNT_REGISTERED' AND "actorKind" = 'SYSTEM' AND "actorId" IS NULL AND "targetType" = 'USER' AND "targetId" = 'user' AND metadata = '{}'::jsonb AND "createdAt" = '2026-01-01') THEN RAISE EXCEPTION 'Image audit migration changed historical evidence'; END IF;
+END $$;
+'@
         }
     }
     # Compare tables/columns, enum labels, constraints and indexes with schema-derived DDL.

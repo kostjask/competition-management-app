@@ -36,6 +36,7 @@ const EnvSchema = z.object({
   // Storage
   STORAGE_TYPE: z.enum(["local", "s3", "gcs"]).default("local"),
   STORAGE_PATH: z.string().default("./uploads"),
+  STORAGE_PUBLIC_URL: z.string().url().optional(),
 
   // AWS S3 (optional, required if STORAGE_TYPE=s3)
   AWS_REGION: z.string().optional(),
@@ -146,6 +147,7 @@ export const config = {
   // Storage
   storage: {
     type: env.STORAGE_TYPE,
+    publicUrl: env.STORAGE_PUBLIC_URL,
     local: {
       path: env.STORAGE_PATH,
     },

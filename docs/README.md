@@ -54,6 +54,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [012](adr/012-durable-domain-audit.md) | Minimal transactional immutable audit and privacy-safe actor/metadata policy |
 | [013](adr/013-onboarding-staff-and-recipient-locale.md) | Recoverable drafts, referenced staff/studio scope, removal history and recipient locale policy |
 | [014](adr/014-transactional-email-dispatch.md) | Resend, encrypted durable dispatch, bounded idempotent retries and truthful acknowledgement |
+| [015](adr/015-image-boundaries.md) | Image ownership/active parents, canonical raster decoding, private retrieval and audited replacement |
 
 ADR-003 lifecycle and ADR-004 scoring are reserved, unaccepted decisions. Their
 required scope is in [DOMAIN](DOMAIN.md#pending-model-decisions); no files or

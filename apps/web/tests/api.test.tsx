@@ -22,3 +22,27 @@ test("API client preserves semantic errors and handles network/non-JSON/multipar
   assert.equal(await apiClient.delete("/test"), undefined);
   assert.throws(() => decode(AuthResponseSchema, { token: "not-a-session" }), error => error instanceof ApiError && error.reason === "invalidResponse");
 });
+
+test("private image client sends credentials only to canonical API-origin images", async t => {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; storage.clear(); });
+  storage.set("auth_token", "synthetic-image-session");
+  const url = "/uploads/users/00000000-0000-4000-8000-000000000000.webp";
+  let requests = 0;
+  globalThis.fetch = async (target, options) => {
+    requests++;
+    assert.equal(String(target), "http://localhost:4000" + url);
+    assert.equal(new Headers(options?.headers).get("Authorization"), "Bearer synthetic-image-session");
+    assert.equal(options?.redirect, "error"); assert.equal(options?.cache, "no-store");
+    return new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/webp" } });
+  };
+  assert.equal((await apiClient.image(url)).type, "image/webp");
+  for (const invalid of ["https://foreign.example.invalid" + url, url + "?token=secret", "/uploads/payload.html", "http://[invalid", "//foreign.example.invalid" + url]) {
+    await assert.rejects(apiClient.image(invalid), error => error instanceof ApiError && error.reason === "invalidResponse");
+  }
+  assert.equal(requests, 1, "Rejected URLs must never receive bearer credentials");
+  globalThis.fetch = async () => new Response("active", { headers: { "Content-Type": "text/html" } });
+  await assert.rejects(apiClient.image(url), error => error instanceof ApiError && error.reason === "invalidResponse");
+  globalThis.fetch = async () => new Response(JSON.stringify({ code: "FORBIDDEN", reason: "ownershipRequired", params: {}, issues: [] }), { status: 403 });
+  await assert.rejects(apiClient.image(url), error => error instanceof ApiError && error.reason === "ownershipRequired");
+});

@@ -16,8 +16,10 @@ approval and stage. Event staff access is limited to their assigned event/task;
 judges need scoring/assignment data, not private billing/contact payloads or a
 complete birth-date/photo export by default. Controlled global administrators
 handle access and approved support/export requests. Contact email alone proves
-no membership. Existing upload ownership/public serving and scoped-admin defects
-remain release blockers; this document does not make those paths compliant.
+no membership. Upload ownership/content and private retrieval are now enforced
+under [ADR-015](adr/015-image-boundaries.md); scoped-admin bypass is corrected
+locally. Actual deployment provenance, provider/cleanup and organizational policy
+review remain separate release gates.
 
 Public output must use approved minimal publication DTOs. Birth dates, contact,
 billing data, private upload paths, account details and audit records are never

@@ -143,6 +143,7 @@ async function main() {
     await require('./check-dev-auth.cjs')({ client, serverEnv: env });
     require('./check-auth-recovery.cjs')({ serverEnv: env });
     require('./check-foundation.cjs')({ serverEnv: env });
+    require('./check-image-boundaries.cjs')({ serverEnv: env });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {

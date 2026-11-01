@@ -2,7 +2,7 @@ import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 
 export const AuditActionSchema = z.enum([
-  "ACCOUNT_REGISTERED", "EMAIL_VERIFIED", "EMAIL_CORRECTED", "PASSWORD_RESET",
+  "IMAGE_REPLACED", "ACCOUNT_REGISTERED", "EMAIL_VERIFIED", "EMAIL_CORRECTED", "PASSWORD_RESET",
   "TOKEN_ROTATED", "INVITATION_CREATED", "INVITATION_ACCEPTED", "INVITATION_REVOKED",
   "INVITATION_ROTATED", "ACCESS_GRANTED", "ACCESS_RECONCILED", "ACCESS_REMOVED", "STUDIO_APPROVAL_CHANGED", "REGISTRATION_APPROVAL_CHANGED",
 ]);
@@ -18,7 +18,7 @@ export const AuditMetadataSchema = z.strictObject({
 });
 export const AuditRecordSchema = z.strictObject({
   action: AuditActionSchema, actor: AuditActorSchema,
-  targetType: z.enum(["USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION"]),
+  targetType: z.enum(["EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION"]),
   targetId: IdSchema, eventId: IdSchema.nullable().optional(), studioId: IdSchema.nullable().optional(),
   metadata: AuditMetadataSchema.default({}),
 });
