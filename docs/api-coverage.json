@@ -982,6 +982,104 @@
         "inactiveRecord": "scripts/check-auth-recovery.cjs",
         "conflict": "scripts/check-auth-recovery.cjs"
       }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/logout",
+      "tests": {
+        "success": "browser sessions isolate transport",
+        "invalidInput": "browser sessions isolate transport",
+        "authentication": "browser sessions isolate transport",
+        "permission": "N/A: own eligible account only",
+        "crossParent": "browser sessions isolate transport",
+        "inactiveRecord": "scripts/check-browser-session.cjs",
+        "conflict": "scripts/check-browser-session.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/onboarding/read",
+      "tests": {
+        "success": "scripts/check-public-onboarding.cjs",
+        "invalidInput": "public onboarding rejects generic signup",
+        "authentication": "N/A: pending password proof or eligible owner session; scripts/check-public-onboarding.cjs",
+        "permission": "scripts/check-public-onboarding.cjs",
+        "crossParent": "scripts/check-public-onboarding.cjs",
+        "inactiveRecord": "scripts/check-public-onboarding.cjs",
+        "conflict": "scripts/check-public-onboarding.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/onboarding/save",
+      "tests": {
+        "success": "scripts/check-public-onboarding.cjs",
+        "invalidInput": "public onboarding rejects generic signup",
+        "authentication": "N/A: pending password proof or eligible owner session; scripts/check-public-onboarding.cjs",
+        "permission": "scripts/check-public-onboarding.cjs",
+        "crossParent": "scripts/check-public-onboarding.cjs",
+        "inactiveRecord": "scripts/check-public-onboarding.cjs",
+        "conflict": "scripts/check-public-onboarding.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/onboarding/cancel",
+      "tests": {
+        "success": "scripts/check-public-onboarding.cjs",
+        "invalidInput": "public onboarding rejects generic signup",
+        "authentication": "N/A: pending password proof or eligible owner session; scripts/check-public-onboarding.cjs",
+        "permission": "scripts/check-public-onboarding.cjs",
+        "crossParent": "scripts/check-public-onboarding.cjs",
+        "inactiveRecord": "scripts/check-public-onboarding.cjs",
+        "conflict": "scripts/check-public-onboarding.cjs"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "POST",
+      "path": "/:invitationId/resend",
+      "tests": {
+        "success": "scripts/check-invitation-lifecycle.cjs",
+        "invalidInput": "invitation lifecycle commands require",
+        "authentication": "all mounted resource groups",
+        "permission": "scripts/check-admin-scope.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs",
+        "crossParent": "scripts/check-admin-scope.cjs",
+        "inactiveRecord": "scripts/check-invitation-lifecycle.cjs",
+        "conflict": "scripts/check-invitation-lifecycle.cjs"
+      }
+    },
+    {
+      "router": "invitations",
+      "exportName": "invitationsRouter",
+      "mount": "/invitations",
+      "method": "POST",
+      "path": "/:invitationId/revoke",
+      "tests": {
+        "success": "scripts/check-invitation-lifecycle.cjs",
+        "invalidInput": "invitation lifecycle commands require",
+        "authentication": "all mounted resource groups",
+        "permission": "scripts/check-admin-scope.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs",
+        "crossParent": "scripts/check-admin-scope.cjs",
+        "inactiveRecord": "scripts/check-invitation-lifecycle.cjs",
+        "conflict": "scripts/check-invitation-lifecycle.cjs"
+      }
     }
   ]
 }

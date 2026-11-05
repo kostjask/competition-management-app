@@ -14,7 +14,7 @@ export function recipientLocale(explicit?: RecipientLocale | null, account?: Rec
 
 export function invitationState(row: { usedAt: Date | null; supersededAt: Date | null; revokedAt: Date | null; expiresAt: Date }, now = new Date()) {
   if (row.usedAt) return "ACCEPTED";
-  if (row.supersededAt) return "SUPERSEDED";
   if (row.revokedAt) return "REVOKED";
+  if (row.supersededAt) return "SUPERSEDED";
   return row.expiresAt <= now ? "EXPIRED" : "PENDING";
 }

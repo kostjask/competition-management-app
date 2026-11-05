@@ -14,8 +14,7 @@ It builds Node 24 API and Vite assets, serves the SPA/API through one origin, ru
 migrations as a one-shot dependency, and keeps PostgreSQL private. The only host
 port is 127.0.0.1:8080. Persistent database/upload volumes are separate from the
 development Compose project. Do not change that binding to a public interface.
-The unfinished invitation identity/upload/boundary/session workflows still block
-public access. Fake production mail refuses requests; it never claims delivery.
+Local invitation identity, image and transport boundaries are implemented; signup and workflow/deployment gates still block public access. Fake production mail refuses requests; it never claims delivery.
 
 ## Rehearse locally
 
@@ -30,7 +29,14 @@ public access. Fake production mail refuses requests; it never claims delivery.
    docker compose --env-file deploy/staging.env -f docker/docker-compose.staging.yml up -d --wait
    ```
 
-3. Check http://127.0.0.1:8080/health and the app. The demonstration seed is
+3. Browser cookie sessions now require HTTPS for production Secure cookies. The
+   existing loopback HTTP rehearsal remains guest/health evidence only; do not
+   weaken cookie flags to claim an authenticated rollout. Apply migration 28 and
+   deploy API/shared contracts/browser together before the session rehearsal.
+   Set STAGING_CORS_ORIGIN to the exact browser origin used for the rehearsal
+   (http://localhost:8080 and http://127.0.0.1:8080 are the explicit local defaults).
+   Production now refuses wildcard CORS.
+   Check http://127.0.0.1:8080/health and the app. The demonstration seed is
    intentionally unavailable in production. Do not copy seed passwords/users to
    staging. Controlled administrator provisioning remains an operational task;
    roleless account creation alone grants no administration.
@@ -51,6 +57,9 @@ For real email, create the Resend account, verify a controlled sending subdomain
 using its supplied DNS records, configure EMAIL_FROM and a restricted API key in
 the hosting secret manager, and disable link/open tracking for identity messages.
 Set STAGING_EMAIL_PROVIDER=resend, HTTPS STAGING_WEB_ORIGIN and the queue key.
+Set STAGING_CORS_ORIGIN to the hosted HTTPS browser origin. Keep proxy trust false
+until the ingress topology and shared limits are reviewed; local rehearsal clients
+share the ingress socket-IP bucket. API headers do not configure SPA-host headers.
 No credentials belong in Git. Verify ET/EN/RU verification, resend, invite and
 reset messages using controlled recipients. Confirm provider acceptance separately
 from inbox receipt, expiry/replay, delivery retries and no secret-bearing logs.

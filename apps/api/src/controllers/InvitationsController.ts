@@ -2,17 +2,16 @@ import { serializeDto } from "../utils/dto";
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { CreateInvitationSchema, AcceptInvitationSchema, InvitationTokenParamsSchema, InvitationSchema, InvitationPreviewSchema, CreateInvitationResponseSchema, AcceptInvitationResponseSchema } from "@dance/schemas";
-import { config } from "../config/env";
+import { CreateInvitationSchema, AcceptInvitationSchema, InvitationTokenParamsSchema, InvitationIdParamsSchema, InvitationCommandSchema, InvitationSchema, InvitationPreviewSchema, CreateInvitationResponseSchema, AcceptInvitationResponseSchema, ResendInvitationResponseSchema, RevokeInvitationResponseSchema } from "@dance/schemas";
+import { issueSession } from "../services/browserSession";
 import { sendInvitationEmail } from "../utils/email";
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../errors";
 import { BaseController } from "./BaseController";
 import { newIdentitySecret, tokenDigest } from "../services/identityTokens";
 import { appendAudit } from "../services/audit";
-import { assertStaffScope, recipientLocale } from "../services/staffPolicy";
+import { assertStaffScope, recipientLocale, invitationState } from "../services/staffPolicy";
 
-const invitationSelect = { id: true, email: true, roleKey: true, eventId: true, createdAt: true, expiresAt: true, usedAt: true } satisfies Prisma.InvitationSelect;
+const invitationSelect = { id: true, email: true, roleKey: true, eventId: true, createdAt: true, expiresAt: true, usedAt: true, revokedAt: true, supersededAt: true } satisfies Prisma.InvitationSelect;
 export class InvitationsController extends BaseController {
   private admin(req: Request) { if (!this.isAdmin(req)) throw new ForbiddenError(); }
   private async mutation<T>(operation: () => Promise<T>): Promise<T> {
@@ -32,7 +31,7 @@ export class InvitationsController extends BaseController {
   async list(req: Request, res: Response): Promise<void> {
     this.admin(req);
     const rows = await this.prisma.invitation.findMany({ select: invitationSelect, orderBy: [{ createdAt: "desc" }, { id: "asc" }] });
-    res.json(rows.map(row => serializeDto(InvitationSchema, { id: row.id, email: row.email, roleKey: row.roleKey, eventId: row.eventId, createdAt: row.createdAt.toISOString(), expiresAt: row.expiresAt.toISOString(), usedAt: row.usedAt?.toISOString() ?? null })));
+    res.json(rows.map(row => serializeDto(InvitationSchema, { id: row.id, email: row.email, roleKey: row.roleKey, eventId: row.eventId, createdAt: row.createdAt.toISOString(), expiresAt: row.expiresAt.toISOString(), usedAt: row.usedAt?.toISOString() ?? null, revokedAt: row.revokedAt?.toISOString() ?? null, supersededAt: row.supersededAt?.toISOString() ?? null, status: invitationState(row) })));
   }
   async create(req: Request, res: Response): Promise<void> {
     this.admin(req);
@@ -66,9 +65,37 @@ export class InvitationsController extends BaseController {
     const { token } = InvitationTokenParamsSchema.parse(req.params);
     const invitation = await this.prisma.invitation.findUnique({ where: { tokenDigest: tokenDigest("INVITATION", token) }, include: { event: { select: { id: true, name: true } } } });
     if (!invitation) throw new NotFoundError("Invitation");
-    this.valid(invitation);
     assertStaffScope(invitation);
-    res.json(serializeDto(InvitationPreviewSchema, { email: invitation.email, roleKey: invitation.roleKey, event: invitation.event ? { id: invitation.event.id, name: invitation.event.name } : null, expiresAt: invitation.expiresAt.toISOString() }));
+    const account = await this.prisma.user.findUnique({ where: { email: invitation.email }, select: { id: true } });
+    res.json(serializeDto(InvitationPreviewSchema, { email: invitation.email, roleKey: invitation.roleKey, event: invitation.event ? { id: invitation.event.id, name: invitation.event.name } : null, expiresAt: invitation.expiresAt.toISOString(), status: invitationState(invitation), accountExists: !!account }));
+  }
+  async resend(req: Request, res: Response): Promise<void> { await this.command(req, res, "resend"); }
+  async revoke(req: Request, res: Response): Promise<void> { await this.command(req, res, "revoke"); }
+  private async command(req: Request, res: Response, kind: "resend" | "revoke"): Promise<void> {
+    this.admin(req);
+    const { invitationId } = InvitationIdParamsSchema.parse(req.params);
+    const body = InvitationCommandSchema.parse(req.body);
+    await this.mutation(() => this.prisma.$transaction(async tx => {
+      const row = await tx.invitation.findUnique({ where: { id: invitationId }, include: { event: { select: { id: true, name: true } } } });
+      if (!row) throw new NotFoundError("Invitation");
+      assertStaffScope(row);
+      if (row.expiresAt.toISOString() !== body.expiresAt || row.usedAt) throw new ConflictError("Invitation changed");
+      if (kind === "revoke" && row.revokedAt) return;
+      if (row.revokedAt || row.supersededAt || row.expiresAt <= new Date()) throw new ConflictError("Invitation is not pending");
+      if (!row.event) throw new NotFoundError("Event");
+      const role = await tx.role.findUnique({ where: { key: row.roleKey }, select: { id: true } });
+      if (!role || role.id !== row.roleId) throw new ConflictError("Invitation role changed");
+      const secret = newIdentitySecret("INVITATION");
+      if (secret.expiresAt.getTime() === row.expiresAt.getTime()) secret.expiresAt.setTime(secret.expiresAt.getTime() + 1);
+      const now = new Date();
+      const changed = await tx.invitation.updateMany({ where: { id: row.id, tokenDigest: row.tokenDigest, expiresAt: row.expiresAt, usedAt: null, revokedAt: null, supersededAt: null },
+        data: kind === "resend" ? { tokenDigest: secret.digest, expiresAt: secret.expiresAt } : { revokedAt: now, supersededAt: now } });
+      if (changed.count !== 1) throw new ConflictError("Invitation changed");
+      await appendAudit(tx, { action: kind === "resend" ? "INVITATION_ROTATED" : "INVITATION_REVOKED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "INVITATION", targetId: row.id, eventId: row.eventId });
+      if (kind === "resend") await sendInvitationEmail({ to: row.email, token: secret.raw, roleKey: row.roleKey, eventName: row.event.name, locale: row.locale }, tx);
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }));
+    res.json(kind === "resend" ? serializeDto(ResendInvitationResponseSchema, { invitationId, messageId: "invitationResent", delivery: "unconfirmed" })
+      : serializeDto(RevokeInvitationResponseSchema, { invitationId, messageId: "invitationRevoked" }));
   }
   async accept(req: Request, res: Response): Promise<void> {
     const body = AcceptInvitationSchema.parse(req.body);
@@ -115,7 +142,7 @@ export class InvitationsController extends BaseController {
     const { user, accountCreated } = result;
     res.status(201).json(serializeDto(AcceptInvitationResponseSchema, {
       message: "Invitation accepted", messageId: "invitationAccepted", user: { id: user.id, email: user.email, name: user.name },
-      ...(accountCreated ? { accountCreated: true, token: jwt.sign({ userId: user.id, sessionVersion: user.sessionVersion }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }), tokenType: "Bearer" } : { accountCreated: false }),
+      ...(accountCreated ? { accountCreated: true, ...issueSession(req, res, user) } : { accountCreated: false }),
     }));
   }
 }

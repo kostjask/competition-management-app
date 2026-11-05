@@ -1,21 +1,22 @@
 import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import {
   RegisterSchema, LoginSchema, VerifyEmailSchema, RegisterResponseSchema,
-  AuthResponseSchema, VerifyEmailResponseSchema, UserProfileSchema,
+  SessionResponseSchema, SessionVerifyEmailResponseSchema, UserProfileSchema, LogoutSchema,
   ResendVerificationSchema, CorrectEmailSchema, RequestPasswordResetSchema, ResetPasswordSchema,
   AuthRequestAcceptedSchema, ResetPasswordResponseSchema,
+  OnboardingReadSchema, OnboardingWriteSchema, OnboardingCancelSchema, OnboardingContextSchema, OnboardingProofSchema,
 } from "@dance/schemas";
 import type { z } from "zod";
-import { sendVerificationEmail } from "../utils/email";
-import { config } from "../config/env";
+import { registerStudioApplicant } from "../services/studioSignup";
+import { issueSession, clearBrowserSession } from "../services/browserSession";
 import { ConflictError, UnauthorizedError, ForbiddenError, NotFoundError, InternalServerError } from "../errors";
 import { BaseController } from "./BaseController";
-import { newIdentitySecret, verifyAccountEmail, recoverAccountPassword } from "../services/identityTokens";
+import { verifyAccountEmail, recoverAccountPassword } from "../services/identityTokens";
 import { requestAuthRecovery, defaultRecoveryDelivery, type RecoveryDelivery } from "../services/authRecovery";
 import { appendAudit } from "../services/audit";
+import { provenOnboarding } from "../services/onboarding";
 
 const identitySelect = { id: true, email: true, name: true, sessionVersion: true } satisfies Prisma.UserSelect;
 const profileSelect = {
@@ -32,17 +33,27 @@ function response<T>(schema: z.ZodType<T>, data: unknown): T {
   if (!result.success) throw new InternalServerError();
   return result.data;
 }
-function session(user: Prisma.UserGetPayload<{ select: typeof identitySelect }>) {
-  return {
-    token: jwt.sign({ userId: user.id, sessionVersion: user.sessionVersion }, config.auth.jwtSecret, { expiresIn: config.auth.jwtExpiry }),
-    tokenType: "Bearer",
-    user: { id: user.id, email: user.email, name: user.name },
-  };
-}
 
 export class AuthController extends BaseController {
   constructor(prisma: PrismaClient, private delivery: RecoveryDelivery = defaultRecoveryDelivery) {
     super(prisma);
+  }
+  private onboardingOwner(req: Request, body: unknown) {
+    if (body && typeof body === "object" && "email" in body) return OnboardingProofSchema.parse({ email: body.email, password: "password" in body ? body.password : undefined });
+    if (!req.auth) throw new UnauthorizedError();
+    return req.auth;
+  }
+  async readOnboarding(req: Request, res: Response): Promise<void> {
+    const body = OnboardingReadSchema.parse(req.body);
+    res.json(response(OnboardingContextSchema, await provenOnboarding(this.prisma, this.onboardingOwner(req, body), { kind: "read" })));
+  }
+  async saveOnboarding(req: Request, res: Response): Promise<void> {
+    const body = OnboardingWriteSchema.parse(req.body);
+    res.json(response(OnboardingContextSchema, await provenOnboarding(this.prisma, this.onboardingOwner(req, body), { kind: "save", draft: body.draft })));
+  }
+  async cancelOnboarding(req: Request, res: Response): Promise<void> {
+    const body = OnboardingCancelSchema.parse(req.body);
+    res.json(response(OnboardingContextSchema, await provenOnboarding(this.prisma, this.onboardingOwner(req, body), { kind: "cancel", revision: body.revision })));
   }
 
   async resendVerification(req: Request, res: Response): Promise<void> {
@@ -67,28 +78,7 @@ export class AuthController extends BaseController {
   }
   async register(req: Request, res: Response): Promise<void> {
     const body = RegisterSchema.parse(req.body);
-    const existing = await this.prisma.user.findUnique({ where: { email: body.email }, select: { id: true } });
-    if (existing) throw new ConflictError("Email already registered", undefined, "emailRegistered");
-    const hashedPassword = await bcrypt.hash(body.password, 10);
-    const verification = newIdentitySecret("VERIFY_EMAIL");
-    let user: Prisma.UserGetPayload<{ select: typeof identitySelect }>;
-    try {
-      user = await this.prisma.$transaction(async tx => {
-        const created = await tx.user.create({
-          data: { email: body.email, name: body.name, password: hashedPassword, emailVerified: false, preferredLocale: body.locale ?? null,
-            accountTokens: { create: { email: body.email, purpose: "VERIFY_EMAIL", digest: verification.digest, expiresAt: verification.expiresAt } } },
-          select: identitySelect,
-        });
-        await appendAudit(tx, { action: "ACCOUNT_REGISTERED", actor: { kind: "ANONYMOUS" }, targetType: "USER", targetId: created.id });
-        await sendVerificationEmail({ to: created.email, token: verification.raw, name: created.name, locale: body.locale }, tx);
-        return created;
-      });
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("Email already registered", undefined, "emailRegistered");
-      }
-      throw error;
-    }
+    const user = await registerStudioApplicant(this.prisma, body);
     res.status(201).json(response(RegisterResponseSchema, {
       message: "Registration accepted. Email delivery is unconfirmed.", messageId: "registered", userId: user.id, delivery: "unconfirmed",
     }));
@@ -97,7 +87,7 @@ export class AuthController extends BaseController {
   async verifyEmail(req: Request, res: Response): Promise<void> {
     const { token } = VerifyEmailSchema.parse(req.body);
     const user = await verifyAccountEmail(this.prisma, token);
-    res.json(response(VerifyEmailResponseSchema, { message: "Email verified successfully", messageId: "emailVerified", ...session(user) }));
+    res.json(response(SessionVerifyEmailResponseSchema, { message: "Email verified successfully", messageId: "emailVerified", ...issueSession(req, res, user) }));
   }
 
   async login(req: Request, res: Response): Promise<void> {
@@ -110,7 +100,20 @@ export class AuthController extends BaseController {
     }
     if (!user.active) throw new ForbiddenError("Account is disabled", "accountDisabled");
     if (!user.emailVerified) throw new ForbiddenError("Verify your email before signing in", "emailVerificationRequired");
-    res.json(response(AuthResponseSchema, session(user)));
+    res.json(response(SessionResponseSchema, issueSession(req, res, user)));
+  }
+
+  async logout(req: Request, res: Response): Promise<void> {
+    LogoutSchema.parse(req.body ?? {});
+    const actor = req.auth;
+    if (!actor) throw new UnauthorizedError();
+    await this.prisma.$transaction(async tx => {
+      const changed = await tx.user.updateMany({ where: { id: actor.userId, sessionVersion: actor.sessionVersion, active: true, emailVerified: true }, data: { sessionVersion: { increment: 1 } } });
+      if (changed.count !== 1) throw new UnauthorizedError();
+      await appendAudit(tx, { action: "SESSION_REVOKED", actor: { kind: "USER", userId: actor.userId }, targetType: "USER", targetId: actor.userId });
+    });
+    clearBrowserSession(res);
+    res.status(204).end();
   }
 
   async getProfile(req: Request, res: Response): Promise<void> {
@@ -120,6 +123,7 @@ export class AuthController extends BaseController {
     res.json(response(UserProfileSchema, {
       id: user.id, email: user.email, name: user.name, createdAt: user.createdAt.toISOString(),
       isAdmin: req.auth.isAdmin,
+      permissions: [...req.auth.permissionsByEvent].map(([eventId, keys]) => ({ eventId, keys: [...keys].sort() })),
       roles: user.roles.map(assignment => ({
         id: assignment.id, eventId: assignment.eventId,
         role: { id: assignment.role.id, key: assignment.role.key, name: assignment.role.name },

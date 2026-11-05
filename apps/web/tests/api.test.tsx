@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { apiClient, decode } from "../src/api/client";
+import { apiClient, decode, privateImageUrl } from "../src/api/client";
 import { ApiError, toUiError } from "../src/api/error";
 import { AuthResponseSchema } from "@dance/schemas";
 const storage = new Map<string, string>();
@@ -23,16 +23,19 @@ test("API client preserves semantic errors and handles network/non-JSON/multipar
   assert.throws(() => decode(AuthResponseSchema, { token: "not-a-session" }), error => error instanceof ApiError && error.reason === "invalidResponse");
 });
 
-test("private image client sends credentials only to canonical API-origin images", async t => {
+test("private image client sends cookie credentials only to canonical API-origin images", async t => {
   const original = globalThis.fetch;
   t.after(() => { globalThis.fetch = original; storage.clear(); });
   storage.set("auth_token", "synthetic-image-session");
   const url = "/uploads/users/00000000-0000-4000-8000-000000000000.webp";
+  assert.equal(privateImageUrl(url, "/api/v1", "https://app.example.invalid"), "https://app.example.invalid" + url);
+  assert.throws(() => privateImageUrl("https://foreign.invalid" + url, "/api/v1", "https://app.example.invalid"), error => error instanceof ApiError && error.reason === "invalidResponse");
   let requests = 0;
   globalThis.fetch = async (target, options) => {
     requests++;
     assert.equal(String(target), "http://localhost:4000" + url);
-    assert.equal(new Headers(options?.headers).get("Authorization"), "Bearer synthetic-image-session");
+    assert.equal(new Headers(options?.headers).get("Authorization"), null);
+    assert.equal(options?.credentials, "include");
     assert.equal(options?.redirect, "error"); assert.equal(options?.cache, "no-store");
     return new Response(new Uint8Array([1, 2, 3]), { headers: { "Content-Type": "image/webp" } });
   };
@@ -40,7 +43,7 @@ test("private image client sends credentials only to canonical API-origin images
   for (const invalid of ["https://foreign.example.invalid" + url, url + "?token=secret", "/uploads/payload.html", "http://[invalid", "//foreign.example.invalid" + url]) {
     await assert.rejects(apiClient.image(invalid), error => error instanceof ApiError && error.reason === "invalidResponse");
   }
-  assert.equal(requests, 1, "Rejected URLs must never receive bearer credentials");
+  assert.equal(requests, 1, "Rejected URLs must never receive cookie credentials");
   globalThis.fetch = async () => new Response("active", { headers: { "Content-Type": "text/html" } });
   await assert.rejects(apiClient.image(url), error => error instanceof ApiError && error.reason === "invalidResponse");
   globalThis.fetch = async () => new Response(JSON.stringify({ code: "FORBIDDEN", reason: "ownershipRequired", params: {}, issues: [] }), { status: 403 });

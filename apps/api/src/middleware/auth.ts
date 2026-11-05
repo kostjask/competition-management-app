@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import type { PrismaClient } from "@prisma/client";
 import { UnauthorizedError } from "../errors";
 import { config } from "../config/env";
+import { cookieToken } from "../services/browserSession";
 
 export interface AuthContext {
   userId: string;
@@ -21,13 +22,16 @@ export function createAuthMiddleware(prisma: PrismaClient) {
     if (config.dev.authBypass) {
       identity = { email: config.dev.authEmail };
     } else {
-      const authHeader = req.headers.authorization ?? "";
-      if (!authHeader.startsWith("Bearer ")) return next(new UnauthorizedError());
-      const token = authHeader.slice("Bearer ".length).trim();
+      const authHeader = req.headers.authorization;
+      const cookie = cookieToken(req);
+      if (authHeader !== undefined && cookie !== undefined) return next(new UnauthorizedError());
+      if (authHeader !== undefined && !authHeader.startsWith("Bearer ")) return next(new UnauthorizedError());
+      const token = cookie ?? authHeader?.slice("Bearer ".length).trim();
       if (!token) return next(new UnauthorizedError());
       try {
         const payload = jwt.verify(token, config.auth.jwtSecret);
         if (typeof payload !== "object" || typeof payload.userId !== "string" || !payload.userId) throw new Error("Invalid identity");
+        if (cookie !== undefined ? payload.transport !== "cookie" : payload.transport !== undefined) throw new Error("Wrong transport");
         if (typeof payload.sessionVersion !== "number" || !Number.isInteger(payload.sessionVersion) || payload.sessionVersion < 0 || payload.sessionVersion > 2147483647) throw new Error("Invalid session revision");
         identity = { id: payload.userId, sessionVersion: payload.sessionVersion };
       } catch {

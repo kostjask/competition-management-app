@@ -3,7 +3,7 @@ import { AppError } from "../errors";
 import { config } from "../config/env";
 
 // Process-local protection for these new public endpoints. Proxy trust stays false.
-export function authRecoveryLimit(options = config.security.rateLimit, now = Date.now): RequestHandler {
+export function requestLimit(options = config.security.rateLimit, now = Date.now): RequestHandler {
   const buckets = new Map<string, { count: number; until: number }>();
   let nextCleanup = 0;
   return (req, res, next) => {
@@ -21,10 +21,12 @@ export function authRecoveryLimit(options = config.security.rateLimit, now = Dat
     }
     if (!bucket || bucket.count >= options.maxRequests) {
       res.setHeader("Retry-After", String(Math.max(1, Math.ceil(((bucket?.until ?? time + options.windowMs) - time) / 1000))));
-      next(new AppError("Too many recovery requests", 429, "TOO_MANY_REQUESTS", undefined, "tooManyRequests"));
+      next(new AppError("Too many requests", 429, "TOO_MANY_REQUESTS", undefined, "tooManyRequests"));
       return;
     }
     bucket.count++;
     next();
   };
 }
+
+export const authRecoveryLimit = requestLimit;

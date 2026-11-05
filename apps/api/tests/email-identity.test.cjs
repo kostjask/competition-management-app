@@ -7,7 +7,7 @@ test('account and invitation inputs share canonical email identity', () => {
   const expected = 'person.tag+studio@example.invalid';
   assert.equal(EmailSchema.parse(email), expected);
   assert.equal(LoginSchema.parse({ email, password: 'password123' }).email, expected);
-  assert.equal(RegisterSchema.parse({ email, name: 'Fixture', password: 'password123' }).email, expected);
+  assert.equal(RegisterSchema.parse({ onboarding: require('../../../scripts/fixtures/studio-signup.cjs')(), email, name: 'Fixture', password: 'password123' }).email, expected);
   assert.equal(CreateInvitationSchema.parse({ email, roleKey: 'judge', eventId: 'fixture' }).email, expected);
   assert.notEqual(EmailSchema.parse('person@example.invalid'), expected);
   for (const invalid of ['person @example.invalid', '\tperson@example.invalid', 'person@example.invalid\n', 'pérson@example.invalid', 'K@example.invalid']) {

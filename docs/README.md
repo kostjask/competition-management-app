@@ -55,6 +55,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [013](adr/013-onboarding-staff-and-recipient-locale.md) | Recoverable drafts, referenced staff/studio scope, removal history and recipient locale policy |
 | [014](adr/014-transactional-email-dispatch.md) | Resend, encrypted durable dispatch, bounded idempotent retries and truthful acknowledgement |
 | [015](adr/015-image-boundaries.md) | Image ownership/active parents, canonical raster decoding, private retrieval and audited replacement |
+| [016](adr/016-browser-sessions-and-safe-return.md) | HttpOnly browser JWTs, native bearer isolation, CSRF, audited all-session logout, work recovery and safe return paths |
 
 ADR-003 lifecycle and ADR-004 scoring are reserved, unaccepted decisions. Their
 required scope is in [DOMAIN](DOMAIN.md#pending-model-decisions); no files or
@@ -74,3 +75,5 @@ Old setup/storage/controller/error summary filenames are compatibility pointers;
 their maintained destinations are linked above. Keep one owner for each rule,
 command or task. Update references instead of adding another implementation summary.
 Audit scope, findings and measurements: [DOCUMENTATION_AUDIT](DOCUMENTATION_AUDIT.md).
+
+Public studio onboarding and invitation lifecycle: [ADR-017](adr/017-public-onboarding-and-invitation-lifecycle.md) and [validation](ONBOARDING_INVITATIONS_VALIDATION.md).

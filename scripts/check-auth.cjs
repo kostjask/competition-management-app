@@ -20,6 +20,7 @@ module.exports = async function checkAuth({ client, baseUrl, login }) {
   };
   const roleless = await getProfile();
   assert.deepEqual(roleless.roles, []); assert.equal(roleless.id, user.id); assert.equal(roleless.isAdmin, false);
+  assert.deepEqual(roleless.permissions, []);
   assert.equal(roleless.createdAt, user.createdAt.toISOString());
   const role = await client.role.findUniqueOrThrow({ where: { key: 'judge' } });
   const event = await client.event.create({ data: {
@@ -34,6 +35,13 @@ module.exports = async function checkAuth({ client, baseUrl, login }) {
   assert.ok(profile.roles.some(assignment => assignment.eventId === null && assignment.event === null));
   assert.ok(profile.roles.some(assignment => assignment.eventId === event.id && assignment.event.name === event.name));
   assert.ok(profile.roles.every(assignment => assignment.role.key === 'judge'));
+  assert.equal(profile.permissions.length, 1, 'Unsupported global judge has no permission scope');
+  assert.equal(profile.permissions[0].eventId, event.id);
+  assert.ok(profile.permissions[0].keys.includes('score.submit'));
+  await client.userRole.updateMany({ where: { userId: user.id, eventId: event.id }, data: { removedAt: new Date() } });
+  const removed = await getProfile();
+  assert.equal(removed.roles.length, 1); assert.equal(removed.roles[0].eventId, null);
+  assert.deepEqual(removed.permissions, [], 'Removed event assignment disappears on the next profile request');
   assert.equal(JSON.stringify(profile).includes('private-auth-profile'), false);
   const response = await fetch(`${baseUrl}/api/v1/auth/login`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -43,7 +51,7 @@ module.exports = async function checkAuth({ client, baseUrl, login }) {
   const beforeDuplicate = await client.user.findUniqueOrThrow({ where: { id: user.id } });
   const duplicate = await fetch(`${baseUrl}/api/v1/auth/register`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: '  ' + user.email.toUpperCase() + '  ', name: 'Duplicate', password: 'different-password' }), signal: AbortSignal.timeout(5000),
+    body: JSON.stringify({ onboarding: require('./fixtures/studio-signup.cjs')(), email: '  ' + user.email.toUpperCase() + '  ', name: 'Duplicate', password: 'different-password' }), signal: AbortSignal.timeout(5000),
   });
   assert.equal(duplicate.status, 409);
   assert.deepEqual(await client.user.findUniqueOrThrow({ where: { id: user.id } }), beforeDuplicate);

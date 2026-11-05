@@ -18,6 +18,10 @@ const env = {
   EMAIL_FROM: 'baseline@example.invalid',
   EMAIL_PROVIDER: 'fake',
   NODE_ENV: 'test', DEV_AUTH: 'false', HOST: '127.0.0.1',
+  // This suite deliberately repeats logins and hostile writes from one socket IP.
+  // Dedicated HTTP tests independently exercise configured limiter behavior.
+  LOGIN_RATE_LIMIT_MAX_REQUESTS: '500', RATE_LIMIT_MAX_REQUESTS: '2000',
+  CORS_ORIGIN: 'http://localhost:5173',
 };
 let created = false;
 let client;
@@ -131,6 +135,8 @@ async function main() {
     await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-setup.cjs')({ client, baseUrl, adminToken: token });
+    await require('./check-public-onboarding.cjs')({ client, baseUrl, jwtSecret: env.JWT_SECRET });
+    await require('./check-invitation-lifecycle.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-invitations.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
     await require('./check-admin-scope.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
     await require('./check-scope-integrity.cjs')({ client, baseUrl, adminToken: token });
@@ -138,6 +144,7 @@ async function main() {
     await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-auth.cjs')({ client, baseUrl, login });
+    await require('./check-browser-session.cjs')({ client, baseUrl, login });
     await require('./check-auth-eligibility.cjs')({ client, baseUrl, login });
     await require('./check-identity-tokens.cjs')({ client, baseUrl });
     await require('./check-dev-auth.cjs')({ client, serverEnv: env });

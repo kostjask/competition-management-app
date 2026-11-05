@@ -1,9 +1,11 @@
+import { useTranslation } from "../i18n/useTranslation";
 type LoadingSpinnerProps = {
   size?: "sm" | "md" | "lg" | "xl";
   className?: string;
 };
 
 export function LoadingSpinner({ size = "md", className = "" }: LoadingSpinnerProps) {
+  const { t } = useTranslation();
   const sizeClasses = {
     sm: "h-4 w-4 border-2",
     md: "h-8 w-8 border-2",
@@ -12,7 +14,7 @@ export function LoadingSpinner({ size = "md", className = "" }: LoadingSpinnerPr
   };
 
   return (
-    <div className={`inline-block ${className}`} role="status" aria-label="Loading">
+    <div className={`inline-block ${className}`} role="status" aria-label={t("Access.loading")}>
       <div
         className={`${sizeClasses[size]} animate-spin rounded-full border-slate-200 border-t-amber-500`}
       />

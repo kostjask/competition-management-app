@@ -11,7 +11,7 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
   };
   const verify = raw => post('auth/verify-email', { token: raw });
   const issue = (user, purpose = 'VERIFY_EMAIL') => tokens.identityTransaction(client, tx => tokens.rotateAccountToken(tx, user.id, purpose));
-  const registration = await post('auth/register', { email: 'registered-token@example.invalid', name: 'Registered fixture', password: 'fixture-password' });
+  const registration = await post('auth/register', { onboarding: require('./fixtures/studio-signup.cjs')(), email: 'registered-token@example.invalid', name: 'Registered fixture', password: 'fixture-password' });
   assert.equal(registration.status, 201);
   assert.deepEqual(Object.keys(registration.body).sort(), ['delivery', 'message', 'messageId', 'userId']);
   const registeredTokens = await client.accountToken.findMany({ where: { userId: registration.body.userId } });
@@ -148,7 +148,8 @@ module.exports = async function checkIdentityTokens({ client, baseUrl }) {
   }
   assert.equal(valid.length, 1); replacement = valid[0];
   await tokens.revokeInvitationToken(client, invitation.id);
-  assert.equal(await inspect(replacement), 400);
+  assert.equal(await inspect(replacement), 200);
+  assert.equal((await (await fetch(baseUrl + "/api/v1/invitations/" + replacement)).json()).status, "REVOKED");
   await assert.rejects(tokens.rotateInvitationToken(client, invitation.id));
   assert.equal((await post('invitations/accept', { token: replacement, name: 'Fixture', password: 'fixture-password' })).status, 400);
   assert.equal(await client.user.count({ where: { email: invitation.email } }), 0);

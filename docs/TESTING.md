@@ -90,7 +90,10 @@ idempotency and production-seed refusal, and starts its own compiled API on a
 temporary port. It runs registration, dancer, performance, studio, judge, category,
 format/age-group and invitation
 HTTP/database workflows, event DTO/persistence and concurrent partial-date
-checks, and auth/profile DTOs with real global/event roles. Category checks include
+checks, and auth/profile DTOs with real global/event roles and resolved permission
+scopes (including immediate removal). The fixture explicitly raises login/general
+limits to 500/2000 per window because it repeats hostile operations from one IP;
+maintained boundaries.test.cjs independently tests low configured limits. Category checks include
 strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
 competing creates, plus deletion preserving active/archived performances. Setup
 checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
@@ -312,7 +315,7 @@ git diff --check
 
 The dependency-free checker validates repository Markdown UTF-8, local file links,
 Markdown heading/explicit anchors, code fences and trailing whitespace. It skips
-generated/dependency directories and external URLs; it does not validate external
+generated/dependency directories (including Playwright test-results/reports) and external URLs; it does not validate external
 websites, domain truth or every Markdown extension. Review changed claims against
 source, preserve task IDs/status and inspect the final diff separately.
 Application build/typecheck/lint/tests and Prisma/database commands are not required
@@ -325,7 +328,7 @@ ownership, rollback/conflict/archive/restore and media compensation. Add browser
 journeys incrementally from signup/verify/apply/approve to entries, staff and live
 results. No unrelated future feature needs to be tested before its implementation.
 
-## Phase 2A browser and foundation checks
+## Browser and foundation checks
 
 Run `pnpm exec playwright install chromium`, then `pnpm test:browser`. CI installs
 Chromium with its OS dependencies. Playwright global setup owns an in-process Vite server on
@@ -335,10 +338,30 @@ by tsconfig.browser.json as part of pnpm typecheck. The dev-only
 /__fixtures/foundation route uses synthetic data and makes no API mutations.
 Twelve ET/EN/RU cases cover 320/390/768/1440px, keyboard summary/field focus,
 input preservation across language switches, disabled/busy states, overflow and
-computed palette values. Screenshots/traces remain ignored under test-results.
+computed palette values. Thirteen additional role cases cover ET/EN/RU at all
+four widths, exact-key/global/event/permission gates, keyboard denial recovery,
+direct URLs, guest and expired sessions. The development-only scoped access
+fixture uses the normal auth provider with intercepted synthetic profiles; browser
+setup pins a same-origin API independent of ignored environment files. Screenshots/traces remain ignored under test-results.
 Web unit checks measure semantic color pairs; visual fixture review supplements
 these checks. This is initial Chromium coverage, not screen-reader/fluent review
 or evidence for unfinished auth/application/scoring journeys.
+
+Session/shell checks are in browser-session.test.cjs, session-format.test.tsx and
+shell-session.spec.ts. The original session/shell scope includes 46 Chromium cases (67 in the complete
+onboarding/invitation suite below):
+foundation, role guards, ET/EN/RU shell/profile/navigation at four widths, expiry
+recovery preserving mounted input, cross-tab verification/logout, offline failure,
+explicit verification continuation, safe event returns and UTC editing from a
+non-UTC browser zone. No private records or real link/session secrets enter artifacts.
+Browser API URLs are pinned to same-origin /api/v1, independent of ignored env files.
+
+The baseline additionally runs check-browser-session.cjs against its isolated
+migrated database. It proves cookie/native transport, caller-only revision and
+immutable audit, failure rollback, concurrent logout, other-account preservation
+and immediate inactive denial. Cookie writes require an exact fixture Origin and
+CSRF header. Production Secure/host-only attributes are checked separately in a
+configuration-isolated child. No hosted HTTPS rollout is implied.
 
 The full baseline additionally invokes scripts/check-foundation.cjs in an isolated
 child with injected Resend-shaped provider credentials and a random encryption
@@ -347,3 +370,20 @@ bidirectional rollback, draft retry/cancel/verification retention, no intent gra
 role/studio FKs and scope denial, and durable encrypted queue rollback/retries,
 worker concurrency, fixed provider request bodies and stale/expired cancellation.
 See [current evidence](PHASE_2A_VALIDATION.md).
+
+## Public onboarding and invitation lifecycle checks
+
+routes.test.cjs covers generic signup bypass, strict owner commands and privileged
+invitation command validation. The complete baseline runs check-public-onboarding.cjs
+and check-invitation-lifecycle.cjs against its random isolated database: atomic
+account/draft/token/audit rollback, no grants/session, owner isolation, retries,
+stale/concurrent edits, verified recovery, retained cancellation, inactive denial,
+resend invalidation, concurrent CAS, rollback, revoke history and expired replacement.
+The expanded global-admin denial matrix covers all 20 operations. Migration 29
+only extends the audit action CHECK; fresh/upgrade parity includes it.
+
+onboarding-invitations.spec.ts adds ET/EN/RU signup/pending recovery at four widths,
+local-work preservation, language switching, wrong-account sign-in/explicit
+acceptance, neutral recovery, reset/link stripping, terminal/new-account invitation
+and mobile administrator lifecycle controls. Synthetic screenshots remain ignored.
+No real mail or human screen-reader/fluent-language review is claimed.

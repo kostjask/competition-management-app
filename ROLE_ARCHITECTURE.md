@@ -39,7 +39,10 @@ Current representative global/event permission behavior is retained; membership,
 approval and stored parent scope remain required. Replacing those inherited
 assignments is outside this slice. Profile roles describe active stored rows,
 including historical unsupported scopes; isAdmin and backend permission resolution
-are authoritative. Frontend guard corrections remain P2-ROLES.
+are authoritative. Frontend guards now share exact-key/event-aware policy and use
+server-resolved profile permission scopes. Global representative/custom permissions
+retain backend behavior; unscoped role queries select section landing pages only.
+Every event operation still needs its event scope and backend parent/ownership checks.
 
 | Assignment writer | Permitted scope / safeguards |
 | --- | --- |
@@ -73,6 +76,7 @@ invitation atomically; offboarding retains scores. Contact email grants no owner
 Generic signup still exists; do not delete legitimate roleless applicants.
 
 Use local seed fixtures only for development, not manual SQL as normal onboarding.
-Frontend helpers currently disagree on display-name matching; P2-ROLES must unify
-stable keys/scopes. [Frontend guide](apps/web/ROLE_SYSTEM.md) ·
+Frontend hooks, route guards and gates now share stable-key/scope checks.
+The responsive translated navigation/context/profile shell is now implemented
+under P2-UI-SHELL; full staff/application journeys remain gated. [Frontend guide](apps/web/ROLE_SYSTEM.md) ·
 [workflow](docs/REGISTRATION_API.md) · [checkpoint](DEVELOPMENT_PLAN.md).

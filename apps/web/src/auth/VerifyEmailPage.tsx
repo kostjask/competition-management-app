@@ -1,145 +1,38 @@
-import { formatSuccess } from "../i18n/errors";
-import { useLanguage } from "../i18n/useLanguage";
-import { ErrorFeedback } from "../components/ErrorFeedback";
-import { toUiError, type UiError } from "../api/error";
-import { useState, useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { safeReturnPath } from "@dance/schemas";
 import { verifyEmail } from "../api/auth";
-import { setToken } from "../api/client";
 import { useAuth } from "./useAuth";
+import { useTranslation } from "../i18n/useTranslation";
+import { toUiError, type UiError } from "../api/error";
+import { ErrorFeedback } from "../components/ErrorFeedback";
+import { Button } from "../components/ui/Foundation";
+import { readOnboarding } from "../api/onboarding";
+import { SwitchAccount } from "./SwitchAccount";
 
 export function VerifyEmailPage() {
-  const { locale } = useLanguage();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { refreshUser } = useAuth();
-  const token = searchParams.get("token");
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    token ? "loading" : "error"
-  );
-  const [error, setError] = useState<UiError | null>(
-    token ? null : toUiError(null)
-  );
-
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
-
-    const verify = async () => {
-      try {
-        const response = await verifyEmail({ token });
-        
-        // Token is automatically stored by the API client
-        if (response.token) {
-          setToken(response.token);
+  const [params] = useSearchParams(); const [token] = useState(() => params.get("token")); const [destination] = useState(() => safeReturnPath(params.get("returnTo")));
+  const [resolvedDestination, setResolvedDestination] = useState(destination);
+  const { user, loading: sessionLoading, error: sessionError, refreshUser } = useAuth(); const { t } = useTranslation();
+  const [status, setStatus] = useState<"ready" | "busy" | "success">("ready"); const [error, setError] = useState<UiError | null>(null);
+  useEffect(() => { if (token) window.history.replaceState(null, "", window.location.pathname + (destination === "/" ? "" : "?returnTo=" + encodeURIComponent(destination))); }, [token, destination]);
+  return <section className="mx-auto max-w-md p-6"><h1 className="text-2xl font-semibold">{t(status === "success" ? "Shell.verifySuccess" : "Shell.verify")}</h1>
+    <ErrorFeedback error={error} />
+    {sessionLoading && status === "ready" && <p role="status">{t("Access.loading")}</p>}
+    {!user && sessionError && <ErrorFeedback error={sessionError} />}
+    {status === "success" ? <Link className="ui-button ui-button-primary mt-4" to={resolvedDestination}>{t("Shell.continue")}</Link> : <>
+      <p className="my-4">{t(user ? "Shell.switchAccount" : "Shell.verifyHelp")}</p>
+      {user && <SwitchAccount />}
+      {token && !user && <Button disabled={sessionLoading || !!sessionError} pending={status === "busy"} onClick={() => {
+        setStatus("busy"); setError(null);
+        void verifyEmail({ token }).then(async () => {
           await refreshUser();
-        }
-        
-        setStatus("success");
-        
-        // Redirect after 3 seconds
-        setTimeout(() => {
-          navigate("/", { replace: true });
-        }, 3000);
-      } catch (err) {
-        setStatus("error");
-        setError(toUiError(err));
-      }
-    };
-
-    void verify();
-  }, [token, navigate, refreshUser]);
-
-  return (
-    <div className="relative min-h-[calc(100vh-96px)] overflow-hidden bg-linear-to-br from-slate-50 via-white to-emerald-50 px-6 py-10">
-      <div className="pointer-events-none absolute -left-20 bottom-10 h-72 w-72 rounded-full bg-emerald-100 opacity-70 blur-3xl" />
-      <div className="pointer-events-none absolute right-10 top-10 h-56 w-56 rounded-full bg-slate-200 opacity-60 blur-3xl" />
-      
-      <div className="relative mx-auto flex w-full max-w-md flex-col items-center justify-center pt-20">
-        <div className="w-full rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-2xl backdrop-blur">
-          {status === "loading" && (
-            <div className="text-center">
-              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600" />
-              <h2 className="mt-6 text-2xl font-semibold text-slate-900">
-                Verifying your email
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                Please wait while we verify your account...
-              </p>
-            </div>
-          )}
-
-          {status === "success" && (
-            <div className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
-                <svg
-                  className="h-6 w-6 text-emerald-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </div>
-              <h2 className="mt-6 text-2xl font-semibold text-slate-900">
-                Email verified!
-              </h2>
-              <p className="mt-2 text-sm text-slate-500">
-                {formatSuccess("emailVerified", locale)}
-              </p>
-              <p className="mt-4 text-sm text-slate-400">
-                Redirecting to homepage in 3 sec...
-              </p>
-            </div>
-          )}
-
-          {status === "error" && (
-            <div className="text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100">
-                <svg
-                  className="h-6 w-6 text-rose-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </div>
-              <h2 className="mt-6 text-2xl font-semibold text-slate-900">
-                Verification failed
-              </h2>
-              <div className="mt-2 text-sm text-rose-600">
-                <ErrorFeedback error={error || toUiError(null)} />
-              </div>
-              <div className="mt-6 space-y-3">
-                <Link
-                  to="/auth/register"
-                  className="block w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
-                >
-                  Register again
-                </Link>
-                <Link
-                  to="/auth/login"
-                  className="block w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-                >
-                  Go to login
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+          try { const context = await readOnboarding({}); setResolvedDestination(context.draft ? context.returnTo : destination); }
+          catch (err: unknown) { setResolvedDestination("/auth/onboarding"); setError(toUiError(err)); }
+          setStatus("success");
+        }).catch((err: unknown) => { setError(toUiError(err)); setStatus("ready"); });
+      }}>{t("Shell.verify")}</Button>}
+      <Link className="ui-button ui-button-secondary mt-4" to="/auth/login">{t("Shell.login")}</Link>
+    </>}
+  </section>;
 }

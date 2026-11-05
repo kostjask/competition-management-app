@@ -5,6 +5,13 @@ import { EmailSchema } from "@dance/schemas";
  * Environment variable validation schema
  * All required variables must be defined in .env file
  */
+const HttpOriginSchema = z.string().refine(value => {
+  try {
+    const url = new URL(value);
+    return ["http:", "https:"].includes(url.protocol) && url.origin === value;
+  } catch { return false; }
+}, "Use an exact HTTP(S) origin without a path or credentials");
+
 const EnvSchema = z.object({
   // Node environment
   NODE_ENV: z
@@ -34,7 +41,7 @@ const EnvSchema = z.object({
     .default("7d"),
 
   // Storage
-  STORAGE_TYPE: z.enum(["local", "s3", "gcs"]).default("local"),
+  STORAGE_TYPE: z.literal("local").default("local"),
   STORAGE_PATH: z.string().default("./uploads"),
   STORAGE_PUBLIC_URL: z.string().url().optional(),
 
@@ -62,12 +69,20 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 
   // CORS
-  CORS_ORIGIN: z.string().default("*"),
+  CORS_ORIGIN: z.string().transform(value => value.split(",").map(origin => origin.trim()))
+    .pipe(z.union([z.tuple([z.literal("*")]), z.array(HttpOriginSchema).min(1)])).default(["http://localhost:5173", "http://127.0.0.1:5173"]),
 
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(900000), // 15 min
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(100),
+  LOGIN_RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().positive().default(20),
 }).superRefine((values, ctx) => {
+  if (values.NODE_ENV === "production") {
+    if (values.CORS_ORIGIN.includes("*")) ctx.addIssue({ code: "custom", path: ["CORS_ORIGIN"], message: "Production requires explicit allowed origins" });
+    if (/your_|change.?me|example|secret_key/i.test(values.JWT_SECRET) || new Set(values.JWT_SECRET).size < 12) {
+      ctx.addIssue({ code: "custom", path: ["JWT_SECRET"], message: "Production requires a generated signing secret" });
+    }
+  }
   if (values.DEV_AUTH === "true" && values.NODE_ENV !== "development") {
     ctx.addIssue({ code: "custom", path: ["DEV_AUTH"], message: "DEV_AUTH may only be enabled in development" });
   }
@@ -101,7 +116,7 @@ function parseEnvironment(): Env {
         .join("\n  ");
 
       console.error(
-        "❌ Environment variable validation failed:\n  " + issues
+        "Environment variable validation failed:\n  " + issues
       );
       process.exit(1);
     }
@@ -156,13 +171,13 @@ export const config = {
       accessKeyId: env.AWS_ACCESS_KEY_ID,
       secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
       bucket: env.AWS_S3_BUCKET,
-      enabled: env.STORAGE_TYPE === "s3",
+      enabled: false,
     },
     gcs: {
       projectId: env.GCS_PROJECT_ID,
       bucket: env.GCS_BUCKET,
       keyFile: env.GCS_KEY_FILE,
-      enabled: env.STORAGE_TYPE === "gcs",
+      enabled: false,
     },
   },
 
@@ -188,6 +203,7 @@ export const config = {
   // Security
   security: {
     corsOrigin: env.CORS_ORIGIN,
+    loginMaxRequests: env.LOGIN_RATE_LIMIT_MAX_REQUESTS,
     rateLimit: {
       windowMs: env.RATE_LIMIT_WINDOW_MS,
       maxRequests: env.RATE_LIMIT_MAX_REQUESTS,

@@ -15,3 +15,4 @@ export * from "./validation.js";
 export * from "./image.schema.js";
 export * from "./audit.schema.js";
 export * from "./onboarding.schema.js";
+export * from "./return-path.js";

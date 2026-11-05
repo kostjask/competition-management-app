@@ -8,6 +8,7 @@ import { useTranslation } from "@i18n/useTranslation";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { type Event, getEvent } from "@api/events";
 import { RoleGate } from "@auth";
+import { Button } from "../../components/ui/Foundation";
 import {
   type StageBadge,
   useStageBadges,
@@ -48,10 +49,6 @@ const EventCard: React.FC<EventCardProps> = ({
   formatDateTime,
   locale,
 }) => {
-  const isRegistrationOpen =
-    event.stage === "PRE_REGISTRATION" ||
-    event.stage === "REGISTRATION_OPEN" ||
-    event.stage === "DATA_REVIEW";
 
   return (
     <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
@@ -165,16 +162,7 @@ const EventCard: React.FC<EventCardProps> = ({
         <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
           <RoleGate
             adminOnly
-            fallback={
-              isRegistrationOpen && (
-                <Link
-                  className="flex-1 rounded-full border border-emerald-500 bg-emerald-50 px-6 py-3 text-center text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100 hover:border-emerald-600"
-                  to={`/events/${event.id}/register`}
-                >
-                  {getTranslation("Events.registerButton", locale)}
-                </Link>
-              )
-            }
+            fallback={<p>{getTranslation("Shell.registrationUnavailable", locale)}</p>}
           >
             <Link
               className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400"
@@ -183,12 +171,7 @@ const EventCard: React.FC<EventCardProps> = ({
               {getTranslation("Events.editButton", locale)}
             </Link>
 
-            <Link
-              className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400"
-              to={`/events/${event.id}/studio`}
-            >
-              {getTranslation("Events.addStudio", locale)}
-            </Link>
+
           </RoleGate>
         </div>
       </div>
@@ -202,6 +185,7 @@ export default function EventInfo() {
   const [eventData, setEventData] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<UiError | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   const stageBadges = useStageBadges(locale);
   const formatDateTime = useDateFormatter(locale);
@@ -241,7 +225,7 @@ export default function EventInfo() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, attempt]);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-linear-to-br from-slate-50 via-white to-amber-50 px-6 py-10">
@@ -267,7 +251,9 @@ export default function EventInfo() {
 
         {loadError && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
+            <h1>{getTranslation(loadError.reason === "recordNotFound" ? "Shell.notFound" : loadError.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable", locale)}</h1>
             <ErrorFeedback error={loadError} />
+            <Button onClick={() => setAttempt(value => value + 1)}>{getTranslation("Shell.retry", locale)}</Button>
           </div>
         )}
 

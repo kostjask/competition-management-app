@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { createServer } from "vite";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +8,8 @@ export default async function setup() {
     root: fileURLToPath(new URL("..", import.meta.url)),
     configFile: fileURLToPath(new URL("../vite.config.ts", import.meta.url)),
     mode: "development",
+    // Keep synthetic browser tests independent of ignored local API settings.
+    define: { "import.meta.env.VITE_API_URL": JSON.stringify("/api/v1") },
     server: { host: "127.0.0.1", port: 4177, strictPort: true },
   });
   try { await server.listen(); }

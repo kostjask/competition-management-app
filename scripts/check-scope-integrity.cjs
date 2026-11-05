@@ -58,7 +58,7 @@ module.exports = async function checkScopeIntegrity({ client, baseUrl, adminToke
     assert.equal(await client.invitation.count({ where: { email: body.email, roleKey: body.roleKey, eventId, usedAt: null, supersededAt: null } }), 1);
     const response = await fetch(baseUrl + '/api/v1/invitations/' + secret.raw);
     assert.equal(response.status, 400);
-    assert.equal((await response.json()).reason, 'invitationExpired');
+    assert.equal((await response.json()).reason, 'invalidInput', 'Historical unclassified invitation remains uninspectable');
   }
   console.log('Scope integrity: concurrent global/event uniqueness, restrictive deletion, preserved history and expired-invitation replacement passed.');
 };

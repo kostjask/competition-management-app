@@ -71,6 +71,9 @@ body {
   color: #111827;
 }
 
+a:focus-visible, button:focus-visible, h1:focus, main:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+dialog { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; }
+
 .font-display {
   font-family: "Fraunces", "Times New Roman", serif;
 }

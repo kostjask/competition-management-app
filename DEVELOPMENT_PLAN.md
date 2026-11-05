@@ -1,14 +1,22 @@
 # Development checkpoint
 
-Updated: 2026-11-01. This file owns current status, priority and milestone gates.
+Updated: 2026-11-05. This file owns current status, priority and milestone gates.
 Read the selected task's roadmap file next; use [docs/README](docs/README.md) to
 find its contracts/specifications. Historical reports are reference only.
 
 ## Next action
 
-**Active work: Phase 2A local foundations implemented; external operational gates remain open.**
-Next actionable development task: **P2-BOUNDARIES**, completing configured CORS,
-security headers, production validation and login/invitation/upload rate limits.
+**Active work: Phase 2A local foundations and Phase 2B transport/role corrections implemented; external gates remain open.**
+Next actionable development task: **P2-JUDGE-ACCEPT**, atomically reconciling
+Judge/UserRole/invitation consumption for the same event, including rollback and
+existing assignments. P2-SIGNUP, P2-INVITE and P2-UI-AUTH are implemented locally
+under ADR-017; see [onboarding/invitation evidence](docs/ONBOARDING_INVITATIONS_VALIDATION.md).
+P2-OFFBOARD follows separately for accepted access; neither an invitation nor a
+UserRole alone establishes Judge readiness. Real mail, hosted deployment and
+human language/assistive-technology release evidence remain open.
+**P2-SESSION, Phase 2 I18N-FORMATTING and P2-UI-SHELL are technically complete
+locally (2026-11-05)** under ADR-016; see [session/shell evidence](docs/SESSION_SHELL_VALIDATION.md).
+P2-BOUNDARIES/ERRORS and P2-ROLES remain complete locally.
 P2-BOUNDARIES-UPLOADS is technically complete locally under ADR-015.
 P2-ROLES-ADMIN-SCOPE, P2-INVITE-IDENTITY and P2-AUTH are technically complete locally.
 P2-SCOPE-DEPLOY and real staging mail remain open;
@@ -18,14 +26,15 @@ steps. Phase 2A and external milestones are not closed by local fixture results.
 
 Audit correction order and all 15 finding owners: [correction plan](docs/AUDIT_FOLLOWUP.md).
 With P2-AUTH, P2-INVITE-IDENTITY, P2-ROLES-ADMIN-SCOPE and the local foundations
-complete, continue remaining P2-BOUNDARIES transport/abuse controls. Upload image
-ownership/content and private retrieval are now implemented. Intended-deployment
+complete, transport/abuse controls, parser errors and frontend role consistency
+are also corrected locally. Upload ownership/content and private retrieval are implemented. Intended-deployment
 assignment provenance remains P2-SCOPE-DEPLOY.
 Independent fixes may proceed when their own prerequisites pass.
 
-UI track: **P2-UI-FOUNDATION is technically complete**, then P2-UI-SHELL with P2-ROLES. Fixture work can
-proceed while security foundations are built; gated management features cannot
-ship early. See [design system](docs/DESIGN_SYSTEM.md).
+UI track: **P2-UI-FOUNDATION/SHELL and Phase 2 formatting are technically complete**.
+Login, cookie recovery and explicit verification continuation are implemented;
+signup/recovery/invitation journeys are implemented locally under ADR-017;
+gated application/Judge/offboarding features cannot ship early. See [design system](docs/DESIGN_SYSTEM.md).
 
 P2-SCHEMA-AUDIT is complete: [findings and validation](docs/SCHEMA_SUITABILITY_AUDIT.md).
 Broader model changes retain their owning tasks and ADR gates. Current test data
@@ -60,13 +69,13 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
 - Purpose-bound verification/recovery/invitation digests, expiry, atomic
   rotation/consumption and legacy-link invalidation are implemented. Verification
   and invitations reject inactive identities; recovery helpers do not mint sessions.
-  Public recovery/resend/correction/reset now use these primitives; invitation
-  management remains open. ADR-011 adds sessionVersion and strict JWT revision
+  Public recovery/resend/correction/reset now use these primitives. Invitation
+  create/list/status/resend/revoke and explicit acceptance UI are implemented locally. ADR-011 adds sessionVersion and strict JWT revision
   matching; reset/correction revoke older sessions and legacy JWTs require sign-in.
   Uniform 202 request acknowledgements explicitly leave delivery unconfirmed.
   Injected synchronous failures roll back email/token changes. Real Resend dispatch
   now uses a transactional encrypted queue and bounded idempotent retries; real
-  staging inbox delivery and email-link UI remain gated.
+  staging inbox delivery remains gated; delivered email-link UI is locally validated.
 - ET/EN/RU semantic feedback, shared validation and dictionary foundations exist.
   Recipient locale policy/storage and basic component/browser fixtures now pass.
   UI migration, formatting, preference reconciliation and human/full-journey
@@ -78,13 +87,15 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
 - Auth/event screens and backend studio/dancer/performance CRUD exist. Role
   dashboards are placeholders; application, staff acceptance, music, scoring,
   live operation and results journeys are unfinished. No external milestone is complete.
-- Public signup remains unrestricted. Login requires active/verified accounts;
+- Public signup now requires studio intent and atomically retains an owner draft.
+  Pending owners can recover/save/cancel using password proof without ordinary
+  sessions or domain privileges; verified owners can use their session. Login requires active/verified accounts;
   protected requests reject missing/inactive/unverified subjects before roles,
   including existing admin JWTs. Verified roleless users retain permitted access.
   DEV_AUTH uses a real eligible development account and actual stored roles;
   startup refuses DEV_AUTH=true outside development. C2 is corrected locally.
   Global-admin bypass now requires null event scope and active assignment; removed
-  assignments/global staff are ignored. All 18 admin-only operations have maintained
+  assignments/global staff are ignored. All 20 admin-only operations have maintained
   own/other-event HTTP/PostgreSQL denial coverage. Assignment writers are inventoried;
   the judge seed now creates event-scoped access and preserves historical rows.
   Aggregate deployment preflight flags unsupported active scopes without repair.
@@ -95,8 +106,14 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
   ownership/scope, active parents and existing resource stage/approval gates,
   fully decode/re-encode matching JPEG/PNG/WebP, and commit reference/audit atomically.
   Image retrieval requires authentication, current reference and read access;
-  public static serving is removed. Frontend role guards and broader CORS/rate
-  limits remain security work.
+  public static serving is removed. Frontend guards now share exact-key/event
+  scope checks and resolved profile permissions; forbidden role URLs have
+  translated focused recovery. Configured CORS, API security headers, production
+  configuration and per-category sensitive-route limits are enforced. JSON parser
+  size/encoding failures use private translated 4xx envelopes. Session storage,
+  translated shell/navigation/profile and browser session recovery are now implemented.
+  Delivered signup/recovery/invitation UI is translated; hosted ingress/shared
+  limits, real mail and human release review remain open.
   The email fake is silent; production rejects unavailable delivery;
   storage is always local. Event reads require authentication.
 - Baseline CI exists; first hosted-run evidence and required-check settings need
@@ -107,7 +124,44 @@ may be reset/reseeded under the disposable-data policy; no reset was needed here
   remain in ignored deploy/staging.env; development data was not migrated/reset.
   Hosted ingress, domain/provider setup, real mail and restore evidence remain open.
 
-Latest **recorded** runtime validation (2026-11-01): P2-BOUNDARIES-UPLOADS workspace
+Latest **recorded** runtime validation (2026-11-05): P2-SIGNUP/INVITE/UI-AUTH
+under ADR-017. Migration 29 expands only audit actions. Studio intent, owner-only
+password/session proof, retained drafts/cancellation, invitation status/CAS
+resend/revoke, acceptance/account switching and neutral recovery UI are aligned.
+Workspace build/typecheck/lint, 110 API + 16 frontend tests, 67 Chromium cases,
+localization guard, Prisma generate/validate/format, fresh/upgrade migration parity
+and the complete isolated PostgreSQL baseline pass. The original generic-signup
+regression fails before the fix; pending-save controls preserve newer work.
+Documentation/UTF-8/local links and git diff whitespace checks pass. No application
+data reset or deployed rollout occurred. Verification evidence and precise
+remaining release gates are maintained in [the validation record](docs/ONBOARDING_INVITATIONS_VALIDATION.md).
+
+Previous **recorded** runtime validation (2026-11-05): P2-SESSION, Phase 2
+I18N-FORMATTING and P2-UI-SHELL workspace build/typecheck/lint/localization guard,
+108 API + 16 frontend tests, 46 Chromium cases, Prisma checks, fresh/upgrade
+migration parity and complete isolated PostgreSQL baseline pass. ADR-016 chooses
+HttpOnly browser JWT cookies with exact-origin/CSRF checks and separate native
+bearer transport; one-hour browser expiry and audited all-account-session logout
+use the existing revision. Migration 28 expands only the audit action allowlist;
+no application-data reset or deployed rollout occurred. Tests cover transport
+isolation, audit rollback/concurrent revocation, preserved mounted work, cross-tab
+logout/verification, safe returns, role/event navigation, profile/formatting,
+ET/EN/RU and four widths. Fluent-language/screen-reader review, hosted ingress,
+real mail and full auth journeys remain open. See [evidence](docs/SESSION_SHELL_VALIDATION.md).
+
+Previous boundary/role validation (2026-11-05): P2-BOUNDARIES,
+P2-BOUNDARIES-ERRORS and P2-ROLES workspace build/typecheck/lint, localization
+guard, 105 API + 13 frontend tests, Prisma generate/validate/format, migration
+fresh/upgrade parity and complete isolated PostgreSQL baseline pass. Browser
+coverage includes ET/EN/RU roles at 320/390/768/1440px, direct/wrong-event/scoped
+admin/roleless/expired access, permission gates and keyboard denial recovery.
+Original-handler boundary and gate probes fail before the fixes. No schema
+migration or application-data reset was needed; test-only database/schemas were
+created and removed. See [evidence and limits](docs/BOUNDARIES_ROLES_VALIDATION.md).
+Hosted ingress, real mail, screen-reader/fluent review and the full UI shell remain
+open; no phase or external milestone is closed.
+
+Previous P2-BOUNDARIES-UPLOADS runtime validation (2026-11-01): P2-BOUNDARIES-UPLOADS workspace
 build/typecheck/lint, localization guard, 99 API + 10 frontend tests, Prisma checks,
 fresh/upgrade migrations with historical audit preservation/parity and complete
 isolated PostgreSQL/image baseline pass. Negative ownership/content regressions
@@ -227,5 +281,4 @@ was changed by this audit. Subsequent identity/token work is recorded above;
 request eligibility was subsequently corrected under P2-AUTH-ELIGIBILITY.
 Public auth recovery and intended-account invitation acceptance are now delivered
 technically. Image ownership/content/private retrieval is now delivered under
-P2-BOUNDARIES-UPLOADS. Remaining boundary/session/provider and actual deployment
-work remains before external exposure.
+P2-BOUNDARIES-UPLOADS. Full signup/recovery/invitation UI, provider and actual deployment work remain before external exposure.

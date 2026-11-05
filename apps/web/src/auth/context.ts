@@ -7,10 +7,10 @@ export interface AuthContextValue {
   user: UserProfile | null;
   loading: boolean;
   error: UiError | null;
-  hasToken: boolean;
+  sessionExpired: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearError: () => void;
 }

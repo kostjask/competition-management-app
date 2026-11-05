@@ -1,7 +1,7 @@
 # Localization foundations
 
 Phase 1 implements ET/EN/RU feedback contracts and the dictionary core under
-[ADR-007](adr/007-localized-feedback-contracts.md). General UI migration, formatting,
+[ADR-007](adr/007-localized-feedback-contracts.md). Remaining UI migration,
 account/email preferences and organizer-authored translations remain separate.
 
 ## Transport
@@ -45,8 +45,13 @@ A valid explicit choice takes effect immediately and is saved when storage is
 available. Initialization uses supported saved locale, then supported browser
 languages, then et. Unsupported storage is ignored; unavailable storage is tolerated.
 Native language names and aria-pressed expose the selector state. Preference
-reconciliation with accounts, background email locale, link locale, document lang,
-page titles and broader date/number formatting belong to Phase 2. Never infer a
+reconciliation with accounts, background email locale and link locale remain
+I18N-PREFERENCES. Document lang/titles, semantic loading names, profile and event
+dates and numeric feedback now use the Phase 2 shared formatting foundation.
+All displayed event instants and datetime editors explicitly use UTC until a
+separately reviewed event-zone model is introduced. Calendar date helpers do not
+shift days across browser zones. Future feature durations/currency retain their
+own delivered-scope formatting gates. Never infer a
 recipient's language from an administrator's session or translate authored names.
 
 ## Checks and outstanding review
@@ -54,12 +59,21 @@ recipient's language from an administrator's session or translate authored names
 pnpm test runs the source guard, API tests and frontend localization/transport
 component tests. pnpm typecheck checks interpolation contracts. The source guard
 uses the TypeScript parser, ignores authored expressions, and allows only the
-reviewed 95 existing literal text/attribute entries in
+reviewed internal event-form aria identifier exceptions in
 [i18n-hardcoded-baseline.json](i18n-hardcoded-baseline.json). New literals fail CI;
 remove exceptions as I18N-UI migrates existing screens. This baseline is not a claim
 that the application is fully translated.
 
 All-locale static React rendering verifies error switching and selected-language
-semantics. Browser interactions, focus preservation, mobile/long-text layout,
+semantics. Chromium now covers the delivered shell/session/profile at four widths,
+keyboard focus and input preservation across language changes. Remaining full-journey
 screen-reader announcements and fluent ET/EN/RU terminology review remain
-I18N-QA/P9-BROWSER release evidence. No human review is claimed in this checkpoint.
+I18N-QA/P9-BROWSER release evidence. Fluent-language and screen-reader review are not claimed; screenshot spot review
+of the delivered scope is recorded in [session/shell evidence](SESSION_SHELL_VALIDATION.md).
+
+The 2026-11-05 auth migration removes all legacy registration text exceptions.
+Eight internal event-form aria identifiers remain reviewed scan exceptions; they
+are not user-facing copy. Signup, draft/recovery, acceptance and invitation
+management use complete ET/EN/RU dictionaries. Recipient mail language is explicit
+or account/ET fallback, never inferred from inviter UI; full preference/link-locale
+reconciliation remains I18N-PREFERENCES. See onboarding/invitation validation.

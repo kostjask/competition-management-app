@@ -235,6 +235,7 @@ export default function EventsList() {
             <p className="max-w-2xl text-sm text-slate-600 md:text-base">
               {getTranslation("Events.listSubtitle", locale)}
             </p>
+            <p>{getTranslation("Shell.utc", locale)}</p>
           </div>
           <RoleGate adminOnly>
             <Link
@@ -266,9 +267,9 @@ export default function EventsList() {
             <h2 className="font-display text-2xl text-slate-900">
               {getTranslation("Events.noEventsYet", locale)}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <RoleGate adminOnly><p className="mt-2 text-sm text-slate-600">
               {getTranslation("Events.createFirstEvent", locale)}
-            </p>
+            </p></RoleGate>
           </div>
         )}
 

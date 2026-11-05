@@ -1,5 +1,6 @@
 export const SUPPORTED_LOCALES = ["et", "en", "ru"] as const;
 export type Locale = typeof SUPPORTED_LOCALES[number];
+export const languageNames: Record<Locale, string> = { et: "Eesti", en: "English", ru: "Русский" };
 export const DEFAULT_LOCALE: Locale = "et";
 export const STORAGE_KEY = "app-language";
 export function isLocale(value: unknown): value is Locale { return value === "et" || value === "en" || value === "ru"; }

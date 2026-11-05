@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { EmailSchema, IdSchema } from "./common.schema.js";
-import { RecipientLocaleSchema } from "./onboarding.schema.js";
+import { RecipientLocaleSchema, OnboardingSaveSchema, OnboardingSubmitDetailsSchema } from "./onboarding.schema.js";
 
 const NewPasswordSchema = z.string().min(8, "Password must be at least 8 characters")
   .refine(value => new TextEncoder().encode(value).length <= 72, "Password must be at most 72 UTF-8 bytes");
@@ -9,6 +9,7 @@ export const RegisterSchema = z.strictObject({
   password: NewPasswordSchema,
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
   locale: RecipientLocaleSchema.optional(),
+  onboarding: OnboardingSaveSchema.extend({ revision: z.literal(0), details: OnboardingSubmitDetailsSchema }),
 });
 
 export const LoginSchema = z.strictObject({
@@ -44,8 +45,14 @@ export const AuthResponseSchema = z.strictObject({
   token: z.string().min(1), tokenType: z.literal("Bearer"), user: AuthUserSchema,
 });
 export const VerifyEmailResponseSchema = AuthResponseSchema.extend({ message: z.string(), messageId: z.literal("emailVerified") });
+export const BrowserSessionSchema = z.strictObject({ session: z.literal("cookie"), expiresAt: z.iso.datetime(), user: AuthUserSchema });
+export const LogoutSchema = z.strictObject({});
+export const SessionResponseSchema = z.union([BrowserSessionSchema, AuthResponseSchema]);
+export const BrowserVerifyEmailResponseSchema = BrowserSessionSchema.extend({ message: z.string(), messageId: z.literal("emailVerified") });
+export const SessionVerifyEmailResponseSchema = z.union([BrowserVerifyEmailResponseSchema, VerifyEmailResponseSchema]);
 export const UserProfileSchema = AuthUserSchema.extend({
   createdAt: z.iso.datetime(), isAdmin: z.boolean(),
+  permissions: z.array(z.strictObject({ eventId: IdSchema.nullable(), keys: z.array(z.string().min(1)) })),
   roles: z.array(z.strictObject({
     id: IdSchema, eventId: IdSchema.nullable(),
     role: z.strictObject({ id: IdSchema, key: z.string().min(1), name: z.string() }),

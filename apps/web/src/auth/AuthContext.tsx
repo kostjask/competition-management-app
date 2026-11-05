@@ -1,127 +1,75 @@
-import { toUiError, type UiError } from "../api/error";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import {
-  getCurrentUser,
-  isAuthenticated,
-  login as loginApi,
-  register as registerApi,
-  type LoginData,
-  type RegisterData,
-} from "../api/auth";
-import { ApiError, removeToken } from "../api/client";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { toUiError, ApiError, type UiError } from "../api/error";
+import { getCurrentUser, login as loginApi, logout as logoutApi, register as registerApi, type LoginData, type RegisterData } from "../api/auth";
+import { clearLegacyToken, sessionEvents } from "../api/client";
 import type { UserProfile } from "../api/client";
 import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [initialHasToken] = useState(isAuthenticated);
-  const [loading, setLoading] = useState(initialHasToken);
+  const current = useRef<UserProfile | null>(null);
+  const channel = useRef<BroadcastChannel | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<UiError | null>(null);
-  const [hasToken, setHasToken] = useState(initialHasToken);
-
-  const clearError = useCallback(() => {
-    setError(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const clearError = useCallback(() => setError(null), []);
+  const loadUser = useCallback(async () => {
+    try {
+      const profile = await getCurrentUser();
+      current.current = profile; setUser(profile); setSessionExpired(false); setError(null);
+      return profile;
+    } catch (err: unknown) {
+      if (!(err instanceof ApiError && err.statusCode === 401)) setError(toUiError(err));
+      else if (current.current) setSessionExpired(true);
+      else setError(null);
+      throw err;
+    } finally { setLoading(false); }
   }, []);
-
-  const loadUser = useCallback(() => {
-    return getCurrentUser()
-      .then((profile) => {
-        setUser(profile);
-      })
-      .catch((err: unknown) => {
-        if (err instanceof ApiError && err.statusCode === 401) {
-          removeToken();
-          setHasToken(false);
-        }
-        setUser(null);
-        setError(toUiError(err));
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
   const refreshUser = useCallback(async () => {
-    if (!isAuthenticated()) {
-      setHasToken(false);
-      setUser(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    setHasToken(true);
-    setLoading(true);
-    setError(null);
-    await loadUser();
+    const wasGuest = !current.current;
+    setLoading(true); await loadUser();
+    if (wasGuest) channel.current?.postMessage("changed");
   }, [loadUser]);
-
   useEffect(() => {
-    if (initialHasToken) {
-      void loadUser();
-    }
-  }, [initialHasToken, loadUser]);
-
-  const login = useCallback(
-    async (data: LoginData) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        await loginApi(data);
-        setHasToken(true);
-        await refreshUser();
-      } catch (err) {
-        setError(toUiError(err));
-        throw err;
-      } finally {
-        setLoading(false);
+    clearLegacyToken();
+    let active = true;
+    void getCurrentUser().then(profile => {
+      if (active) { current.current = profile; setUser(profile); setError(null); }
+    }).catch((err: unknown) => {
+      if (active && !(err instanceof ApiError && err.statusCode === 401)) setError(toUiError(err));
+    }).finally(() => { if (active) setLoading(false); });
+    const expired = () => { if (current.current) setSessionExpired(true); };
+    sessionEvents.addEventListener("expired", expired);
+    const otherTabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("dance-session");
+    channel.current = otherTabs;
+    if (otherTabs) otherTabs.onmessage = event => {
+      if (event.data === "changed") {
+        if (current.current) expired(); else void loadUser().catch(() => {});
       }
-    },
-    [refreshUser]
-  );
-
-  const register = useCallback(
-    async (data: RegisterData) => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        await registerApi(data);
-        setHasToken(true);
-        await refreshUser();
-      } catch (err) {
-        setError(toUiError(err));
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [refreshUser]
-  );
-
-  const logout = useCallback(() => {
-    removeToken();
-    setUser(null);
-    setHasToken(false);
-    setError(null);
+    };
+    return () => { active = false; sessionEvents.removeEventListener("expired", expired); otherTabs?.close(); channel.current = null; };
+  }, [loadUser]);
+  const login = useCallback(async (data: LoginData) => {
+    if (current.current && sessionExpired && data.email.trim().toLowerCase() !== current.current.email) throw new ApiError(403, "Account mismatch", undefined, "FORBIDDEN", "permissionDenied");
+    setLoading(true); setError(null);
+    try { await loginApi(data); await loadUser(); channel.current?.postMessage("changed"); }
+    catch (err: unknown) { setError(toUiError(err)); throw err; }
+    finally { setLoading(false); }
+  }, [loadUser, sessionExpired]);
+  const register = useCallback(async (data: RegisterData) => {
+    setLoading(true); setError(null);
+    try { await registerApi(data); } // Registration never establishes a session.
+    catch (err: unknown) { setError(toUiError(err)); throw err; }
+    finally { setLoading(false); }
   }, []);
-
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      error,
-      hasToken,
-      login,
-      register,
-      logout,
-      refreshUser,
-      clearError,
-    }),
-    [user, loading, error, hasToken, login, register, logout, refreshUser, clearError]
-  );
-
+  const logout = useCallback(async () => {
+    setLoading(true); setError(null);
+    try { await logoutApi(); }
+    catch (err: unknown) { if (!(err instanceof ApiError && err.statusCode === 401)) { setError(toUiError(err)); throw err; } }
+    finally { setLoading(false); }
+    current.current = null; setUser(null); setSessionExpired(false);
+    channel.current?.postMessage("changed");
+  }, []);
+  const value = useMemo(() => ({ user, loading, error, sessionExpired, login, register, logout, refreshUser, clearError }), [user, loading, error, sessionExpired, login, register, logout, refreshUser, clearError]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

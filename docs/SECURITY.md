@@ -28,7 +28,7 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   outstanding-invitation uniqueness. It retains history and refuses ambiguous
   duplicates. **Deployment still needs P2-SCOPE-DEPLOY** and [ADR-008](adr/008-event-scope-integrity.md).
 - P2-ROLES-ADMIN-SCOPE completes the backend writer/operation inventory and
-  HTTP/PostgreSQL scope evidence for all 18 admin-only operations. The judge seed
+  HTTP/PostgreSQL scope evidence for all 20 admin-only operations. The judge seed
   now binds new access to its event; historical records remain unchanged. Read-only
   deployment preflight flags active scoped admin/global staff and removed admin
   assignments. See [scope evidence](ADMIN_SCOPE_VALIDATION.md); intended-deployment
@@ -54,12 +54,24 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   Reference/audit rollback and new-file cleanup are tested. Unreachable orphan
   cleanup and provider expansion remain P8-MEDIA; see [image evidence](IMAGE_BOUNDARIES_VALIDATION.md).
 
+P2-BOUNDARIES/ERRORS and P2-ROLES are locally complete: exact-origin CORS,
+API headers, validated production configuration, bounded sensitive-route limits,
+private parser 4xx envelopes and exact-key/event/permission UI gates. Limits remain
+process-local and proxy trust remains false. Denied role routes provide translated
+focus/home recovery. P2-SESSION/UI-SHELL and Phase 2 formatting now add HttpOnly
+browser cookies, exact-Origin/CSRF protection, audited revision logout, safe returns,
+preserved-work recovery, translated navigation/context/profile and UTC formatting.
+Full signup/recovery/invitation workflows and hosting controls remain gated. See
+[session/shell evidence](SESSION_SHELL_VALIDATION.md).
+See [boundary and role evidence](BOUNDARIES_ROLES_VALIDATION.md).
+
 ## Known gaps and owning tasks
 
 The [audit correction map](AUDIT_FOLLOWUP.md) tracks all 15 findings to roadmap
 owners and acceptance evidence. C1/C2/C3/C4/H2 are technically corrected locally
 under P2-INVITE-IDENTITY, P2-AUTH-ELIGIBILITY, P2-BOUNDARIES-UPLOADS and
-P2-IDENTITY-TOKENS; other findings
+P2-IDENTITY-TOKENS; H5/M1/M3 are now technically corrected locally under
+P2-BOUNDARIES/ERRORS and P2-ROLES; other findings
 remain open. M1 explicitly includes P2-INVITE-IDENTITY,
 P2-ROLES-ADMIN-SCOPE and P2-BOUNDARIES-UPLOADS/ERRORS. Mounted API security cannot
 be deferred until its UI or the full M4 staff workflow exists.
@@ -77,16 +89,16 @@ is inferred from the local probes.
 
 | Gap | Owner |
 | --- | --- |
-| Public signup lacks validated studio context; legitimate roleless accounts need recovery | P2-ONBOARDING-MODEL/SIGNUP |
-| Intended-account acceptance corrected locally; invitation management and acceptance UI remain incomplete | P2-INVITE / P2-UI-AUTH; P2-JUDGE-ACCEPT |
-| Scoped-admin bypass and backend inventory corrected locally; actual deployment assignment provenance/repair remains | P2-SCOPE-DEPLOY; frontend guards remain P2-ROLES |
+| Public signup requires studio context; pending/verified owners recover retained drafts without added privileges | P2-ONBOARDING-MODEL/SIGNUP |
+| Intended-account acceptance, admin pending management and translated acceptance UI implemented locally; Judge reconciliation remains | P2-INVITE / P2-UI-AUTH; P2-JUDGE-ACCEPT |
+| Scoped-admin bypass and backend inventory corrected locally; actual deployment assignment provenance/repair remains | P2-SCOPE-DEPLOY; frontend role consistency is now corrected locally |
 | Judge role and Judge record are separate; accepted-access removal/history policy incomplete | P2-JUDGE-ACCEPT/OFFBOARD |
 | Image ownership/content/private retrieval corrected locally; image UI and actual rollout remain gated | Owning UI workflows; P9 operations |
-| CORS hardcodes *; configured process-local limits cover recovery only; other auth/invite/upload limits and production boundary hardening pending | P2-BOUNDARIES |
-| Frontend guards disagree on display-name matching rather than stable keys/scope | P2-ROLES |
-| Credential-reset JWT revision checks exist; bearer storage/cookie and safe email/reauth return policy remain undecided | P2-SESSION |
+| Configured CORS, API headers and bounded process-local sensitive-route limits implemented; intended ingress/shared-instance policy and rollout remain | P9-DEPLOY / P9-OBSERVABILITY |
+| Exact-key/event/permission gates and translated shell/context/profile/signup/recovery/invitation journeys implemented locally; human and hosted release review remains | P2-SIGNUP / P2-UI-AUTH / P2-INVITE |
+| Cookie/native session isolation, Origin/CSRF, safe returns and audited all-session logout implemented locally; production HTTPS rollout and full workflow evidence remain | P9-DEPLOY / P2-UI-AUTH |
 | Minimal immutable transactional audit/privacy policy implemented; per-feature coverage and organizational retention review continue | Owning feature tasks; P9 operations |
-| Resend/queue/templates/retries implemented locally; real staging inbox evidence and link UI remain open | P2-EMAIL / P2-UI-AUTH |
+| Resend/queue/templates/retries implemented locally; link UI implemented locally; real staging inbox evidence remains open | P2-EMAIL / P2-UI-AUTH |
 | Durable orphan cleanup/retry and cloud/private media provider lifecycle remain incomplete | P8-MEDIA; current raster authorization/content/retrieval are delivered under ADR-015 |
 
 ## Change requirements
@@ -102,3 +114,11 @@ Frontend gates cannot authorize operations. Public discovery/results require
 approved minimal DTOs/publication controls under ADR-002; no spectator account is
 needed by target policy. [Testing](TESTING.md) defines evidence; passing DTO/unit
 checks alone does not establish security or external release readiness.
+
+Public onboarding now requires studio intent and proves/locks the owner for each
+pending read/save/cancel. It cannot issue ordinary pending sessions or grant roles,
+studios, membership or approvals. The password-proof limiter runs before parsing
+and bcrypt. Revision/operation guards, terminal cancellation and transactional audit
+protect recovered work. Invitation resend/revoke are global-admin-only,
+compare displayed expiry, preserve terminal history and audit/queue atomically;
+accepted access requires separate offboarding. See ADR-017 and onboarding validation.

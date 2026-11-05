@@ -143,7 +143,7 @@ test('scoped admin cannot use any mounted global-admin operation', async t => {
   const { request, prisma } = await fixture(t);
   const { operations } = require('../../../docs/api-coverage.json');
   const adminOperations = operations.filter(row => row.tests.globalAdmin);
-  assert.equal(adminOperations.length, 18);
+  assert.equal(adminOperations.length, 20);
   let assignments;
   prisma.userRole.findMany = async ({ where }) => {
     assert.deepEqual(where, { userId: 'actor', removedAt: null });
@@ -1019,7 +1019,7 @@ async function authFixture(t) {
     create: async ({ data, select }) => {
       f.calls.push({ name: 'auth-create', data, select });
       accountToken = { id: 'token', userId: 'account', consumedAt: null, revokedAt: null, ...data.accountTokens?.create };
-      return (user = { id: 'account', sessionVersion: 0, active: true, createdAt: new Date('2026-01-02'), roles: [], ...data });
+      return (user = { id: 'account', sessionVersion: 0, active: true, createdAt: new Date('2026-01-02'), roles: [], ...data, onboardingDraft: data.onboardingDraft ? { id: 'draft', status: 'DRAFT', updatedAt: new Date('2026-01-02'), ...data.onboardingDraft.create } : null });
     },
     update: async ({ data }) => (user = { ...user, ...data }),
     updateMany: async ({ where, data }) => {
@@ -1040,7 +1040,7 @@ async function authFixture(t) {
       digest: require('../dist/services/identityTokens.js').tokenDigest('VERIFY_EMAIL', raw), expiresAt: new Date(Date.now() + 60000), consumedAt: null, revokedAt: null }; },
     stored: () => user, setUser: value => { user = { sessionVersion: 0, active: true, emailVerified: true, ...value }; } };
 }
-const authInput = { email: 'auth-contract@example.invalid', name: ' Account ', password: 'fixture-password' };
+const authInput = { onboarding: require('../../../scripts/fixtures/studio-signup.cjs')(), email: 'auth-contract@example.invalid', name: ' Account ', password: 'fixture-password' };
 
 test('auth registration validates explicit response and private fields, hashes passwords and maps duplicates', async (t) => {
   const { request, deliveries, stored, storedToken, prisma } = await authFixture(t);
@@ -1056,7 +1056,9 @@ test('auth registration validates explicit response and private fields, hashes p
   assert.equal(deliveries.length, 1); assert.equal(stored().verificationToken, undefined);
   assert.equal(require('../dist/services/identityTokens.js').tokenDigest('VERIFY_EMAIL', deliveries[0].token), storedToken().digest);
   assert.ok(!JSON.stringify(stored()).includes(deliveries[0].token));
-  const duplicate = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
+  const identical = await request('/api/v1/auth/register', { method: 'POST', body: authInput });
+  assert.equal(identical.status, 201); assert.equal(deliveries.length, 1);
+  const duplicate = await request('/api/v1/auth/register', { method: 'POST', body: { ...authInput, onboarding: require('../../../scripts/fixtures/studio-signup.cjs')() } });
   assert.equal(duplicate.status, 409); ErrorResponseSchema.parse(duplicate.body);
   prisma.user.findUnique = async () => null;
   prisma.user.create = async () => { throw new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
@@ -1145,11 +1147,13 @@ test('auth profile constrains identity to the caller and explicitly serializes r
   const result = await request('/api/v1/auth/profile', { user: 'account' });
   assert.equal(result.status, 200); const profile = UserProfileSchema.parse(result.body);
   assert.equal(profile.createdAt, '2026-01-02T00:00:00.000Z'); assert.equal(profile.isAdmin, false);
+  assert.deepEqual(profile.permissions, [{ eventId: 'allowed-event', keys: ['event.manage'] }]);
   assert.equal(profile.roles[0].eventId, null); assert.equal(profile.roles[1].role.key, 'representative');
   assert.equal(JSON.stringify(profile).includes('private'), false);
   const lookup = calls.filter(c => c.name === 'auth-user').at(-1);
   assert.deepEqual(lookup.where, { id: 'account' }); assert.equal(lookup.select.roles.select.role.select.key, true);
   assert.equal(lookup.select.password, undefined);
+  assert.deepEqual(lookup.select.roles.where, { removedAt: null });
   const roleReads = calls.filter(call => call.name === 'roles').length;
   for (const state of [{ active: false, emailVerified: true }, { active: true, emailVerified: false }]) {
     setUser({ id: 'account', email: authInput.email, name: 'Account', ...state });
@@ -1330,9 +1334,9 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
   assert.notEqual(stored.tokenDigest, deliveredToken); assert.equal(stored.token, undefined);
   const preview = await request('/api/v1/invitations/' + deliveredToken); schemas.InvitationPreviewSchema.parse(preview.body);
   assert.equal(preview.body.token, undefined); assert.equal(preview.body.event.id, 'e');
-  stored.usedAt = new Date(); const used = await request('/api/v1/invitations/' + deliveredToken); assert.equal(used.status, 400); assert.equal(used.body.reason, 'invitationUsed');
+  stored.usedAt = new Date(); const used = await request('/api/v1/invitations/' + deliveredToken); assert.equal(used.status, 200); assert.equal(used.body.status, 'ACCEPTED');
   stored.usedAt = null; stored.expiresAt = new Date('2020-01-01');
-  assert.equal((await request('/api/v1/invitations/' + deliveredToken)).body.reason, 'invitationExpired');
+  assert.equal((await request('/api/v1/invitations/' + deliveredToken)).body.status, 'EXPIRED');
   prisma.invitation.findFirst = async () => stored;
   assert.equal((await create(body)).status, 409);
   prisma.invitation.findFirst = async () => null;
@@ -1373,20 +1377,15 @@ test('invitation acceptance returns an explicit session and atomically links rol
   assert.equal((await accept({ token: 'fixture', name: 'New', password: 'fixture-password' })).body.reason, 'invitationUsed');
 });
 
-test('superseded invitation links cannot be inspected or accepted even with future expiry', async (t) => {
+test('superseded invitation links expose terminal state but cannot be accepted', async (t) => {
   const { request, prisma } = await fixture(t);
-  prisma.invitation.findUnique = async () => ({ id: 'superseded', usedAt: null,
+  prisma.invitation.findUnique = async () => ({ id: 'superseded', email:'former@example.invalid', roleKey:'judge', eventId:'e', studioId:null, roleId:'r', event:{id:'e',name:'Event'}, usedAt: null,
     supersededAt: new Date(), expiresAt: new Date(Date.now() + 60000) });
-  prisma.user.findUnique = async () => assert.fail('Superseded links must not reach account handling');
-  for (const result of [
-    await request('/api/v1/invitations/superseded'),
-    await request('/api/v1/invitations/accept', { method: 'POST', body: {
-      token: 'superseded', name: 'Fixture', password: 'fixture-password',
-    } }),
-  ]) {
-    assert.equal(result.status, 400);
-    assert.equal(result.body.reason, 'invitationExpired');
-  }
+  const preview = await request('/api/v1/invitations/superseded');
+  assert.equal(preview.status,200); assert.equal(preview.body.status,'SUPERSEDED');
+  prisma.user.findUnique = async () => assert.fail('Terminal acceptance must not reach account handling');
+  const result = await request('/api/v1/invitations/accept', { method:'POST',body:{token:'superseded',name:'Fixture',password:'fixture-password'} });
+  assert.equal(result.status,400); assert.equal(result.body.reason,'invitationExpired');
 });
 
 test('existing invitation recipients require intended eligible identity and receive no new session', async t => {
@@ -1545,4 +1544,25 @@ test('database race fallbacks and malformed JWT identities retain the standard e
     assert.equal(result.status, code === 'P2025' ? 404 : 409); require('@dance/schemas').ErrorResponseSchema.parse(result.body);
     assert.ok(!JSON.stringify(result.body).includes('Private'));
   }
+});
+
+test('public onboarding rejects generic signup and malformed owner commands', async t => {
+ const {request}=await fixture(t);
+ const result=await request('/api/v1/auth/register',{method:'POST',body:{email:'generic@example.invalid',password:'password123',name:'Generic'}});
+ assert.equal(result.status,400); assert.ok(result.body.issues.some(issue=>issue.path[0]==='onboarding'));
+ for(const action of ['read','save','cancel']) {
+  assert.equal((await request('/api/v1/auth/onboarding/'+action,{method:'POST',body:{}})).status,401);
+  assert.equal((await request('/api/v1/auth/onboarding/'+action,{method:'POST',body:{email:'bad',password:'',userId:'victim'}})).status,400);
+ }
+});
+test('invitation lifecycle commands require global admin and a strict displayed revision', async t => {
+ const {request,calls}=await fixture(t);
+ for(const action of ['resend','revoke']) {
+  const path='/api/v1/invitations/i/'+action;
+  assert.equal((await request(path,{method:'POST',body:{}})).status,401);
+  assert.equal((await request(path,{user:'moderator',method:'POST',body:{}})).status,403);
+  assert.equal((await request(path,{user:'admin',method:'POST',body:{expiresAt:'invalid'}})).status,400);
+  assert.equal((await request(path,{user:'admin',method:'POST',body:{expiresAt:new Date().toISOString(),extra:true}})).status,400);
+ }
+ assert.ok(calls.every(call=>call.name==='roles'));
 });

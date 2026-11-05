@@ -10,36 +10,21 @@ export type { AuthResponse, UserProfile, ErrorResponse } from "@dance/schemas";
 
 const API_BASE_URL = import.meta.env?.VITE_API_URL || "http://localhost:4000/api/v1";
 
-const TOKEN_KEY = "auth_token";
+// Only nonsecret notifications leave this module. Credentials remain HttpOnly.
+export const sessionEvents = new EventTarget();
+export function clearLegacyToken(): void {
+  try { localStorage.removeItem("auth_token"); } catch { /* No credential fallback. */ }
+}
 
-/**
- * Get the stored JWT token from localStorage
- */
-export const getToken = (): string | null => {
-  return localStorage.getItem(TOKEN_KEY);
-};
-
-/**
- * Store JWT token in localStorage
- */
-export const setToken = (token: string): void => {
-  localStorage.setItem(TOKEN_KEY, token);
-};
-
-/**
- * Remove JWT token from localStorage
- */
-export const removeToken = (): void => {
-  localStorage.removeItem(TOKEN_KEY);
-};
-
-/**
- * Redirect to login page and clear token
- */
-const redirectToLogin = (): void => {
-  removeToken();
-  window.location.href = "/auth/login";
-};
+export function privateImageUrl(endpoint: string, baseUrl = API_BASE_URL, origin = typeof window === "undefined" ? "http://localhost:4000" : window.location.origin): string {
+  try {
+    const base = new URL(baseUrl, origin);
+    const target = new URL(endpoint, base);
+    if (!["http:", "https:"].includes(base.protocol) || target.origin !== base.origin || target.username || target.password || target.search || target.hash ||
+      !/^\/uploads\/(events|users|studios|dancers)\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/.test(target.pathname)) throw new Error("Invalid image target");
+    return target.href;
+  } catch { throw new ApiError(502, "Invalid image URL", undefined, "INVALID_RESPONSE", "invalidResponse"); }
+}
 
 /**
  * Make an authenticated API request
@@ -50,27 +35,16 @@ async function request(
   image = false,
 ): Promise<unknown> {
   let url = `${API_BASE_URL}${endpoint}`;
-  if (image) {
-    let target: URL;
-    try { target = new URL(endpoint, API_BASE_URL); }
-    catch { throw new ApiError(502, "Invalid image URL", undefined, "INVALID_RESPONSE", "invalidResponse"); }
-    if (target.origin !== new URL(API_BASE_URL).origin || target.username || target.password || target.search || target.hash ||
-        !/^\/uploads\/(events|users|studios|dancers)\/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.webp$/.test(target.pathname)) {
-      throw new ApiError(502, "Invalid image URL", undefined, "INVALID_RESPONSE", "invalidResponse");
-    }
-    url = target.href;
-  }
-  const token = getToken();
+  if (image) url = privateImageUrl(endpoint);
+
 
   // Prepare headers
   const headers: Record<string, string> = {
     ...(image || options.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
   };
 
-  // Add Authorization header if token exists
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
+  if (!["GET", "HEAD"].includes(options.method ?? "GET")) headers["X-CSRF-Protection"] = "1";
+  if (["/auth/login", "/auth/verify-email", "/invitations/accept"].includes(endpoint)) headers["X-Session-Transport"] = "cookie";
 
   // Merge with provided headers
   if (options.headers) {
@@ -80,12 +54,13 @@ async function request(
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: "include",
       headers,
     });
 
     // Handle authentication errors
-    if (response.status === 401 && token) {
-      redirectToLogin();
+    if (response.status === 401) {
+      sessionEvents.dispatchEvent(new Event("expired"));
       throw new ApiError(401, "Unauthorized", undefined, "UNAUTHORIZED", "authenticationRequired");
     }
 

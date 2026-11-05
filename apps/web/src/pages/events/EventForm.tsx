@@ -33,20 +33,19 @@ type EventFormProps = {
   onCancel: () => void;
 };
 
-const toLocalInputValue = (value: string | Date): string => {
+const toUtcInputValue = (value: string | Date): string => {
   const date = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(date.getTime())) {
     return "";
   }
-  const offset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+  return date.toISOString().slice(0, 16);
 };
 
 const toIsoString = (value: string): string => {
   if (!value) {
     return "";
   }
-  const date = new Date(value);
+  const date = new Date(value + "Z");
   if (Number.isNaN(date.getTime())) {
     return "";
   }
@@ -70,8 +69,8 @@ export function EventForm({
   const fieldMessage = (field: string) => { const issue = fieldErrors[field]; return issue ? formatIssue(issue, locale) : null; };
   const [formValues, setFormValues] = useState<EventFormValues>(() => ({
     name: initialValues.name ?? "",
-    startsAt: toLocalInputValue(initialValues.startsAt),
-    endsAt: toLocalInputValue(initialValues.endsAt),
+    startsAt: toUtcInputValue(initialValues.startsAt),
+    endsAt: toUtcInputValue(initialValues.endsAt),
     stage: initialValues.stage ?? EventStageSchema.options[0],
   }));
 
@@ -118,6 +117,7 @@ export function EventForm({
         <div className="flex flex-col gap-2">
           <p className="text-xs uppercase tracking-[0.3em] text-amber-500">{t("Common.events")}</p>
           <h1 className="font-display text-3xl text-slate-900">{title}</h1>
+          <p>{t("Shell.utc")}</p>
           <p className="text-sm text-slate-500">{t("Events.formHint")}</p>
         </div>
 

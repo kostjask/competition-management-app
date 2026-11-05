@@ -1,0 +1,1 @@
+module.exports = function studioIntent() { return { operationId: require('node:crypto').randomUUID(), revision: 0, intendedEventId: null, details: { studioName: 'Synthetic studio', country: 'EE', city: 'Tallinn', directorName: 'Synthetic director', directorPhone: '' } }; };

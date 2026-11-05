@@ -35,7 +35,7 @@ Target screen contracts, not an implementation claim. Inherit all shared
 - **Sections / components:** context/title, semantic form, instructions, show-password button, linked errors, progress/success, recovery/contact links; verification has a deliberate Continue action.
 - **States:** submitting, check-email, missing/expired/used token, wrong account, unverified/inactive account, throttled request, delivery failure and safe resend/address-correction path after contracts exist.
 - **Responsive / accessibility:** single readable form column on every device; optional secondary introduction on desktop; password manager/autocomplete/paste, keyboard submit, focus error summary.
-- **API:** auth register/login/verify-email; resend/reset and onboarding context are pending P2 contracts. Logout currently clears local bearer state; broader invalidation depends on session decision.
+- **API:** auth register/login/verify-email; resend/reset and onboarding context are pending P2 contracts. Logout now atomically revokes all account sessions under ADR-016 and clears the browser cookie.
 - **Acceptance:** no staff self-selection, no false sent/session claim, selected task/language survives defined recovery, wrong-account links cannot grant access. F01/F06.
 
 ## S04 — Profile
@@ -44,7 +44,22 @@ Target screen contracts, not an implementation claim. Inherit all shared
 - **Primary action:** inspect identity and event-scoped assignments; preference/edit only when supported.
 - **Data:** own profile DTO and agreed locale preference contract.
 - **Sections / components:** identity, localized joined date, role/event list, account recovery/help; global scope explicitly labeled rather than “No event.”
-- **States:** loading, retryable unavailable, legitimate no roles with application link, expired session; no inert Edit action.
+- **States:** loading, retryable unavailable, legitimate no roles with event browsing and truthful application-unavailable feedback, expired session; no inert Edit action.
 - **Responsive / accessibility:** definition lists stack; long email wraps; roles are text, dates use locale formatter.
 - **API:** GET `/auth/profile`; no current profile update endpoint.
 - **Acceptance:** pending users have a next action; no promise that editing representative contact changes login email. F01/F04.
+
+## Delivered account slice (2026-11-05)
+
+P2-SIGNUP/INVITE/UI-AUTH implement studio-intent signup/check-email, memory-only
+owner proof at /auth/onboarding, revision-aware save/reload/retained cancellation,
+resend/correct-email/password request and /auth/reset-password. Invitation mail
+opens /auth/accept-invitation: terminal link explanation, new setup, existing
+locked-email sign-in, explicit wrong-account logout and deliberate acceptance.
+Secrets are stripped from URLs and require reopening mail after reload. Generic
+signup and public role selection are rejected by the API. All acknowledgements
+leave delivery unconfirmed. /admin/invitations allows authorized event staff
+creation, displayed-expiry resend/revoke and retained status. Pending revocation
+never removes accepted access. Judge readiness, applications and offboarding remain
+gated. See [validation](../ONBOARDING_INVITATIONS_VALIDATION.md) for local evidence
+and external/manual release limits.

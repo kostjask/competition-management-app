@@ -5,7 +5,7 @@ const { TextDecoder } = require('node:util');
 
 const root = path.resolve(__dirname, '..');
 const files = [];
-const excluded = new Set(['node_modules', '.git', '.turbo', 'dist', 'coverage']);
+const excluded = new Set(['node_modules', '.git', '.turbo', 'dist', 'coverage', 'test-results', 'playwright-report']);
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     if (entry.isSymbolicLink() || excluded.has(entry.name)) continue;

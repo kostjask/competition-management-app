@@ -32,8 +32,13 @@ the wrapper is not a requirement imposed by older Express behavior.
 ZodError reaches the global handler and becomes a 400 with structured issues.
 Do not wrap an output-contract failure as user input: it is a server defect.
 Known Prisma P2002/P2003/P2034 errors become 409 (conflict, relationshipConflict,
-concurrentChange); P2025 becomes 404. Malformed JSON becomes 400; unexpected
-errors receive sanitized 500 output. Inspect operation code for narrower mappings.
+concurrentChange); P2025 becomes 404. JSON is limited to 100 KiB; oversized bodies
+return 413 requestTooLarge. Malformed JSON and parser aborted/invalid-length errors
+return 400 invalidInput. Unsupported charset/content encoding returns 415
+unsupportedEncoding; compressed JSON requests are explicitly unsupported. Parser
+input, body, charset and exception details never enter the envelope. ET/EN/RU
+feedback uses the shared reasons. Unknown exceptions (including unrelated status
+properties) still receive sanitized 500 output. Inspect operation code for narrower mappings.
 
 ## Frontend
 

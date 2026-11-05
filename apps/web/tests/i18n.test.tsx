@@ -96,7 +96,7 @@ test("initialization tolerates unavailable storage and unknown/nested validation
     const issues = validationIssues(result.error.issues); assert.ok(issues.some(issue => issue.rule === "invalid_type"));
     if (issues.some(issue => issue.path[0] === "dancerIds")) assert.deepEqual(issues[0].path, ["dancerIds", 0]);
   }
-  const future = RegisterSchema.refine(() => false, { params: { reason: "futureRule" } }).safeParse({ email: "fixture@example.invalid", name: "Fixture", password: "fixture-password" });
+  const future = RegisterSchema.refine(() => false, { params: { reason: "futureRule" } }).safeParse({ email: "fixture@example.invalid", name: "Fixture", password: "fixture-password", onboarding: { operationId: "00000000-0000-4000-8000-000000000000", revision: 0, intendedEventId: null, details: { studioName: "Fixture", country: "EE", city: "Tallinn", directorName: "Fixture", directorPhone: "" } } });
   assert.equal(future.success, false); if (future.success) return;
   assert.equal(validationIssues(future.error.issues)[0].rule, "invalid");
   const remote = toUiError(parseApiError(400, { reason: "invalidInput", issues: [{ path: ["name"], rule: "futureRule", params: {} }] }));

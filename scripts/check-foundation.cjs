@@ -96,7 +96,7 @@ async function main() {
     assert.equal((await request('/events', {}, session)).status, 403, 'Removed admin cannot bypass');
 
     stage = 'transactional email queue';
-    const registered = await request('/auth/register', { email: 'foundation-mail@example.invalid', password: 'fixture-password', name: 'Mail fixture', locale: 'ru' });
+    const registered = await request('/auth/register', { onboarding: require('./fixtures/studio-signup.cjs')(), email: 'foundation-mail@example.invalid', password: 'fixture-password', name: 'Mail fixture', locale: 'ru' });
     assert.equal(registered.status, 201); assert.equal(registered.body.delivery, 'unconfirmed');
     const rows = await client.emailDelivery.findMany({ where: { state: 'PENDING' } }); assert.equal(rows.length, 1);
     const queued = rows[0]; const envelope = mail.decryptEmail(queued.ciphertext, queued.id, process.env.EMAIL_QUEUE_KEY);

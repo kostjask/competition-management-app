@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { LanguageContext } from "./LanguageContext";
 import { initialLocale, isLocale, DEFAULT_LOCALE, STORAGE_KEY, type Locale } from "./locale";
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, updateLocale] = useState<Locale>(initialLocale);
+  useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   const setLocale = (value: Locale) => {
     const next = isLocale(value) ? value : DEFAULT_LOCALE;
     updateLocale(next);

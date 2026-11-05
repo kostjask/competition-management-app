@@ -1,23 +1,5 @@
-import { type Locale } from "@i18n/LanguageContext";
-import {useCallback} from "react";
+import type { Locale } from "../../../i18n/locale";
+import { useCallback } from "react";
+import { formatInstant } from "../../../i18n/format";
 type Style = "short" | "medium" | "long";
-
-export const useDateFormatter = (locale: Locale, dateStyle: Style = "long", timeStyle: Style = "short") => {
-  return useCallback(
-    (value: string): string => {
-      try {
-        const date = new Date(value);
-        if (isNaN(date.getTime())) {
-          return value; // Return original string if date is invalid
-        }
-        return new Intl.DateTimeFormat(locale, {
-          dateStyle,
-          timeStyle,
-        }).format(date);
-      } catch {
-        return value; // Return original string if formatting fails
-      }
-    },
-    [locale, dateStyle, timeStyle],
-  );
-};
+export const useDateFormatter = (locale: Locale, dateStyle: Style = "long", timeStyle: Style = "short") => useCallback((value: string) => formatInstant(value, locale, dateStyle, timeStyle), [locale, dateStyle, timeStyle]);

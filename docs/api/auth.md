@@ -6,7 +6,12 @@ Public mutations include `POST /api/v1/auth/register`, `/auth/login`,
 `/auth/verify-email` and the recovery operations below. Bodies reject unknown fields. Registration requires a
 valid `email`, a password of at least eight characters and at most 72 UTF-8 bytes, and a trimmed name of
 at least two characters, with optional locale et/en/ru persisted as recipient
-preference (no browser inference). Login requires email and nonempty password; verification
+preference (no browser inference). Registration also requires a strict `onboarding`
+object: UUID `operationId`, `revision: 0`, nullable existing `intendedEventId`,
+and `details` containing studioName (2-160), country (2-100), city (1-100),
+directorName (2-160) and directorPhone (0-40 characters). No role/user selector is
+accepted. Account, initial draft (revision 1), verification token, audit and delivery
+intent commit atomically. Signup grants no studio, membership, application or role. Login requires email and nonempty password; verification
 requires a nonempty token. Account/invitation email inputs strip surrounding ASCII
 spaces and lowercase ASCII letters before validation. Dots and plus tags remain
 significant; non-ASCII addresses are rejected. See [ADR-009](../adr/009-email-identity.md).
@@ -15,7 +20,9 @@ Invalid input returns the standard 400 envelope with `details.fields`.
 Registration returns 201 with `message`, `messageId: "registered"`, `userId`
 and `delivery: "unconfirmed"`,
 without a session.
-An existing email or a database uniqueness race returns 409 `CONFLICT`.
+An exact original retry with current password proof, matching operation/details/name/locale
+and unchanged active draft returns the original acknowledgement without duplicate mail.
+Other existing emails/changed drafts and uniqueness races return 409 `CONFLICT`.
 Login requires correct credentials plus an active, verified account and returns
 200 with `token`, literal `tokenType: "Bearer"`, and `user`
 containing only `id`, `email`, and `name`. Verification returns the same
@@ -27,8 +34,8 @@ accounts return 403 without consuming a live token. Concurrent losers may return
 409; only one request can verify and receive a session. Bad credentials return
 401; disabled login returns 403 `accountDisabled`, and unverified login with
 correct credentials returns 403 `emailVerificationRequired` (ET/EN/RU).
-Those failures do not mint sessions or mutate account state. The frontend
-validates each complete response before saving a returned session token.
+Those failures do not mint sessions or mutate account state. The browser validates
+its token-free session metadata, then refreshes profile before continuing.
 
 Every protected operation rechecks that the bearer subject still exists, is
 active, verified and has the JWT's current integer sessionVersion before loading
@@ -41,15 +48,22 @@ remain separate; a verified roleless user is eligible but gains no new privilege
 
 `GET /api/v1/auth/profile` requires an eligible session and always selects the
 caller, ignoring any attempted user selector in query parameters. It returns
-`id`, `email`, `name`, ISO UTC `createdAt`, `isAdmin`, and `roles`.
+`id`, `email`, `name`, ISO UTC `createdAt`, `isAdmin`, `roles`, and `permissions`.
 Each role assignment contains only `id`, nullable `eventId`,
 `role: { id, key, name }`, and nullable `event: { id, name }`.
-Null event scope represents existing global assignments; event-specific IDs are
-preserved. Roleless accounts receive an empty array. Assignments sort by ID.
+Only active assignments are included. Null event scope represents existing global
+assignments; event-specific IDs are preserved. Roleless accounts receive empty
+roles and permissions arrays. Assignments sort by ID. Resolved permissions contain
+`{ eventId: string | null, keys: string[] }` with sorted operation keys, from the same
+request authorization used by the backend. Scoped admin/global staff rows confer
+no permissions; only isAdmin grants the global bypass. Admin permissions may be
+empty because isAdmin is authoritative. Assignment removal takes effect on the
+next profile request. Refresh the profile to reconcile client presentation; every
+backend request still rechecks authorization independently.
 Profiles exclude passwords, verification tokens, private paths, role descriptions,
 permission relations, and redundant user/role foreign keys. A missing caller
-record fails at authentication with 401. Role keys/scopes are now available; frontend role-guard
-unification remains P2-ROLES.
+record fails at authentication with 401. Frontend gates use exact keys, resolved
+permissions and event scope; display names never authorize.
 
 Auth success DTOs validate on both server and client. The shared error contract
 uses the global [semantic envelope](../ERROR_HANDLING.md), including reason, params
@@ -59,13 +73,56 @@ that envelope and retains server messages/details, including disabled-account
 session-clearing/redirect behavior is unchanged. JWT expiry uses validated
 compact durations documented in [environment configuration](../ENVIRONMENT_CONFIGURATION.md).
 
-Registration atomically creates its account and initial verification digest;
+Registration atomically creates its account, owner draft and initial verification digest;
 raw secrets are passed only to the delivery adapter. AccountToken records retain
 consumed/revoked history and bind the immutable account ID and issuance email.
 Internal rotation/recovery helpers implement one outstanding token per purpose,
 one-hour recovery expiry and atomic password change for active verified accounts,
 without granting access, reactivation or a new session. Public operations now use
 these primitives under [ADR-011](../adr/011-public-account-recovery.md).
+
+## Browser sessions and logout
+
+[ADR-016](../adr/016-browser-sessions-and-safe-return.md) defines the threat model.
+Login, verification and new-account invitation acceptance negotiate browser mode
+with X-Session-Transport: cookie. Responses replace token/tokenType with
+session: cookie and ISO expiresAt, retaining the explicit user and operation
+message fields. No browser JWT enters JSON or Web Storage. The host-only HttpOnly
+cookie is dance_session in development/test and __Host-dance_session in production;
+it uses Path=/, SameSite=Lax, Secure in production and a fixed one-hour expiry.
+Bearer API clients omit the header and retain their existing explicit token DTO.
+Cookie JWTs cannot authenticate as bearer tokens or vice versa; ambiguous credentials
+fail closed. Supplied invitation cookies receive the same identity/eligibility checks.
+
+Every unsafe cookie request, including login, requires an exact configured Origin
+and X-CSRF-Protection: 1. Credentialed CORS is limited to exact allowed origins;
+wildcard development configuration cannot support browser sessions. Browser requests
+use credentials: include, including canonical private images and multipart uploads.
+No Origin is required for native bearer requests. HTTPS/same-site browser/API or
+same-origin ingress is required in production; do not weaken Secure for rehearsal.
+
+POST /auth/logout is authenticated, accepts an empty body/object only, and returns
+204 after atomically incrementing only the caller's sessionVersion and appending
+SESSION_REVOKED audit. It revokes all account sessions without changing credentials,
+roles, membership or other accounts. Its cookie is cleared only after commit.
+An audit/domain failure rolls back both changes. Concurrent/stale requests fail at
+401 and do not duplicate audit. Failed offline logout never claims revocation.
+
+Bootstrap always reads profile. A 401 pauses an already mounted browser view behind
+an inert reauthentication dialog instead of navigating away or replaying writes.
+Recovery locks the prior account email; switching account requires explicit logout
+and confirmation of lost unsaved work. Other tabs receive nonsecret BroadcastChannel
+notifications and recheck or pause; server revision checks are authoritative on every
+device. Browsers without BroadcastChannel reconcile on their next protected request.
+Passwords/private work are not persisted. Reload recovers only already saved work.
+
+Return destinations use the shared implemented-route allowlist. Only canonical
+relative paths without query/hash/escapes/credentials are accepted; unsupported or
+external values fall back to /. Login uses a validated returnTo query rather than
+unchecked router state. Verification removes its secret from the visible URL before
+an explicit Verify action and offers a deliberate Continue; missing device context
+falls back to /. Signed-in users must explicitly sign out before verifying a different
+account. Full recovery/signup/invitation UI and real email remain their existing gates.
 
 ## Public recovery operations
 
@@ -109,21 +166,46 @@ session after successful reset; no new auth screen is delivered by this slice.
 All four operations share configured per-IP process-local throttling: default
 100 requests per 15 minutes, including invalid input. Excess requests return 429
 tooManyRequests plus Retry-After. Proxy trust is false and forwarded headers do
-not change the bucket. Distributed limits and other auth/invite/upload endpoints
-remain P2-BOUNDARIES; these defaults do not authorize external release.
+not change the bucket. Other auth, invitation and upload operations now have
+separate configured buckets; login defaults to 20 per window. See
+[boundary configuration](../ENVIRONMENT_CONFIGURATION.md). Distributed/ingress
+limits remain deployment work; these defaults do not authorize external release.
 
 Migration invalidates old links and removes plaintext columns, preserving accounts
 and ownership. The development email fake is silent; production delivery throws
 unavailable, producing the standard private 500 instead of a false success.
-Initial registration/invitation writes can already be persisted when delivery
-fails. Recovery uses the rollback semantics above; truthful delivered UI/provider
+Transactional queue/domain changes commit atomically; provider retries remain
+explicitly unconfirmed. Recovery uses the rollback semantics above; truthful delivered UI/provider
 contracts and real email remain P2-UI-AUTH/EMAIL work.
 
 DEV_AUTH is restricted to NODE_ENV=development and resolves DEV_AUTH_EMAIL to a
 persisted active/verified account with its actual database roles. It grants no
 synthetic admin identity or permissions. See [configuration](../ENVIRONMENT_CONFIGURATION.md).
 
-Signup eligibility, safe return destinations, auth UI and secure email delivery
-remain open. Credential-revision invalidation is implemented; broader session
-storage/cookie/return handling remains P2-SESSION.
+Signup eligibility, full auth UI and real email delivery remain open. Browser
+cookie storage/expiry, audited logout and safe return handling are implemented
+locally under P2-SESSION.
 These gaps prevent external onboarding release.
+
+## Owner-proven onboarding
+
+[ADR-017](../adr/017-public-onboarding-and-invitation-lifecycle.md) supplies three
+canonical POST operations: /auth/onboarding/read, /save, /cancel. Every request
+uses either strict email/password proof or an eligible verified session. Read
+accepts proof or {}; save accepts proof plus draft, or {draft}; cancel accepts
+proof plus revision, or {revision}. Draft is the shared OnboardingSaveSchema:
+UUID operationId, nonnegative integer revision, nullable existing intendedEventId,
+and the five bounded details strings (partial empty strings allowed after signup).
+No owner ID can be supplied. Password proof grants no ordinary session and cannot
+read other accounts. Wrong/inactive proof returns 401; session eligibility still
+requires active/verified/current revision. The dedicated IP limit uses the login
+request allowance and runs before parsing/bcrypt.
+
+All return 200 with {email,emailVerified,returnTo,draft}; draft is null or
+{id,status,revision,intendedEventId,details,updatedAt}. returnTo is allowlisted and
+updatedAt is ISO UTC. Save uses optimistic revision plus operation UUID; exact
+retries return stored state, conflicting/stale operations return 409. Cancellation
+increments revision and retains account/history; it never deletes or reopens a
+terminal draft. Verified reads preserve prior progress. Read/write identity checks,
+revision changes and ONBOARDING_SAVED/CANCELLED audit commit serializably.
+Application submission/approval remains P5-APPLICATION.

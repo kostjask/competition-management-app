@@ -32,6 +32,7 @@ services:
     environment:
       NODE_ENV: production
       DEV_AUTH: "false"
+      CORS_ORIGIN: ${STAGING_CORS_ORIGIN:-http://127.0.0.1:8080,http://localhost:8080}
       DATABASE_URL: postgresql://dance_staging:${STAGING_DB_PASSWORD}@postgres:5432/dance_staging
       JWT_SECRET: ${STAGING_JWT_SECRET:?Set an independent JWT secret}
       EMAIL_PROVIDER: ${STAGING_EMAIL_PROVIDER:-fake}

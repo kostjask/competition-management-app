@@ -30,7 +30,7 @@ test('email stub rejects production delivery without logging arguments', async t
           { message: 'Email delivery is unavailable' });
       }
     })().catch(() => { process.exitCode = 1; });
-  `], { env: { ...process.env, NODE_ENV: 'production', DEV_AUTH: 'false', EMAIL_PROVIDER: 'fake' }, encoding: 'utf8' });
+  `], { env: { ...process.env, NODE_ENV: 'production', DEV_AUTH: 'false', EMAIL_PROVIDER: 'fake', CORS_ORIGIN: 'https://app.example.invalid' }, encoding: 'utf8' });
   assert.equal(result.status, 0, 'Production fake must refuse delivery');
   assert.equal(result.stdout, ''); assert.equal(result.stderr, '');
 });

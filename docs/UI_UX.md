@@ -75,13 +75,13 @@ controllers, shared schemas, Prisma model and the related maintained guides.
 
 | Finding / mismatch | Evidence and intended resolution | Owner |
 | --- | --- | --- |
-| Product signup is studio-focused; current signup is generic | ADR-006 versus RegisterPage/auth API. Enforce recoverable onboarding on backend; do not merely relabel signup. | P2-SIGNUP |
+| Studio signup and owner-proven recovery implemented locally | ADR-017 enforces intent, atomic owner draft and password/session proof without domain privileges. Applications remain gated. | P2-SIGNUP complete locally; P5-APPLICATION |
 | Verification instructions exceed runtime enforcement | RegisterPage asks users to check email; login still permits unverified accounts and delivery is a stub. | P2-AUTH/EMAIL |
 | Event screens look public but data is protected | `/events` and detail lack route auth guards; API reads require auth per ADR-002. Explicit sign-in state now; public release only after DTO/publication decision. | P2-UI-SHELL; UX-D02 |
 | Dead application links and incorrect stage availability | EventInfo links `/events/:id/register` and `/events/:id/studio`; neither route exists. It offers application in DATA_REVIEW; backend only allows new non-admin applications in PRE_REGISTRATION/REGISTRATION_OPEN. | P5-APPLICATION |
 | Guards disagree about roles and omit consistent event scope | useRole uses exact display names; RequireRole uses fuzzy display names. Backend profile already exposes keys/scopes. Denied guards redirect home without explanation. | P2-ROLES |
 | Interrupted authentication loses task | Login restores pathname only; token-bearing 401 hard redirects; verification sends users home after a timer and is guest-gated. Signed-in/wrong-account email links need deliberate recovery. | P2-SESSION/AUTH |
-| Missing invitation and recovery screens | `/accept-invitation` is used by email but absent; password reset, resend/revoke UI/API are incomplete. Judge record and role remain separate. | P2-INVITE/JUDGE-ACCEPT |
+| Invitation/recovery screens and pending management implemented locally | `/auth/accept-invitation` and `/auth/reset-password` match mail contracts; global-admin create/resend/revoke/status is available. Judge record and role remain separate. | P2-INVITE/UI-AUTH complete locally; P2-JUDGE-ACCEPT |
 | Dashboards and profile controls overpromise | Four role pages are text placeholders; profile Edit has no handler and account menu says Edit Profile. Remove misleading actions or deliver a supported contract. | P2-UI-SHELL; feature phases |
 | Event form omits stored setup details and controlled transitions | EventForm collects name/dates/stage; edit initializes only those. Venue/limits/image/timezone/deadlines/checklist need feature work; raw stage selector is not a transition workflow. | P3-REGISTRATION/P4-CORE |
 | Draft, music, live and results promises exceed persistence | Performance create needs complete fields and stage order; Score has free-form criterion/Float, no sheet locks. No music/live/results endpoints or screens. Keep these as gated targets. | Phases 3, 5–7 |
@@ -139,7 +139,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
-| S17 | P `/accept-invitation`, `/admin/events/:id/staff`, `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
+| S17 | I `/auth/accept-invitation`, `/admin/invitations`; P `/admin/events/:id/staff`, `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 
 Current role-section unknown children redirect to their root. Add deliberate
 not-found handling as nested screens arrive; do not let a typo masquerade as a

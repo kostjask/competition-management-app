@@ -7,12 +7,14 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
+    "jsx": "react-jsx",
     "types": ["node"]
   },
   "include": [
     "playwright.config.ts",
     "tests/browser/**/*.ts",
     "apps/web/tests/browser-setup.ts",
-    "apps/web/tests/foundation.test.tsx"
+    "apps/web/tests/foundation.test.tsx",
+    "apps/web/tests/roles.test.tsx"
   ]
 }

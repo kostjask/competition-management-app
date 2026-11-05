@@ -1,22 +1,15 @@
 import type { JSX } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { safeReturnPath } from "@dance/schemas";
 import { useAuth } from "./useAuth";
+import { useTranslation } from "../i18n/useTranslation";
+import { ErrorFeedback } from "../components/ErrorFeedback";
+import { Button, LoadingState } from "../components/ui/Foundation";
 
 export function RequireAuth({ children }: { children: JSX.Element }) {
-  const { hasToken, user, loading } = useAuth();
-  const location = useLocation();
-
-  if (!hasToken) {
-    return <Navigate to="/auth/login" state={{ from: location }} replace />;
-  }
-
-  if (loading && !user) {
-    return <div className="p-6">Loading...</div>;
-  }
-
-  if (!user) {
-    return <Navigate to="/auth/login" replace />;
-  }
-
+  const { user, loading, error, refreshUser } = useAuth(); const location = useLocation(); const { t } = useTranslation();
+  if (loading && !user) return <LoadingState label={t("Access.loading")} />;
+  if (!user && error) return <section className="p-6"><h1>{t("Shell.unavailable")}</h1><ErrorFeedback error={error} /><Button onClick={() => { void refreshUser().catch(() => {}); }}>{t("Shell.retry")}</Button></section>;
+  if (!user) return <section className="p-6"><h1>{t("Shell.signInRequired")}</h1><Link className="ui-button ui-button-primary" to={"/auth/login?returnTo=" + encodeURIComponent(safeReturnPath(location.pathname))}>{t("Shell.login")}</Link></section>;
   return children;
 }

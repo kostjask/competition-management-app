@@ -1,6 +1,16 @@
 import type { ErrorReason, FieldIssue, SuccessMessageId } from "@dance/schemas";
 import type { Locale } from "./locale";
 export const errorMessages = {
+  requestTooLarge: {
+    et: "Päringu sisu on liiga suur. Vähenda andmete mahtu ja proovi uuesti.",
+    en: "The request is too large. Reduce its size and try again.",
+    ru: "Запрос слишком большой. Уменьшите объём данных и повторите попытку.",
+  },
+  unsupportedEncoding: {
+    et: "Päringu kodeeringut ei toetata.",
+    en: "The request encoding is not supported.",
+    ru: "Кодировка запроса не поддерживается.",
+  },
   "authDeliveryUnavailable": {
     "et": "Kirja saatmine ei ole praegu saadaval. Proovi hiljem uuesti.",
     "en": "Email delivery is unavailable. Please try again later.",
@@ -270,6 +280,8 @@ export const validationMessages = {
   }
 } satisfies Record<FieldIssue["rule"], Record<Locale, string>>;
 export const successMessages = {
+  invitationResent: { et: "Kutse on uuendatud. Kirja kohaletoimetamine ei ole kinnitatud.", en: "Invitation renewed. Email delivery is unconfirmed.", ru: "Приглашение обновлено. Доставка письма не подтверждена." },
+  invitationRevoked: { et: "Ootel kutse on tühistatud.", en: "Pending invitation revoked.", ru: "Ожидающее приглашение отозвано." },
   "authRequestAccepted": {
     "et": "Taotlus on vastu võetud. E-kirja kohaletoimetamine ei ole kinnitatud.",
     "en": "Request accepted. Email delivery is unconfirmed.",

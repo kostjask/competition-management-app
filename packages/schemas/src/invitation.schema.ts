@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AuthResponseSchema, AuthUserSchema, RegisterSchema } from "./auth.schema.js";
+import { AuthResponseSchema, BrowserSessionSchema, AuthUserSchema, RegisterSchema } from "./auth.schema.js";
 import { EmailSchema, IdSchema } from "./common.schema.js";
 import { RecipientLocaleSchema } from "./onboarding.schema.js";
 
@@ -31,17 +31,24 @@ export type AcceptInvitationInput = z.infer<typeof AcceptInvitationSchema>;
 export type RoleKey = z.infer<typeof RoleKeySchema>;
 
 export const InvitationTokenParamsSchema = z.object({ token: z.string().min(1) });
+export const InvitationIdParamsSchema = z.strictObject({ invitationId: IdSchema });
+export const InvitationCommandSchema = z.strictObject({ expiresAt: z.iso.datetime() });
+export const InvitationStatusSchema = z.enum(["PENDING", "ACCEPTED", "EXPIRED", "REVOKED", "SUPERSEDED"]);
 const EventSummarySchema = z.strictObject({ id: IdSchema, name: z.string() });
 export const InvitationSchema = z.strictObject({
   id: IdSchema, email: EmailSchema, roleKey: RoleKeySchema, eventId: IdSchema.nullable(),
   createdAt: z.iso.datetime(), expiresAt: z.iso.datetime(), usedAt: z.iso.datetime().nullable(),
+  revokedAt: z.iso.datetime().nullable(), supersededAt: z.iso.datetime().nullable(), status: InvitationStatusSchema,
 });
 export const InvitationsSchema = z.array(InvitationSchema);
-export const InvitationPreviewSchema = z.strictObject({ email: EmailSchema, roleKey: RoleKeySchema, event: EventSummarySchema.nullable(), expiresAt: z.iso.datetime() });
+export const InvitationPreviewSchema = z.strictObject({ email: EmailSchema, roleKey: RoleKeySchema, event: EventSummarySchema.nullable(), expiresAt: z.iso.datetime(), status: InvitationStatusSchema, accountExists: z.boolean() });
+export const ResendInvitationResponseSchema = z.strictObject({ invitationId: IdSchema, messageId: z.literal("invitationResent"), delivery: z.literal("unconfirmed") });
+export const RevokeInvitationResponseSchema = z.strictObject({ invitationId: IdSchema, messageId: z.literal("invitationRevoked") });
 export const CreateInvitationResponseSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationCreated"), invitationId: IdSchema, delivery: z.literal("unconfirmed") });
 const AcceptanceMessageSchema = z.strictObject({ message: z.string(), messageId: z.literal("invitationAccepted") });
 export const AcceptInvitationResponseSchema = z.union([
   AuthResponseSchema.extend({ ...AcceptanceMessageSchema.shape, accountCreated: z.literal(true) }),
+  BrowserSessionSchema.extend({ ...AcceptanceMessageSchema.shape, accountCreated: z.literal(true) }),
   AcceptanceMessageSchema.extend({ user: AuthUserSchema, accountCreated: z.literal(false) }),
 ]);
 export type Invitation = z.infer<typeof InvitationSchema>;
