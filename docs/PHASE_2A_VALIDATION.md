@@ -1,5 +1,8 @@
 # Phase 2A foundation evidence
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Updated: 2026-10-25. Scope: user-requested remaining Phase 2A foundations, plus
 explicitly requested staging preparation. Validation ran on the working tree
 before logical batch commits; earlier eligibility/recovery changes are preserved

@@ -7,8 +7,8 @@
 | Account | Studio-intent signup retains an owner-proven draft and creates a roleless unverified user; active/verified login required | Application completion/approval remains separate; no spectator signup (ADR-006/017) |
 | Studio | Event-owned organization; active names globally case-sensitive unique | Reusable identity (ADR-001); name policy decision before index changes |
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
-| Event registration | Unique studio/event pair; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Revisioned retained transitions under ADR-003 |
-| Representative | Active membership grants studio relationship; event approval assigns role | Additional members need studio-bound invitations; contact email never grants ownership |
+| Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Application/review UI remains P4/P5 |
+| Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
 | Performance | Complete fields/order required; owner inferred from one studio's participants | Explicit owner, incomplete unscheduled drafts, revision/submission snapshots before entry UI |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |

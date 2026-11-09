@@ -1,5 +1,8 @@
 # Account eligibility validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-10-25. Task: P2-AUTH-ELIGIBILITY / C2, a security slice of the still-open
 P2-AUTH parent. Source base: e1ba9db plus the working tree; no commit or deployment
 is implied. Policy is recorded in [ADR-006](adr/006-account-eligibility-and-staff-onboarding.md).

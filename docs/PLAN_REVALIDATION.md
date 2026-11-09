@@ -1,5 +1,8 @@
 # Implementation plan revalidation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Reviewed: 2026-11-06. Documentation and source inspection only; no runtime tests,
 deployment audit, database access, schema change or application fix was performed.
 The [checkpoint](../DEVELOPMENT_PLAN.md#implementation-order) owns priority;

@@ -4,6 +4,11 @@ Status and next action: [DEVELOPMENT_PLAN](../../DEVELOPMENT_PLAN.md).
 Read only the phase needed for the selected task. Checkboxes describe technical
 scope; milestone and release gates still apply. Task IDs are stable.
 
+The completed entries below record their original delivery scope. Statements about
+then-pending Phase 2 work or session transport are historical; current behavior is
+in maintained contracts and current priority in the checkpoint. They are not
+new blockers or duplicate checklists to reopen.
+
 ## Phase 0 — Preserve and restore the development baseline (complete)
 
 Goal: obtain a reproducible, buildable checkout without losing current work.

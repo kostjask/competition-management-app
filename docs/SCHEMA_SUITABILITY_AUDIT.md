@@ -1,5 +1,8 @@
 # Schema suitability audit
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Reviewed: 2026-10-25. Task: P2-SCHEMA-AUDIT. Evidence refers to the working tree,
 including pending migrations, not a committed/deployed revision. This supersedes
 the structural status in the dated [database review](DATABASE_REVIEW.md).

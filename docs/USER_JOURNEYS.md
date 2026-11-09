@@ -12,8 +12,9 @@ owns components. Do not duplicate those inventories here.
 studio applicants; event judges/moderators and additional studio representatives
 join by scoped invitation; administrators use controlled provisioning; spectators
 need no account. Pending roleless applicants must recover their own progress.
-Current signup is still unrestricted. Backend context must enforce eligibility;
-relabeling a button or trusting an intent flag is insufficient.
+Signup now validates studio intent and atomically retains an owner draft under
+ADR-017. It grants no studio, membership or application; owner-proven recovery
+and active/verified access are enforced separately by the backend.
 
 | Label | Meaning |
 | --- | --- |

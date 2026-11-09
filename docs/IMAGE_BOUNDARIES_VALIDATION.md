@@ -1,5 +1,8 @@
 # Image boundary validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-11-01. Task: P2-BOUNDARIES-UPLOADS, C3/C4. Base revision 76912d0 plus
 preserved uncommitted invitation/admin-scope work. Evidence applies to this working
 tree, without a commit, hosted rollout or application database reset.

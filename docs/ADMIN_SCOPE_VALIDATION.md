@@ -1,5 +1,8 @@
 # Administrator scope validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-11-01. Task: P2-ROLES-ADMIN-SCOPE (H1 backend technical slice).
 Base revision: 76912d0 plus the preserved, uncommitted P2-INVITE-IDENTITY changes.
 This report describes the current working tree; no commit or deployment was made.

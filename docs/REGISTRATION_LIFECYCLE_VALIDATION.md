@@ -1,4 +1,7 @@
-﻿# M2 registration lifecycle validation
+# M2 registration lifecycle validation
+
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
 
 Date: 2026-11-09. Local technical delivery for the three selected queued scopes:
 P3-REGISTRATION, P3-REGISTRATION-REAPPLY and I18N-CONTENT's M2 policy/contracts.

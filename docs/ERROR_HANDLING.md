@@ -4,7 +4,8 @@ Sources: [error classes](../apps/api/src/errors/index.ts),
 [global handler](../apps/api/src/errors/handler.ts),
 [shared schemas](../packages/schemas/src/common.schema.ts),
 [semantic feedback](LOCALIZATION.md). Business routes use the shared envelope;
-/health and static files are infrastructure exceptions.
+/health uses an infrastructure status shape. Successful image retrieval is binary;
+its authentication/access errors still use the global envelope.
 
 | Class | HTTP | Code | Default reason |
 | --- | --- | --- | --- |

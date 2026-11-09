@@ -14,8 +14,9 @@ Each inherits UI_UX's loading/empty/error/offline/reconnect/success/locked/denie
 patterns, ET/EN/RU and accessibility rules. Failed requests retain permitted
 visible work. No navigation or translated label grants permission. Confirmation
 names the target and consequences; cancellation of a dialog performs no mutation.
-After lost mutation response, reconcile server outcome before retry; current
-application creation is not idempotent. Never display success from local state.
+After lost mutation response, reconcile server outcome before retry. Application
+creation supports retained operationId retries; exact retry/conflict semantics live
+in [the registration contract](api/registrations.md). Never display success from local state.
 
 Current event enum is PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
 ENDED, CANCELLED. It has no SCHEDULED or LIVE stage. Those proposed names require

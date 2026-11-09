@@ -1,6 +1,6 @@
 # API integration status
 
-Reviewed: 2026-10-25. Local base: http://localhost:4000/api/v1.
+Local base: http://localhost:4000/api/v1.
 VITE_API_URL includes /api/v1; restart Vite after changes. Frontend page routes
 are separate. No unversioned business aliases exist; /health and /uploads remain
 at server root. /uploads is authenticated resource-scoped image retrieval, with
@@ -12,10 +12,10 @@ createApp(prisma) in apps/api/src/app.ts constructs the app without listening or
 creating dependencies. routes/api.ts mounts each resource once. Startup/storage/
 signals live in index.ts. Controllers use the injected Prisma client.
 
-Public operations: POST /auth/register, /auth/login, /auth/verify-email;
-GET /invitations/:token; POST /invitations/accept for new-account setup only
-(existing recipients require their intended eligible session). Profile and invitation admin
-handlers attach auth directly; other resource routers require auth at their mount.
+Auth and invitation routers attach authentication per operation. Public account
+access/recovery, owner-proven onboarding and new/existing-account invitation
+boundaries are defined in [auth](api/auth.md) and [invitations](api/invitations.md).
+Other resource routers require auth at their mount; private images also authenticate.
 **Event reads remain authenticated.** Unknown routes use global 404 errors.
 Exact permissions/ownership/stages are in each resource contract.
 
@@ -31,7 +31,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 
 | Resource | Collection / item | Contract |
 | --- | --- | --- |
-| Auth | /auth/register, /auth/login, /auth/verify-email, /auth/profile | [Auth](api/auth.md) |
+| Auth | /auth; see contract for account/session/recovery/onboarding/preferences operations | [Auth](api/auth.md) |
 | Events | /events; /events/:eventId | [Events](api/events.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
 | Studios | /studios; /:studioId; approval/representatives actions | [Studios](api/studios.md) |
@@ -46,8 +46,9 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Users / scores | No mounted implementation | Reserved in ADR-002 |
 
 Frontend helpers decode unknown transport output through shared response schemas,
-including before session storage. DTOs omit private persistence fields; explicit
-auth/token operations remain exceptions by contract. No draft, music, final-submit,
+including session metadata. DTOs omit private persistence fields; explicit
+native auth/token operations remain exceptions by contract. Owner onboarding drafts
+exist under auth; no entry draft, music, final-submit,
 score-sheet, live or results API is implied by UI specifications.
 
 ## Resource contracts
@@ -107,11 +108,11 @@ ordinary DTOs and 204 need no invented notice. Render descriptors through the
 shared presenter, not diagnostic English. [Error guide](ERROR_HANDLING.md) ·
 [Localization](LOCALIZATION.md) · [ADR-007](adr/007-localized-feedback-contracts.md).
 
-[api-coverage.json](api-coverage.json) maps all 56 mounted operations to evidence
+[api-coverage.json](api-coverage.json) maps mounted operations to evidence
 or explicit deferred/non-applicable cases. Runtime registration/no-token checks
 guard that inventory. It is not a coverage percentage, browser or security-release
-claim. /health uses an infrastructure status shape; static files are outside the
-business DTO/error contract.
+claim. /health uses an infrastructure status shape; successful image retrieval
+returns binary output, while its errors use the global envelope.
 
 ## Validation
 

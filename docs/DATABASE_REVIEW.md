@@ -5,7 +5,10 @@ Reviewed: 2026-10-24
 Current follow-up: [P2-SCHEMA-AUDIT](SCHEMA_SUITABILITY_AUDIT.md) reassesses the
 working tree, SQL-only objects, Compose metadata and synthetic query plans, and
 implements token row checks plus complete studio-index parity. Read that report
-for current status; this dated review retains the original domain concerns.
+for its dated catalog/query evidence. This review retains domain concerns; the
+[checkpoint](../DEVELOPMENT_PLAN.md) and roadmaps own current status.
+Follow-up source review (2026-11-10) reconciles implemented staff/audit, M2
+timezone/deadline and invitation management below; it adds no runtime evidence.
 Development data is [disposable](TESTING.md#development-database-and-disposable-data);
 no compatibility work is required solely to preserve test rows.
 
@@ -35,25 +38,25 @@ an existing null scope was intentional.
 | Area | Current structure and consequence | Target and owning task |
 | --- | --- | --- |
 | Event permission scope | New migration uses RESTRICT for UserRole/Invitation event references; null still means global. | P2-SCOPE-INTEGRITY technically complete (ADR-008). P2-SCOPE-DEPLOY provenance review/rollout remains required before deployment/M1. No event-delete endpoint. |
-| Global uniqueness | New SQL-only indexes enforce global-role and null-safe outstanding-invitation uniqueness; used/superseded history remains. | P2-SCOPE-INTEGRITY technically complete; deployed duplicate/provenance review is P2-SCOPE-DEPLOY. Internal token lifecycle is implemented; public resend/revoke management remains P2-INVITE. |
-| Identity and tokens | Canonical account/invitation email, purpose-bound digests, expiry and atomic lifecycle are implemented under ADR-009/010; schema audit adds storage CHECKs. Invitations still cannot reference a studio. | P2-IDENTITY-TOKENS complete technically. P2-AUTH/INVITE/EMAIL own public workflows; P2-STAFF-MODEL/P5-MEMBERS define studio-bound scope. Deployment preflights remain required. |
+| Global uniqueness | New SQL-only indexes enforce global-role and null-safe outstanding-invitation uniqueness; used/superseded history remains. | P2-SCOPE-INTEGRITY technically complete; deployed duplicate/provenance review is P2-SCOPE-DEPLOY. Internal token lifecycle is implemented; public resend/revoke management is delivered under ADR-017. |
+| Identity and tokens | Canonical account/invitation email, purpose-bound digests, expiry and atomic lifecycle are implemented under ADR-009/010; schema audit adds storage CHECKs. Invitations can reference a studio under ADR-013; representative invitation UI remains P5-MEMBERS. | P2-IDENTITY-TOKENS complete technically. P2-AUTH/INVITE/EMAIL own public workflows; P2-STAFF-MODEL/P5-MEMBERS define studio-bound scope. Deployment preflights remain required. |
 | Studio identity | Studio belongs directly to one Event as well as having event registrations. | P3-STUDIO-IDENTITY: implement accepted ADR-001 with preserved memberships, approvals and history; multi-event reuse stays disabled until ready. |
 | Studio names | SQL-only Studio_name_active_unique enforces global, case-sensitive active-name uniqueness. This can block unrelated organizations sharing a display name. | P3-STUDIO-NAMES: record the identity/duplicate-review policy before any new migration. Recommended target is non-unique display names with stable ID identity; no automatic merging or silent relaxation of current behavior. |
 | Performance ownership | Performance has no studio/registration owner field; controllers infer ownership from its participant dancers. Empty/mixed legacy sets are not a reliable owner. | P3-PERFORMANCE-OWNER: define an explicit event-consistent owning studio/registration relationship, audit/backfill unambiguous records, and reject ambiguous data for reviewed repair rather than guessing from the first dancer. |
 | Drafts versus scheduling | Current creation requires complete entry data and an event-unique orderOnStage. Archived entries retain their reserved order. | P3-ENTRIES: allow authorized incomplete drafts without stage order, with strict final validation. Decide nullable transitional fields versus a dedicated draft structure before implementation. P6-LIVE-MODEL supplies separate schedule-entry/stage/session ordering. |
 | Cross-event consistency | Individual foreign keys do not require a performance's configuration or a score's judge to belong to the same event. Current controllers enforce several relationships. | P3-CONSTRAINTS and P6-SCORING-MODEL: add suitable compound keys/foreign keys where practical, retaining backend validation and transaction rules for relationships not expressible directly. |
 | Historical accuracy | Performances reference mutable dancer/configuration records; there is no submission version/snapshot. | P3-HISTORY: define immutable submitted participant/configuration snapshots or versioned records plus revision/conflict checks. Later profile/roster edits must not silently alter historical entries or published calculations. |
-| Dates and time | Birth dates are timestamps serialized to their UTC calendar day; event instants use timestamp columns and there is no event timezone or age-reference policy. | P3-CALENDAR-DATES: audit historical interpretation, then migrate birth dates to native date where agreed. Define timezone-aware event/deadline instant storage and an explicit IANA event timezone. Never apply a blind timestamp/date conversion. |
+| Dates and time | Birth dates are timestamps serialized to their UTC calendar day; event instants use timestamp columns with IANA timeZone and optional registrationDeadline under ADR-003. Age-reference policy remains pending. | P3-CALENDAR-DATES: audit historical interpretation, then migrate birth dates to native date where agreed. M2 timezone/deadline storage/contracts are implemented; setup controls remain P4-CORE. Never apply a blind timestamp/date conversion. |
 | Score precision | Score uses a free-text criterion and Float value; no rubric range/step, lock, submission, assignment, or versioned calculation model exists. | P6-SCORING-MODEL: choose scaled integer or Decimal precision from the scoring specification, define rounding/tie behavior and finite/range/step validation, and migrate existing values under explicit conversion rules. |
-| Constraints and query performance | SQL-only email/token CHECKs exist; general event/entry checks remain absent. Unique indexes cover some query prefixes, not every foreign-key lookup; current audit records synthetic plans. | P3-CONSTRAINTS/P3-INDEXES: add agreed domain invariants and measured reverse-key indexes without duplicating coverage. Token checks and exact SQL-only parity are current foundation work. |
-| Audit and removal | Mutable entities have inconsistent timestamps and actor fields; there is no durable AuditLog, assignment lifecycle, or restore specification. | P2-AUDIT/STAFF-MODEL and P3-DATA-HYGIENE: explicit actor references, safe audit records, intentional referential actions, restore conflicts, and history-preserving access removal. |
+| Constraints and query performance | SQL-only email/token and M2 deadline/registration/audit CHECKs exist; broader entry checks remain pending. Unique indexes cover some query prefixes, not every foreign-key lookup; current audit records synthetic plans. | P3-CONSTRAINTS/P3-INDEXES: add agreed domain invariants and measured reverse-key indexes without duplicating coverage. Token checks and exact SQL-only parity are current foundation work. |
+| Audit and removal | Minimal immutable AuditLog and retained staff assignment lifecycle are implemented under ADR-012/013/018. General entity restore policy and per-feature audit/active fields remain pending. | P2-AUDIT/STAFF-MODEL and P3-DATA-HYGIENE: explicit actor references, safe audit records, intentional referential actions, restore conflicts, and history-preserving access removal. |
 
 ## Required design decisions before migrations
 
 - ADR-008 selects restricted deletion and null-safe uniqueness/history. Review
   existing null-scoped assignments without guessing whether scope was lost;
-  complete P2-SCOPE-DEPLOY before rollout. Public revoke/resend management remains
-  P2-INVITE; preserve accepted/revoked history.
+  complete P2-SCOPE-DEPLOY before rollout. Public revoke/resend management is
+  delivered under ADR-017; preserve accepted/revoked history.
 - ADR-009/010 now specify canonical email and purpose-bound digest lifecycles.
   Keep deployment collision review, identity versus editable contact separation,
   legacy-link invalidation and secret-free delivery/audit rules during rollout.

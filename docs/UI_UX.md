@@ -1,7 +1,8 @@
 # UI and UX specification
 
-Audited: 2026-10-25. Documentation only; no screen, API, migration, accessibility
-conformance, or release completion is implied.
+Target specification established 2026-10-25; route/source facts refreshed 2026-11-10.
+Documentation only; no runtime validation, accessibility conformance or release
+completion is implied.
 
 ## Scope, authority, and reading order
 
@@ -68,29 +69,23 @@ birth-date, contact, billing and unpublished scoring data.
 
 ## Audit of the current experience
 
-Static source audit; no browser usability or assistive-technology test was run.
-Sources: [routes](../apps/web/src/routes/index.tsx), layouts, all current pages,
-auth guards/context, API modules, i18n and feedback components; backend router,
-controllers, shared schemas, Prisma model and the related maintained guides.
+Source review: 2026-11-10, without browser/runtime checks. The original mixed-date
+[audit table is archived](DEVELOPMENT_HISTORY.md#ui-source-audit-archived-2026-11-10).
+Use the checkpoint/roadmaps for delivery and release status; this specification
+owns target behavior, not a second implementation checklist.
 
-| Finding / mismatch | Evidence and intended resolution | Owner |
-| --- | --- | --- |
-| Studio signup and owner-proven recovery implemented locally | ADR-017 enforces intent, atomic owner draft and password/session proof without domain privileges. Applications remain gated. | P2-SIGNUP complete locally; P5-APPLICATION |
-| Verification instructions exceed runtime enforcement | RegisterPage asks users to check email; login still permits unverified accounts and delivery is a stub. | P2-AUTH/EMAIL |
-| Event screens look public but data is protected | `/events` and detail lack route auth guards; API reads require auth per ADR-002. Explicit sign-in state now; public release only after DTO/publication decision. | P2-UI-SHELL; UX-D02 |
-| Dead application links and incorrect stage availability | EventInfo links `/events/:id/register` and `/events/:id/studio`; neither route exists. It offers application in DATA_REVIEW; backend only allows new non-admin applications in PRE_REGISTRATION/REGISTRATION_OPEN. | P5-APPLICATION |
-| Guards disagree about roles and omit consistent event scope | useRole uses exact display names; RequireRole uses fuzzy display names. Backend profile already exposes keys/scopes. Denied guards redirect home without explanation. | P2-ROLES |
-| Interrupted authentication loses task | Login restores pathname only; token-bearing 401 hard redirects; verification sends users home after a timer and is guest-gated. Signed-in/wrong-account email links need deliberate recovery. | P2-SESSION/AUTH |
-| Invitation/recovery screens and pending management implemented locally | `/auth/accept-invitation` and `/auth/reset-password` match mail contracts; global-admin create/resend/revoke/status is available. Judge record and role remain separate. | P2-INVITE/UI-AUTH complete locally; P2-JUDGE-ACCEPT |
-| Dashboards and profile controls overpromise | Four role pages are text placeholders; profile Edit has no handler and account menu says Edit Profile. Remove misleading actions or deliver a supported contract. | P2-UI-SHELL; feature phases |
-| Event form omits stored setup details and controlled transitions | EventForm collects name/dates/stage; edit initializes only those. Venue/limits/image/timezone/deadlines/checklist need feature work; raw stage selector is not a transition workflow. | P3-REGISTRATION/P4-CORE |
-| Draft, music, live and results promises exceed persistence | Performance create needs complete fields and stage order; Score has free-form criterion/Float, no sheet locks. No music/live/results endpoints or screens. Keep these as gated targets. | Phases 3, 5–7 |
-| Localization foundation is stronger than visible UI | Semantic feedback and three catalogues exist; auth/layout/profile/dashboard literals and profile date-fns formatting remain. Existing date formatter uses browser timezone; event timezone is absent. | I18N-UI/FORMATTING |
-| Accessibility and visual patterns are inconsistent | Login/register use click handlers rather than semantic form submit; AuthNav declares menu roles without complete menu keyboard handling; AuthLayout removes focus outline; spinner has English label. No shared tokens, skip link or complete focus contract. | P2-UI-FOUNDATION/SHELL |
-
-P2-SCOPE-INTEGRITY is technically complete under ADR-008; P2-SCOPE-DEPLOY remains
-open. This static UI audit does not claim deployed-data, staff-onboarding or
-browser/assistive-technology validation.
+- Auth, owner drafts/recovery, shell/session, profile language and scoped staff UI
+  are mounted. API identity eligibility, invitation reconciliation and private
+  image authorization are enforced. See [contracts](API.md) and [security](SECURITY.md).
+- Event discovery is authenticated; create/edit routes require admin. Event forms
+  remain partial UTC editors; P4-CORE owns timezone/deadline/contact/checklist and
+  authored-content controls. M2 stage/deadline contracts already exist (ADR-003).
+- Role dashboards remain placeholders. Application/review, entry/music and
+  live/scoring/results screens remain their owning roadmap scopes. Event details
+  truthfully show registration unavailable for non-admins; P5-APPLICATION owns
+  the future apply/resume routes and actions.
+- Automated Chromium coverage exists for delivered slices; real inbox/hosted,
+  full-journey human language and assistive review remain release evidence.
 
 ## Information architecture and navigation
 
@@ -123,14 +118,14 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | Screen ID | Route | Current implementation / target gate |
 | --- | --- | --- |
 | S01 | `/`, `/events` | Home is minimal; list implemented partially; protected data |
-| S02 | `/events/:id` | Partial details with dead application links |
+| S02 | `/events/:id` | Partial details; registration unavailable; admin edit/staff links |
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
-| S03 | P `/auth/forgot-password`, `/auth/reset-password` | P2-AUTH/SESSION contracts first |
+| S03 | `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/correct-email`, `/auth/onboarding` | Mounted recovery and owner draft pages; ADR-017 |
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
 | S05 | `/admin`, `/events/new`, `/events/:id/edit`; P `/admin/events/:id/setup` | Dashboard placeholder; partial forms; P4-CORE |
 | S06 | P `/admin/events/:id/applications` | P4-REVIEW |
 | S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
-| S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | First two already linked but unmounted; P5-APPLICATION |
+| S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | Unmounted; P5-APPLICATION |
 | S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |
 | S10 | P `/events/:id/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | P5-ENTRIES |
 | S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |
@@ -141,11 +136,10 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 
-Current role-section unknown children redirect to their root. Add deliberate
-not-found handling as nested screens arrive; do not let a typo masquerade as a
-successful visit. Event create/edit currently lack route-level admin guards;
-backend still enforces admin-only writes. Shell repair must align visibility and
-direct navigation without treating a frontend guard as authorization.
+Route facts above are checked against src/routes/index.tsx; proposed paths remain
+subject to their owning task. Event create/edit have route-level admin guards;
+backend writes independently require global admin. Preserve deliberate not-found
+and translated denied recovery as nested screens arrive.
 
 ## Responsive and live-event requirements
 
@@ -212,8 +206,8 @@ Organizer-authored content follows I18N-CONTENT, with a visible fallback languag
 
 | Value | Required format and pending dependency |
 | --- | --- |
-| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone after P3-REGISTRATION. Proposed initial organizer choice Europe/Tallinn must be confirmed, never silently inferred from browser locale. Current DTO has no timezone/deadline fields. |
-| Date/time entry | Labeled date/time and timezone; resolve or reject DST gaps/ambiguities explicitly. Current datetime-local uses browser timezone and is a known gap. Include exact date/time for deadlines, not relative text alone. |
+| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone after P3-REGISTRATION. Proposed initial organizer choice Europe/Tallinn must be confirmed, never silently inferred from browser locale. Current DTO includes timeZone (default UTC) and nullable registrationDeadline; P4-CORE owns event-zone controls. |
+| Date/time entry | Labeled date/time and timezone; resolve or reject DST gaps/ambiguities explicitly. Current datetime-local is explicitly UTC; event-zone controls remain P4-CORE. Include exact date/time for deadlines, not relative text alone. |
 | Birth date | Calendar `YYYY-MM-DD` API value; locale display without instant conversion/day shift. Age calculation needs configured date/rule. |
 | Names | Preserve Unicode, spaces, hyphens and supplied order; account full name differs from dancer first/last fields. Do not enforce Latin-only names or use initials as the only accessible identity. |
 | Numbers/counts | Intl.NumberFormat and locale plural messages; preserve stable IDs and unformatted machine payloads. No concatenated translated sentences. |
@@ -270,19 +264,20 @@ Pending contracts do not authorize invented frontend endpoints.
 
 ## Decision register and implementation gates
 
-These are unresolved choices, not authorization to implement new domain behavior.
+This register separates accepted subsets from unresolved choices. It does not
+authorize new domain behavior or mark an implementation/release task complete.
 Record substantial decisions in their owning ADR before dependent schema/code.
 
 | ID | Options / recommendation | Owner and gate |
 | --- | --- | --- |
 | UX-D01 Branding | Preserve current Sora/Fraunces styling versus neutral system stack; recommend neutral operational UI, reserve display typography for discovery after Cyrillic/fallback review. No approved logo, brand palette or final assets exist. | Product/design before final visual approval; does not block accessible structural components |
 | UX-D02 Public access | Keep authenticated events versus publication-safe discovery; recommend explicit public event/results DTOs with publication controls, never opening private current DTOs. | ADR-002 follow-up before public event/result release; P7-PUBLISH |
-| UX-D03 Account/session recovery | Cookie versus bearer storage, onboarding persistence before/after verification, cross-tab/device return and enumeration policy; recommend server-owned recoverable context and allowlisted internal destinations. | P2-SESSION/ONBOARDING-MODEL/IDENTITY-TOKENS before signup/recovery UI |
-| UX-D04 Locale/content | Account/email preference precedence and required authored translations/fallback; recommend deterministic recipient locale and explicit content fallback. | I18N-PREFERENCES before P2-EMAIL; I18N-CONTENT before organizer content publication |
+| UX-D03 Account/session recovery | Accepted in ADR-013/016/017: server-owned owner drafts, HttpOnly browser cookies/native bearer separation, explicit internal returns and neutral recovery. | Delivered local scope in foundation roadmap; external workflow review remains |
+| UX-D04 Locale/content | ADR-013 defines account/recipient precedence; ADR-019 accepts M2 authored-content source-language and explicit fallback. Later workflow content remains open. | I18N-PREFERENCES delivered locally; I18N-CONTENT remains open for storage/editors/later workflows |
 | UX-D05 Registration policy | M2 application policy accepted in [ADR-003](adr/003-registration-lifecycle.md): independent decisions, deadline/timezone, retained revisioned cancel/reapply, semantic reasons and pending profile correction. Entry transitions remain M3. | P3 registration backend/contracts delivered; P4/P5 screens remain pending |
 | UX-D06 Entries/history | Draft representation, versioned submission, withdrawal, corrections and global roster locks; recommend server drafts without schedule position plus revision-based conflict detection. | P3-ENTRIES/HISTORY/OWNER and ADR-001 migration before related P5 UI |
 | UX-D07 Eligibility/media | Age date/leap rules, participant/duration limits, required music, formats/limits and replacement; recommend explicit upfront event rules and server enforcement. | P3-CALENDAR-DATES/ENTRIES/MUSIC-MODEL before M3 |
-| UX-D08 Staff authority | Organizer management and studio inviter scope versus admin-only; recommend least privilege with explicit event/studio membership and separate stage-control permissions. | P2-STAFF-MODEL before invitations; P5-MEMBERS before member extension |
+| UX-D08 Staff authority | ADR-013/017/018 select global-admin staff management with explicit event scope and retained offboarding. Studio inviter/member extension remains P5-MEMBERS; separate stage authority remains a live-model decision. | Staff model/UI delivered locally; member/live extensions retain their own gates |
 | UX-D09 Live/recovery | Single/multiple stages/sessions, transition authority, offline blocked versus durable queued drafts, freshness thresholds and manual fallback; recommend acknowledged online operations first, explicit read-only offline status until reconciled. | ADR-003 live portion/P6-RECOVERY before live UI promises |
 | UX-D10 Scoring/publication | Rubric precision/rounding/ties/penalties, peer visibility, lock/reopen authority and correction publication; recommend exact versioned rules and explicit final submission/publication. | ADR-004/P6-SCORING-MODEL before score/results implementation |
 
@@ -293,11 +288,10 @@ all listed states demonstrated; ET/EN/RU terminology reviewed; keyboard/focus an
 screen-reader behavior checked; phone/tablet/desktop and long text verified; and
 negative ownership/stage/session/retry tests. Record evidence by screen/flow ID,
 revision, locale, viewport and role. Use [testing strategy](TESTING.md); browser
-and visual regression infrastructure remains planned, not installed by this work.
+and visual regression infrastructure exists for delivered slices. Extend it with
+each workflow; this documentation change reruns no browser evidence.
 
-First proposed UI slice: **P2-UI-FOUNDATION**, then **P2-UI-SHELL** paired with
-P2-ROLES: shared controls/feedback/focus, translated responsive navigation,
-explicit protected-event/denied states and honest profile actions. It can be
-reviewed with fixtures while the required security work proceeds, but cannot
-release gated management/upload workflows early. The first complete product UX
-milestone remains M2 (verify → apply → independent approvals → resume status).
+P2-UI-FOUNDATION/SHELL are delivered locally. Current UI priority follows the
+[checkpoint](../DEVELOPMENT_PLAN.md#implementation-order): P4-CORE setup, P4-REVIEW,
+then P5-APPLICATION. The first complete product UX milestone remains M2
+(verify → apply → independent approvals → resume status), with all release gates.

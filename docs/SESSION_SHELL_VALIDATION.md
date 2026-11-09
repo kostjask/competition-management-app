@@ -1,5 +1,8 @@
 # Session, formatting and shell validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 2026-11-05. Tasks: P2-SESSION, Phase 2 I18N-FORMATTING and P2-UI-SHELL.
 Base revision 3445f94 plus the preserved prior boundary/role work and this uncommitted
 working tree. No commit, push, application-data reset or staging deployment occurred.

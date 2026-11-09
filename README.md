@@ -34,7 +34,7 @@ pnpm.cmd build
 pnpm.cmd dev
 ```
 
-Open http://localhost:5173; database health is http://localhost:4000/health.
+Open http://localhost:5173; API/database health is http://localhost:4000/health.
 The dev command starts both apps. Rebuild @dance/schemas and restart the API
 watcher after shared-contract changes; the API consumes emitted JavaScript.
 Compiled API: pnpm.cmd --filter api start. Scoped API commands read apps/api/.env;
@@ -48,9 +48,9 @@ Run it sequentially. Do not use demonstration accounts for external operations.
 
 | Purpose | Root command / location |
 | --- | --- |
-| Build / strict checking / lint / tests | pnpm build / typecheck / lint / test |
+| Validation commands / scope | [TESTING](docs/TESTING.md#workspace-checks) |
 | Database deploy / generation / validation | pnpm db:migrate / db:generate / db:validate |
-| Isolated database workflows | pnpm test:baseline; see [TESTING](docs/TESTING.md) for migration suite and cleanup |
+| Isolated database workflows | [TESTING](docs/TESTING.md#postgresql-checks) |
 | Backend | apps/api — Express 5, Prisma 7, PostgreSQL, JWT |
 | Frontend | apps/web — React 19, Vite 8, Tailwind 4, React Router 7 |
 | Contracts / remaining shared types | packages/schemas / packages/types |
@@ -62,10 +62,12 @@ own exact versions. [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) �
 
 ## Current limits
 
-Email is a stub, storage is local, public signup is unrestricted, event reads
-require login, and upload ownership is unfinished. Role dashboards are
-placeholders. Backend CRUD is not a complete application, staff, entry or live
-competition journey. [Security](docs/SECURITY.md) lists current gaps;
+Email defaults to a silent development fake; Resend dispatch/queue is implemented
+locally but real inbox/hosted release evidence remains open. Storage is local with
+private authenticated images. Signup requires studio intent; event reads require
+login. Auth and staff administration are delivered locally; role dashboards remain
+placeholders. Organizer/application, entry/music and live/results workflows remain
+unfinished. [Security](docs/SECURITY.md) lists current gaps;
 [domain guide](docs/DOMAIN.md) distinguishes runtime from accepted targets.
 
 Author: [Konstantin Skorohodov](https://github.com/kostjask)

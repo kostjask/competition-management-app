@@ -80,5 +80,6 @@ Studio-intent signup grants no roles; legitimate roleless applicants remain.
 Use local seed fixtures only for development, not manual SQL as normal onboarding.
 Frontend hooks, route guards and gates now share stable-key/scope checks.
 The responsive translated navigation/context/profile shell is now implemented
-under P2-UI-SHELL; full staff/application journeys remain gated. [Frontend guide](apps/web/ROLE_SYSTEM.md) ·
+under P2-UI-SHELL. Staff administration is delivered locally; application UI and
+external workflow release evidence remain gated. [Frontend guide](apps/web/ROLE_SYSTEM.md) ·
 [workflow](docs/REGISTRATION_API.md) · [checkpoint](DEVELOPMENT_PLAN.md).

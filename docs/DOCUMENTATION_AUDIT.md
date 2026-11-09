@@ -1,4 +1,69 @@
-# Documentation audit — 2026-10-25
+# Documentation audits
+
+## Maintenance 2026-11-10
+
+DOCS-MAINTENANCE is documentation-only. Application priority remains P4-CORE
+with P4-UI-CORE setup scope, then P4-REVIEW, then P5-APPLICATION. No application,
+dependency, database, Git configuration or release-status change was made.
+
+Inventory: 113 Markdown files (111 tracked plus two ignored local .github/agents
+profiles). No .agents/.codex directory was present. Dependencies, generated output,
+private uploads and actual environment files were excluded. Purpose/ownership:
+
+| Group | Owner / disposition |
+| --- | --- |
+| AGENTS, checkpoint, root/web READMEs | Rules; current priority/gates; setup and app entry points |
+| docs/README, API and api/*, role/domain/architecture/security/privacy/storage/env/error/controller/localization guides | Task routing and maintained behavior; exact payloads remain shared schemas/source |
+| roadmap/* | Authoritative task IDs, checkboxes, dependencies and exits |
+| ADRs; journeys, UI_UX/ui/*, USER_FLOWS/flows/*, DESIGN_SYSTEM | Accepted decisions versus product/UI targets; neither proves runtime delivery |
+| TESTING, STAGING | Commands/isolation/evidence requirements versus rehearsal/rollout preparation |
+| Audits, reviews, validation reports, DEVELOPMENT_HISTORY | Dated findings/results; [evidence index](DEVELOPMENT_HISTORY.md#evidence-index) routes investigation outside default reading |
+| Seven compatibility pointers | Retained saved/external-link entry points: root STORAGE_SETUP/IMPLEMENTATION; docs SETUP_GUIDE, ENV_IMPROVEMENTS_SUMMARY, CONTROLLERS_MIGRATION/PATTERNS, ERROR_HANDLING_EXAMPLES |
+| .github/agents profiles | Reviewed locally; already defer to AGENTS and environment delegation policy; unchanged/ignored |
+
+Consolidation: repeated checkpoint delivery/runtime narratives, mixed-date UI audit
+and correction-map status/order moved into existing DEVELOPMENT_HISTORY. Repeated
+test descriptions also moved there; TESTING retains commands/isolation, links to
+current runners/inventory and acceptance requirements. Original
+user-edited 2026-11-09 startup evidence is preserved there and dated in the checkpoint.
+No files were added, deleted or renamed. Compatibility references/automation were
+searched; absence of internal links was not treated as proof of obsolescence.
+
+Source checks resolved stale unrestricted-signup/stub-mail, bearer-browser-session,
+public-static-image, absent-browser-CI, invitation management, event timezone/audit
+and route-guard claims. Resource docs now own details instead of stale index lists.
+ADR-017 is indexed; ADR-003's accepted M2 scope is distinguished from pending live
+and ADR-004 scoring scope. Original ADR rationale and dated test results remain.
+Checked against manifests/Turbo/CI, config and example files, routers/controllers,
+web transport/routes/forms, shared schemas, Prisma schema and migration 30. This
+was targeted source reconciliation, not a fresh runtime/security audit.
+
+Reading size (UTF-8 bytes, including original line endings; **not token savings**):
+AGENTS + DEVELOPMENT_PLAN + docs/README: **43,916 → 26,432 bytes** (39.8% smaller).
+Checkpoint: **31,094 → 13,715 bytes**. Task-specific roadmap/source reading is
+additional; historical evidence was relocated rather than discarded.
+
+Validation: node scripts/check-docs.cjs and node --check scripts/check-docs.cjs
+pass (113 Markdown files/712 local links); git diff --check passes. Snapshot
+comparisons verify all 143 existing
+roadmap checkboxes/IDs, owning dependencies, queue/gate sections, moved narratives,
+original startup edit and dated report bodies. Only Markdown changed; no runtime
+suites were rerun. The initial checker also passed (113 files/611 local links);
+no pre-existing documentation-check failure was observed. Existing roadmap IDs,
+checkbox states, dependencies and gates are preserved; the only new completed
+checkbox is DOCS-MAINTENANCE. No domain decision was made by this maintenance.
+
+Remaining: generated OpenAPI guidance awaits infrastructure; hosted deployment
+runbook awaits P9-DEPLOY evidence; live/scoring decisions and per-feature docs stay
+with their owners. Hosted scope/mail/CI/ingress/restore and human release evidence
+remain open. Next application task remains P4-CORE, not started here.
+
+## Original audit 2026-10-25
+
+> Historical report below, including measurements, checks and “next task” statements.
+> It does not report the 2026-11-10 maintenance or current implementation status.
+
+### Documentation audit — 2026-10-25
 
 Scope: all 40 original repository Markdown files, including agent profiles,
 untracked UI specifications and concurrent scope-integrity documentation. Reviewed
@@ -6,7 +71,7 @@ claims against manifests/scripts, route composition, shared schemas, controllers
 auth/config/error/storage code and frontend routes. No application behavior,
 database, deployment or release gate was changed by this audit.
 
-## Findings and changes
+### Findings and changes
 
 | Finding | Resolution |
 | --- | --- |
@@ -21,7 +86,7 @@ database, deployment or release gate was changed by this audit.
 | Specialist agent profiles duplicated repository policy and assumed tools/agents or automatic latest upgrades | Refer to root instructions, pinned versions and actual environment delegation policy |
 | Dated reports could be mistaken for current next actions or fresh test results | Added historical banners; preserved underlying evidence and rollout cautions |
 
-## Original-file coverage
+### Original-file coverage
 
 | Files / group | Disposition |
 | --- | --- |
@@ -48,7 +113,7 @@ filenames remain valid; no original document was deleted.
 The two `.github/agents` profiles are locally updated but already Git-ignored;
 they will not appear in a normal Git diff. Ignore rules were preserved.
 
-## Reading-cost measurement
+### Reading-cost measurement
 
 Measured UTF-8 bytes, not tokenizer output or agent execution time. Splitting a
 file reduces task-specific reading, not its total text; the overall reduction
@@ -65,7 +130,7 @@ More small files allow selective reading. The root checkpoint no longer requires
 loading future-phase details, API resources or historical test narratives.
 
 
-## Validation and limits
+### Validation and limits
 
 - `node --check scripts/check-docs.cjs`: syntax check.
 - `node scripts/check-docs.cjs`: all local Markdown links/anchors, UTF-8, fences

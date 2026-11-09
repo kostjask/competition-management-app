@@ -42,5 +42,6 @@ Read working code rather than maintaining duplicate pseudo-implementations:
 | Canonical route delegation | [judges router](../apps/api/src/routes/judges.ts) |
 
 Mounted business controller migration is complete for Phase 1. Empty users router
-and future scores are not implemented resources; health/static are infrastructure
-exceptions. Pending security/domain tasks remain in the [checkpoint](../DEVELOPMENT_PLAN.md).
+and future scores are not implemented resources; health is an infrastructure
+exception and image retrieval returns binary output. Pending security/domain tasks
+remain in the [checkpoint](../DEVELOPMENT_PLAN.md).

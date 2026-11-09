@@ -1,5 +1,8 @@
 # Boundary and role validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 2026-11-05. Technical scope: P2-BOUNDARIES, P2-BOUNDARIES-ERRORS and P2-ROLES.
 Revision: base 3445f94 plus this uncommitted working tree. No commit, deployment,
 application-data reset or schema migration was performed. External milestones stay open.

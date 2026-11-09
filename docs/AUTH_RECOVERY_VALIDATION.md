@@ -1,5 +1,8 @@
 # Public account recovery validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-10-25. Task: P2-AUTH-RECOVERY, completing the technical backend P2-AUTH
 scope after eligibility. Evidence is from the working tree based on e1ba9db;
 earlier eligibility edits are preserved, and no commit/deployment is implied.

@@ -4,9 +4,10 @@ React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
 [setup](../../README.md#local-setup) starts API and web together. API reads remain
 authenticated; role dashboards are placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
-From the repository root: pnpm --filter web dev (port 5173), build, typecheck,
-lint or test. Tests use tsx/Node plus static React rendering; interactive browser
-coverage remains planned. [Test commands and scope](../../docs/TESTING.md).
+For frontend-only development from the root: pnpm --filter web dev (port 5173).
+[Test commands and scope](../../docs/TESTING.md) own build/typecheck/lint, Node/static
+React tests and maintained Playwright Chromium coverage for delivered workflows.
+Human language and assistive review remain separate release evidence.
 
 VITE_API_URL must include /api/v1 (local http://localhost:4000/api/v1).
 Restart Vite after environment changes. Shared @dance/schemas emits runtime JS;
@@ -18,7 +19,7 @@ build it and restart the API after contract changes.
 | --- | --- |
 | Mounted pages | src/routes/index.tsx; proposed routes are in [UI_UX](../../docs/UI_UX.md) |
 | HTTP and DTO decoding | src/api; [client conventions](src/api/README.md) |
-| Session / route gates | src/auth; [known role issues](ROLE_SYSTEM.md) |
+| Session / route gates | src/auth; [access gates](ROLE_SYSTEM.md) |
 | Translation / feedback | src/i18n, ErrorFeedback; [LOCALIZATION](../../docs/LOCALIZATION.md) |
 | Shared layout / future controls | src/components; [DESIGN_SYSTEM](../../docs/DESIGN_SYSTEM.md) |
 

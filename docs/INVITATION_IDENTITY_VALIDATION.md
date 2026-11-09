@@ -1,5 +1,8 @@
 # Invitation identity validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-11-01. Task: P2-INVITE-IDENTITY, C1/C2. Base revision: 76912d0;
 evidence applies to this uncommitted working-tree change. No external milestone
 or deployed-data review is completed by these local results.

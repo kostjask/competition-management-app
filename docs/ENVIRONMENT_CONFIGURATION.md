@@ -79,7 +79,7 @@ and [staging setup](STAGING.md) for queue key backup/rotation, retries and rollo
   Behind the local ingress clients share its socket IP. Before hosted/multi-instance
   use, review ingress limits and a topology-specific trusted-proxy/shared-store policy;
   never enable arbitrary proxy trust. OPTIONS preflight does not consume a bucket.
-- Images: /uploads requires a current eligible bearer identity, a live reference
+- Images: /uploads requires a current eligible cookie/bearer identity, a live reference
   and resource read permission. No static fallback or public publication is enabled.
   Check [storage behavior](STORAGE.md) before introducing any cloud/public provider.
 

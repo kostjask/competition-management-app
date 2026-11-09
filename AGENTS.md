@@ -7,12 +7,14 @@ cannot be inferred). [Documentation map](docs/README.md).
 ## Start and scope
 
 1. Read [DEVELOPMENT_PLAN.md](DEVELOPMENT_PLAN.md), then only the selected task's
-   roadmap section and relevant docs. Check active phase, priority and prerequisites.
+   roadmap section and relevant docs from [the map](docs/README.md). Check active
+   phase, priority and prerequisites; use headings/rg instead of loading whole
+   specifications. Historical reports are optional evidence, not current instructions.
 2. Inspect git status --short and relevant diffs before editing. Existing edits
    belong to the user: preserve them; no reset/discard/overwriting or unrelated reformatting.
 3. Inspect implementation; reconcile code/doc mismatches before relying on docs.
 4. Without a selected task, choose the highest-priority actionable unchecked item
-   in the active phase. Respect documented dependencies/exit criteria; later work
+   in the checkpoint queue. Respect documented dependencies/exit criteria; later work
    needs its plan gates or an explicit user request. Do not add unrelated roadmap work.
 
 Fix root causes with simple, focused changes following existing conventions.
@@ -64,7 +66,8 @@ existing source/Git edits must always be preserved. Operational details:
 
 - Add/update behavior tests where infrastructure exists; add a failing-before-fix
   regression when practical. Include denied/cross-event/cross-studio cases.
-- Start narrow, then run applicable tests, typecheck, lint, build and Prisma
+- For prose/link-only edits run [documentation checks](docs/TESTING.md#documentation-only-changes).
+  For implementation, start narrow, then run applicable tests, typecheck, lint, build and Prisma
   format/validate/generate; database changes also need migration/API integration
   checks. Commands and isolation: [TESTING](docs/TESTING.md).
 - Claim success only for completed commands. Report exact environmental,
@@ -76,6 +79,23 @@ existing source/Git edits must always be preserved. Operational details:
   stale statements, risks/blockers, new work in its phase, next concrete action.
   Do not close a phase before exit criteria. Place outside-plan work appropriately
   or explain why it stays outside. Keep current state separate from historical evidence.
+
+## Skill usage
+
+Use relevant installed skills selectively; read their SKILL.md before applying
+them. Do not load every skill for every task.
+
+- ub-mode: use for nontrivial implementation, bug fixes and refactoring.
+- hallmark: use for new UI design, preserving docs/DESIGN_SYSTEM.md,
+  accessibility and ET/EN/RU requirements. For existing designs, use only
+  when the user explicitly requests Hallmark auditing or redesign.
+- security-best-practices: use for explicitly requested security reviews,
+  security guidance or secure-by-default implementation.
+
+Repository instructions and user scope take precedence. Skills do not
+authorize additional dependencies, Git mutations or unrelated changes.
+If a skill is unavailable, follow repository conventions and disclose
+any material limitation.
 
 ## Git safety and handoff
 

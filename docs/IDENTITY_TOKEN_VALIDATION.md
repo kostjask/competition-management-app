@@ -1,5 +1,8 @@
 # Identity token lifecycle validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-10-25. Task: P2-IDENTITY-TOKENS-LIFECYCLE / H2, completing the technical
 P2-IDENTITY-TOKENS parent after the email slice. Evidence refers to the working
 tree, not a committed or deployed revision. Decision: [ADR-010](adr/010-identity-token-lifecycle.md).

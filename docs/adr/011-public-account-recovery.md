@@ -2,7 +2,9 @@
 
 Date: 2026-10-25
 
-Status: Accepted technical policy for P2-AUTH-RECOVERY; real delivery/UI remain gated.
+Status: Accepted technical policy for P2-AUTH-RECOVERY. UI subsequently delivered
+under ADR-017; real inbox/hosted/human release evidence remains gated. The decision
+and original recovery rationale below are retained.
 
 Expose four canonical POST operations: /auth/resend-verification,
 /auth/correct-email, /auth/request-password-reset and /auth/reset-password.

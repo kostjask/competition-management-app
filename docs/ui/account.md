@@ -60,6 +60,6 @@ Secrets are stripped from URLs and require reopening mail after reload. Generic
 signup and public role selection are rejected by the API. All acknowledgements
 leave delivery unconfirmed. /admin/invitations allows authorized event staff
 creation, displayed-expiry resend/revoke and retained status. Pending revocation
-never removes accepted access. Judge readiness, applications and offboarding remain
-gated. See [validation](../ONBOARDING_INVITATIONS_VALIDATION.md) for local evidence
+never removes accepted access. This dated slice predates ADR-018/P4-STAFF
+acceptance/offboarding/staff UI delivery; application UI remains P4/P5. See [validation](../ONBOARDING_INVITATIONS_VALIDATION.md) for local evidence
 and external/manual release limits.

@@ -2,7 +2,10 @@
 
 Date: 2026-10-24
 
-Status: Accepted product direction; runtime implementation pending.
+Status: Accepted product direction. Original context below describes 2026-10-24.
+Later delivery: ADR-017/018 implement signup, invitation lifecycle and staff
+acceptance/offboarding locally; application UI and external release remain gated.
+[Checkpoint](../../DEVELOPMENT_PLAN.md) and owning roadmaps track execution.
 
 ## Context
 

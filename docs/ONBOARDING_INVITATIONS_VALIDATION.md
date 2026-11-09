@@ -1,5 +1,8 @@
 # Public onboarding and invitation lifecycle validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 2026-11-05. Local technical scope: P2-SIGNUP, P2-INVITE and P2-UI-AUTH.
 [ADR-017](adr/017-public-onboarding-and-invitation-lifecycle.md) records the
 ownership/retry/status choices before implementation. This extends the earlier

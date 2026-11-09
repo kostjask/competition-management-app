@@ -24,8 +24,9 @@ existing application environment file. Build/typecheck cover the four workspace
 packages and the API seed. Lint currently covers web only. The API uses Node's
 built-in test runner against the compiled application; pnpm test builds its
 dependencies first. The web test script uses the existing tsx runner for Node tests and static React
-component rendering. Initial Chromium browser infrastructure now checks the
-synthetic foundation fixture; full auth/domain journeys remain P9-BROWSER.
+component rendering. Playwright Chromium checks delivered foundation, session,
+auth/onboarding/invitation, account-language and staff slices with synthetic data;
+remaining application/domain journeys extend P9-BROWSER.
 
 Turbo may reuse unchanged local results. To run fresh HTTP tests after building,
 use pnpm --filter api test. In CI each job begins with a fresh checkout and
@@ -84,47 +85,22 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.
 PowerShell 7 (pwsh) runs the same script on Linux. The script selects pnpm.cmd on
 Windows and pnpm elsewhere.
 
-The baseline runner uses only the checked-in Compose fixture, creates a random
-dance_baseline_* database, deploys/redeploys migrations, checks full-record seed
-idempotency and production-seed refusal, and starts its own compiled API on a
-temporary port. It runs registration, dancer, performance, studio, judge, category,
-format/age-group and invitation
-HTTP/database workflows, event DTO/persistence and concurrent partial-date
-checks, and auth/profile DTOs with real global/event roles and resolved permission
-scopes (including immediate removal). The fixture explicitly raises login/general
-limits to 500/2000 per window because it repeats hostile operations from one IP;
-maintained boundaries.test.cjs independently tests low configured limits. Category checks include
-strict CRUD, scoped reads/admin writes, cross-event parents, name conflicts and
-competing creates, plus deletion preserving active/archived performances. Setup
-checks preserve duplicate labels, nullable ages and valid concurrent partial ranges.
-Invitation checks cover scoped new-account setup and intended existing-account
-authentication, unsupported global/unclassified denial, wrong/no/stale/inactive/
-unverified session denial, full-field credential/access/invitation preservation,
-USER audit attribution, concurrent acceptance and consumption/audit failure rollback.
-Existing-account success issues no new JWT. See
-[invitation identity evidence](INVITATION_IDENTITY_VALIDATION.md).
-Scope-integrity checks additionally race direct global/event role and invitation
-writes, restrict deletion with assignments or invitation history, and replace
-expired links concurrently without losing old records. The baseline's isolated
-upgrade schemas verify full-field role/invitation preservation and atomic refusal
-of ambiguous legacy duplicates. Migration parity compares both scope SQL-only
-indexes exactly as well as Prisma-derived columns and foreign keys.
-Email-identity fixtures also verify canonical email upgrades, full-field preservation,
-account/global/event invitation collision refusal and direct-write checks under
-ADR-009. Migration parity includes the SQL-only canonical email CHECK constraints;
-HTTP workflows exercise case/space variants and duplicate-account preservation.
-Token fixtures cover legacy plaintext removal/link invalidation, account/access/
-invitation-history preservation, purpose/expiry/replay/rotation/revocation,
-concurrent verification/recovery, inactive/changed-email denial and real database
-failure rollback after token claim. Recovery primitives run against the disposable
-database; they are not public endpoints. The SQL-only outstanding-account-token
-unique index is included in migration parity. Secret-free development and failed
-production email stubs have unit regressions.
-Schema-audit fixtures additionally validate six token storage CHECKs, refusal of
-each invalid preexisting state with all checks rolled back, full-record valid
-upgrade preservation and direct SQL rejection. Expired account-token fixtures
-retain a positive historical issuance/expiry interval. Exact parity now includes
-the SQL-only active-studio-name index without excluding it from signatures.
+The [baseline runner](../scripts/test-baseline.cjs) uses only the checked-in
+Compose fixture. It creates a random dance_baseline_* database, deploys/redeploys
+migrations, verifies full-record seed idempotency/production refusal and runs its
+compiled API on a temporary port. It stops that server and drops its database in
+finally. Application database credentials/environment files are not used/reset.
+The fixture raises login/general limits to 500/2000 per window for repeated hostile
+operations; boundaries.test.cjs independently verifies low configured limits.
+
+The runner composes resource and identity/scope/audit/onboarding/staff/registration
+HTTP/PostgreSQL checks. Use its child-script list and the
+[operation inventory](api-coverage.json) to locate a selected suite, rather than
+loading every past report. SQL-only indexes/CHECKs/functions/triggers must retain
+exact fresh/upgrade parity alongside Prisma columns/foreign keys. Synthetic
+fixtures cover invalid-upgrade refusal, unchanged denied records, history,
+concurrency, rollback, expiry/replay and current authorization. Specific dated
+results are in the [evidence index](DEVELOPMENT_HISTORY.md#evidence-index).
 
 For reproducible schema suitability and synthetic query-plan evidence, run
 `node scripts/audit-schema-fixture.cjs` with the Compose PostgreSQL service running.
@@ -132,11 +108,9 @@ It creates a random schema in the checked-in dance_comp fixture database, applie
 all migrations, loads synthetic data and prints only catalog/plan metadata, then
 drops its own schema. It never reads application environment files or application
 rows. This one-off audit is separate from normal CI baseline checks; it does not
-establish production latency or deployment parity. Findings and current results:
+establish production latency or deployment parity. Dated findings/results:
 [schema audit](SCHEMA_SUITABILITY_AUDIT.md).
-It stops its server
-and drops its own database in a
-finally block. The migration suite creates random schemas in dance_comp, checks
+The migration suite creates random schemas in dance_comp, checks
 fresh and existing-data upgrades, status/default/data preservation, the partial
 active-studio-name index and schema parity, and removes its schemas/temp SQL.
 These commands fail if Docker/PostgreSQL is unavailable; there is no skip-success
@@ -154,7 +128,8 @@ It uses Node 24 and the repository-pinned pnpm version through the official
 The two independent jobs are:
 
 - **Workspace checks:** frozen installation, Prisma generation/validation/format
-  check, build, typecheck, current lint, existing tests and whitespace checking of
+  check, build, typecheck, current lint, Node/localization tests, Playwright Chromium
+  installation/browser tests and whitespace checking of
   the triggering commit (or PR merge against its first parent).
 - **PostgreSQL migrations and workflows:** frozen installation, generation/build,
   PostgreSQL readiness, migration regression checks through pwsh, and the baseline
@@ -184,77 +159,35 @@ operator follow-up after the workflow is published.
 
 ## Phase 1 coverage and localization gate
 
-pnpm test first runs pnpm test:i18n, a TypeScript AST source guard against new
-hardcoded JSX text/accessible attributes. Existing reviewed exceptions are in
-[i18n-hardcoded-baseline.json](i18n-hardcoded-baseline.json); they remain I18N-UI
-work. The detector itself has a regression test. Do not regenerate this baseline
-to hide new strings; translate them or document a specific intentional-content
-exception. Catalogue completeness, placeholder and native plural checks run for
-ET/EN/RU in the web test task. Typecheck also exercises invalid key/argument cases.
+pnpm test first runs pnpm test:i18n, the TypeScript AST guard against new hardcoded
+JSX/accessible text. [Reviewed exceptions](i18n-hardcoded-baseline.json) are not
+permission to regenerate a baseline to hide new strings. Translate new UI or
+document a specific intentional-content exception. Catalogue completeness,
+placeholders, plurals and invalid key/argument typechecks cover ET/EN/RU.
+[LOCALIZATION](LOCALIZATION.md) owns dictionary/presenter conventions.
 
-The current suite has 99 API tests and 10 frontend tests. Frontend checks include
-all-locale component renders of the same stored error, field links, selector
-semantics, network/non-JSON/multipart/204 handling, response-schema failures and
-safe legacy/future fallback. Shared validation preserves root/nested rules and
-bounds without input values. These are static component/transport checks, not
-interactive browser, keyboard/mobile/screen-reader or fluent-language review.
-Those remain per-workflow release checks under I18N-QA and P9-BROWSER.
+[api-coverage.json](api-coverage.json) owns the mounted operation/test mapping;
+counts belong to the inventory or a dated run, not a second current tally here.
+Runtime registration and unauthenticated-operation checks guard inventory drift.
+/health uses an infrastructure shape; private image GET is separately tested in
+the image baseline. globalAdmin evidence is enforced by HTTP and isolated
+check-admin-scope.cjs fixtures, including immediate access removal and safe
+preflight. P2-SCOPE-DEPLOY still needs intended-target provenance.
 
-[api-coverage.json](api-coverage.json) inventories 60 mounted method/path operations
-and their test evidence/non-applicable or Phase 2 exceptions. Tests compare runtime
-router registration to the inventory and reject unauthenticated access to every
-protected operation. /health is an infrastructure exception; protected GET
-/uploads/:resource/:filename is tested separately in the image baseline.
-The coverage inventory does not imply complete authorization hardening:
-frontend role guards and remaining transport/abuse controls are still Phase 2 gates.
-Intended-account invitation proof is implemented under P2-INVITE-IDENTITY;
-management, acceptance UI and Judge reconciliation remain separate gates.
-The globalAdmin evidence field marks all 18 mounted admin-only operations.
-Maintained HTTP tests deny own/other-event scoped admins, removed admins,
-unsupported global staff and similarly named roles. check-admin-scope.cjs repeats
-the inventory matrix against PostgreSQL, compares full domain/audit snapshots,
-checks immediate removal using the same JWT and tests unsupported invitation
-creation/inspection/acceptance/rotation. The exact aggregate scope preflight runs
-against synthetic historical rows without exposing account details. Fresh seed
-checks require an event-bound judge and no newly created global judge; seed
-idempotency and all existing migration/HTTP fixtures remain required. See
-[admin scope evidence](ADMIN_SCOPE_VALIDATION.md). Actual deployment provenance
-remains P2-SCOPE-DEPLOY; fixture counts cannot close that gate.
-Image checks additionally run check-image-boundaries.cjs in an isolated child with
-real PostgreSQL, a temporary local storage root and synthetic raster images.
-They verify ownership/event/member/approval/stage denial before storage, archived
-parents, genuine uploads and private retrieval headers, no static fallback, live
-reference checks, IMAGE_REPLACED audit rollback, fresh authorization after storage,
-concurrent replacement and cleanup-failure orphan denial. The child deletes only
-its verified temporary root. Raster unit tests cover PNG/JPEG/WebP decoding,
-metadata stripping, MIME/extension/content mismatch, malformed/animated input and
-pixel/output bounds. Client tests restrict bearer downloads to canonical API-origin
-images with no redirects or credential query parameters. Migration parity includes
-expanded audit allowlists and preserves a historical audit row. See
-[image evidence](IMAGE_BOUNDARIES_VALIDATION.md). No image UI/browser flow is claimed.
-Account eligibility is tested across every protected inventory operation with
-missing/inactive/unverified subjects, before role resolution. PostgreSQL checks
-also retain issued JWTs while disabling, removing or unverifying their account,
-cover verified roleless/admin paths and prove denied operations preserve records.
-The development-mode API fixture resolves a persisted seed actor, exercises an
-invitation creator foreign key and rejects disabled/unverified seed identity.
-Configuration tests refuse DEV_AUTH outside development. Missing-identity
-registration now fails at 401; a database trigger under a valid identity preserves
-the original nested-write rollback coverage.
-Public recovery adds strict-body/neutral-acknowledgement, password proof,
-delivery availability/failure, session revision and shared-throttle HTTP tests.
-The baseline also runs check-auth-recovery.cjs in an isolated child with an injected
-mail fake: real PostgreSQL checks email collisions, identity/membership preservation,
-failed-send rollback, reset/rotation races, expiry/replay/wrong-purpose/inactive
-denial, database rollback and old-session rejection. Raw synthetic delivery secrets
-stay inside that test child. Migration upgrades verify default-zero revisions and
-negative-version rejection; SQL-only check parity includes sessionVersion.
+Security/content, identity eligibility and recovery checks live in maintained API
+unit tests and baseline child scripts. Use synthetic accounts/secrets/files,
+assert denied requests preserve credentials/access/records/media, test accepted
+image retrieval as well as MIME, and keep raw secrets within the test process.
+check-image-boundaries.cjs deletes only its verified temporary storage root;
+client images must use canonical API-origin paths without redirects/credential
+query parameters. Static/contract checks do not replace browser/human workflow
+review or real staging delivery. Scope-specific runners are linked below.
 
 ## Incremental UI/UX acceptance and visual regression strategy
 
-Planned infrastructure, not a claim of installed browser/screenshot tooling.
-Start P9-BROWSER/P9-UI-REGRESSION with P2-UI-FOUNDATION/SHELL, then extend alongside
-each functional slice; do not wait for the final quality phase. Use
+Playwright infrastructure exists; [browser checks](#browser-and-foundation-checks)
+own runner commands and delivered scope. Extend P9-BROWSER/P9-UI-REGRESSION alongside
+each functional slice; remaining strategy below does not claim future coverage. Use
 [UI_UX](UI_UX.md) S01–S17 contracts, [USER_FLOWS](USER_FLOWS.md) F01–F10 acceptance
 and [DESIGN_SYSTEM](DESIGN_SYSTEM.md) component states as test identifiers.
 
@@ -267,10 +200,9 @@ and [DESIGN_SYSTEM](DESIGN_SYSTEM.md) component states as test identifiers.
 | Visual regression | Reviewed synthetic state fixtures for phone 390px plus 320px reflow, portrait tablet 768px and desktop 1440px; ET/EN/RU including long labels. Cover default/focus/invalid/loading/empty/error/denied/locked and live reconnect states per component/page. Stabilize clock/data/fonts, disable nonessential animation; never put private dancer/contact/billing data or tokens into screenshots/artifacts. |
 | Accessibility and language | Automated semantics/contrast checks plus manual keyboard, screen-reader announcements, focus restoration, touch, zoom/reflow/text-spacing and fluent ET/EN/RU review. Verify locale switching preserves work and displayed feedback, calendar birth dates do not shift and event timezone is explicit. Target complete delivered processes at WCAG 2.2 AA; snapshots alone cannot establish conformance. |
 
-Select the smallest appropriate browser/visual tool during implementation based
-on the concrete coverage gap; no new dependency is authorized merely by listing
-this strategy. Check in reviewed baselines only after inspection. A visual change
-must be explained and approved through normal code review; do not blindly update
+Extend the existing runner for concrete coverage gaps; no new dependency is
+authorized merely by listing this strategy. Check in reviewed baselines only after
+inspection. A visual change must be explained and approved through normal code review; do not blindly update
 all snapshots to make CI pass. Keep behavior, permission and golden calculation
 assertions independent of screenshots. Record revision, S/F ID, role, locale,
 viewport, browser/device, network fixture and manual-review evidence for each

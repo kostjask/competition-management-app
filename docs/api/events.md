@@ -32,7 +32,7 @@ audit. See [ADR-003](../adr/003-registration-lifecycle.md).
 
 Unknown fields, IDs, audit timestamps, relations, image URLs and private paths
 are rejected. Image changes remain on the upload route, whose resource-specific
-authorization is still P2-BOUNDARIES.
+authorization/content rules are in [the image contract](images.md).
 
 A partial date update validates the resulting stored pair in a serializable
 transaction. Concurrent edits cannot produce a reversed pair; serialization
@@ -41,7 +41,7 @@ and concurrent disappearance return 404. Existing legacy rows are not rewritten;
 invalid stored date pairs must be corrected before a PATCH can succeed.
 
 List/detail/create/update use one explicit DTO: `id`, `name`, `startsAt`,
-`endsAt`, `stage`, `createdAt`, nullable `venue`, `country`, `city`,
+`endsAt`, `timeZone`, nullable `registrationDeadline`, `stage`, `createdAt`, nullable `venue`, `country`, `city`,
 `description`, `maxStudios`, `maxPerformances`, and `imageUrl`.
 Dates serialize as ISO UTC strings. DTOs omit `imagePath`, relations and the
 nonexistent `updatedAt`; the detail screen no longer renders that timestamp.

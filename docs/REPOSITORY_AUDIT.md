@@ -1,5 +1,8 @@
 # Repository implementation audit
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-10-25 (Europe/Tallinn). Baseline: `dad2361` plus the existing working tree.
 This is a source, contract, test and isolated-database audit, not a deployment or
 browser acceptance audit. No implementation, schema, migration or test file was

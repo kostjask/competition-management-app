@@ -1,5 +1,8 @@
 # Staff acceptance, offboarding and account preference validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Recorded: 2026-11-06. Scope: P2-JUDGE-ACCEPT, P2-OFFBOARD, I18N-PREFERENCES.
 Local working-tree evidence; no commit, deployment, application-data reset or
 external milestone completion. The initial working tree was clean.

@@ -1,4 +1,4 @@
-﻿# Studio registration contract
+# Studio registration contract
 
 [API index](../API.md). Paths are relative to `/api/v1`. Authentication requires
 an active verified account. A new applicant needs no role. Policy and actor matrix:

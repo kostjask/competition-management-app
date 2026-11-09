@@ -1,6 +1,6 @@
 # Authorization and security status
 
-Working-tree status: 2026-11-06. This describes current boundaries and open work,
+Source review: 2026-11-10. This describes current boundaries and open work,
 not a production-readiness or deployed-data audit. Task priority: [checkpoint](../DEVELOPMENT_PLAN.md).
 
 ## Current model
@@ -36,8 +36,8 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
 - ADR-009/010 supply canonical email and purpose-bound token digests, expiry,
   atomic consumption/rotation and legacy-link invalidation. Verification/recovery
   reject inactive accounts; invitation acceptance also refuses inactive invitees.
-  Invitation rotation/revocation helpers are internal; public account recovery
-  now uses the digest primitives under ADR-011.
+  Public admin invitation resend/revoke use these primitives under ADR-017; public
+  account recovery uses them under ADR-011.
   [Lifecycle evidence](IDENTITY_TOKEN_VALIDATION.md) records local checks and limits.
 - ADR-011 adds public resend, password-proven pending email correction and reset.
   Request acknowledgements are uniform and explicitly delivery-unconfirmed;
@@ -45,8 +45,8 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   now uses a transactional encrypted queue with bounded idempotent retries under
   ADR-014; staging inbox delivery is still unverified. Reset increments the stored JWT
   revision, revokes older sessions and returns no session or access grants.
-  Recovery routes share process-local IP limits; real staging delivery, UI, distributed
-  throttling and other session controls remain separate release gates.
+  Recovery routes share process-local IP limits. Recovery UI is delivered locally;
+  real staging delivery and intended ingress/shared-instance controls remain gated.
 - P2-BOUNDARIES-UPLOADS now enforces ownership/scope, active parents, resource
   stage/approval and fresh transactional access on all four image endpoints.
   Raster content is decoded/re-encoded into bounded metadata-free WebP; private
@@ -61,7 +61,8 @@ process-local and proxy trust remains false. Denied role routes provide translat
 focus/home recovery. P2-SESSION/UI-SHELL and Phase 2 formatting now add HttpOnly
 browser cookies, exact-Origin/CSRF protection, audited revision logout, safe returns,
 preserved-work recovery, translated navigation/context/profile and UTC formatting.
-Full signup/recovery/invitation workflows and hosting controls remain gated. See
+Signup/recovery/invitation UI is delivered locally under ADR-017; real mail, hosted
+operations and human review remain release gates. See
 [session/shell evidence](SESSION_SHELL_VALIDATION.md).
 See [boundary and role evidence](BOUNDARIES_ROLES_VALIDATION.md).
 
@@ -87,7 +88,7 @@ Correct remaining defects under the mapped preservation/regression
 requirements before external exposure; no production exploit or deployed occurrence
 is inferred from the local probes.
 
-| Gap | Owner |
+| Boundary / remaining work | Owner |
 | --- | --- |
 | Public signup requires studio context; pending/verified owners recover retained drafts without added privileges | P2-ONBOARDING-MODEL/SIGNUP |
 | Intended-account acceptance, admin pending management, translated acceptance UI and atomic Judge reconciliation implemented locally | P2-INVITE / P2-UI-AUTH / P2-JUDGE-ACCEPT |
@@ -106,8 +107,9 @@ is inferred from the local probes.
 Validate external input and every client-supplied relationship on the backend.
 Test denied, cross-event/studio, inactive/deleted, stale/concurrent and rollback
 cases alongside success. Never infer account ownership from contact email or
-merge identities by normalized email/name. Preserve rows/history during migration;
-review ambiguous data through authorized tooling. Do not log secrets, personal
+merge identities by normalized email/name. Follow the [disposable-target and migration policy](../AGENTS.md#development-database-policy);
+preserve required domain history/integrity and review ambiguous retained data
+through authorized tooling. Do not log secrets, personal
 records or arbitrary request/error payloads.
 
 Frontend gates cannot authorize operations. Public discovery/results require

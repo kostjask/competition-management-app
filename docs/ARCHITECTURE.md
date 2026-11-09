@@ -17,21 +17,25 @@ summarized in [README](../README.md).
 ## Request and data flow
 
 1. A web feature calls its resource helper under `apps/web/src/api`.
-2. `client.ts` uses the configured `/api/v1` base, attaches bearer credentials and
-   returns unknown output; helpers decode shared schemas before use/session storage.
+2. `client.ts` uses the configured `/api/v1` base, includes HttpOnly cookie credentials and
+   CSRF/session-negotiation headers. It returns unknown output; resource helpers
+   decode shared schemas before use. Browser credentials never enter Web Storage;
+   native bearer transport is separate. See [client conventions](../apps/web/src/api/README.md).
 3. `createApp(prisma)` mounts `routes/api.ts`; concrete routes compose public/auth
    boundaries, middleware and controller delegation.
 4. Controllers parse shared schemas and enforce stored relationships, permissions,
    ownership, active records and stage rules. They call Prisma directly and use
-   transactions for dependent writes; services currently cover storage integration.
+   transactions for dependent writes; services cover audit, registration/access
+   policy, onboarding, sessions, email dispatch and storage.
 5. Explicit DTOs serialize dates and omit private persistence fields. Shared
    response validation runs before sending. The global handler converts failures
    to the semantic envelope; web presenters localize descriptors at render time.
 
 `apps/api/src/index.ts` constructs dependencies, initializes local storage,
 registers signals and listens. `app.ts` constructs no database/listener/provider;
-tests inject a Prisma fixture. `/health` queries the database; `/uploads` serves
-local files publicly outside the business prefix.
+tests inject a Prisma fixture. `/health` queries the database. `/uploads` is
+authenticated, current-reference/resource-scoped image retrieval outside the
+business prefix, with no public static fallback. See [image contracts](api/images.md).
 
 ## Model and delivery boundaries
 

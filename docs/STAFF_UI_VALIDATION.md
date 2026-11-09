@@ -1,5 +1,8 @@
 # Event staff administration validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Recorded: 2026-11-06. Local working tree, no deployment or external milestone.
 Scope: P4-STAFF-READ, P4-STAFF-UI and P9-BROWSER-STAFF, the three bounded
 execution tasks recorded under P4-STAFF before implementation. Existing uncommitted

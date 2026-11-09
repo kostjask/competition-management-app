@@ -1,5 +1,8 @@
 # Email identity validation
 
+> Dated evidence; results and “next task” statements apply to the recorded snapshot.
+> Current priority/status: [checkpoint](../DEVELOPMENT_PLAN.md); commands: [TESTING](TESTING.md).
+
 Date: 2026-10-25. Task: P2-IDENTITY-TOKENS-EMAIL, under the still-open
 P2-IDENTITY-TOKENS parent. Evidence is from the working tree, not a committed or
 deployed revision. Decision and rollout/rollback limits: [ADR-009](adr/009-email-identity.md).

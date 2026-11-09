@@ -59,8 +59,9 @@ verification/invitation links retain the session choice or use the same account/
 fallback. Mail resolves its recipient locale independently and invitations keep
 their frozen locale. No browser inference writes account preferences. Document lang/titles, semantic loading names, profile and event
 dates and numeric feedback now use the Phase 2 shared formatting foundation.
-All displayed event instants and datetime editors explicitly use UTC until a
-separately reviewed event-zone model is introduced. Calendar date helpers do not
+Current event screens and datetime editors explicitly use UTC. The M2 event-zone
+model is implemented in contracts/storage under ADR-003; event-zone setup/display
+controls remain P4-CORE. Calendar date helpers do not
 shift days across browser zones. Future feature durations/currency retain their
 own delivered-scope formatting gates. Never infer a
 recipient's language from an administrator's session or translate authored names.

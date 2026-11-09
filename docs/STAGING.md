@@ -4,9 +4,10 @@
 user currently has a Wix site. Keep that site separate; determine whether it uses
 an owned custom domain before choosing a staging subdomain and email sender.
 No cloud resource, DNS record, provider account or real email has been created.
-A local rehearsal is running at http://127.0.0.1:8080 with production fake mail,
-26 applied migrations and healthy API/PostgreSQL; SPA/guest/mail-unavailable smoke
-checks pass. Independent generated secrets stay in ignored deploy/staging.env.
+The 2026-10-25 local rehearsal recorded http://127.0.0.1:8080 with production
+fake mail, 26 applied migrations and healthy API/PostgreSQL; SPA/guest/mail-unavailable
+smoke checks passed. This is dated evidence; current process/target state is
+unverified. Independent generated secrets stay in ignored deploy/staging.env.
 No application development database was changed.
 
 The checked-in Docker setup is a **local staging rehearsal**, not a public release.
@@ -14,7 +15,9 @@ It builds Node 24 API and Vite assets, serves the SPA/API through one origin, ru
 migrations as a one-shot dependency, and keeps PostgreSQL private. The only host
 port is 127.0.0.1:8080. Persistent database/upload volumes are separate from the
 development Compose project. Do not change that binding to a public interface.
-Local invitation identity, image and transport boundaries are implemented; signup and workflow/deployment gates still block public access. Fake production mail refuses requests; it never claims delivery.
+Local invitation identity, image, transport and signup boundaries are implemented;
+workflow/deployment/real-mail/human gates still block public release. Fake production
+mail refuses requests; it never claims delivery.
 
 ## Rehearse locally
 
@@ -31,8 +34,8 @@ Local invitation identity, image and transport boundaries are implemented; signu
 
 3. Browser cookie sessions now require HTTPS for production Secure cookies. The
    existing loopback HTTP rehearsal remains guest/health evidence only; do not
-   weaken cookie flags to claim an authenticated rollout. Apply migration 28 and
-   deploy API/shared contracts/browser together before the session rehearsal.
+   weaken cookie flags to claim an authenticated rollout. Apply all migrations for
+   the selected revision and deploy API/shared contracts/browser together.
    Set STAGING_CORS_ORIGIN to the exact browser origin used for the rehearsal
    (http://localhost:8080 and http://127.0.0.1:8080 are the explicit local defaults).
    Production now refuses wildcard CORS.
@@ -63,8 +66,8 @@ share the ingress socket-IP bucket. API headers do not configure SPA-host header
 No credentials belong in Git. Verify ET/EN/RU verification, resend, invite and
 reset messages using controlled recipients. Confirm provider acceptance separately
 from inbox receipt, expiry/replay, delivery retries and no secret-bearing logs.
-Invitation/reset UI links are still gated by P2-UI-AUTH; template tests do not
-prove those journeys. Record revision, environment, timestamps and safe outcomes.
+Invitation/reset UI is delivered locally; template tests do not prove hosted
+end-to-end delivery or access. Record revision, environment, timestamps and safe outcomes.
 
 ## Scope audit, backups and rollout gates
 

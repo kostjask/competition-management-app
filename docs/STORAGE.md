@@ -7,7 +7,7 @@ Current implementation is local only. Sources:
 
 ## Current behavior
 
-- Startup installs LocalStorageService regardless of STORAGE_TYPE.
+- STORAGE_TYPE accepts only local; startup installs LocalStorageService.
 - Files live under configured STORAGE_PATH, resolved against the API working
   directory (default ./uploads, normally apps/api/uploads). Strict canonical keys
   and containment checks protect reads/writes/deletes. New keys use forward slashes
