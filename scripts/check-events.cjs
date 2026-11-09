@@ -6,6 +6,7 @@ const { EventSchema, EventsSchema } = createRequire(path.resolve(__dirname, '../
 // Runs exclusively in test-baseline.cjs's disposable database.
 module.exports = async function checkEvents({ client, baseUrl, adminToken }) {
   const request = async (suffix = '', method = 'GET', body) => {
+    if (method === 'PATCH') body = { expectedRevision: (await client.event.findUnique({ where: { id: suffix.slice(1) } }))?.revision ?? 1, ...body };
     const response = await fetch(`${baseUrl}/api/v1/events${suffix}`, {
       method, headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(10000),
@@ -14,7 +15,7 @@ module.exports = async function checkEvents({ client, baseUrl, adminToken }) {
   };
   const created = await request('', 'POST', {
     name: ' Event contract ', startsAt: '2026-11-01T10:00:00+02:00', endsAt: '2026-11-01T12:00:00+02:00',
-    venue: ' Hall ', country: ' EE ', city: ' Tallinn ', description: ' Example ', maxStudios: 10, maxPerformances: 100,
+    venue: ' Hall ', country: ' EE ', city: ' Tallinn ', description: { sourceLocale: 'en', sourceText: ' Example ', translations: {} }, maxStudios: 10, maxPerformances: 100,
   });
   assert.equal(created.status, 201);
   const event = EventSchema.parse(created.body);

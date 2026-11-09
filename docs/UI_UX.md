@@ -6,6 +6,11 @@ completion is implied.
 
 ## Scope, authority, and reading order
 
+The user has rejected the current UI as a placeholder and requires a full
+[Hallmark redesign](DESIGN_SYSTEM.md#required-full-redesign). The functional
+screen/flow contracts below remain requirements; existing visual appearance and
+proposed styling do not establish an approved design.
+
 UI and UX are one delivery contract: user goals, permissions, transitions and
 recovery determine the page hierarchy, controls, feedback and responsive layout.
 Use this document before implementing an affected page, together with its flow
@@ -69,7 +74,7 @@ birth-date, contact, billing and unpublished scoring data.
 
 ## Audit of the current experience
 
-Source review: 2026-11-10, without browser/runtime checks. The original mixed-date
+Source review: 2026-11-10. Updated event setup/list/detail behavior is validated in [P4-CORE evidence](EVENT_SETUP_VALIDATION.md); other observations below remain source review. The original mixed-date
 [audit table is archived](DEVELOPMENT_HISTORY.md#ui-source-audit-archived-2026-11-10).
 Use the checkpoint/roadmaps for delivery and release status; this specification
 owns target behavior, not a second implementation checklist.
@@ -78,11 +83,10 @@ owns target behavior, not a second implementation checklist.
   are mounted. API identity eligibility, invitation reconciliation and private
   image authorization are enforced. See [contracts](API.md) and [security](SECURITY.md).
 - Event discovery is authenticated; create/edit routes require admin. Event forms
-  remain partial UTC editors; P4-CORE owns timezone/deadline/contact/checklist and
-  authored-content controls. M2 stage/deadline contracts already exist (ADR-003).
-- Role dashboards remain placeholders. Application/review, entry/music and
+  expose event-zone/DST/deadline/contact/checklist and authored-content controls under P4-CORE/ADR-020.
+- The organizer dashboard prioritizes setup blockers; other role dashboards remain placeholders. Application/review, entry/music and
   live/scoring/results screens remain their owning roadmap scopes. Event details
-  truthfully show registration unavailable for non-admins; P5-APPLICATION owns
+  show the actual application window and explain that the application form is pending; P5-APPLICATION owns
   the future apply/resume routes and actions.
 - Automated Chromium coverage exists for delivered slices; real inbox/hosted,
   full-journey human language and assistive review remain release evidence.
@@ -117,12 +121,12 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 
 | Screen ID | Route | Current implementation / target gate |
 | --- | --- | --- |
-| S01 | `/`, `/events` | Home is minimal; list implemented partially; protected data |
-| S02 | `/events/:id` | Partial details; registration unavailable; admin edit/staff links |
+| S01 | `/`, `/events` | Home is minimal; authenticated event index delivered in P4-CORE |
+| S02 | `/events/:id` | Event-zone facts, content fallback/contact/window state; setup/staff links; P5 apply/resume pending |
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
 | S03 | `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/correct-email`, `/auth/onboarding` | Mounted recovery and owner draft pages; ADR-017 |
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
-| S05 | `/admin`, `/events/new`, `/events/:id/edit`; P `/admin/events/:id/setup` | Dashboard placeholder; partial forms; P4-CORE |
+| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | P4-CORE setup/checklist/lifecycle/editor delivered; review counts remain P4-REVIEW |
 | S06 | P `/admin/events/:id/applications` | P4-REVIEW |
 | S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
 | S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | Unmounted; P5-APPLICATION |
@@ -206,8 +210,8 @@ Organizer-authored content follows I18N-CONTENT, with a visible fallback languag
 
 | Value | Required format and pending dependency |
 | --- | --- |
-| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone after P3-REGISTRATION. Proposed initial organizer choice Europe/Tallinn must be confirmed, never silently inferred from browser locale. Current DTO includes timeZone (default UTC) and nullable registrationDeadline; P4-CORE owns event-zone controls. |
-| Date/time entry | Labeled date/time and timezone; resolve or reject DST gaps/ambiguities explicitly. Current datetime-local is explicitly UTC; event-zone controls remain P4-CORE. Include exact date/time for deadlines, not relative text alone. |
+| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone after P3-REGISTRATION. Proposed initial organizer choice Europe/Tallinn must be confirmed, never silently inferred from browser locale. Current DTO includes timeZone (default UTC) and nullable registrationDeadline; P4-CORE now implements event-zone controls. |
+| Date/time entry | Labeled date/time and timezone; resolve or reject DST gaps/ambiguities explicitly. P4-CORE datetime-local uses the selected event zone with DST gap/fold handling. Include exact date/time for deadlines, not relative text alone. |
 | Birth date | Calendar `YYYY-MM-DD` API value; locale display without instant conversion/day shift. Age calculation needs configured date/rule. |
 | Names | Preserve Unicode, spaces, hyphens and supplied order; account full name differs from dancer first/last fields. Do not enforce Latin-only names or use initials as the only accessible identity. |
 | Numbers/counts | Intl.NumberFormat and locale plural messages; preserve stable IDs and unformatted machine payloads. No concatenated translated sentences. |
@@ -270,7 +274,7 @@ Record substantial decisions in their owning ADR before dependent schema/code.
 
 | ID | Options / recommendation | Owner and gate |
 | --- | --- | --- |
-| UX-D01 Branding | Preserve current Sora/Fraunces styling versus neutral system stack; recommend neutral operational UI, reserve display typography for discovery after Cyrillic/fallback review. No approved logo, brand palette or final assets exist. | Product/design before final visual approval; does not block accessible structural components |
+| UX-D01 Branding | User direction accepted 2026-11-10: entire current UI is a rejected placeholder; fully reimagine/redesign using Hallmark. Replacement visual system/brand remains to be designed; preserve functional and accessibility/localization contracts. | [Full-redesign brief](DESIGN_SYSTEM.md#required-full-redesign); P9-UI-REDESIGN tracks delivery, separate from local technical completion |
 | UX-D02 Public access | Keep authenticated events versus publication-safe discovery; recommend explicit public event/results DTOs with publication controls, never opening private current DTOs. | ADR-002 follow-up before public event/result release; P7-PUBLISH |
 | UX-D03 Account/session recovery | Accepted in ADR-013/016/017: server-owned owner drafts, HttpOnly browser cookies/native bearer separation, explicit internal returns and neutral recovery. | Delivered local scope in foundation roadmap; external workflow review remains |
 | UX-D04 Locale/content | ADR-013 defines account/recipient precedence; ADR-019 accepts M2 authored-content source-language and explicit fallback. Later workflow content remains open. | I18N-PREFERENCES delivered locally; I18N-CONTENT remains open for storage/editors/later workflows |

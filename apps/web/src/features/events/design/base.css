@@ -1,0 +1,15 @@
+/* Hallmark · scoped app foundations · Cobalt · v2.0.0 */
+.event-workbench { color-scheme: light; scrollbar-color: var(--color-muted) var(--color-paper); color: var(--color-ink); background: var(--color-paper); font-family: var(--font-body); font-size: var(--text-md); line-height: 1.55; -webkit-font-smoothing: antialiased; caret-color: var(--color-accent); }
+.event-workbench *, .event-workbench *::before, .event-workbench *::after { box-sizing: border-box; }
+.event-workbench ::selection { background: var(--color-accent-wash); color: var(--color-ink); }
+.event-workbench h1, .event-workbench h2, .event-workbench h3 { font-family: var(--font-display); font-weight: 600; letter-spacing: var(--tracking-display); line-height: 1.2; overflow-wrap: break-word; min-width: 0; text-wrap: balance; }
+.event-workbench h1 { font-size: var(--text-3xl); }
+.event-workbench h2, .event-workbench legend { font-size: var(--text-xl); }
+.event-workbench h3 { font-size: var(--text-lg); }
+.event-workbench a { text-decoration-thickness: 1px; text-underline-offset: .2em; }
+.event-workbench p { text-wrap: pretty; }
+.event-workbench img { max-width: 100%; height: auto; display: block; }
+.event-workbench button, .event-workbench input, .event-workbench select, .event-workbench textarea { font: inherit; }
+.event-workbench :focus-visible, .event-workbench h1:focus, .event-workbench h2:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.event-workbench [hidden] { display: none !important; }
+@media (prefers-reduced-motion: reduce) { .event-workbench *, .event-workbench *::before, .event-workbench *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

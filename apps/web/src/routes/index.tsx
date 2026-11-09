@@ -114,6 +114,7 @@ export function AppRoutes() {
               >
                 <Route path="invitations" element={<LazyWrapper><InvitationsPage /></LazyWrapper>} />
                 <Route path="events/:eventId/staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
+                <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
                 <Route
                   index
                   element={

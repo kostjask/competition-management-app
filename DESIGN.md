@@ -1,0 +1,46 @@
+﻿# Design: Dance competition operations
+
+Implementation baseline for the P4-CORE organizer/event slice, selected with
+Hallmark on 2026-11-10. This establishes a reusable direction; it is not human
+visual approval or completion of P9-UI-REDESIGN. The required scope and functional
+constraints remain in [the design system](docs/DESIGN_SYSTEM.md).
+
+## System
+
+- Genre: modern-minimal. Shape: app screens, no marketing hero.
+- Theme: Cobalt, selected from the three-theme Hallmark deal after inspecting its
+  reference alongside Broadside and Dusk.
+- Material: cool paper, graphite, ruled facts, precise control edges, one cobalt
+  action. The organizer's registration readiness is the signature, not artwork.
+- Typography: local system-ui/Segoe UI with Latin/Cyrillic fallback. No new remote
+  font dependency; titles and controls share this operational family.
+- Layout: readiness and lifecycle rail beside the editor on desktop; sequential
+  regions on phones. Event discovery uses a date/name/action index; event details
+  use a fact sheet with a real image only when available.
+
+## Tokens and controls
+
+[Scoped tokens](apps/web/src/features/events/design/tokens.css) own this slice.
+[Scoped foundations](apps/web/src/features/events/design/base.css) and
+[composition](apps/web/src/pages/events/event-setup.css) consume them.
+
+Paper, graphite, ink, muted text, rule, accent, focus and semantic feedback roles
+are tokens. Spacing uses the shared scale and the named page/column/row tokens.
+Controls have a 44px minimum hit area, 6px fallback corners, a restrained key edge,
+instant focus rings, native disabled states and acknowledged inline outcomes.
+Required boundaries maintain 3:1 contrast and text maintains 4.5:1.
+
+## Motion and content
+
+Motion is limited to short control feedback and is removed for reduced motion.
+No decorative animation, invented statistics, logo, stock photo or proof is used.
+Authored descriptions use explicit source language and labeled fallback, with
+plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
+
+## Adoption
+
+This baseline covers organizer dashboard, event create/setup and authenticated
+list/detail. The shared shell, auth, staff and unfinished workflows retain their
+own bounded P9-UI-REDESIGN slices. Preserve their behavior during future adoption;
+do not interpret the old visuals as approved or restyle unrelated screens within
+P4-CORE. Human visual, fluent-language and assistive review remain open.

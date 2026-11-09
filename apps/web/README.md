@@ -2,7 +2,7 @@
 
 React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
 [setup](../../README.md#local-setup) starts API and web together. API reads remain
-authenticated; role dashboards are placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
+authenticated; the organizer setup dashboard is delivered; other role dashboards remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
 For frontend-only development from the root: pnpm --filter web dev (port 5173).
 [Test commands and scope](../../docs/TESTING.md) own build/typecheck/lint, Node/static
@@ -28,3 +28,18 @@ states, keyboard/focus access and responsive ET/EN/RU text. Backend authorizes
 every operation. Read only the relevant screen/flow sections before feature work;
 their targets do not mean the corresponding route/API already exists.
 Do not add a UI/state library without a concrete need.
+
+## P4-CORE event setup
+
+Organizer setup is mounted at /admin/events/:eventId/setup, retaining
+/events/:id/edit. /admin prioritizes incomplete event setup. Creation explicitly
+selects an IANA timezone and cutoff/no-cutoff policy; local times reject DST gaps
+and require offset choice for folds. Editors cover contact/location, authored
+source-language description/translations/fallback preview, optional limits and
+separately saved private images. Readiness links missing fields and M2 lifecycle
+changes require confirmation. Setup PATCH sends expectedRevision; stale/unknown
+outcomes retain input and require an explicit same-request retry or server
+comparison. Creation retains its UUID operationId across uncertain responses.
+See [event contract](../../docs/api/events.md) and
+[design baseline](../../DESIGN.md). Review queues and application routes remain
+their next owning tasks; they are not implied by setup completion.

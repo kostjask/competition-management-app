@@ -1,8 +1,10 @@
 import { isLocale, DEFAULT_LOCALE, type Locale } from "./locale";
 import { formatNumber } from "./format";
+import { eventSetupTranslations } from "./eventSetupTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 export const translations = {
+  Setup: eventSetupTranslations,
   Registration: {
     pending: { et: "Ootel", en: "Pending", ru: "На рассмотрении" },
     approved: { et: "Heaks kiidetud", en: "Approved", ru: "Одобрено" },

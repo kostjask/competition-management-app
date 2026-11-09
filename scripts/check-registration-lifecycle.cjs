@@ -8,6 +8,7 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
   const token = await login(baseUrl, owner.email);
   const outsider = await login(baseUrl, 'judge@test.com');
   const request = async (path, auth = token, method = 'GET', body) => {
+    if (method === 'PATCH' && /^\/events\/[^/]+$/.test(path)) body = { expectedRevision: (await client.event.findUniqueOrThrow({ where: { id: path.split('/')[2] } })).revision, ...body };
     const response = await fetch(baseUrl + '/api/v1' + path, { method, headers: { Authorization: 'Bearer ' + auth, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(10000) });
     return { status: response.status, body: response.status === 204 ? null : await response.json() };
@@ -77,7 +78,7 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
   assert.deepEqual(await client.studioRepresentative.findMany({ where: { studioId: id } }), members);
   assert.equal(await client.studio.count({ where: { id } }), 1);
   assert.equal((await request(eventPath, adminToken, 'PATCH', { stage: 'DATA_REVIEW', expectedStage: 'PRE_REGISTRATION' })).status, 403);
-  assert.equal((await request(eventPath, adminToken, 'PATCH', { stage: 'REGISTRATION_OPEN', expectedStage: 'PRE_REGISTRATION' })).status, 200);
+  assert.equal((await request(eventPath, adminToken, 'PATCH', { stage: 'REGISTRATION_OPEN', expectedStage: 'PRE_REGISTRATION', venue: 'Fixture venue', country: 'EE', city: 'Tallinn', organizerEmail: 'organizer@example.invalid' })).status, 200);
   assert.equal((await request(eventPath, adminToken, 'PATCH', { stage: 'DATA_REVIEW', expectedStage: 'PRE_REGISTRATION' })).status, 409);
   assert.equal((await request(eventPath, adminToken, 'PATCH', { registrationDeadline: '2099-10-26T00:00:00Z' })).status, 400);
   assert.equal((await request(eventPath, adminToken, 'PATCH', { timeZone: 'Invalid/Zone' })).status, 400);

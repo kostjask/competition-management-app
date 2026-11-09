@@ -1,273 +1,92 @@
-import { toUiError, type UiError } from "../../api/error";
-import { ErrorFeedback } from "../../components/ErrorFeedback";
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { getTranslation } from "@i18n/translations";
-import { type Locale } from "@i18n/LanguageContext";
-import { useTranslation } from "@i18n/useTranslation";
-import { LoadingSpinner } from "../../components/LoadingSpinner";
-import { type Event, getEvent } from "@api/events";
-import { RoleGate } from "@auth";
-import { Button } from "../../components/ui/Foundation";
-import {
-  type StageBadge,
-  useStageBadges,
-} from "../../features/events/hooks/useStageBadges";
-
-import { useDateFormatter } from "../../features/events/hooks/useDateFormatter";
-
-// const useDateFormatter = (locale: Locale) => {
-//   return useCallback(
-//     (value: string): string => {
-//       try {
-//         const date = new Date(value);
-//         if (isNaN(date.getTime())) {
-//           return value; // Return original string if date is invalid
-//         }
-//         return new Intl.DateTimeFormat(locale, {
-//           dateStyle: "long",
-//           timeStyle: "short",
-//         }).format(date);
-//       } catch {
-//         return value; // Return original string if formatting fails
-//       }
-//     },
-//     [locale],
-//   );
-// };
-
-interface EventCardProps {
-  event: Event;
-  stageBadge: StageBadge;
-  formatDateTime: (value: string) => string;
-  locale: Locale;
-}
-
-const EventCard: React.FC<EventCardProps> = ({
-  event,
-  stageBadge,
-  formatDateTime,
-  locale,
-}) => {
-
-  return (
-    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
-      {/* Hero Image Section */}
-      <div className="relative h-80 w-full bg-linear-to-br from-slate-100 to-slate-200">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <svg
-              className="mx-auto h-20 w-20 text-slate-300"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="mt-2 text-sm text-slate-500">
-              {getTranslation("Common.eventPhoto", locale)}
-            </p>
-          </div>
-        </div>
-
-        {/* Stage Badge - Top Right */}
-        <div className="absolute right-4 top-4">
-          <span
-            className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold ${stageBadge.className}`}
-          >
-            {stageBadge.label}
-          </span>
-        </div>
-      </div>
-
-      {/* Content Section */}
-      <div className="flex flex-col gap-8 p-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-slate-900">{event.name}</h1>
-          <p className="mt-2 text-lg text-slate-600">{event.description}</p>
-        </div>
-
-        {/* Date & Time Info */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {getTranslation("Events.startsAt", locale)}
-            </p>
-            <time className="block text-lg font-semibold text-slate-900">
-              {formatDateTime(event.startsAt)}
-            </time>
-          </div>
-          <div className="space-y-1 rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {getTranslation("Events.endsAt", locale)}
-            </p>
-            <time className="block text-lg font-semibold text-slate-900">
-              {formatDateTime(event.endsAt)}
-            </time>
-          </div>
-        </div>
-
-        {/* Location Info */}
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-linear-to-br from-slate-50 to-white p-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              {getTranslation("Events.venue", locale)}
-            </p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">
-              {event.venue}
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {getTranslation("Common.city", locale)}
-              </p>
-              <p className="mt-1 text-base font-semibold text-slate-900">
-                {event.city}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {getTranslation("Common.country", locale)}
-              </p>
-              <p className="mt-1 text-base font-semibold text-slate-900">
-                {event.country}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Event Metadata */}
-        <div className="space-y-3 border-t border-slate-200 pt-6 text-sm text-slate-600">
-          <div className="flex items-center justify-between">
-            <span>{getTranslation("Common.eventId", locale)}</span>
-            <code className="rounded bg-slate-100 px-2 py-1 font-mono text-xs">
-              {event.id}
-            </code>
-          </div>
-          <div className="flex items-center justify-between">
-            <span>{getTranslation("Events.createdAt", locale)}</span>
-            <time>{formatDateTime(event.createdAt)}</time>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
-          <RoleGate
-            adminOnly
-            fallback={<p>{getTranslation("Shell.registrationUnavailable", locale)}</p>}
-          >
-            <Link
-              className="flex-1 rounded-full border border-slate-300 bg-white px-6 py-3 text-center text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:border-slate-400"
-              to={`/events/${event.id}/edit`}
-            >
-              {getTranslation("Events.editButton", locale)}
-            </Link>
-            <Link className="ui-button ui-button-secondary" to={`/admin/events/${encodeURIComponent(event.id)}/staff`}>
-              {getTranslation("Staff.title", locale)}
-            </Link>
-
-          </RoleGate>
-        </div>
-      </div>
-    </div>
-  );
-};
+import type { Event } from "@dance/schemas";
+import { getEvent } from "../../api/events";
+import { toUiError, type UiError } from "../../api/error";
+import { useTranslation } from "../../i18n/useTranslation";
+import { RoleGate } from "../../auth";
+import { Button, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
+import { EventSnapshot } from "./EventSnapshot";
+import { PrivateEventImage } from "./EventImage";
+import "./event-setup.css";
 
 export default function EventInfo() {
-  const { locale } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
-  const [eventData, setEventData] = useState<Event | null>(null);
+  const [data, setData] = useState<Event | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<UiError | null>(null);
   const [attempt, setAttempt] = useState(0);
-
-  const stageBadges = useStageBadges(locale);
-  const formatDateTime = useDateFormatter(locale);
 
   useEffect(() => {
     let active = true;
-
-    const fetchEvent = async () => {
-      if (!id) {
-        setLoadError(toUiError(null));
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setLoadError(null);
-        const data = await getEvent(id);
-        if (active) {
-          setEventData(data);
-        }
-      } catch (err) {
-        if (active) {
-          const message =
-            toUiError(err);
-          setLoadError(message);
-        }
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchEvent();
-
-    return () => {
-      active = false;
-    };
+    if (id) {
+      void getEvent(id)
+        .then(result => { if (active) setData(result); })
+        .catch((err: unknown) => { if (active) setError(toUiError(err)); })
+        .finally(() => { if (active) setLoading(false); });
+    }
+    return () => { active = false; };
   }, [id, attempt]);
 
+  const open = data && ["PRE_REGISTRATION", "REGISTRATION_OPEN"].includes(data.stage) && (!data.registrationDeadline || now < Date.parse(data.registrationDeadline));
+
   return (
-    <div className="min-h-[calc(100vh-64px)] bg-linear-to-br from-slate-50 via-white to-amber-50 px-6 py-10">
-      <div className="mx-auto w-full max-w-4xl">
-        <Link
-          className="mb-8 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 transition hover:text-slate-900"
-          to="/events"
-        >
-          <span aria-hidden className="text-lg">
-            ←
-          </span>
-          {getTranslation("Events.backToList", locale)}
-        </Link>
-
-        {loading && (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white/80 p-6 shadow-sm">
-            <LoadingSpinner />
-            <span className="text-sm text-slate-500">
-              {getTranslation("Events.loading", locale)}
-            </span>
+    <div className="event-workbench">
+      <Link to="/events">{t("Events.backToList")}</Link>
+      {loading ? (
+        <LoadingState label={t("Access.loading")} />
+      ) : error ? (
+        <section className="event-load-error">
+          <h1>{t(error.reason === "recordNotFound" ? "Shell.notFound" : error.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable")}</h1>
+          <ErrorSummary error={error} title={t("Feedback.validation")} />
+          <Button onClick={() => {
+            setLoading(true);
+            setError(null);
+            setAttempt(value => value + 1);
+          }}>{t("Shell.retry")}</Button>
+        </section>
+      ) : data && (
+        <>
+          <header className="event-masthead">
+            <div>
+              <h1>{data.name}</h1>
+              <p className="ui-help">{t("Setup.authenticated")}</p>
+              <p className="event-status">{t(open ? "Setup.windowOpen" : "Setup.windowClosed")}</p>
+            </div>
+            <RoleGate adminOnly>
+              <div className="event-heading-actions">
+                <Link className="ui-button ui-button-primary" to={`/admin/events/${encodeURIComponent(data.id)}/setup`}>
+                  {t("Setup.title")}
+                </Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/staff`}>{t("Staff.title")}</Link>
+              </div>
+            </RoleGate>
+          </header>
+          <div className={`event-detail-layout${data.imageUrl ? " event-detail-layout--with-media" : ""}`}>
+            <div className="event-detail-data">
+              <EventSnapshot event={data} allLanguages={false} />
+            </div>
+            {data.imageUrl && (
+              <section className="event-detail-media">
+                <h2>{t("Common.eventPhoto")}</h2>
+                <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
+              </section>
+            )}
           </div>
-        )}
-
-        {loadError && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-            <h1>{getTranslation(loadError.reason === "recordNotFound" ? "Shell.notFound" : loadError.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable", locale)}</h1>
-            <ErrorFeedback error={loadError} />
-            <Button onClick={() => setAttempt(value => value + 1)}>{getTranslation("Shell.retry", locale)}</Button>
-          </div>
-        )}
-
-        {!loading && !loadError && eventData && (
-          <EventCard
-            event={eventData}
-            stageBadge={stageBadges[eventData.stage]}
-            formatDateTime={formatDateTime}
-            locale={locale}
-          />
-        )}
-      </div>
+          {!data.imageUrl && (
+            <section className="event-detail-media event-detail-media--empty">
+              <h2>{t("Common.eventPhoto")}</h2>
+              <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
+            </section>
+          )}
+        </>
+      )}
     </div>
   );
 }
