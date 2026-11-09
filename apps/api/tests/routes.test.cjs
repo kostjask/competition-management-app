@@ -915,10 +915,11 @@ async function eventFixture(t) {
   f.prisma.event = {
     create: async ({ data }) => (stored = { id: 'e', createdAt: new Date('2026-01-01'),
       stage: 'PRE_REGISTRATION', venue: null, country: null, city: null, description: null,
+      descriptionSourceLocale: null, descriptionTranslations: {}, organizerEmail: null, organizerPhone: null, revision: 1,
       maxStudios: null, maxPerformances: null, imageUrl: null, ...data }),
     findUnique: async ({ where }) => stored?.id === where.id ? stored : null,
     findMany: async (args) => { f.calls.push({ name: 'event-list', args }); return stored ? [stored] : []; },
-    update: async ({ data }) => (stored = { ...stored, ...data }),
+    update: async ({ data }) => (stored = { ...stored, ...data, revision: stored.revision + (data.revision?.increment ?? 0) }),
   };
   f.prisma.$transaction = async (work, options) => {
     assert.equal(options.isolationLevel, 'Serializable');
@@ -932,8 +933,8 @@ test('event CRUD contracts include stored nullable fields and omit private/nonex
   const { request, stored, calls } = await eventFixture(t);
   const { EventSchema } = require('@dance/schemas');
   const created = await request('/api/v1/events', { user: 'admin', method: 'POST', body: {
-    ...eventInput, venue: ' Hall ', country: ' EE ', city: ' Tallinn ', description: ' Description ',
-    maxStudios: 20, maxPerformances: 100, stage: 'REGISTRATION_OPEN',
+    ...eventInput, venue: ' Hall ', country: ' EE ', city: ' Tallinn ', description: { sourceLocale: 'en', sourceText: ' Description ', translations: {} },
+    maxStudios: 20, maxPerformances: 100,
   } });
   assert.equal(created.status, 201);
   const event = EventSchema.parse(created.body);
@@ -946,7 +947,7 @@ test('event CRUD contracts include stored nullable fields and omit private/nonex
   assert.deepEqual((await request('/api/v1/events', { user: 'moderator' })).body, [event]);
   assert.deepEqual(calls.find(c => c.name === 'event-list').args.orderBy, [{ startsAt: 'asc' }, { id: 'asc' }]);
   const patched = await request('/api/v1/events/e', { user: 'admin', method: 'PATCH', body: {
-    city: null, venue: null, description: null, maxStudios: null, maxPerformances: 50,
+    city: null, venue: null, description: null, maxStudios: null, maxPerformances: 50, expectedRevision: event.revision,
   } });
   assert.equal(patched.status, 200); assert.equal(patched.body.city, null);
   assert.equal(patched.body.country, 'EE'); assert.equal(patched.body.maxPerformances, 50);
@@ -974,7 +975,7 @@ test('event operations require authentication and all non-admin write scopes fai
 
 test('event strict mutation validation and partial date ordering reject invalid writes without changes', async (t) => {
   const { request, stored } = await eventFixture(t);
-  const send = (body, method = 'PATCH') => request(`/api/v1/events${method === 'PATCH' ? '/e' : ''}`, { user: 'admin', method, body });
+  const send = (body, method = 'PATCH') => request(`/api/v1/events${method === 'PATCH' ? '/e' : ''}`, { user: 'admin', method, body: method === 'PATCH' ? { expectedRevision: stored()?.revision ?? 1, ...body } : body });
   assert.equal((await send(eventInput, 'POST')).status, 201);
   const before = { ...stored() };
   for (const body of [{}, { name: ' ' }, { name: null }, { venue: '' }, { maxStudios: 0 },
@@ -998,13 +999,13 @@ test('event strict mutation validation and partial date ordering reject invalid 
 test('event missing records and transaction conflicts use standard errors', async (t) => {
   const { request, prisma } = await eventFixture(t);
   for (const method of ['GET', 'PATCH']) {
-    const result = await request('/api/v1/events/missing', { user: 'admin', method, body: method === 'PATCH' ? { name: 'x' } : undefined });
+    const result = await request('/api/v1/events/missing', { user: 'admin', method, body: method === 'PATCH' ? { name: 'x', expectedRevision: 1 } : undefined });
     assert.equal(result.status, 404); assert.equal(result.body.code, 'NOT_FOUND');
   }
-  for (const [code, status] of [['P2025', 404], ['P2034', 409]]) {
+  for (const [code, status] of [['P2025', 409], ['P2034', 409]]) {
     prisma.$transaction = async () => { throw new (require('@prisma/client').Prisma.PrismaClientKnownRequestError)(
       'Fixture', { code, clientVersion: 'test' }); };
-    const result = await request('/api/v1/events/e', { user: 'admin', method: 'PATCH', body: { name: 'x' } });
+    const result = await request('/api/v1/events/e', { user: 'admin', method: 'PATCH', body: { name: 'x', expectedRevision: 1 } });
     assert.equal(result.status, status); assert.equal(result.body.statusCode, status);
   }
 });

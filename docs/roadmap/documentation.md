@@ -8,6 +8,8 @@ commands/results. Feature roadmaps own implementation and release status.
 
 ## Tasks
 
+- [x] DOCS-UI-DIRECTION (2026-11-10): record the user's rejection of the entire placeholder UI and required full Hallmark redesign; reconcile UX-D01 and provisional typography/adoption guidance, add P9-UI-REDESIGN ownership and agent/checkpoint routing. Documentation only; redesign remains unimplemented, existing technical completion and implementation queue unchanged.
+
 - [x] DOCS-MAINTENANCE (2026-11-10): source-check maintained instructions, clarify canonical owners/selective reading, move repetitive checkpoint evidence to existing history, reconcile stale routing/backlog/behavior claims and label dated reports. Application priorities, task states and release gates preserved. [Scope, checks and remaining work](../DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).
 
 - [x] PLAN-REVALIDATION (2026-11-06): separate local/model/deployment/release gates, restore registration-first M2 order and preserve task IDs/acceptance criteria. Documentation-only [findings and validation](../PLAN_REVALIDATION.md); its next-task statement is historical.

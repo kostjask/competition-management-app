@@ -63,22 +63,29 @@ model EmailDelivery {
 }
 
 model Event {
-  id                   String     @id @default(cuid())
-  name                 String
-  startsAt             DateTime
-  endsAt               DateTime
-  stage                EventStage @default(PRE_REGISTRATION)
-  timeZone             String     @default("UTC")
-  registrationDeadline DateTime?
-  createdAt            DateTime   @default(now())
-  venue                String?
-  country              String?
-  city                 String?
-  description          String?
-  maxStudios           Int?
-  maxPerformances      Int?
-  imageUrl             String?
-  imagePath            String?
+  id                      String     @id @default(cuid())
+  name                    String
+  startsAt                DateTime
+  endsAt                  DateTime
+  stage                   EventStage @default(PRE_REGISTRATION)
+  timeZone                String     @default("UTC")
+  registrationDeadline    DateTime?
+  createdAt               DateTime   @default(now())
+  venue                   String?
+  country                 String?
+  city                    String?
+  description             String?
+  descriptionSourceLocale String?
+  descriptionTranslations Json       @default("{}")
+  organizerEmail          String?
+  organizerPhone          String?
+  revision                Int        @default(1)
+  creationOperationId     String?    @unique
+  creationDigest          String?
+  maxStudios              Int?
+  maxPerformances         Int?
+  imageUrl                String?
+  imagePath               String?
 
   ageGroups           AgeGroup[]
   categories          DanceCategory[]

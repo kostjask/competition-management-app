@@ -12,7 +12,7 @@ M2 stage changes are PRE_REGISTRATION → REGISTRATION_OPEN → DATA_REVIEW.
 Cancellation is allowed from these three stages. Backward/skipped changes and
 transitions into live/final states are refused until their owning lifecycle task.
 Existing terminal/live records remain readable. An unchanged stage is a no-op.
-Stage PATCH supplies expectedStage; stale stages conflict. All actors, including
+Stage PATCH supplies expectedStage; stale stages conflict. P4-CORE adds mandatory expectedRevision for all event edits and setup readiness before opening, as recorded in [ADR-020](020-organizer-event-setup.md). All actors, including
 global administrators, obey application deadlines and stage locks.
 
 Event instants use explicit-offset ISO input and UTC storage. timeZone is an IANA

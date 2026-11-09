@@ -14,6 +14,12 @@ This documentation maintenance task advances no application or release task.
 
 ## Current state
 
+- **UI design direction (2026-11-10):** the user rejects the entire current UI as
+  a placeholder and requires a full Hallmark redesign.
+  [Design direction](docs/DESIGN_SYSTEM.md#required-full-redesign) owns the brief;
+  P9-UI-REDESIGN tracks delivery across existing workflow slices. Technical
+  completion remains distinct from visual approval. The implementation queue
+  below is unchanged; this update implements no UI redesign.
 - Phases 0–1 and the applicable Phase 2 local security/auth/scope/audit/onboarding
   foundations are technically delivered. Cookie-session recovery, translated
   auth/shell/profile, account language preferences and scoped staff administration

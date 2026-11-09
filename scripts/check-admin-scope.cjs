@@ -56,7 +56,7 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
   assert.equal((await request('/auth/profile')).body.isAdmin, true);
   const created = await request('/events', 'POST', { name: 'Global admin control', startsAt: '2026-11-01T00:00:00Z', endsAt: '2026-11-02T00:00:00Z' });
   assert.equal(created.status, 201);
-  assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Global admin updated another event' })).status, 200);
+  assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Global admin updated another event', expectedRevision: other.revision })).status, 200);
   await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: new Date() } });
   const beforeRemovalDenial = await snapshot();
   assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Must stay unchanged' })).status, 403);

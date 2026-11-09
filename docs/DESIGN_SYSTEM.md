@@ -7,6 +7,37 @@ semantic-feedback code conventions; [API](API.md) owns DTOs/enums/permissions.
 
 ## Direction and adoption
 
+### Required full redesign
+
+User direction (2026-11-10): **the entire current UI is a functional placeholder.
+The user rejects its visual design and requires it to be fully reimagined and
+redone using the available Hallmark skill.** Existing implementation and passing
+checks do not constitute visual design approval. This applies to delivered auth,
+shell, event and staff screens as well as unfinished role dashboards and future
+workflows.
+
+Use Hallmark at full redesign depth: rethink the visual system, shell/navigation
+presentation, page composition, typography, palette, spacing, components and
+responsive layouts. A cosmetic reskin or preservation of the current look does
+not satisfy this direction. Read the installed hallmark SKILL.md and its redesign
+and app-screen guidance from the active skill catalog; follow its design and
+rendered-review workflow rather than copying skill instructions into this repo.
+No replacement theme, palette, font or brand has been chosen by this decision.
+
+Preserve implemented functionality, contracts, authorization, routes, form wiring,
+recovery states, ET/EN/RU and accessibility requirements. The screen/flow IDs and
+accepted domain decisions remain requirements. Existing visual tokens, font
+choices, styling examples and numerical design defaults below are provisional
+material to replace, not an approved design to reproduce.
+
+[P9-UI-REDESIGN](roadmap/operations.md#phase-9--expanded-quality-and-production-operations)
+owns redesign completion across workflows. Establish the new direction before
+new UI composition, then deliver it in bounded feature/redesign slices with
+functional regression and rendered visual review. Technical completion records
+stay valid for their tested scope; redesign acceptance remains separate and open.
+
+### Existing foundation and constraints
+
 Foundation implementation (2026-10-25): semantic tokens in web/src/index.css and
 native controls in components/ui/Foundation.tsx are implemented and checked in
 the development-only /__fixtures/foundation route. ET/EN/RU fixtures, measured
@@ -26,9 +57,10 @@ Treat that as existing styling, not a validated system.
 Foundation token/basic-control defaults are verified for the synthetic states
 above; other numeric/type/layout defaults remain **proposed** until their owning
 workflow review. Accessibility/interaction/privacy requirements are **required**.
-Final branding is UX-D01. Adopt tokens and components incrementally in owning
-feature slices; do not broadly restyle unrelated screens or introduce a library
-without concrete need. This document adds no CSS or package dependency.
+UX-D01 now requires the full Hallmark redesign above. Use coherent replacement
+tokens/components across its scoped slices; the existing look is not a constraint.
+Do not introduce a library without concrete need. This document adds no CSS or
+package dependency.
 
 ## Color roles and contrast
 
@@ -62,9 +94,10 @@ unacknowledged save. Avoid score quality heatmaps until scoring policy approves 
 ## Typography and numeric presentation
 
 Proposed operational stack: `system-ui, "Segoe UI", sans-serif`, supporting Latin
-and Cyrillic. Preserve existing Sora/Fraunces on discovery until branding review
-if needed; verify Cyrillic fallback, font loading and layout stability before
-approving it. Do not require remote fonts for live scoring to remain usable.
+and Cyrillic. This and the existing Sora/Fraunces pairing are provisional;
+Hallmark redesign selects the replacement typography. Verify Cyrillic fallback,
+font loading and layout stability before accepting it. Do not require remote
+fonts for live scoring to remain usable.
 
 | Token | Size / line height / weight | Use |
 | --- | --- | --- |
@@ -279,3 +312,12 @@ and exclude private screenshots. Compare both long-language layout and actual
 component states; baseline changes require human review, never blanket acceptance.
 Visual diffs supplement semantic/user-flow/authorization tests. Regression tools
 and budgets are planned work under P2-UI-FOUNDATION/P9-BROWSER, not configured here.
+
+## P4 organizer setup implementation
+
+The first bounded Cobalt app-screen implementation is recorded in
+[DESIGN](../DESIGN.md). It replaces composition and local tokens on organizer
+setup/create/dashboard and authenticated event list/detail, preserving the shared
+shell while its own redesign slice remains open. It does not approve the old
+shell or close P9-UI-REDESIGN. [Setup evidence](EVENT_SETUP_VALIDATION.md) owns
+rendered/functional checks and remaining human review limits.

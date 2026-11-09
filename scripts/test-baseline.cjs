@@ -136,6 +136,7 @@ async function main() {
       client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
     });
     await require('./check-registration-lifecycle.cjs')({ client, baseUrl, adminToken: token, login });
+    await require('./check-event-setup.cjs')({ client, baseUrl, adminToken: token, login });
     if (registrationOnly) { console.log('PASS: isolated registration baseline.'); return; }
     await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });

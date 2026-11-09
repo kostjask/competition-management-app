@@ -366,3 +366,21 @@ revisions, cancellation/reapplication races and stale/lost responses, event scop
 admin/deadline denials, direct SQL constraints and audit rollback. No application
 database or environment file is migrated/reset. Failure reporting prints stack
 frames without assertion snapshots or environment values.
+
+## Organizer event setup (S05/F05)
+
+The full baseline invokes scripts/check-event-setup.cjs (also included in the
+--registration-only mode). It proves global-admin setup authorization, strict
+contact/content DTOs, readiness, source-language retention, revisioned updates,
+matching creation/edit retry behavior, races, other-event preservation, direct
+SQL guards and audit rollback. scripts/test-migrations.ps1 additionally checks
+verbatim pre-migration event prose, unknown source language and fresh/upgrade parity.
+
+Web event-setup.test.tsx checks calendar/DST gaps/folds, explicit offsets (including
+half-hour and non-hour zones), setup prerequisites and shared mutation contracts.
+Browser event-setup.spec.ts adds 22 cases across ET/EN/RU and four widths, including
+computed contrast, keyboard modal/error/checklist focus, create/save/stage flows,
+uncertain responses, stale comparison, language/session preservation, pending
+controls and private image recovery. Other browser suites keep their prior scope.
+Use [setup evidence](EVENT_SETUP_VALIDATION.md) for final commands/results and
+human/provider/hosted limits. Screenshots/traces use synthetic data and stay ignored.

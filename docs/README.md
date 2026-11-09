@@ -70,6 +70,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [017](adr/017-public-onboarding-and-invitation-lifecycle.md) | Public studio intent and invitation lifecycle |
 | [018](adr/018-staff-acceptance-and-offboarding.md) | Atomic staff acceptance and retained offboarding |
 | [019](adr/019-m2-authored-content.md) | M2 authored content and language fallback |
+| [020](adr/020-organizer-event-setup.md) | Organizer readiness, retained content and revision/retry-safe event setup |
 
 ADR-003 accepts the M2 application/review subset; live operation remains pending.
 ADR-004 scoring is reserved and unaccepted; its required scope is in

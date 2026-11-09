@@ -55,6 +55,9 @@ existing source/Git edits must always be preserved. Operational details:
 
 ## Frontend
 
+- Current UI is a placeholder rejected by the user. UI design/redesign work must
+  use the hallmark skill and follow [the full-redesign direction](docs/DESIGN_SYSTEM.md#required-full-redesign);
+  existing styling and passed technical checks are not visual approval.
 - Align role keys/event scopes with backend; UI gates provide usability only.
   Use shared contracts and API helpers, no feature-level fetch.
 - Provide loading, empty, validation/server-error, success and disabled states;

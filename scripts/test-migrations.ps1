@@ -56,6 +56,8 @@ try {
     $expectedSql += "`n" + (($onboardingAuditSql -split "`n" | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
     $registrationSql = Get-Content -Raw apps/api/prisma/migrations/20261109000000_registration_lifecycle/migration.sql
     $expectedSql += "`n" + (($registrationSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $eventSetupSql = Get-Content -Raw apps/api/prisma/migrations/20261110000000_event_setup/migration.sql
+    $expectedSql += "`n" + (($eventSetupSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -84,6 +86,11 @@ INSERT INTO "Event" (id, name, "startsAt", "endsAt") SELECT s, s, '2026-01-01', 
 INSERT INTO "StudioEventRegistration" (id, "studioId", "eventId", status, "updatedAt") SELECT s, 'studio', s, s::"RegistrationStatus", '2026-01-01' FROM unnest(ARRAY['PENDING', 'APPROVED', 'REJECTED']) s;
 '@
             }
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261110000000_event_setup') {
+                $sql += @'
+UPDATE "Event" SET description = E'  Retained organizer prose\nSecond line  ' WHERE id = 'event';
+'@
+            }
             # Separate transactions permit use of enum values added by earlier migrations.
             $migrationSql = Get-Content -Raw (Join-Path $migration.FullName 'migration.sql')
             # Each migration gets one transaction even when it declares its own.
@@ -99,6 +106,11 @@ BEGIN
 END $$;
 '@
         if ($testSchema -eq $upgradeSchema) {
+            $sql += @'
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM "Event" WHERE id = 'event' AND description = E'  Retained organizer prose\nSecond line  ' AND "descriptionSourceLocale" IS NULL AND "descriptionTranslations" = '{}'::jsonb AND revision = 1 AND "organizerEmail" IS NULL AND "organizerPhone" IS NULL) THEN RAISE EXCEPTION 'Event setup migration changed retained prose or inferred setup'; END IF;
+END $$;
+'@
             $sql += Get-Content -Raw scripts/test-migrations-upgrade.sql
             $sql += @'
 DO $$ BEGIN

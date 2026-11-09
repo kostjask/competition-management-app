@@ -38,3 +38,6 @@ Thumbs.db
 
 #agents
 .github/agents/
+
+# Hallmark local review records
+.hallmark/

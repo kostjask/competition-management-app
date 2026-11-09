@@ -13,8 +13,10 @@ Target screen contracts, not an implementation claim. Inherit all shared
 - **Sections / components:** event selector/context, actionable blockers, approvals and incomplete-data summaries, setup sections for details/registration, then separately gated entry rules/staff/schedule/results.
 - **States:** no event → create; partial setup; failed section save preserving input; transition blocked with linked prerequisites; conflict/reload and denied access.
 - **Responsive / accessibility:** desktop sidebar/summary and content, mobile sequential sections; checklist text and focusable links; accessible date/time controls.
-- **API:** event CRUD, category/age-group/format clients; lifecycle/checklist/deadline contracts pending P3/P4. Image controls wait for P2-BOUNDARIES.
+- **API:** event CRUD, category/age-group/format clients; lifecycle/checklist/deadline contracts and private image controls are delivered in P4-CORE; see [event API](../api/events.md).
 - **Acceptance:** organizer can open valid registration without SQL; scoring setup does not block studio applications; raw stage selection cannot bypass transition validation. F05.
+
+P4-CORE implements S05 setup/dashboard with the [Cobalt baseline](../../DESIGN.md). Review counts and queues remain P4-REVIEW; no absent counts are rendered as zero.
 
 ## S06 — Studio approval queue
 
