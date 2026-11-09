@@ -26,6 +26,14 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   } });
   const root = `/events/${event.id}/studio-registrations`;
   const request = async (route, token, method = 'GET', body) => {
+    // Older workflows act on the latest receipt; concurrency cases below supply
+    // explicit revisions to prove stale request protection.
+    const match = route.match(/^\/events\/([^/]+)\/studio-registrations\/([^/?]+)/);
+    if (match && ['PATCH', 'DELETE'].includes(method)) {
+      const row = await client.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId: match[2], eventId: match[1] } } });
+      if (method === 'PATCH' && body.revision === undefined) body = { ...body, revision: row?.revision ?? 1 };
+      if (method === 'DELETE' && !route.includes('?')) route += '?revision=' + (row?.revision ?? 1);
+    }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),
@@ -52,7 +60,9 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   assert.deepEqual((await request(root, outsiderToken)).body, []);
   assert.equal((await request(item, outsiderToken, 'DELETE')).status, 403);
   assert.equal((await request(item, applicantToken, 'PATCH', { status: 'APPROVED' })).status, 403);
-  assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 403);
+  assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 200);
+  assert.equal(await client.userRole.count({ where: { userId: applicant.id } }), 0, 'Event approval alone grants no role');
+  assert.equal((await request(item, adminToken, 'PATCH', { status: 'PENDING' })).status, 200);
 
   // A correctly signed JWT for an unknown identity must fail before any write.
   const before = await Promise.all([
@@ -119,9 +129,9 @@ module.exports = async function checkStudioRegistrations({ client, baseUrl, admi
   assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 404);
   await client.studio.update({ where: { id: studioId }, data: { deletedAt: null } });
   assert.equal((await request(item, applicantToken, 'DELETE')).status, 204);
-  assert.equal(await client.studioEventRegistration.count({ where: { id: registration.id } }), 0);
+  assert.equal((await client.studioEventRegistration.findUniqueOrThrow({ where: { id: registration.id } })).status, 'CANCELLED');
   assert.ok(await client.studio.findUnique({ where: { id: studioId } }), 'Cancellation must retain the studio');
-  assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 404);
+  assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED' })).status, 403);
 
   const adminCreated = await request(root, adminToken, 'POST', { name: 'Admin-created fixture' });
   assert.equal(adminCreated.status, 201);

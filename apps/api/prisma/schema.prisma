@@ -20,6 +20,7 @@ enum EventRegistrationStatus {
   APPROVED
   REJECTED
   LOCKED
+  CANCELLED
 }
 
 enum StudioApprovalStatus {
@@ -62,20 +63,22 @@ model EmailDelivery {
 }
 
 model Event {
-  id              String     @id @default(cuid())
-  name            String
-  startsAt        DateTime
-  endsAt          DateTime
-  stage           EventStage @default(PRE_REGISTRATION)
-  createdAt       DateTime   @default(now())
-  venue           String?
-  country         String?
-  city            String?
-  description     String?
-  maxStudios      Int?
-  maxPerformances Int?
-  imageUrl        String?
-  imagePath       String?
+  id                   String     @id @default(cuid())
+  name                 String
+  startsAt             DateTime
+  endsAt               DateTime
+  stage                EventStage @default(PRE_REGISTRATION)
+  timeZone             String     @default("UTC")
+  registrationDeadline DateTime?
+  createdAt            DateTime   @default(now())
+  venue                String?
+  country              String?
+  city                 String?
+  description          String?
+  maxStudios           Int?
+  maxPerformances      Int?
+  imageUrl             String?
+  imagePath            String?
 
   ageGroups           AgeGroup[]
   categories          DanceCategory[]
@@ -167,6 +170,11 @@ model StudioEventRegistration {
   eventId             String
   status              EventRegistrationStatus @default(PENDING)
   canEditDuringReview Boolean                 @default(false)
+  revision            Int                     @default(1)
+  decisionReason      String?
+  operationId         String?                 @unique
+  requestDigest       String?
+  createdBy           String?
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 

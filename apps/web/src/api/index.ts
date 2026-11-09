@@ -10,6 +10,7 @@ export * from "./studios.js";
 export * from "./dancers.js";
 export * from "./performances.js";
 export * from "./judges.js";
+export * from "./staff.js";
 export * from "./categories.js";
 export * from "./formats.js";
 export * from "./age-groups.js";

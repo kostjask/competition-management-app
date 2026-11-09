@@ -43,12 +43,12 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
   const ownProfiles = StudiosSchema.parse((await request('/studios')).body);
   assert.deepEqual(new Set(ownProfiles.map((s) => s.id)), new Set([studio.id, otherStudio.id]));
   assert.equal((await request(item, outsiderToken)).status, 403);
-  assert.equal((await request(item, ownerToken, 'PATCH', { name: 'Blocked' })).status, 403);
+  assert.equal((await request(item, ownerToken, 'PATCH', { directorName: 'Corrected' })).status, 200);
   const role = await client.role.findUniqueOrThrow({ where: { key: 'representative' } });
   await client.userRole.create({ data: { userId: owner.id, roleId: role.id, eventId: event.id } });
   await client.userRole.create({ data: { userId: outsider.id, roleId: role.id, eventId: event.id } });
   assert.equal((await request(item, outsiderToken, 'PATCH', { name: 'Blocked' })).status, 403);
-  assert.equal((await request(`/studios/${otherStudio.id}`, ownerToken, 'PATCH', { name: 'Blocked' })).status, 403);
+  assert.equal((await request(`/studios/${otherStudio.id}`, ownerToken, 'PATCH', { directorName: 'Corrected other' })).status, 200);
   const changed = await request(item, ownerToken, 'PATCH', {
     directorName: ' Changed ', directorPhone: ' 123 ', invoiceDetails: { nested: { rate: 1 }, lines: [null, true] },
   });
@@ -105,6 +105,11 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
     assert.equal((await request(item, adminToken, 'PATCH', { directorName: 'Admin' })).status, 200);
   }
   await client.event.update({ where: { id: event.id }, data: { stage: 'REGISTRATION_OPEN' } });
+  // Organization approval now derives access from both approvals; prepare the
+  // archive fixture through the canonical operations rather than a manual role.
+  assert.equal((await request(item + '/approval', adminToken, 'PATCH', { status: 'APPROVED' })).status, 200);
+  const archiveRegistration = await client.studioEventRegistration.findUniqueOrThrow({ where: { id: studio.registrations[0].id } });
+  assert.equal((await request('/events/' + event.id + '/studio-registrations/' + studio.id, adminToken, 'PATCH', { status: 'APPROVED', revision: archiveRegistration.revision })).status, 200);
   const dancer = await client.dancer.create({ data: { studioId: studio.id, firstName: 'Kept', lastName: 'Dancer', birthDate: new Date('2012-02-29') } });
   assert.equal((await request(item, ownerToken, 'DELETE')).status, 204);
   const archived = await client.studio.findUniqueOrThrow({ where: { id: studio.id } });

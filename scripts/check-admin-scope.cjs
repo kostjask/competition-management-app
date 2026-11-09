@@ -24,7 +24,7 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
     'studioEventRegistration', 'judge', 'danceCategory', 'danceFormat', 'ageGroup', 'auditLog',
   ].map(async model => [model, await client[model].findMany({ orderBy: { id: 'asc' } })])));
   const operations = require('../docs/api-coverage.json').operations.filter(row => row.tests.globalAdmin);
-  assert.equal(operations.length, 20);
+  assert.equal(operations.length, 22);
 
   const matrices = [
     [], [{ roleId: roles.admin.id, eventId: event.id }],
@@ -99,5 +99,5 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
   assert.ok(counts.active_global_staff_assignments >= 1);
   assert.ok(counts.removed_admin_assignments >= 1);
   assert.ok(isDeepStrictEqual(await snapshot(), beforePreflight));
-  console.log('Admin scope: all 20 privileged operations deny scoped/removed/global-staff identities, preserve records, and honor only active global admin; invitation denial and aggregate preflight passed.');
+  console.log('Admin scope: all 22 privileged operations deny scoped/removed/global-staff identities, preserve records, and honor only active global admin; invitation denial and aggregate preflight passed.');
 };

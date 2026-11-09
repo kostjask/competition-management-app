@@ -36,6 +36,8 @@ export const authRouter = (prisma: PrismaClient, authenticate: RequestHandler, r
     asyncHandler((req, res) => authController.login(req, res))
   );
 
+  router.post("/preferences", authenticate, asyncHandler((req, res) => authController.saveLocale(req, res)));
+
   // Get current user profile (requires auth)
   router.get(
     "/profile",

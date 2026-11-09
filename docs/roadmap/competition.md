@@ -6,8 +6,13 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Phase 6 — Scheduling, live operations, and judging
 
-Entry: M3/M4 for the user workflow; complete model/specification tasks before
-their own dependent screens. Do not require these models for M2 registration.
+Local implementation entry: the consumed M3 entry/submission and M4 staff
+technical workflows and model decisions pass. Full M3/M4 release evidence gates
+external competition operation, not isolated model/tests development. Follow the
+checkpoint's delivery priority: finish the local M2/M3 path before promoting this
+track, unless a concrete prerequisite or explicit user request requires it.
+Complete model/specification tasks before their own dependent screens. Do not
+require these models for M2 registration.
 
 - [ ] P6-UI-LIVE: within P6-SCHEDULE/TEMPLATES/JUDGE/MODERATOR after the respective model/recovery decisions, implement S13 accessible schedule editor/conflicts, scoring-template setup, S14 current/next/completion/connection console and S15 rubric/exact inputs/autosave/explicit submission/lock/correction. UI exit requires F07–F09 touch/keyboard venue rehearsal, stale/repeated/reconnecting/removed-access/manual-fallback cases and full cross-phase language/accessibility/state/visual gates; current identity and local/server acknowledgement remain visible throughout.
 

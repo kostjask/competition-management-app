@@ -4,20 +4,21 @@
 
 | Concept | Current behavior | Accepted target / pending work |
 | --- | --- | --- |
-| Account | Public signup creates roleless unverified user | Studio-focused recoverable onboarding; staff invitation; controlled admins; no spectator signup (ADR-006) |
+| Account | Studio-intent signup retains an owner-proven draft and creates a roleless unverified user; active/verified login required | Application completion/approval remains separate; no spectator signup (ADR-006/017) |
 | Studio | Event-owned organization; active names globally case-sensitive unique | Reusable identity (ADR-001); name policy decision before index changes |
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
-| Event registration | Unique studio/event pair; PENDING / APPROVED / REJECTED / LOCKED | Explicit transition/deadline/reason/correction policy in P3-REGISTRATION |
+| Event registration | Unique studio/event pair; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Revisioned retained transitions under ADR-003 |
 | Representative | Active membership grants studio relationship; event approval assigns role | Additional members need studio-bound invitations; contact email never grants ownership |
 | Performance | Complete fields/order required; owner inferred from one studio's participants | Explicit owner, incomplete unscheduled drafts, revision/submission snapshots before entry UI |
-| Judge | Event-specific record separate from UserRole; scored records cannot be hard-deleted | Atomic invited acceptance and history-preserving removal |
+| Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
-ENDED, CANCELLED. An enum or raw PATCH does not implement a transition policy.
+ENDED, CANCELLED. M2 transitions are enforced by ADR-003; live/final transitions remain P6-LIVE-MODEL.
 FINALIZED is not score-sheet lock, entry submission or public result publication.
 
-Non-admin new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
+All new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
+A configured deadline closes new applications and pending-owner corrections.
 Studio profile writes use those stages; dancer/performance writes use
 REGISTRATION_OPEN or DATA_REVIEW with explicit review allowance. Individual
 operations retain distinct permission/approval rules; read [resource contracts](API.md).
@@ -25,12 +26,16 @@ operations retain distinct permission/approval rules; read [resource contracts](
 Application creation atomically saves studio, pending registration and applicable
 membership. Account creation, organization approval, event approval and final
 entry submission are separate actions. Pending cancellation retains studio/member.
+Cancellation retains the registration as CANCELLED with revision/audit history.
+Same-studio reapplication resets the event decision without replacing identity or
+memberships. Organization/event decisions are independent; both are required for
+derived representative access. See [ADR-003](adr/003-registration-lifecycle.md).
 There is no final-entry-submission API today. [Registration workflow](REGISTRATION_API.md).
 
 ## Pending model decisions
 
-**ADR-003 lifecycle (not accepted/filed):** define allowed transitions and actions,
-application/review rules first (P3-REGISTRATION), live rules later (P6-LIVE-MODEL).
+**ADR-003 lifecycle:** [M2 application/review policy accepted and implemented](adr/003-registration-lifecycle.md).
+Live rules remain P6-LIVE-MODEL.
 Candidate sequence: DRAFT → PRE_REGISTRATION → REGISTRATION_OPEN → DATA_REVIEW →
 SCHEDULED → LIVE → FINALIZED → ENDED, with CANCELLED from pre-ended states.
 DRAFT/SCHEDULED/LIVE are proposals, not current enum values. Decide correction

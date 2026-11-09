@@ -34,7 +34,7 @@ async function fixture(t) {
     user: { findUnique: record('user', null), findFirst: async ({ where }) => ({ id: where.id }) },
     accountToken: { findUnique: record('account-token', null) },
     event: { findMany: record('events', []), findUnique: record('event', null) },
-    judge: { findMany: record('judges', []) },
+    judge: { findUnique: async () => null, create: async ({ data }) => ({ id: "reconciled-judge", ...data }), findMany: record('judges', []) },
     danceCategory: { findMany: record('categories', []) },
     danceFormat: { findMany: record('formats', []) },
     ageGroup: { findMany: record('age-groups', []) },
@@ -143,7 +143,7 @@ test('scoped admin cannot use any mounted global-admin operation', async t => {
   const { request, prisma } = await fixture(t);
   const { operations } = require('../../../docs/api-coverage.json');
   const adminOperations = operations.filter(row => row.tests.globalAdmin);
-  assert.equal(adminOperations.length, 20);
+  assert.equal(adminOperations.length, 22);
   let assignments;
   prisma.userRole.findMany = async ({ where }) => {
     assert.deepEqual(where, { userId: 'actor', removedAt: null });
@@ -249,7 +249,7 @@ test('legacy URLs, duplicated invitation paths, and unknown auth routes have no 
 
 function registrationRecord(status = 'PENDING') {
   return {
-    id: 'registration', eventId: 'e', studioId: 's', status, canEditDuringReview: false,
+    id: 'registration', eventId: 'e', studioId: 's', revision: 1, decisionReason: null, status, canEditDuringReview: false,
     createdAt: new Date('2026-10-24T00:00:00Z'), updatedAt: new Date('2026-10-24T00:00:00Z'),
     studio: { id: 's', name: 'Fixture', approvalStatus: 'PENDING', country: null, city: null },
   };
@@ -275,9 +275,10 @@ async function registrationFixture(t) {
     findMany: async (args) => { calls.push({ name: 'list', args }); return [registrationRecord()]; },
     findUnique: async () => registrationRecord(),
     update: async (args) => { calls.push({ name: 'update', args }); return registrationRecord(args.data.status); },
-    deleteMany: async (args) => { calls.push({ name: 'cancel', args }); return { count: 1 }; },
+    updateMany: async (args) => { calls.push({ name: 'cancel', args }); return { count: 1 }; },
   };
   prisma.role = { findUnique: async () => ({ id: 'representative-role' }) };
+  prisma.studioRepresentative = { findFirst: async () => ({ id: 'eligible' }) };
   prisma.userRole.upsert = async (args) => { calls.push({ name: 'assign', args }); return { id: 'assignment', ...args.create }; };
   return context;
 }
@@ -295,7 +296,7 @@ test('roleless applicants create a pending registration and their own membership
   assert.deepEqual(data.representatives.create, {
     userId: 'applicant', name: 'Applicant', email: application.representativeEmail,
   });
-  assert.deepEqual(data.registrations.create, { eventId: 'e', status: 'PENDING', canEditDuringReview: false });
+  assert.deepEqual(data.registrations.create, { eventId: 'e', status: 'PENDING', canEditDuringReview: false, createdBy: 'applicant', operationId: null, requestDigest: null });
   assert.equal(calls.some(({ name }) => name === 'assign'), false);
   assert.equal(result.body.createdAt, '2026-10-24T00:00:00.000Z');
   assert.equal(result.body.studio.country, null);
@@ -303,9 +304,9 @@ test('roleless applicants create a pending registration and their own membership
   assert.equal('invoiceDetails' in result.body.studio, false);
 });
 
-test('admin registration also creates pending membership in the event without becoming a representative', async (t) => {
+test('admin registration obeys closed stages and never becomes a representative', async (t) => {
   const { request, prisma, calls } = await registrationFixture(t);
-  prisma.event.findUnique = async () => ({ stage: 'ENDED' });
+  prisma.event.findUnique = async () => ({ stage: 'REGISTRATION_OPEN' });
   const result = await request(registrationPath, { user: 'admin', method: 'POST', body: { name: 'Fixture' } });
   assert.equal(result.status, 201);
   const data = calls.find(({ name }) => name === 'create').data;
@@ -339,7 +340,7 @@ test('registration rejects whitespace, missing contacts, spoofed relationships a
   for (const body of [
     { ...application, name: '   ' }, { name: 'Fixture' },
     { ...application, studioId: 'other' }, { ...application, eventId: 'other' },
-    { ...application, status: 'APPROVED' }, { ...application, userId: 'other-user' },
+    { ...application, status: 'APPROVED', revision: 1 }, { ...application, userId: 'other-user' },
   ]) {
     assert.equal((await request(registrationPath, { user: 'applicant', method: 'POST', body })).status, 400);
   }
@@ -361,48 +362,48 @@ test('registration lists require active ownership even when the applicant has no
   });
 });
 
-test('approval requires admin and organization approval and assigns roles in the same transaction', async (t) => {
+test('event approval is independent of organization approval and reconciles access', async (t) => {
   const { request, prisma, calls } = await registrationFixture(t);
-  const options = { method: 'PATCH', body: { status: 'APPROVED' } };
-  assert.equal((await request(`${registrationPath}/s`, { ...options, user: 'applicant' })).status, 403);
-  const result = await request(`${registrationPath}/s`, { ...options, user: 'admin' });
+  const options = { method: 'PATCH', body: { status: 'APPROVED', revision: 1 } };
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { ...options, user: 'applicant' })).status, 403);
+  const result = await request(`${registrationPath}/s?revision=1`, { ...options, user: 'admin' });
   assert.equal(result.status, 200);
   assert.equal(result.body.status, 'APPROVED');
   const assigned = calls.find(({ name }) => name === 'assign').args;
   assert.deepEqual(assigned.where.userId_roleId_eventId, { userId: 'applicant', roleId: 'representative-role', eventId: 'e' });
   const studioLookup = prisma.studio.findFirst;
   prisma.studio.findFirst = async (args) => ({ ...await studioLookup(args), approvalStatus: 'PENDING' });
-  assert.equal((await request(`${registrationPath}/s`, { ...options, user: 'admin' })).status, 403);
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { ...options, user: 'admin' })).status, 200);
 });
 
 test('registration mutations reject wrong event scope and cannot create missing registrations', async (t) => {
   const { request, prisma, calls } = await registrationFixture(t);
   for (const method of ['PATCH', 'DELETE']) {
-    assert.equal((await request('/api/v1/events/other/studio-registrations/s', {
-      user: 'admin', method, ...(method === 'PATCH' && { body: { status: 'APPROVED' } }),
+    assert.equal((await request('/api/v1/events/other/studio-registrations/s?revision=1', {
+      user: 'admin', method, ...(method === 'PATCH' && { body: { status: 'APPROVED', revision: 1 } }),
     })).status, 404);
   }
   prisma.studioEventRegistration.findUnique = async () => null;
-  assert.equal((await request(`${registrationPath}/s`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED' } })).status, 404);
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', revision: 1 } })).status, 404);
   assert.equal(calls.some(({ name }) => ['update', 'cancel', 'assign'].includes(name)), false);
 });
 
-test('cancellation enforces ownership and pending state and uses a conditional delete', async (t) => {
+test('cancellation enforces ownership and pending state and uses a conditional retained cancellation', async (t) => {
   const { request, prisma, calls } = await registrationFixture(t);
   prisma.studio.findFirst = async () => ({ representatives: [] });
-  assert.equal((await request(`${registrationPath}/s`, { user: 'applicant', method: 'DELETE' })).status, 403);
-  prisma.studio.findFirst = async () => ({ representatives: [{ id: 'rep' }] });
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { user: 'applicant', method: 'DELETE' })).status, 403);
+  prisma.studio.findFirst = async () => ({ representatives: [{ id: 'rep', userId: 'applicant' }] });
   for (const status of ['APPROVED', 'REJECTED', 'LOCKED']) {
     prisma.studioEventRegistration.findUnique = async () => registrationRecord(status);
-    assert.equal((await request(`${registrationPath}/s`, { user: 'applicant', method: 'DELETE' })).status, 403);
+    assert.equal((await request(`${registrationPath}/s?revision=1`, { user: 'applicant', method: 'DELETE' })).status, 403);
   }
   prisma.studioEventRegistration.findUnique = async () => registrationRecord();
-  assert.equal((await request(`${registrationPath}/s`, { user: 'applicant', method: 'DELETE' })).status, 204);
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { user: 'applicant', method: 'DELETE' })).status, 204);
   const where = calls.find(({ name }) => name === 'cancel').args.where;
   assert.equal(where.status, 'PENDING');
   assert.deepEqual(where.studio.representatives.some, { userId: 'applicant', active: true });
-  prisma.studioEventRegistration.deleteMany = async () => ({ count: 0 });
-  assert.equal((await request(`${registrationPath}/s`, { user: 'applicant', method: 'DELETE' })).status, 409);
+  prisma.studioEventRegistration.updateMany = async () => ({ count: 0 });
+  assert.equal((await request(`${registrationPath}/s?revision=1`, { user: 'applicant', method: 'DELETE' })).status, 409);
 });
 
 test('retired studio registration paths no longer execute handlers', async (t) => {
@@ -677,7 +678,7 @@ async function studioFixture(t) {
   const rep = { id: 'r', studioId: 's', userId: 'owner', name: 'Owner', email: 'owner@example.invalid', active: true, createdAt: new Date('2026-01-01') };
   const studio = { id: 's', eventId: 'e', name: 'Studio', approvalStatus: 'PENDING', country: 'EE', city: 'Tallinn',
     directorName: null, directorPhone: null, invoiceDetails: null, logoUrl: null,
-    representatives: [rep], registrations: [{ id: 'registration', studioId: 's', eventId: 'e', status: 'PENDING',
+    representatives: [rep], registrations: [{ id: 'registration', studioId: 's', eventId: 'e', status: 'PENDING', revision: 1, decisionReason: null,
       canEditDuringReview: false, createdAt: new Date('2026-01-01'), updatedAt: new Date('2026-01-01') }],
     event: { stage: 'REGISTRATION_OPEN' } };
   prisma.userRole.findMany = async ({ where }) => where.userId === 'admin'
@@ -689,6 +690,7 @@ async function studioFixture(t) {
     return where.id === 's' ? studio : null;
   };
   prisma.studio.findMany = async (args) => { calls.push({ name: 'studio-list', args }); return [studio]; };
+  prisma.studioEventRegistration = { updateMany: async () => ({ count: 1 }) };
   prisma.studio.update = async (args) => { calls.push({ name: 'studio-update', args }); return { ...studio, ...args.data }; };
   prisma.studio.updateMany = async (args) => { calls.push({ name: 'studio-archive', args }); return { count: 1 }; };
   prisma.studioRepresentative = {
@@ -723,7 +725,8 @@ test('studio reads allow active roleless membership and return explicit identica
 });
 
 test('studio writes derive permissions from the stored event and always require ownership', async (t) => {
-  const { request, rep, calls } = await studioFixture(t);
+  const { request, rep, calls, studio } = await studioFixture(t);
+  studio.registrations[0].status = 'APPROVED';
   const patch = (user) => request(studioPath, { user, method: 'PATCH', body: { directorName: ' Changed ' } });
   assert.equal((await patch('owner')).status, 200);
   rep.userId = 'wrong-event'; assert.equal((await patch('wrong-event')).status, 403);
@@ -757,7 +760,7 @@ test('studio PATCH trims text, preserves omitted values, permits explicit cleari
   assert.equal(updated.status, 200); assert.equal(updated.body.directorName, 'New director');
   assert.equal(updated.body.country, 'EE'); assert.equal(updated.body.city, null);
   assert.deepEqual(calls.find(({ name }) => name === 'studio-update').args.data,
-    { directorName: 'New director', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
+    { approvalStatus: 'PENDING', directorName: 'New director', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
   for (const body of [{}, { name: ' ' }, { name: null }, { country: '' }, { eventId: 'foreign' },
     { approvalStatus: 'APPROVED' }, { representatives: [] }, { logoUrl: 'url' }, { deletedAt: null }, { invoiceDetails: [] }]) {
     const result = await patch(body); assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
@@ -779,6 +782,9 @@ test('studio PATCH trims text, preserves omitted values, permits explicit cleari
 
 test('studio representative and approval operations enforce active parents, self ownership and strict inputs', async (t) => {
   const { request, rep, prisma } = await studioFixture(t);
+  prisma.role = { findUnique: async () => ({ id: 'role' }) };
+  const originalRoles = prisma.userRole.findMany;
+  prisma.userRole.findMany = async args => args.where.roleId ? [] : originalRoles(args);
   const route = `${studioPath}/representatives/r`;
   assert.equal((await request(route, { user: 'owner', method: 'PATCH', body: { name: ' Changed ' } })).body.name, 'Changed');
   for (const body of [{}, { name: ' ' }, { email: 'invalid' }, { userId: 'other' }, { active: false }])
@@ -1353,7 +1359,8 @@ test('invitation contracts validate relationships, dates, DTOs and global errors
 test('invitation acceptance returns an explicit session and atomically links role scope', async (t) => {
   const { request, prisma } = await fixture(t); const schemas = require('@dance/schemas');
   const invitation = { id: 'i', email: 'new@example.invalid', roleKey: 'judge', roleId: 'role', studioId: null, eventId: 'e', token: 'fixture', usedAt: null, expiresAt: new Date(Date.now() + 60000) };
-  let user; let assignment; let used = false;
+  let user; let assignment; let used = false; let judge;
+  prisma.judge.create = async ({ data }) => { judge = { id: 'judge', ...data }; return judge; };
   prisma.invitation.findUnique = async () => invitation;
   prisma.invitation.update = async ({ where, data }) => { assert.equal(where.usedAt, null); used = true; invitation.usedAt = data.usedAt; };
   prisma.event.findUnique = async () => ({ id: 'e' });
@@ -1374,7 +1381,75 @@ test('invitation acceptance returns an explicit session and atomically links rol
   assert.equal(jwt.verify(result.body.token, process.env.JWT_SECRET).sessionVersion, 0);
   assert.equal(user.name, 'New'); assert.notEqual(user.password, 'fixture-password'); assert.equal(used, true);
   assert.deepEqual(assignment, { userId: 'new', roleId: 'role', eventId: 'e' });
+  assert.deepEqual(judge, { id: 'judge', userId: 'new', eventId: 'e', name: 'New' });
   assert.equal((await accept({ token: 'fixture', name: 'New', password: 'fixture-password' })).body.reason, 'invitationUsed');
+});
+
+test('accepted staff removal validates scope and cannot delete Judge history', async t => {
+  const { request, prisma } = await fixture(t);
+  let assignment = { id: 'staff', userId: 'recipient', eventId: 'e', removedAt: null, role: { key: 'judge' } };
+  const audits = [];
+  prisma.userRole.findFirst = async ({ where }) => assignment?.eventId === where.eventId ? assignment : null;
+  prisma.userRole.update = async ({ data }) => { assignment = { ...assignment, ...data }; return assignment; };
+  prisma.auditLog.create = async ({ data }) => { audits.push(data); return data; };
+  prisma.judge.delete = async () => assert.fail('Offboarding must retain Judge history');
+  const remove = (eventId, body = {}, user = 'admin') => request('/api/v1/events/' + eventId + '/staff/staff/remove', { method: 'POST', user, body });
+  assert.equal((await remove('e', {}, 'moderator')).status, 403);
+  assert.equal((await remove('other')).status, 404);
+  assert.equal((await remove('e', { roleKey: 'judge' })).status, 400);
+  assert.equal((await remove('e')).status, 204);
+  assert.ok(assignment.removedAt);
+  assert.equal((await remove('e')).status, 204);
+  assert.equal(audits.length, 1);
+  assert.deepEqual([audits[0].action, audits[0].actorId, audits[0].eventId], ['ACCESS_REMOVED', 'admin', 'e']);
+  assignment = { ...assignment, removedAt: null, role: { key: 'moderator' } };
+  assert.equal((await remove('e')).status, 204);
+  assert.equal(audits.length, 2);
+  assignment.role.key = 'representative';
+  assert.equal((await remove('e')).status, 403);
+});
+
+test('event staff overview constrains scope and reports access gaps without private fields', async t => {
+  const { request, prisma } = await fixture(t);
+  assert.equal((await request('/api/v1/events/e/staff')).status, 401);
+  assert.equal((await request('/api/v1/events/e/staff', { user: 'moderator' })).status, 403);
+  assert.equal((await request('/api/v1/events/missing/staff', { user: 'admin' })).status, 404);
+  prisma.event.findUnique = async ({ where }) => ({ id: where.id, name: 'Staff event' });
+  const authRoles = prisma.userRole.findMany;
+  prisma.userRole.findMany = async args => {
+    if (args.where.userId) return authRoles(args);
+    assert.equal(args.where.eventId, 'e');
+    assert.deepEqual(args.where.role.key.in, ['judge', 'moderator']);
+    assert.equal(args.select.user.select.password, undefined);
+    assert.equal(args.select.user.select.judges.where.eventId, 'e');
+    return ['ACTIVE', 'REMOVED', 'ACCOUNT_UNAVAILABLE', 'JUDGE_MISSING'].map((status, index) => ({
+      id: 'assignment-' + index, role: { key: 'judge' }, removedAt: status === 'REMOVED' ? new Date('2026-11-01') : null,
+      user: { id: 'u' + index, name: 'Synthetic', email: 'staff-' + index + '@example.invalid', active: status !== 'ACCOUNT_UNAVAILABLE', emailVerified: true, judges: status === 'JUDGE_MISSING' ? [] : [{ id: 'judge' }] },
+    }));
+  };
+  prisma.invitation.findMany = async args => {
+    assert.equal(args.where.eventId, 'e'); assert.deepEqual(args.where.roleId, { not: null }); assert.equal(args.where.studioId, null);
+    assert.equal(args.select.tokenDigest, undefined);
+    return [{ id: 'i', email: 'invite@example.invalid', eventId: 'e', roleKey: 'judge', createdAt: new Date('2026-11-01'), expiresAt: new Date('2027-01-01'), usedAt: null, supersededAt: null, revokedAt: null, tokenDigest: 'private-digest' }];
+  };
+  const result = await request('/api/v1/events/e/staff', { user: 'admin' });
+  assert.equal(result.status, 200); const data = require('@dance/schemas').StaffOverviewSchema.parse(result.body);
+  assert.deepEqual(data.assignments.map(row => row.status), ['ACTIVE', 'REMOVED', 'ACCOUNT_UNAVAILABLE', 'JUDGE_MISSING']);
+  assert.equal(data.invitations[0].status, 'PENDING'); assert.ok(!JSON.stringify(data).includes('private'));
+});
+
+test('account preferences validate supported locale and write only the eligible caller', async t => {
+  const { request, prisma } = await fixture(t);
+  const writes = [];
+  prisma.user.updateMany = async args => { writes.push(args); return { count: 1 }; };
+  const save = body => request('/api/v1/auth/preferences', { method: 'POST', user: 'recipient', body });
+  for (const body of [{ preferredLocale: 'de' }, { preferredLocale: 'ru', userId: 'victim' }, {}]) assert.equal((await save(body)).status, 400);
+  assert.deepEqual(writes, []);
+  const result = await save({ preferredLocale: 'ru' });
+  assert.equal(result.status, 200); assert.deepEqual(result.body, { preferredLocale: 'ru' });
+  assert.equal(writes[0].where.id, 'recipient'); assert.equal(writes[0].where.active, true); assert.equal(writes[0].where.emailVerified, true);
+  prisma.user.updateMany = async () => ({ count: 0 });
+  assert.equal((await save({ preferredLocale: null })).status, 401);
 });
 
 test('superseded invitation links expose terminal state but cannot be accepted', async (t) => {

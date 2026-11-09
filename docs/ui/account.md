@@ -41,12 +41,12 @@ Target screen contracts, not an implementation claim. Inherit all shared
 ## S04 — Profile
 
 - **Purpose / roles / route:** understand own identity/access; any authenticated user at `/auth/profile`.
-- **Primary action:** inspect identity and event-scoped assignments; preference/edit only when supported.
+- **Primary action:** inspect identity and event-scoped assignments; explicitly save or clear account/email language.
 - **Data:** own profile DTO and agreed locale preference contract.
 - **Sections / components:** identity, localized joined date, role/event list, account recovery/help; global scope explicitly labeled rather than “No event.”
 - **States:** loading, retryable unavailable, legitimate no roles with event browsing and truthful application-unavailable feedback, expired session; no inert Edit action.
 - **Responsive / accessibility:** definition lists stack; long email wraps; roles are text, dates use locale formatter.
-- **API:** GET `/auth/profile`; no current profile update endpoint.
+- **API:** GET `/auth/profile`; POST `/auth/preferences` saves/clears only account language. Identity editing is unavailable.
 - **Acceptance:** pending users have a next action; no promise that editing representative contact changes login email. F01/F04.
 
 ## Delivered account slice (2026-11-05)

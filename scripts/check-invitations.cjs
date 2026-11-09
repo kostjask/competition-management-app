@@ -28,7 +28,7 @@ module.exports = async function checkInvitations({ client, baseUrl, adminToken, 
   const role = await client.role.findUniqueOrThrow({ where: { key: 'judge' } });
   assert.equal(await client.userRole.count({ where: { userId: user.id, roleId: role.id, eventId: event.id } }), 1);
   assert.ok((await client.invitation.findUniqueOrThrow({ where: { id: invitation.id } })).usedAt);
-  assert.equal(await client.judge.count({ where: { userId: user.id, eventId: event.id } }), 0, 'Atomic Judge onboarding remains P2-JUDGE-ACCEPT');
+  assert.equal(await client.judge.count({ where: { userId: user.id, eventId: event.id } }), 1, 'Atomic Judge onboarding creates matching Judge');
   for (const scope of [event.id, null]) {
     const secret = newIdentitySecret('INVITATION');
     const row = await client.invitation.create({ data: { email: scope ? 'rollback-invite@example.invalid' : 'global-invite@example.invalid', roleKey: scope ? 'missing_role' : 'moderator', eventId: scope, tokenDigest: secret.digest, expiresAt: secret.expiresAt, createdBy: creator.id } });

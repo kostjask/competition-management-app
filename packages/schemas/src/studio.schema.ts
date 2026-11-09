@@ -16,6 +16,8 @@ export const UpdateStudioBodySchema = z.strictObject({
   invoiceDetails: invoice.nullable().optional(),
 }).refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one studio field is required", params: { reason: "nonemptyPatch" } });
 export const UpdateRegistrationBodySchema = z.object({
+  revision: z.int().positive(),
+  reason: z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]).nullable().optional(),
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]), canEditDuringReview: z.boolean().optional(),
 });
 export const StudioApprovalStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
@@ -28,7 +30,8 @@ export const StudioRepresentativeSchema = z.strictObject({
 });
 export const StudioEventMembershipSchema = z.strictObject({
   id: IdSchema, studioId: IdSchema, eventId: IdSchema,
-  status: z.enum(["PENDING", "APPROVED", "REJECTED", "LOCKED"]),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED", "LOCKED", "CANCELLED"]),
+  revision: z.int().positive(), decisionReason: z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]).nullable(),
   canEditDuringReview: z.boolean(), createdAt: z.iso.datetime(), updatedAt: z.iso.datetime(),
 });
 export const StudioSchema = z.strictObject({

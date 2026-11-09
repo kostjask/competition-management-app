@@ -2,16 +2,17 @@ import { serializeDto } from "../utils/dto";
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import bcrypt from "bcrypt";
-import { CreateInvitationSchema, AcceptInvitationSchema, InvitationTokenParamsSchema, InvitationIdParamsSchema, InvitationCommandSchema, InvitationSchema, InvitationPreviewSchema, CreateInvitationResponseSchema, AcceptInvitationResponseSchema, ResendInvitationResponseSchema, RevokeInvitationResponseSchema } from "@dance/schemas";
+import { CreateInvitationSchema, AcceptInvitationSchema, InvitationTokenParamsSchema, InvitationIdParamsSchema, InvitationCommandSchema, InvitationPreviewSchema, CreateInvitationResponseSchema, AcceptInvitationResponseSchema, ResendInvitationResponseSchema, RevokeInvitationResponseSchema } from "@dance/schemas";
 import { issueSession } from "../services/browserSession";
 import { sendInvitationEmail } from "../utils/email";
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from "../errors";
 import { BaseController } from "./BaseController";
 import { newIdentitySecret, tokenDigest } from "../services/identityTokens";
 import { appendAudit } from "../services/audit";
+import { invitationSelect, invitationView } from "../services/invitationView";
 import { assertStaffScope, recipientLocale, invitationState } from "../services/staffPolicy";
 
-const invitationSelect = { id: true, email: true, roleKey: true, eventId: true, createdAt: true, expiresAt: true, usedAt: true, revokedAt: true, supersededAt: true } satisfies Prisma.InvitationSelect;
+
 export class InvitationsController extends BaseController {
   private admin(req: Request) { if (!this.isAdmin(req)) throw new ForbiddenError(); }
   private async mutation<T>(operation: () => Promise<T>): Promise<T> {
@@ -31,7 +32,7 @@ export class InvitationsController extends BaseController {
   async list(req: Request, res: Response): Promise<void> {
     this.admin(req);
     const rows = await this.prisma.invitation.findMany({ select: invitationSelect, orderBy: [{ createdAt: "desc" }, { id: "asc" }] });
-    res.json(rows.map(row => serializeDto(InvitationSchema, { id: row.id, email: row.email, roleKey: row.roleKey, eventId: row.eventId, createdAt: row.createdAt.toISOString(), expiresAt: row.expiresAt.toISOString(), usedAt: row.usedAt?.toISOString() ?? null, revokedAt: row.revokedAt?.toISOString() ?? null, supersededAt: row.supersededAt?.toISOString() ?? null, status: invitationState(row) })));
+    res.json(rows.map(invitationView));
   }
   async create(req: Request, res: Response): Promise<void> {
     this.admin(req);
@@ -130,9 +131,17 @@ export class InvitationsController extends BaseController {
       const where = { userId: user.id, roleId: role.id, eventId: invitation.eventId };
       const existing = await tx.userRole.findFirst({ where });
       if (existing?.removedAt) throw new ConflictError("Removed access requires reviewed restoration");
-      if (!existing) {
-        const assignment = await tx.userRole.create({ data: where });
+      let assignment = existing;
+      if (!assignment) {
+        assignment = await tx.userRole.create({ data: where });
         await appendAudit(tx, { action: "ACCESS_GRANTED", actor, targetType: "USER_ROLE", targetId: assignment.id, eventId: invitation.eventId });
+      }
+      if (invitation.roleKey === "judge" && invitation.eventId) {
+        const judge = await tx.judge.findUnique({ where: { userId_eventId: { userId: user.id, eventId: invitation.eventId } } });
+        if (!judge) {
+          await tx.judge.create({ data: { userId: user.id, eventId: invitation.eventId, name: user.name } });
+          await appendAudit(tx, { action: "ACCESS_RECONCILED", actor, targetType: "USER_ROLE", targetId: assignment.id, eventId: invitation.eventId, metadata: { roleKey: "judge" } });
+        }
       }
       await tx.invitation.update({ where: { id: invitation.id, tokenDigest: digest, usedAt: null, supersededAt: null,
         revokedAt: null, expiresAt: { gt: new Date() } }, data: { usedAt: new Date() } });

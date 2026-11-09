@@ -16,3 +16,5 @@ export * from "./image.schema.js";
 export * from "./audit.schema.js";
 export * from "./onboarding.schema.js";
 export * from "./return-path.js";
+export * from "./staff.schema.js";
+export * from "./content.schema.js";

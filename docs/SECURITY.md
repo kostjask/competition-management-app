@@ -1,6 +1,6 @@
 # Authorization and security status
 
-Working-tree status: 2026-11-01. This describes current boundaries and open work,
+Working-tree status: 2026-11-06. This describes current boundaries and open work,
 not a production-readiness or deployed-data audit. Task priority: [checkpoint](../DEVELOPMENT_PLAN.md).
 
 ## Current model
@@ -28,7 +28,7 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   outstanding-invitation uniqueness. It retains history and refuses ambiguous
   duplicates. **Deployment still needs P2-SCOPE-DEPLOY** and [ADR-008](adr/008-event-scope-integrity.md).
 - P2-ROLES-ADMIN-SCOPE completes the backend writer/operation inventory and
-  HTTP/PostgreSQL scope evidence for all 20 admin-only operations. The judge seed
+  HTTP/PostgreSQL scope evidence for all 22 admin-only operations. The judge seed
   now binds new access to its event; historical records remain unchanged. Read-only
   deployment preflight flags active scoped admin/global staff and removed admin
   assignments. See [scope evidence](ADMIN_SCOPE_VALIDATION.md); intended-deployment
@@ -90,9 +90,9 @@ is inferred from the local probes.
 | Gap | Owner |
 | --- | --- |
 | Public signup requires studio context; pending/verified owners recover retained drafts without added privileges | P2-ONBOARDING-MODEL/SIGNUP |
-| Intended-account acceptance, admin pending management and translated acceptance UI implemented locally; Judge reconciliation remains | P2-INVITE / P2-UI-AUTH; P2-JUDGE-ACCEPT |
+| Intended-account acceptance, admin pending management, translated acceptance UI and atomic Judge reconciliation implemented locally | P2-INVITE / P2-UI-AUTH / P2-JUDGE-ACCEPT |
 | Scoped-admin bypass and backend inventory corrected locally; actual deployment assignment provenance/repair remains | P2-SCOPE-DEPLOY; frontend role consistency is now corrected locally |
-| Judge role and Judge record are separate; accepted-access removal/history policy incomplete | P2-JUDGE-ACCEPT/OFFBOARD |
+| Judge/access acceptance, audited retained offboarding and scoped staff UI implemented locally; hosted/human release evidence remains | P2-EMAIL / P2-SCOPE-DEPLOY / P9 release gates |
 | Image ownership/content/private retrieval corrected locally; image UI and actual rollout remain gated | Owning UI workflows; P9 operations |
 | Configured CORS, API headers and bounded process-local sensitive-route limits implemented; intended ingress/shared-instance policy and rollout remain | P9-DEPLOY / P9-OBSERVABILITY |
 | Exact-key/event/permission gates and translated shell/context/profile/signup/recovery/invitation journeys implemented locally; human and hosted release review remains | P2-SIGNUP / P2-UI-AUTH / P2-INVITE |

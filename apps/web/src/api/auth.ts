@@ -1,6 +1,6 @@
 import { decode } from "./client.js";
 import {
-  RegisterResponseSchema, BrowserSessionSchema, BrowserVerifyEmailResponseSchema, UserProfileSchema,
+  AccountLocaleSchema, type RecipientLocale, RegisterResponseSchema, BrowserSessionSchema, BrowserVerifyEmailResponseSchema, UserProfileSchema,
   type RegisterInput, type LoginInput, type VerifyEmailInput,
   type RegisterResponse, type UserProfile,
   ResendVerificationSchema, CorrectEmailSchema, RequestPasswordResetSchema, ResetPasswordSchema,
@@ -39,3 +39,6 @@ export const resetPassword = async (data: ResetPasswordInput) => {
   // Reset revokes sessions on the server; the next profile check reconciles state.
   return result;
 };
+
+export const saveAccountLocale = async (preferredLocale: RecipientLocale | null) =>
+  decode(AccountLocaleSchema, await apiClient.post("/auth/preferences", AccountLocaleSchema.parse({ preferredLocale })));

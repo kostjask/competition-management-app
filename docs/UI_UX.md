@@ -126,7 +126,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S02 | `/events/:id` | Partial details with dead application links |
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
 | S03 | P `/auth/forgot-password`, `/auth/reset-password` | P2-AUTH/SESSION contracts first |
-| S04 | `/auth/profile` | Read-only data; Edit is inert |
+| S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
 | S05 | `/admin`, `/events/new`, `/events/:id/edit`; P `/admin/events/:id/setup` | Dashboard placeholder; partial forms; P4-CORE |
 | S06 | P `/admin/events/:id/applications` | P4-REVIEW |
 | S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
@@ -139,7 +139,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
-| S17 | I `/auth/accept-invitation`, `/admin/invitations`; P `/admin/events/:id/staff`, `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
+| S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 
 Current role-section unknown children redirect to their root. Add deliberate
 not-found handling as nested screens arrive; do not let a typo masquerade as a
@@ -203,8 +203,9 @@ browser storage. No automatic retry of non-idempotent mutations.
 Required: all application UI, accessible labels, errors, statuses, emails and
 exports for a delivered slice in ET/EN/RU, following [LOCALIZATION](LOCALIZATION.md).
 Render descriptors at display time so existing errors retranslate without losing
-form values/focus. Current initialization is saved choice → supported browser
-language → `et`; cross-device/account/email preference precedence is still open.
+form values/focus. Current precedence is explicit session choice, account
+preference, saved browser choice, supported browser language, then `et`, under
+ADR-013 and [localization policy](LOCALIZATION.md). Profile saves are explicit.
 Translate role/stage labels by stable keys, never authorize against translated text.
 Do not translate personal names, studio names or performance titles automatically.
 Organizer-authored content follows I18N-CONTENT, with a visible fallback language.
@@ -278,7 +279,7 @@ Record substantial decisions in their owning ADR before dependent schema/code.
 | UX-D02 Public access | Keep authenticated events versus publication-safe discovery; recommend explicit public event/results DTOs with publication controls, never opening private current DTOs. | ADR-002 follow-up before public event/result release; P7-PUBLISH |
 | UX-D03 Account/session recovery | Cookie versus bearer storage, onboarding persistence before/after verification, cross-tab/device return and enumeration policy; recommend server-owned recoverable context and allowlisted internal destinations. | P2-SESSION/ONBOARDING-MODEL/IDENTITY-TOKENS before signup/recovery UI |
 | UX-D04 Locale/content | Account/email preference precedence and required authored translations/fallback; recommend deterministic recipient locale and explicit content fallback. | I18N-PREFERENCES before P2-EMAIL; I18N-CONTENT before organizer content publication |
-| UX-D05 Registration policy | Deadlines/timezone, cancellation/rejection/resubmission, reasons and corrections; recommend separate named transitions for each approval and entry action. | P3-REGISTRATION, ADR-003 application portion before P4/P5 application slice |
+| UX-D05 Registration policy | M2 application policy accepted in [ADR-003](adr/003-registration-lifecycle.md): independent decisions, deadline/timezone, retained revisioned cancel/reapply, semantic reasons and pending profile correction. Entry transitions remain M3. | P3 registration backend/contracts delivered; P4/P5 screens remain pending |
 | UX-D06 Entries/history | Draft representation, versioned submission, withdrawal, corrections and global roster locks; recommend server drafts without schedule position plus revision-based conflict detection. | P3-ENTRIES/HISTORY/OWNER and ADR-001 migration before related P5 UI |
 | UX-D07 Eligibility/media | Age date/leap rules, participant/duration limits, required music, formats/limits and replacement; recommend explicit upfront event rules and server enforcement. | P3-CALENDAR-DATES/ENTRIES/MUSIC-MODEL before M3 |
 | UX-D08 Staff authority | Organizer management and studio inviter scope versus admin-only; recommend least privilege with explicit event/studio membership and separate stage-control permissions. | P2-STAFF-MODEL before invitations; P5-MEMBERS before member extension |

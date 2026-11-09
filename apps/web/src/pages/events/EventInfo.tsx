@@ -170,7 +170,9 @@ const EventCard: React.FC<EventCardProps> = ({
             >
               {getTranslation("Events.editButton", locale)}
             </Link>
-
+            <Link className="ui-button ui-button-secondary" to={`/admin/events/${encodeURIComponent(event.id)}/staff`}>
+              {getTranslation("Staff.title", locale)}
+            </Link>
 
           </RoleGate>
         </div>

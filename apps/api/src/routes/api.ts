@@ -5,6 +5,7 @@ import { authRouter } from "./auth";
 import { invitationsRouter } from "./invitations";
 import { eventsRouter } from "./events";
 import { studioRegistrationsRouter } from "./studio-registrations";
+import { staffRouter } from "./staff";
 import { judgesRouter } from "./judges";
 import { categoriesRouter } from "./categories";
 import { formatsRouter } from "./formats";
@@ -30,6 +31,7 @@ export function apiRouter(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
     eventsRouter(prisma),
     studioRegistrationsRouter(prisma),
     judgesRouter(prisma),
+    staffRouter(prisma),
     categoriesRouter(prisma),
     formatsRouter(prisma),
     ageGroupsRouter(prisma),

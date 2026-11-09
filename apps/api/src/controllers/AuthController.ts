@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { Prisma, type PrismaClient } from "@prisma/client";
 import {
-  RegisterSchema, LoginSchema, VerifyEmailSchema, RegisterResponseSchema,
+  AccountLocaleSchema, RegisterSchema, LoginSchema, VerifyEmailSchema, RegisterResponseSchema,
   SessionResponseSchema, SessionVerifyEmailResponseSchema, UserProfileSchema, LogoutSchema,
   ResendVerificationSchema, CorrectEmailSchema, RequestPasswordResetSchema, ResetPasswordSchema,
   AuthRequestAcceptedSchema, ResetPasswordResponseSchema,
@@ -20,7 +20,7 @@ import { provenOnboarding } from "../services/onboarding";
 
 const identitySelect = { id: true, email: true, name: true, sessionVersion: true } satisfies Prisma.UserSelect;
 const profileSelect = {
-  ...identitySelect, createdAt: true,
+  ...identitySelect, createdAt: true, preferredLocale: true,
   roles: { where: { removedAt: null }, select: {
     id: true, eventId: true,
     role: { select: { id: true, key: true, name: true } },
@@ -116,12 +116,20 @@ export class AuthController extends BaseController {
     res.status(204).end();
   }
 
+  async saveLocale(req: Request, res: Response): Promise<void> {
+    if (!req.auth) throw new UnauthorizedError();
+    const body = AccountLocaleSchema.parse(req.body);
+    const changed = await this.prisma.user.updateMany({ where: { id: req.auth.userId, active: true, emailVerified: true, sessionVersion: req.auth.sessionVersion }, data: body });
+    if (changed.count !== 1) throw new UnauthorizedError();
+    res.json(response(AccountLocaleSchema, body));
+  }
+
   async getProfile(req: Request, res: Response): Promise<void> {
     if (!req.auth) throw new UnauthorizedError();
     const user = await this.prisma.user.findUnique({ where: { id: req.auth.userId }, select: profileSelect });
     if (!user) throw new NotFoundError("User");
     res.json(response(UserProfileSchema, {
-      id: user.id, email: user.email, name: user.name, createdAt: user.createdAt.toISOString(),
+      id: user.id, email: user.email, name: user.name, preferredLocale: user.preferredLocale ?? null, createdAt: user.createdAt.toISOString(),
       isAdmin: req.auth.isAdmin,
       permissions: [...req.auth.permissionsByEvent].map(([eventId, keys]) => ({ eventId, keys: [...keys].sort() })),
       roles: user.roles.map(assignment => ({

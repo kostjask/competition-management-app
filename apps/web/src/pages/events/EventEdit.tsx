@@ -57,14 +57,14 @@ export default function EventEdit() {
   }, [id]);
 
   const handleSubmit = async (values: CreateEventInput) => {
-    if (!id) {
+    if (!id || !eventData) {
       return;
     }
 
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      await updateEvent(id, values);
+      await updateEvent(id, { ...values, expectedStage: eventData.stage });
       navigate("/events");
     } catch (err) {
       const message =
@@ -112,6 +112,7 @@ export default function EventEdit() {
             key={eventData?.id}
             title={getTranslation("Events.editTitle", locale)}
             initialValues={initialValues}
+            {...(eventData && { currentStage: eventData.stage })}
             submitLabel={getTranslation("Events.saveChanges", locale)}
             submitError={submitError}
             isSubmitting={isSubmitting}

@@ -30,8 +30,8 @@ export const updateStudio = async (studioId: string, body: UpdateStudioRequest):
   decode(StudioSchema, await apiClient.patch<UpdateStudioRequest>(studioPath(studioId), body));
 export const updateStudioRegistration = async (eventId: string, studioId: string, body: UpdateRegistrationRequest): Promise<StudioRegistration> =>
   decode(StudioRegistrationSchema, await apiClient.patch<UpdateRegistrationRequest>(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`, body));
-export const cancelStudioRegistration = (eventId: string, studioId: string): Promise<void> =>
-  apiClient.delete(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}`);
+export const cancelStudioRegistration = (eventId: string, studioId: string, revision: number): Promise<void> =>
+  apiClient.delete(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}?revision=${revision}`);
 export const updateStudioRepresentative = async (studioId: string, representativeId: string, body: UpdateRepresentativeRequest): Promise<StudioRepresentative> =>
   decode(StudioRepresentativeSchema, await apiClient.patch<UpdateRepresentativeRequest>(
     `${studioPath(studioId)}/representatives/${encodeURIComponent(representativeId)}`, body,

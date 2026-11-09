@@ -46,11 +46,13 @@ export const AuthResponseSchema = z.strictObject({
 });
 export const VerifyEmailResponseSchema = AuthResponseSchema.extend({ message: z.string(), messageId: z.literal("emailVerified") });
 export const BrowserSessionSchema = z.strictObject({ session: z.literal("cookie"), expiresAt: z.iso.datetime(), user: AuthUserSchema });
+export const AccountLocaleSchema = z.strictObject({ preferredLocale: RecipientLocaleSchema.nullable() });
 export const LogoutSchema = z.strictObject({});
 export const SessionResponseSchema = z.union([BrowserSessionSchema, AuthResponseSchema]);
 export const BrowserVerifyEmailResponseSchema = BrowserSessionSchema.extend({ message: z.string(), messageId: z.literal("emailVerified") });
 export const SessionVerifyEmailResponseSchema = z.union([BrowserVerifyEmailResponseSchema, VerifyEmailResponseSchema]);
 export const UserProfileSchema = AuthUserSchema.extend({
+  preferredLocale: RecipientLocaleSchema.nullable(),
   createdAt: z.iso.datetime(), isAdmin: z.boolean(),
   permissions: z.array(z.strictObject({ eventId: IdSchema.nullable(), keys: z.array(z.string().min(1)) })),
   roles: z.array(z.strictObject({

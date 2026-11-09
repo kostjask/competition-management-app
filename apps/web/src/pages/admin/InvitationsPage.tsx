@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { CreateInvitationSchema, RecipientLocaleSchema, type InvitationsSchema, type EventsSchema } from "@dance/schemas";
 import type { z } from "zod";
 import { createInvitation, getInvitations, resendInvitation, revokeInvitation } from "../../api/invitations";
@@ -16,6 +17,7 @@ export default function InvitationsPage(){
   const load=useCallback(async()=>{const [invitations,eventRows]=await Promise.all([getInvitations(),getEvents()]);setRows(invitations);setEvents(eventRows);},[]);
   useEffect(()=>{let active=true;void Promise.all([getInvitations(),getEvents()]).then(([items,eventRows])=>{if(active){setRows(items);setEvents(eventRows);}}).catch((err:unknown)=>{if(active)setError(toUiError(err));});return()=>{active=false;};},[]);
   return <section className="mx-auto max-w-4xl p-4 sm:p-6"><h1 className="text-2xl font-semibold">{t("Flow.manage")}</h1>
+    <nav aria-label={t("Staff.title")} className="my-4 flex flex-wrap gap-3">{events.map(event => <Link key={event.id} to={`/admin/events/${encodeURIComponent(event.id)}/staff`}>{t("Staff.manageEvent", { name: event.name })}</Link>)}</nav>
     <ErrorSummary error={error} title={t("Feedback.validation")} fields={{email:"staff-email",eventId:"staff-event",roleKey:"staff-role"}}/>
     {notice&&<Alert tone="success">{formatSuccess(notice,locale)}</Alert>}
     {!rows&&!error&&<LoadingState label={t("Access.loading")}/>}

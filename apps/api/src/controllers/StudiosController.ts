@@ -7,6 +7,7 @@ import {
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
 import { BaseController } from "./BaseController";
+import { assertApplicationWindow, reconcileRepresentativeAccess, registrationTransaction } from "../services/registrationPolicy";
 import { appendAudit } from "../services/audit";
 
 const representativeSelect = {
@@ -17,7 +18,7 @@ const studioSelect = {
   directorName: true, directorPhone: true, invoiceDetails: true, logoUrl: true,
   representatives: { where: { active: true }, select: representativeSelect, orderBy: { id: "asc" } },
   registrations: { select: {
-    id: true, studioId: true, eventId: true, status: true, canEditDuringReview: true, createdAt: true, updatedAt: true,
+    id: true, studioId: true, eventId: true, status: true, canEditDuringReview: true, revision: true, decisionReason: true, createdAt: true, updatedAt: true,
   }, orderBy: { id: "asc" } },
 } satisfies Prisma.StudioSelect;
 type StudioRecord = Prisma.StudioGetPayload<{ select: typeof studioSelect }>;
@@ -44,7 +45,7 @@ function serialize(studio: StudioRecord) {
 
 export class StudiosController extends BaseController {
   private async transaction<T>(work: (db: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    try { return await this.prisma.$transaction(work); }
+    try { return await registrationTransaction(this.prisma, work); }
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
@@ -53,10 +54,10 @@ export class StudiosController extends BaseController {
     }
   }
 
-  private async requireAccess(req: Request, db: Prisma.TransactionClient, studioId: string, write = false) {
+  private async requireAccess(req: Request, db: Prisma.TransactionClient, studioId: string, write = false, allowPendingCorrection = false) {
     const studio = await db.studio.findFirst({
       where: { id: studioId, deletedAt: null },
-      select: { ...studioSelect, event: { select: { stage: true } } },
+      select: { ...studioSelect, event: { select: { stage: true, registrationDeadline: true } } },
     });
     if (!studio) throw new NotFoundError("Studio", studioId);
     if (this.isAdmin(req)) return studio;
@@ -64,6 +65,8 @@ export class StudiosController extends BaseController {
       throw new ForbiddenError("Access to studio denied", "ownershipRequired");
     }
     if (write) {
+      const pendingApplication = studio.registrations.some(r => r.eventId === studio.eventId && r.status === "PENDING");
+      if (allowPendingCorrection && pendingApplication) { assertApplicationWindow(studio.event); return studio; }
       if (!this.hasPermission(req, "studio.manage", studio.eventId) && !this.hasPermission(req, "studio.manage", null)) {
         throw new ForbiddenError("Studio management permission required");
       }
@@ -94,7 +97,7 @@ export class StudiosController extends BaseController {
     const { studioId } = StudioIdParamsSchema.parse(req.params);
     const body = UpdateStudioBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
-      const studio = await this.requireAccess(req, db, studioId, true);
+      const studio = await this.requireAccess(req, db, studioId, true, true);
       const name = body.name ?? studio.name;
       // Match the SQL-only global partial unique index on active studio names.
       if (name !== studio.name && await db.studio.findFirst({
@@ -102,9 +105,16 @@ export class StudiosController extends BaseController {
       })) {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
-      return serialize(await db.studio.update({
+      const pending = studio.registrations.find(r => r.eventId === studio.eventId && r.status === "PENDING");
+      if (pending) {
+        const changed = await db.studioEventRegistration.updateMany({ where: { id: pending.id, revision: pending.revision, status: "PENDING" }, data: { revision: { increment: 1 } } });
+        if (changed.count !== 1) throw new ConflictError("Reload application", undefined, "concurrentChange");
+        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: pending.id, eventId: studio.eventId, studioId, metadata: { revision: pending.revision + 1 } });
+      }
+      const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null },
         data: {
+          ...(pending && { approvalStatus: "PENDING" }),
           ...(body.name !== undefined && { name: body.name }),
           ...(body.country !== undefined && { country: body.country }),
           ...(body.city !== undefined && { city: body.city }),
@@ -112,7 +122,9 @@ export class StudiosController extends BaseController {
           ...(body.directorPhone !== undefined && { directorPhone: body.directorPhone }),
           ...(body.invoiceDetails !== undefined && { invoiceDetails: body.invoiceDetails === null ? Prisma.DbNull : body.invoiceDetails }),
         }, select: studioSelect,
-      }));
+      });
+      if (pending && studio.approvalStatus === "APPROVED") await reconcileRepresentativeAccess(db, studio.eventId, studio.representatives.map(r => r.userId), this.getUserId(req));
+      return serialize(updated);
     });
     res.json(result);
   }
@@ -158,6 +170,7 @@ export class StudiosController extends BaseController {
       const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null }, data: { approvalStatus: body.status }, select: studioSelect,
       });
+      await reconcileRepresentativeAccess(db, current.eventId, current.representatives.map(r => r.userId), this.getUserId(req));
       await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status } });
       return serialize(updated);
     });

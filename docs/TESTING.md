@@ -387,3 +387,50 @@ local-work preservation, language switching, wrong-account sign-in/explicit
 acceptance, neutral recovery, reset/link stripping, terminal/new-account invitation
 and mobile administrator lifecycle controls. Synthetic screenshots remain ignored.
 No real mail or human screen-reader/fluent-language review is claimed.
+
+## Staff acceptance, offboarding and account preferences
+
+The baseline runs check-staff-access.cjs and check-account-preferences.cjs against
+its random isolated database. They prove Judge/role reconciliation across existing
+combinations, one-winner acceptance, transactional audit/consumption rollback,
+scoped/global-admin removal, concurrent/idempotent removal, retained Judge/Score
+history, unchanged other-event access, denied restoration, strict self-only locale
+writes and concurrent recipient isolation. The admin denial matrix now covers 22
+operations. Route tests also enforce supported staff roles and preference contracts.
+
+account-preferences.spec.ts adds 16 Chromium cases for ET/EN/RU at four widths,
+keyboard save, 320px reflow, failure/retry/input preservation, disabled pending
+state, account/browser/session precedence, clear, login/logout and a fresh tab's
+persisted preference. Combined with the existing suite this is 83 cases. Stored
+invitation locale/provider template checks remain in the foundation baseline.
+Human fluent-language and screen-reader review, real inbox and hosted scope/rollout
+evidence remain release gates. See [staff/preference evidence](STAFF_PREFERENCES_VALIDATION.md).
+
+## Event staff administration (S17/F06)
+
+staff.spec.ts extends the browser suite with event staff state/permission matrices,
+four-width ET/EN/RU layouts, native modal safe focus/Tab/Escape/restore, retained
+input through language/session changes, invite/resend/revoke/accept/remove in
+separate tabs, removed and missing-assignment history, pending controls, conflict
+refresh, lost removal responses and acknowledged mutations with failed readback.
+All browser data/links are synthetic; PostgreSQL remains the proof for real
+transactional history and authorization. The complete suite has 108 cases.
+
+The baseline's check-staff-access.cjs now additionally verifies the global-admin
+read DTO, missing event, guest/staff/scoped-admin denial, other-event exclusion,
+removed/missing-Judge/unavailable-account states, accepted history and exact public
+field allowlists. The global-admin inventory covers 22 operations. No schema or
+migration change is needed. [Staff UI evidence](STAFF_UI_VALIDATION.md) records
+commands, reviewed screenshots and remaining human/real-mail/hosted release gates.
+
+## M2 registration lifecycle checks (2026-11-09)
+
+Start narrow with node scripts/test-baseline.cjs --registration-only after build.
+It uses the same random disposable database/cleanup and seed checks as the full
+baseline, but runs only check-studio-registrations and check-registration-lifecycle.
+It does not replace pnpm test:baseline or fresh/upgrade migration parity. New checks
+cover independent approvals in both orders, retained assignments, correction
+revisions, cancellation/reapplication races and stale/lost responses, event scopes,
+admin/deadline denials, direct SQL constraints and audit rollback. No application
+database or environment file is migrated/reset. Failure reporting prints stack
+frames without assertion snapshots or environment values.

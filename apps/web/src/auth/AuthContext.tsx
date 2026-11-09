@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toUiError, ApiError, type UiError } from "../api/error";
-import { getCurrentUser, login as loginApi, logout as logoutApi, register as registerApi, type LoginData, type RegisterData } from "../api/auth";
+import { saveAccountLocale, getCurrentUser, login as loginApi, logout as logoutApi, register as registerApi, type LoginData, type RegisterData } from "../api/auth";
 import { clearLegacyToken, sessionEvents } from "../api/client";
 import type { UserProfile } from "../api/client";
+import { useLanguage } from "../i18n/useLanguage";
+import type { Locale } from "../i18n/locale";
 import { AuthContext } from "./context";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { reconcileAccountLocale } = useLanguage();
   const [user, setUser] = useState<UserProfile | null>(null);
   const current = useRef<UserProfile | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
@@ -70,6 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     current.current = null; setUser(null); setSessionExpired(false);
     channel.current?.postMessage("changed");
   }, []);
-  const value = useMemo(() => ({ user, loading, error, sessionExpired, login, register, logout, refreshUser, clearError }), [user, loading, error, sessionExpired, login, register, logout, refreshUser, clearError]);
+  useEffect(() => { reconcileAccountLocale(user?.preferredLocale ?? null); }, [user, reconcileAccountLocale]);
+  const savePreference = useCallback(async (locale: Locale | null) => {
+    await saveAccountLocale(locale);
+    await loadUser();
+  }, [loadUser]);
+  const value = useMemo(() => ({ user, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError }), [user, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

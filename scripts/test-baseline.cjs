@@ -9,6 +9,8 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 
 const root = path.resolve(__dirname, '..');
+const registrationOnly = process.argv.includes('--registration-only');
+if (process.argv.slice(2).some(arg => arg !== '--registration-only')) throw new Error('Unsupported baseline option');
 const database = `dance_baseline_${randomUUID().replaceAll('-', '')}`;
 // Only the checked-in Compose fixture is used, never application .env credentials.
 const env = {
@@ -68,10 +70,12 @@ async function main() {
     psql(`CREATE DATABASE ${database};`);
     created = true;
     pnpm('db:migrate');
+    if (!registrationOnly) {
     require('./check-scope-upgrade.cjs')(database);
     require('./check-email-upgrade.cjs')(database);
     require('./check-token-upgrade.cjs')(database);
     require('./check-token-constraints.cjs')(database);
+    }
     client = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
     const migrations = await client.$queryRaw`SELECT count(*)::int AS count FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
     const { readdirSync } = require('node:fs');
@@ -131,11 +135,15 @@ async function main() {
     await require('./check-studio-registrations.cjs')({
       client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
     });
+    await require('./check-registration-lifecycle.cjs')({ client, baseUrl, adminToken: token, login });
+    if (registrationOnly) { console.log('PASS: isolated registration baseline.'); return; }
     await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
     await require('./check-setup.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-public-onboarding.cjs')({ client, baseUrl, jwtSecret: env.JWT_SECRET });
+    await require('./check-staff-access.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
+    await require('./check-account-preferences.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
     await require('./check-invitation-lifecycle.cjs')({ client, baseUrl, adminToken: token });
     await require('./check-invitations.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
     await require('./check-admin-scope.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
@@ -169,5 +177,7 @@ async function main() {
 main().catch((error) => {
   // Do not print snapshots, tokens, passwords, or application environment values.
   console.error(error.message);
+  // Stack frames locate failed checks without printing assertion snapshots or env.
+  if (error.stack) console.error(error.stack.split("\n").filter(line => /^\s+at /.test(line)).join("\n"));
   process.exitCode = 1;
 });

@@ -30,4 +30,6 @@ Score foreign key restricts deletion: scored judges return 409 and retain scores
 The previous route comment claiming cascade/soft deletion was incorrect. A
 concurrently missing item returns 404; foreign-key races return 409. No migration
 or automatic cleanup is introduced. CRUD neither grants nor removes UserRole;
-invitation acceptance and history-preserving staff offboarding remain Phase 2.
+invitation acceptance now reconciles Judge/UserRole/consumption atomically, and
+staff offboarding retains Judge/Score history. See [invitation/staff contracts](invitations.md)
+and [ADR-018](../adr/018-staff-acceptance-and-offboarding.md).

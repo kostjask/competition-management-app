@@ -2,7 +2,8 @@
 
 Phase 1 implements ET/EN/RU feedback contracts and the dictionary core under
 [ADR-007](adr/007-localized-feedback-contracts.md). Remaining UI migration,
-account/email preferences and organizer-authored translations remain separate.
+account/email preferences are now delivered locally; organizer-authored
+translations and human workflow review remain separate.
 
 ## Transport
 
@@ -45,8 +46,18 @@ A valid explicit choice takes effect immediately and is saved when storage is
 available. Initialization uses supported saved locale, then supported browser
 languages, then et. Unsupported storage is ignored; unavailable storage is tolerated.
 Native language names and aria-pressed expose the selector state. Preference
-reconciliation with accounts, background email locale and link locale remain
-I18N-PREFERENCES. Document lang/titles, semantic loading names, profile and event
+reconciliation now follows ADR-013: explicit choice in the mounted session,
+account preference, saved browser choice, supported browser languages, then et.
+Account preference is read on profile load/login/verification/recovery. Logout
+returns to browser fallback unless a session choice exists. Account reconciliation
+does not overwrite browser storage; only explicit selector clicks save it.
+Profile offers an explicit save/clear control for account/email language, preserving
+inputs on failure and reporting success only after acknowledgement/profile refresh.
+Other devices/tabs read the preference on their next profile load; saving does not
+broadcast session expiry or silently replace work. URL locale parameters are ignored;
+verification/invitation links retain the session choice or use the same account/browser
+fallback. Mail resolves its recipient locale independently and invitations keep
+their frozen locale. No browser inference writes account preferences. Document lang/titles, semantic loading names, profile and event
 dates and numeric feedback now use the Phase 2 shared formatting foundation.
 All displayed event instants and datetime editors explicitly use UTC until a
 separately reviewed event-zone model is introduced. Calendar date helpers do not
@@ -75,5 +86,11 @@ The 2026-11-05 auth migration removes all legacy registration text exceptions.
 Eight internal event-form aria identifiers remain reviewed scan exceptions; they
 are not user-facing copy. Signup, draft/recovery, acceptance and invitation
 management use complete ET/EN/RU dictionaries. Recipient mail language is explicit
-or account/ET fallback, never inferred from inviter UI; full preference/link-locale
-reconciliation remains I18N-PREFERENCES. See onboarding/invitation validation.
+or account/ET fallback, never inferred from inviter UI; preference/link reconciliation is delivered under I18N-PREFERENCES. See onboarding/invitation validation.
+
+M2 authored-content policy/contracts: [ADR-019](adr/019-m2-authored-content.md).
+AuthoredContentSchema/resolveAuthoredContent return actual lang and explicit
+source fallback; Registration catalogue keys cover ET/EN/RU statuses, reasons,
+next actors and fallback notice. Existing description storage remains single-text
+until P4 assigns its source language explicitly. I18N-CONTENT remains open for
+workflow implementations and later content; the M2 policy/contracts slice is complete.

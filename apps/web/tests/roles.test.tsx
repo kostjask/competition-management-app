@@ -8,12 +8,12 @@ import { RoleGate } from "../src/auth/RoleGate";
 import { AuthContext, type AuthContextValue } from "../src/auth/context";
 
 function profile(key: string, eventId: string | null, name = "Unrelated label"): UserProfile {
-  return { id: "u", name: "Synthetic", email: "synthetic@example.invalid", createdAt: "2026-01-01T00:00:00.000Z", isAdmin: false,
+  return { id: "u", name: "Synthetic", email: "synthetic@example.invalid", preferredLocale:null,createdAt: "2026-01-01T00:00:00.000Z", isAdmin: false,
     roles: [{ id: "assignment", eventId, role: { id: "role", key, name }, event: eventId ? { id: eventId, name: "Synthetic event" } : null }],
     permissions: [{ eventId, keys: ["stage.manage"] }] };
 }
 export function context(user: UserProfile | null, loading = false): AuthContextValue {
-  return { user, loading, sessionExpired: false, error: null, login: async () => {}, register: async () => {}, logout: async () => {}, refreshUser: async () => {}, clearError: () => {} };
+  return { user, loading, sessionExpired: false, error: null, login: async () => {}, register: async () => {}, logout: async () => {}, refreshUser: async () => {}, savePreference: async () => {}, clearError: () => {} };
 }
 test("exact stable keys and supported scope select roles independently of labels", () => {
   const access = roleAccess(profile("judge", "a", "Renamed Judge"));

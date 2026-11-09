@@ -25,4 +25,4 @@ Target screen contracts, not an implementation claim. Inherit all shared
 - **States:** skeleton, no pending versus filtered empty, missing studio, denied, stale decision/conflict, notification failure after saved decision.
 - **Responsive / accessibility:** mobile summary list/detail page; desktop table/detail pane; row actions identify studio and decision, focus returns logically.
 - **API:** registrations GET/PATCH and studio approval PATCH; reasons/corrections/history pending contracts.
-- **Acceptance:** organization approval alone never claims event approval; backend prevents event approval before organization approval; canceled pending application retains studio/membership. F03/F05.
+- **Acceptance:** organization approval alone never claims event approval; backend records independent decisions and requires both approvals for representative access; canceled pending application retains studio/membership. F03/F05.

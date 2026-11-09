@@ -48,7 +48,7 @@ remain separate; a verified roleless user is eligible but gains no new privilege
 
 `GET /api/v1/auth/profile` requires an eligible session and always selects the
 caller, ignoring any attempted user selector in query parameters. It returns
-`id`, `email`, `name`, ISO UTC `createdAt`, `isAdmin`, `roles`, and `permissions`.
+`id`, `email`, `name`, ISO UTC `createdAt`, nullable `preferredLocale`, `isAdmin`, `roles`, and `permissions`.
 Each role assignment contains only `id`, nullable `eventId`,
 `role: { id, key, name }`, and nullable `event: { id, name }`.
 Only active assignments are included. Null event scope represents existing global
@@ -209,3 +209,15 @@ increments revision and retains account/history; it never deletes or reopens a
 terminal draft. Verified reads preserve prior progress. Read/write identity checks,
 revision changes and ONBOARDING_SAVED/CANCELLED audit commit serializably.
 Application submission/approval remains P5-APPLICATION.
+
+## Account language preference
+
+POST /auth/preferences requires an eligible session and strict body
+{preferredLocale: "et" | "en" | "ru" | null}. It updates only the caller with a
+current active/verified/session-revision predicate and returns the same validated
+object (200). Unsupported locales/extra selectors return 400; missing/ineligible
+sessions return 401. Cookie requests require normal Origin/CSRF protection.
+Null clears the account preference; deterministic email fallback is et. Concurrent
+saves use last committed write for the same account, with no cross-account effects.
+No credential, role, invitation locale or global server language changes occur.
+The profile includes the stored nullable preference. No migration is needed.

@@ -4,7 +4,8 @@ import { StudioApprovalStatusSchema, StudioEventMembershipSchema, UpdateRegistra
 
 const TextSchema = z.string().trim().min(1);
 
-export const CreateStudioRegistrationBodySchema = z.strictObject({
+export const NewStudioRegistrationBodySchema = z.strictObject({
+  operationId: z.uuid().optional(),
   name: TextSchema,
   country: TextSchema.optional(),
   city: TextSchema.optional(),
@@ -15,6 +16,10 @@ export const CreateStudioRegistrationBodySchema = z.strictObject({
   representativeEmail: EmailSchema.optional(),
 });
 
+export const ReapplyStudioRegistrationBodySchema = z.strictObject({ studioId: IdSchema, revision: z.int().positive() });
+export const CreateStudioRegistrationBodySchema = z.union([NewStudioRegistrationBodySchema, ReapplyStudioRegistrationBodySchema]);
+export const CancelStudioRegistrationQuerySchema = z.strictObject({ revision: z.coerce.number().int().positive() });
+
 export const UpdateStudioRegistrationBodySchema = UpdateRegistrationBodySchema.strict();
 export const StudioRegistrationParamsSchema = z.object({
   eventId: IdSchema,
@@ -22,6 +27,7 @@ export const StudioRegistrationParamsSchema = z.object({
 });
 
 export const StudioRegistrationSchema = StudioEventMembershipSchema.extend({
+  nextActor: z.enum(["ORGANIZER", "APPLICANT", "NONE"]),
   studio: z.strictObject({
     id: IdSchema,
     name: z.string(),

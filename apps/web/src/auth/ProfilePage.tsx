@@ -1,3 +1,4 @@
+import { AccountLanguage } from "./AccountLanguage";
 import { useAuth } from "./useAuth";
 import { useTranslation } from "../i18n/useTranslation";
 import { formatInstant } from "../i18n/format";
@@ -13,6 +14,7 @@ export function ProfilePage() {
       <div><dt>{t("Shell.name")}</dt><dd className="font-semibold">{user.name}</dd></div>
       <div className="min-w-0"><dt>{t("Shell.email")}</dt><dd className="font-semibold [overflow-wrap:anywhere]">{user.email}</dd></div>
     </dl>
+    <AccountLanguage />
     <h2 className="text-xl font-semibold">{t("Shell.roles")}</h2>
     {!user.roles.length && <p className="mt-3">{t("Shell.noRoles")}</p>}
     <ul className="mt-3 grid gap-3">{user.roles.map(assignment => <li key={assignment.id} className="rounded-xl border border-slate-200 bg-white p-4 break-words">

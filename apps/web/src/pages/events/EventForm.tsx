@@ -3,7 +3,7 @@ import { toUiError, type UiError } from "../../api/error";
 import { formatIssue } from "../../i18n/errors";
 import { ErrorFeedback } from "../../components/ErrorFeedback";
 import { useMemo, useState } from "react";
-import { CreateEventBodySchema, EventStageSchema, type CreateEventInput } from "@dance/schemas";
+import { CreateEventBodySchema, EventStageSchema, eventStageTargets, type CreateEventInput } from "@dance/schemas";
 import { useTranslation } from "@i18n/useTranslation";
 
 const inputBaseClass =
@@ -26,6 +26,7 @@ type EventFormValues = {
 type EventFormProps = {
   title: string;
   initialValues: CreateEventInput;
+  currentStage?: EventStage;
   submitLabel: string;
   submitError?: UiError | null;
   isSubmitting?: boolean;
@@ -55,6 +56,7 @@ const toIsoString = (value: string): string => {
 export function EventForm({
   title,
   initialValues,
+  currentStage,
   submitLabel,
   submitError,
   isSubmitting,
@@ -160,7 +162,7 @@ export function EventForm({
                 }
                 aria-invalid={Boolean(fieldErrors.stage)}
               >
-                {EventStageSchema.options.map((stage) => (
+                {eventStageTargets(currentStage).map((stage) => (
                   <option key={stage} value={stage}>
                     {stageLabels[stage]}
                   </option>

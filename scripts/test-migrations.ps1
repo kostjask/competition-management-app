@@ -54,6 +54,8 @@ try {
     $expectedSql += "`n" + (($sessionAuditSql -split "`n" | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
     $onboardingAuditSql = Get-Content -Raw apps/api/prisma/migrations/20261105010000_onboarding_audit/migration.sql
     $expectedSql += "`n" + (($onboardingAuditSql -split "`n" | Where-Object { $_ -match '^ALTER TABLE' }) -join "`n")
+    $registrationSql = Get-Content -Raw apps/api/prisma/migrations/20261109000000_registration_lifecycle/migration.sql
+    $expectedSql += "`n" + (($registrationSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {

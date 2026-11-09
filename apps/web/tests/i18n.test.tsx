@@ -50,7 +50,7 @@ test("typed interpolation and Russian plural rules handle zero/one/few/many/frac
 
 test("one stored error re-renders in all locales without technical prose or a new request", () => {
   const descriptor = toUiError(parseApiError(403, { code: "FORBIDDEN", reason: "stageLocked", error: "PRIVATE ACCOUNT AND SQL", params: {}, issues: [] }));
-  const outputs = SUPPORTED_LOCALES.map(locale => renderToStaticMarkup(<LanguageContext.Provider value={{ locale, setLocale: () => {} }}><ErrorFeedback error={descriptor} /></LanguageContext.Provider>));
+  const outputs = SUPPORTED_LOCALES.map(locale => renderToStaticMarkup(<LanguageContext.Provider value={{ locale, setLocale: () => {}, reconcileAccountLocale: () => {} }}><ErrorFeedback error={descriptor} /></LanguageContext.Provider>));
   assert.equal(new Set(outputs).size, 3);
   for (const output of outputs) { assert.ok(output.includes('role="alert"')); assert.ok(!output.includes("PRIVATE")); }
   for (const legacy of [{ error: "PRIVATE" }, { reason: "futureReason", error: "PRIVATE" }, null]) assert.equal(formatError(toUiError(parseApiError(500, legacy)), "en"), errorMessages.unexpected.en);
@@ -74,12 +74,12 @@ test("shared validation preserves nested/root/date/range/duplicate rules and saf
   }
   for (const rule of ["too_small", "invalid_format", "dateOrder", "duplicate", "nonemptyPatch"]) assert.ok(rules.has(rule));
   const error = toUiError(new ApiError(400, "PRIVATE", undefined, "VALIDATION_ERROR", "invalidInput", {}, [{ path: ["name"], rule: "too_small", params: { minimum: 2 } }]));
-  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "en", setLocale: () => {} }}><ErrorFeedback error={error} fields={{ name: "name" }} /></LanguageContext.Provider>);
+  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "en", setLocale: () => {}, reconcileAccountLocale: () => {} }}><ErrorFeedback error={error} fields={{ name: "name" }} /></LanguageContext.Provider>);
   assert.ok(output.includes('href="#name"')); assert.ok(!output.includes("PRIVATE"));
 });
 
 test("language selector uses native names and an accessible selected state", () => {
-  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "ru", setLocale: () => {} }}><LanguageSelector /></LanguageContext.Provider>);
+  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "ru", setLocale: () => {}, reconcileAccountLocale: () => {} }}><LanguageSelector /></LanguageContext.Provider>);
   assert.ok(output.includes("Eesti")); assert.ok(output.includes("English")); assert.ok(output.includes("Русский")); assert.equal((output.match(/aria-pressed="true"/g) ?? []).length, 1);
 });
 
@@ -102,6 +102,6 @@ test("initialization tolerates unavailable storage and unknown/nested validation
   const remote = toUiError(parseApiError(400, { reason: "invalidInput", issues: [{ path: ["name"], rule: "futureRule", params: {} }] }));
   assert.equal(formatError(remote, "en"), errorMessages.invalidInput.en);
   const descriptor = toUiError(new ApiError(400, "Private", undefined, "VALIDATION_ERROR", "invalidInput", {}, [{ path: ["__proto__"], rule: "invalid", params: {} }]));
-  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "en", setLocale: () => {} }}><ErrorFeedback error={descriptor} /></LanguageContext.Provider>);
+  const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "en", setLocale: () => {}, reconcileAccountLocale: () => {} }}><ErrorFeedback error={descriptor} /></LanguageContext.Provider>);
   assert.ok(!output.includes("href="));
 });

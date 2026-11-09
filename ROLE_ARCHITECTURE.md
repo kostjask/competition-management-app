@@ -50,7 +50,7 @@ Every event operation still needs its event scope and backend parent/ownership c
 | Invitation creation / acceptance | Only bound event judge/moderator, no studio; strict shared input, role-reference check and assertStaffScope before writes; admin/global/unclassified invitation rejected |
 | Studio registration approval | Only representative key, using the checked registration/studio event; no caller-selected role or scope |
 | Development seed | Global admin and inherited global representative; judge bound to the demo event. Existing rows, including unsupported historical global judges and removed assignments, remain unchanged |
-| Judge CRUD | Does not assign UserRole; reconciliation remains P2-JUDGE-ACCEPT |
+| Judge CRUD | Does not assign UserRole; invitation acceptance reconciles Judge/access atomically under ADR-018 |
 | Generic role assignment / production admin provisioning | No mounted API; controlled operational provisioning needs its own reviewed procedure before hosted use |
 
 The seed's global judge creation was corrected under P2-ROLES-ADMIN-SCOPE; it
@@ -60,7 +60,7 @@ promotion is performed. Any actual deployment provenance review/repair remains
 P2-SCOPE-DEPLOY. The aggregate preflight now identifies active scoped admins,
 active global staff and removed admins without emitting account/row details.
 
-All 18 mounted global-admin-only operations are marked in api-coverage.json and
+All 22 mounted global-admin-only operations are marked in api-coverage.json and
 covered by HTTP/database scope matrices. See [scope evidence](docs/ADMIN_SCOPE_VALIDATION.md).
 
 The new ADR-008 migration restricts event deletion and enforces null-safe role/
@@ -71,9 +71,11 @@ provenance review is still P2-SCOPE-DEPLOY; never infer lost scope.
 
 Before adding a role define operations, scope, assignment/removal authority,
 backend checks, navigation, translations and negative tests. A database row alone
-does not create a feature. Judge acceptance must eventually reconcile role/record/
-invitation atomically; offboarding retains scores. Contact email grants no ownership.
-Generic signup still exists; do not delete legitimate roleless applicants.
+does not create a feature. Judge acceptance now reconciles role/record/invitation
+atomically; event staff removal marks UserRole.removedAt and retains scores under
+[ADR-018](docs/adr/018-staff-acceptance-and-offboarding.md). Removed access cannot
+be restored by invitation acceptance. Contact email grants no ownership.
+Studio-intent signup grants no roles; legitimate roleless applicants remain.
 
 Use local seed fixtures only for development, not manual SQL as normal onboarding.
 Frontend hooks, route guards and gates now share stable-key/scope checks.

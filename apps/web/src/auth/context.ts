@@ -1,3 +1,4 @@
+import type { Locale } from "../i18n/locale";
 import type { UiError } from "../api/error";
 import { createContext } from "react";
 import type { LoginData, RegisterData } from "../api/auth";
@@ -12,6 +13,7 @@ export interface AuthContextValue {
   register: (data: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  savePreference: (locale: Locale | null) => Promise<void>;
   clearError: () => void;
 }
 

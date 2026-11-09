@@ -236,13 +236,13 @@
       "method": "PATCH",
       "path": "/:eventId/studio-registrations/:studioId",
       "tests": {
-        "success": "approval requires admin and organization approval",
+        "success": "event approval is independent of organization approval",
         "invalidInput": "registration rejects whitespace",
         "authentication": "registration mutations reject wrong event scope",
         "permission": "registration mutations reject wrong event scope",
         "crossParent": "registration mutations reject wrong event scope",
         "inactiveRecord": "registration lists require active ownership",
-        "conflict": "approval requires admin and organization approval",
+        "conflict": "event approval is independent of organization approval",
         "globalAdmin": "scoped admin cannot use any mounted global-admin operation"
       }
     },
@@ -1079,6 +1079,56 @@
         "crossParent": "scripts/check-admin-scope.cjs",
         "inactiveRecord": "scripts/check-invitation-lifecycle.cjs",
         "conflict": "scripts/check-invitation-lifecycle.cjs"
+      }
+    },
+    {
+      "router": "staff",
+      "exportName": "staffRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/staff/:assignmentId/remove",
+      "tests": {
+        "success": "scripts/check-staff-access.cjs",
+        "invalidInput": "scripts/check-staff-access.cjs",
+        "authentication": "scripts/check-staff-access.cjs",
+        "permission": "scripts/check-staff-access.cjs",
+        "crossParent": "scripts/check-staff-access.cjs",
+        "inactiveRecord": "scripts/check-staff-access.cjs",
+        "conflict": "scripts/check-staff-access.cjs",
+        "globalAdmin": "scripts/check-staff-access.cjs"
+      }
+    },
+    {
+      "router": "auth",
+      "exportName": "authRouter",
+      "mount": "/auth",
+      "method": "POST",
+      "path": "/preferences",
+      "tests": {
+        "success": "scripts/check-account-preferences.cjs",
+        "invalidInput": "scripts/check-account-preferences.cjs",
+        "authentication": "scripts/check-account-preferences.cjs",
+        "permission": "scripts/check-account-preferences.cjs",
+        "crossParent": "scripts/check-account-preferences.cjs",
+        "inactiveRecord": "scripts/check-account-preferences.cjs",
+        "conflict": "scripts/check-account-preferences.cjs"
+      }
+    },
+    {
+      "router": "staff",
+      "exportName": "staffRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/staff",
+      "tests": {
+        "success": "scripts/check-staff-access.cjs",
+        "invalidInput": "scripts/check-staff-access.cjs",
+        "authentication": "scripts/check-staff-access.cjs",
+        "permission": "scripts/check-staff-access.cjs",
+        "crossParent": "scripts/check-staff-access.cjs",
+        "inactiveRecord": "scripts/check-staff-access.cjs",
+        "conflict": "scripts/check-staff-access.cjs",
+        "globalAdmin": "scripts/check-staff-access.cjs"
       }
     }
   ]

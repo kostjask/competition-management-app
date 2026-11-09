@@ -40,7 +40,9 @@ rewriting history. Token-proven inspection may show terminal state and whether
 an intended account exists, but no inactive-account flag, digest or raw token.
 Existing acceptance still requires the intended eligible session and never
 changes credentials. New setup alone receives a session. Judge reconciliation
-and accepted-access offboarding remain separate tasks, never implied readiness.
+and accepted-access offboarding are separate tasks now implemented locally under
+[ADR-018](018-staff-acceptance-and-offboarding.md); invitation status alone is
+never implied readiness.
 
 UI link secrets are removed from visible URLs and retained only in page memory.
 Acceptance is deliberate, with new/existing/wrong-account states, sign-in in place

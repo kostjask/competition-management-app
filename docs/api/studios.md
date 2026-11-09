@@ -21,8 +21,10 @@ fields, are rejected.
 Non-admin writes need active membership plus `studio.manage` for the studio's
 stored event or globally. A different event's role is insufficient. Existing
 organization-profile edits do not require organization or event approval; entry
-operations retain their separate approval gates. Pending users without that
-permission can read, but cannot edit or archive. PATCH, representative PATCH,
+operations retain their separate approval gates. Pending active owners may PATCH profile details without a role during the
+application window (before a configured deadline); their correction increments
+the registration revision and returns organization approval to PENDING for review; this exception does not allow
+representative changes or archival. Other writes retain the permission rule. PATCH, representative PATCH,
 and DELETE are allowed to owners only in `PRE_REGISTRATION` or
 `REGISTRATION_OPEN`. The existing review override unlocks dancers/performances,
 not studio profiles. Admins bypass membership/permission/stage gates; active
@@ -54,13 +56,14 @@ changes account/login identity. Membership/role/activation fields are not accept
 `PATCH /api/v1/studios/:studioId/approval` accepts only
 `{ "status": "PENDING" | "APPROVED" | "REJECTED" }` and requires admin.
 It changes organization approval only; event registrations, review permission,
-and roles are untouched. All studio errors use the global envelope. Writes use
+are untouched; derived representative access is reconciled transactionally when
+both approvals qualify, or removed with retained history when none qualify. All studio errors use the global envelope. Writes use
 transactions and active-record predicates.
 
 List/detail/profile update/approval return the same explicit studio DTO: `id`,
 `eventId`, `name`, `approvalStatus`, nullable `country`, `city`, `directorName`,
 `directorPhone`, `invoiceDetails`, `logoUrl`, `registrations`, and `representatives`.
-Registration summaries include IDs, status (including existing `LOCKED`), review
+Registration summaries include IDs, status (including `LOCKED` and `CANCELLED`), revision, nullable decisionReason, review
 permission, and ISO UTC creation/update timestamps, limited to the studio's
 current event. Contradictory legacy registrations stay stored for the Phase 3
 audit. Representative summaries contain `id`, `studioId`, `userId`, `name`,

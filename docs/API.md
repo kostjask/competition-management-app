@@ -37,6 +37,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Studios | /studios; /:studioId; approval/representatives actions | [Studios](api/studios.md) |
 | Dancers | /studios/:studioId/dancers; /:dancerId | [Dancers](api/dancers.md) |
 | Performances | /events/:eventId/performances; /:performanceId | [Performances](api/performances.md) |
+| Event staff | GET /events/:eventId/staff; POST /events/:eventId/staff/:assignmentId/remove | [Staff access](api/invitations.md#accepted-staff-removal) |
 | Judges | /events/:eventId/judges; /:judgeId | [Judges](api/judges.md) |
 | Categories | /events/:eventId/categories; /:categoryId | [Categories](api/categories.md) |
 | Formats / age groups | /events/:eventId/formats or /age-groups; /:formatId or /:ageGroupId | [Setup](api/setup.md) |

@@ -64,11 +64,14 @@ Historical unclassified rows are preserved but cannot be accepted or rotated.
 Global/admin invitations are rejected; removed assignments need reviewed restoration.
 Acceptance enforces intended-account authentication and writes USER-attributed
 access/acceptance audit records in the same transaction. Failed access, consumption
-or audit writes roll back the entire acceptance. No Judge record is created automatically.
+or audit writes roll back the entire acceptance. Judge invitations now reconcile a
+missing Judge in the same event using the account name; existing Judge IDs and
+profile fields are preserved. Moderator acceptance creates no Judge. Removed
+assignments return 409 and cannot be restored through acceptance.
 The silent development email fake does not deliver or log links. Real email is
 queued encrypted inside the creation transaction, with bounded retries and provider
-idempotency under ADR-014. Unavailable delivery rolls back creation. Staging delivery,
-hosted rollout and atomic Judge reconciliation remain release gates. This contract slice
+idempotency under ADR-014. Unavailable delivery rolls back creation. Staging delivery
+and hosted rollout remain release gates. This contract slice
 does not authorize external onboarding.
 
 ## Pending invitation commands
@@ -91,5 +94,51 @@ wins when both terminal timestamps exist. Public previews do not expose inactive
 account flags, digests, tokens or creators. Acceptance still enforces identity,
 current eligibility and event scope independently. The web uses
 /auth/accept-invitation, signs existing users in place, offers explicit account
-switching, strips link secrets and requires explicit acceptance. Further Judge
-reconciliation and accepted-access removal remain P2-JUDGE-ACCEPT/P2-OFFBOARD.
+switching, strips link secrets and requires explicit acceptance. Accepted-access
+removal is a separate global-admin operation described below.
+
+## Accepted staff removal
+
+POST /events/:eventId/staff/:assignmentId/remove requires active global admin and
+strict empty JSON body {}. The stored event judge/moderator assignment determines
+the target. Missing/wrong-event IDs return 404; unsupported role scope returns 403;
+extra fields return 400. Success/repeated removal returns 204. The serializable
+transaction retains UserRole with removedAt and appends exactly one ACCESS_REMOVED
+audit; failure rolls back both. Concurrency conflicts return 409; retry is safe.
+Judge, Score, accepted invitations and unrelated role/event access remain intact.
+Current profile/permissions ignore removed assignments immediately. Pending revoke
+never substitutes for offboarding. Staff UI is now implemented locally under
+P4-STAFF. Restoration remains unavailable and requires separately reviewed scope.
+See [ADR-018](../adr/018-staff-acceptance-and-offboarding.md).
+
+## Event staff overview
+
+GET /events/:eventId/staff requires an eligible active global administrator.
+Missing events return 404; scoped admins, roleless users and event staff return
+403, guests/ineligible accounts 401. The backend ignores caller-supplied user or
+studio query selectors and always scopes every relation to the path event.
+The strict StaffOverview DTO contains event {id,name}, invitations (the existing
+secret-free Invitation DTO) and assignments. Only bound judge/moderator invitations
+with no studio are listed; historical unclassified/global/representative records
+are retained but excluded from this staff-specific view.
+
+Each assignment has id, user {id,name,email}, roleKey (judge/moderator), nullable
+UTC removedAt and status. Status precedence: REMOVED, ACCOUNT_UNAVAILABLE
+(inactive or unverified), JUDGE_MISSING (judge role with no same-event Judge),
+ACTIVE. Removed assignments and terminal invitation history remain visible.
+An accepted invitation without an assignment does not invent access. ACTIVE means
+eligible event access, never scoring readiness; scoring assignment is separate.
+A repeatable-read transaction keeps the event/invitation/assignment view consistent.
+No token digest, credential, session revision, account flags, score values or
+unrestricted relation is serialized. This read makes no repairs or grants.
+
+The event page is /admin/events/:eventId/staff, linked from event details and
+/admin/invitations. It fixes the event when creating judge/moderator invitations,
+uses the canonical existing create/resend/revoke/remove operations and shows
+accepted history separately from current access. Native modal confirmation names
+the event and person/role, defaults to Cancel, traps keyboard focus, blocks unsafe
+closure while pending and restores focus to the trigger or refresh control.
+Failed/uncertain actions preserve input and disable writes until explicit status
+refresh; no create/remove is automatically repeated. Acknowledged mutations remain
+acknowledged even if the subsequent overview read fails. Account session recovery
+preserves the mounted form and requires explicit overview reload before more writes.

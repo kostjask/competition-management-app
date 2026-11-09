@@ -43,7 +43,8 @@ limits. The development judge seed is event-scoped; historical assignments are
 retained without inferred repair. No new production role-provisioning API is added.
 Acceptance must reconcile role/access and consumption in one serializable
 transaction. Intended existing-account authentication is now enforced under
-P2-INVITE-IDENTITY; Judge reconciliation remains P2-JUDGE-ACCEPT.
+P2-INVITE-IDENTITY; Judge reconciliation and retained offboarding are now
+implemented under [ADR-018](018-staff-acceptance-and-offboarding.md).
 Moderator stage control uses stage.manage, separate from judge score.submit;
 score viewing needs its own later permission, never score submission as a proxy.
 
@@ -54,7 +55,12 @@ then et. Invitation locale is frozen at creation and never inferred from the
 inviter's UI. Verification/recovery use the recipient's stored account preference.
 UI precedence is explicit current-session choice, account preference, saved browser
 choice, browser language, et. Cross-device account preference editing and UI
-reconciliation belong to I18N-PREFERENCES before delivered onboarding UI release.
+reconciliation are implemented locally under I18N-PREFERENCES (2026-11-06).
+Profile save/clear is explicit; automatic account reconciliation never overwrites
+browser storage. An explicit choice lasts for the mounted app session. Other tabs
+read account changes on their next profile load, preserving mounted work. Link
+locale query parameters are ignored; existing session/account/browser fallback
+applies. Background mail keeps deterministic recipient resolution.
 
 Migrations add nullable references without classifying historical records. New
 drafts have restrictive account/event FKs, unique owner and nonnegative revision.

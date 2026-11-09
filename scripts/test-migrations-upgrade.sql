@@ -1,5 +1,11 @@
 DO $$
 BEGIN
+    IF EXISTS (SELECT FROM "Event" WHERE "timeZone" <> 'UTC' OR "registrationDeadline" IS NOT NULL) THEN
+        RAISE EXCEPTION 'Registration migration changed existing event time interpretation';
+    END IF;
+    IF EXISTS (SELECT FROM "StudioEventRegistration" WHERE revision <> 1 OR "decisionReason" IS NOT NULL OR "operationId" IS NOT NULL OR "requestDigest" IS NOT NULL OR "createdBy" IS NOT NULL) THEN
+        RAISE EXCEPTION 'Registration migration rewrote existing decisions or retry ownership';
+    END IF;
     IF NOT EXISTS (SELECT FROM "User" WHERE id = 'user' AND "sessionVersion" = 0) THEN
         RAISE EXCEPTION 'Existing user session revision default was not preserved';
     END IF;
