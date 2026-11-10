@@ -30,6 +30,16 @@ Baseline CI is P1-CI. Tests, localization/accessibility and privacy apply when e
 feature is built, not first in Phase 9. Existing Node/API/PostgreSQL tests remain;
 introduce new test libraries only for a concrete need.
 
+- [ ] P9-TEST-SPEED (user-requested, 2026-11-10): focused file/database commands,
+  baseline per-suite timings and pnpm-store CI caching are implemented; local
+  validation is recorded in [TESTING](../TESTING.md#test-runner-validation-2026-11-10).
+  The focused registration baseline passed in 23.99s and full baseline in 154.11s;
+  tooling tests, selected browser checks, workspace/Prisma/docs and actionlint passed.
+  Full acceptance gates remain required. Next: collect hosted cold/warm cache
+  timing, audit environment/generated-client inputs before hosted Turbo caching,
+  and isolate shared baseline fixtures before attempting suite parallelism.
+  Keep browser workers at two pending repeated comparative measurements.
+
 Development and external release are separate gates under the
 [checkpoint](../../DEVELOPMENT_PLAN.md#development-and-release-gates).
 P2-SCOPE-DEPLOY, real P2-EMAIL inbox delivery, hosted CI/ingress/rollout/restore

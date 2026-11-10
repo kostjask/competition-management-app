@@ -70,3 +70,6 @@ source-language editors, three-language fallback previews, linked readiness and
 confirmed M2 transitions. Dashboard prioritizes incomplete setup. Authenticated
 list/detail expose saved event facts and truthful application-window availability;
 apply/resume routes remain P5-APPLICATION and review queues remain P4-REVIEW.
+The minute-based editor retains exact stored seconds/milliseconds on unchanged
+time fields, including an existing DST fold offset. Changing the time or choosing
+another offset resolves a new instant at the editor's minute precision.

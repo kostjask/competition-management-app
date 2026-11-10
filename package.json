@@ -17,8 +17,12 @@
     "db:validate": "pnpm --filter api prisma:validate",
     "db:migrate": "pnpm --filter api prisma:migrate",
     "test:baseline": "node scripts/test-baseline.cjs",
+    "test:registration": "turbo build --filter=api... && node scripts/test-baseline.cjs --registration-only",
+    "test:event-setup": "turbo build --filter=api... && node scripts/test-baseline.cjs --event-setup-only",
+    "test:focus": "node scripts/test-focus.cjs",
+    "test:tooling": "node --test scripts/*.test.cjs",
     "test:browser": "playwright test",
-    "test": "pnpm test:i18n && turbo test",
+    "test": "pnpm test:tooling && pnpm test:i18n && turbo test",
     "test:watch": "turbo watch test",
     "test:i18n": "node scripts/check-i18n.cjs"
   },

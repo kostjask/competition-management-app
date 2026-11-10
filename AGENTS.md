@@ -70,6 +70,10 @@ existing source/Git edits must always be preserved. Operational details:
 - Add/update behavior tests where infrastructure exists; add a failing-before-fix
   regression when practical. Include denied/cross-event/cross-studio cases.
 - For prose/link-only edits run [documentation checks](docs/TESTING.md#documentation-only-changes).
+  During implementation, use the [fast development loop](docs/TESTING.md#fast-development-loop)
+  for affected suites while editing, then run the applicable full gates once the
+  change is stable. After fixes, rerun the failing suite first; repeat broader
+  checks when subsequent changes or unresolved concerns justify them.
   For implementation, start narrow, then run applicable tests, typecheck, lint, build and Prisma
   format/validate/generate; database changes also need migration/API integration
   checks. Commands and isolation: [TESTING](docs/TESTING.md).

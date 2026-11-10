@@ -44,7 +44,7 @@ export default function EventInfo() {
       ) : error ? (
         <section className="event-load-error">
           <h1>{t(error.reason === "recordNotFound" ? "Shell.notFound" : error.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable")}</h1>
-          <ErrorSummary error={error} title={t("Feedback.validation")} />
+          <ErrorSummary error={error} title={t("Events.loadError")} />
           <Button onClick={() => {
             setLoading(true);
             setError(null);

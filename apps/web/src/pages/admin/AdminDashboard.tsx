@@ -40,7 +40,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <ErrorSummary error={error} title={t("Feedback.validation")} />
+      <ErrorSummary error={error} title={t("Events.loadError")} />
       {loading ? (
         <LoadingState label={t("Access.loading")} />
       ) : error ? (

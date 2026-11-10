@@ -1,6 +1,7 @@
 /* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (deal 3/3) · redesign: full · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V4 · weakest: hierarchy; moved readiness and lifecycle into a persistent work rail. */
 /* Hallmark · answered F3 · operational headings follow a fixed app type scale; no display hero. */
+/* Hallmark · finish-review: subagent · 3 findings · 3 resolved; gate 49a actions shortened, retrieval heading corrected, standalone date punctuation removed. */
 @import "../../features/events/design/tokens.css";
 @import "../../features/events/design/base.css";
 .event-workbench { max-width: 80rem; margin: auto; padding: var(--space-page); overflow-wrap: anywhere; scrollbar-color: inherit; min-width: 0; }

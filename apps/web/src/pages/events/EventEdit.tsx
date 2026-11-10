@@ -33,6 +33,14 @@ function EventSetup({ id }: { id: string }) {
   const [dirty, setDirty] = useState(false); const [formVersion, setFormVersion] = useState(0);
   const [pending, setPending] = useState<UpdateEventInput | null>(null); const [server, setServer] = useState<Event | null>(null);
   const [target, setTarget] = useState<EventStage | null>(null); const trigger = useRef<HTMLElement | null>(null); const locked = useRef(false);
+  const stageHeading = useRef<HTMLHeadingElement>(null);
+  const restoreFocus = useRef<HTMLElement | null>(null);
+  // Restore only after React has closed the modal and committed the new stage.
+  // A frame scheduled by the request can run while the destination is still inert.
+  useLayoutEffect(() => {
+    if (target !== null || busy || !restoreFocus.current) return;
+    restoreFocus.current.focus(); restoreFocus.current = null;
+  }, [target, busy]);
   const load = useCallback(async (compare = false) => {
     if (locked.current) return; locked.current = true; setLoading(true); setError(null);
     try { const result = await getEvent(id); if (compare) setServer(result); else setData(result); }
@@ -45,14 +53,14 @@ function EventSetup({ id }: { id: string }) {
     locked.current = true; setBusy(true); setError(null); setNotice(null); setServer(null);
     try { const result = await updateEvent(id, body); setData(result); setPending(null); setDirty(false); setNotice(body.stage ? "stageSaved" : "saved"); }
     catch (err: unknown) { setError(toUiError(err)); if (!(err instanceof ApiError && err.statusCode === 400)) setPending(body); }
-    finally { locked.current = false; setBusy(false); setTarget(null); if (body.stage) requestAnimationFrame(() => document.getElementById("event-stage-heading")?.focus()); }
+    finally { locked.current = false; if (body.stage) restoreFocus.current = stageHeading.current; setBusy(false); setTarget(null); }
   };
   const disabled = busy || loading || !!pending || sessionExpired;
   const blockers = data ? eventSetupBlockers(data) : [];
   const blockerLabel = (field: typeof blockers[number]) => t(field === "venue" ? "Events.venue" : field === "city" ? "Common.city" : field === "country" ? "Common.country" : field === "description" ? "Setup.sourceLocale" : "Setup.organizerEmail");
   return <div className="event-workbench">
     <Link to="/admin">{t("Setup.dashboard")}</Link>
-    {!data && <>{!loading && <h1>{t("Setup.title")}</h1>}<ErrorSummary error={error} title={t("Feedback.validation")} />{!loading && <Button onClick={() => { void load(); }}>{t("Shell.retry")}</Button>}</>}
+    {!data && <>{!loading && <h1>{t("Setup.title")}</h1>}<ErrorSummary error={error} title={t("Events.loadError")} />{!loading && <Button onClick={() => { void load(); }}>{t("Shell.retry")}</Button>}</>}
     {loading && <LoadingState label={t("Access.loading")} />}
     {notice && <Alert tone="success">{t(notice === "saved" ? "Setup.saved" : "Setup.stageSaved")}</Alert>}
     {pending && <Alert tone="warning"><p>{t("Setup.reconcile")}</p><div className="ui-actions"><Button disabled={busy || loading || sessionExpired} onClick={() => { void run(pending); }}>{t("Setup.retrySame")}</Button><Button variant="secondary" disabled={busy || loading || sessionExpired} onClick={() => { void load(true); }}>{t("Setup.compare")}</Button></div></Alert>}
@@ -66,7 +74,7 @@ function EventSetup({ id }: { id: string }) {
         <ul className="setup-checklist">{blockers.map(field => <li key={field}><a href={"#" + eventFieldIds[field]} onClick={event => { event.preventDefault(); document.getElementById(eventFieldIds[field] ?? "")?.focus(); }}>{blockerLabel(field)}</a></li>)}</ul>
         <p className="ui-help">{t("Setup.optionalHelp")}</p>
       </section>
-      <section><h2 id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2><p>{t(stageKey[data.stage])}</p><p>{t("Setup.preHelp")}</p>
+      <section><h2 ref={stageHeading} id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2><p>{t(stageKey[data.stage])}</p><p>{t("Setup.preHelp")}</p>
         {dirty && <p>{t("Setup.saveFirst")}</p>}
         <div className="ui-actions">{eventStageTargets(data.stage).filter(stage => stage !== data.stage).map(stage => { const variant = stage === "CANCELLED" ? "danger" : "secondary"; return <Button key={stage} variant={variant}
           disabled={disabled || dirty || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
@@ -77,7 +85,7 @@ function EventSetup({ id }: { id: string }) {
         onSubmit={values => run({ ...values, expectedRevision: data.revision })} onCancel={() => navigate(`/events/${encodeURIComponent(id)}`)} />
       <EventImageEditor eventId={id} imageUrl={data.imageUrl} disabled={disabled} onSaved={imageUrl => setData(previous => previous ? { ...previous, imageUrl } : previous)} />
       <div className="ui-actions"><Link to={`/events/${encodeURIComponent(id)}`}>{t("Events.moreInfo")}</Link><Link to={`/admin/events/${encodeURIComponent(id)}/staff`}>{t("Staff.title")}</Link></div>
-      </div></div>{target && <StageConfirmation event={data} target={target} busy={busy} onCancel={() => { setTarget(null); requestAnimationFrame(() => trigger.current?.focus()); }} onConfirm={() => { void run({ stage: target, expectedStage: data.stage, expectedRevision: data.revision }); }} />}
+      </div></div>{target && <StageConfirmation event={data} target={target} busy={busy} onCancel={() => { restoreFocus.current = trigger.current; setTarget(null); }} onConfirm={() => { void run({ stage: target, expectedStage: data.stage, expectedRevision: data.revision }); }} />}
     </>}
   </div>;
 }

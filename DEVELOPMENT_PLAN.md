@@ -6,20 +6,27 @@ tasks to contracts/specifications. Read history only to investigate past evidenc
 
 ## Next action
 
-**Active implementation: M2 organizer setup/review, then applicant UI.**
-Next: **P4-CORE with P4-UI-CORE's setup scope**, then P4-REVIEW with its review UI
-scope, then P5-APPLICATION with P5-UI-APPLICATION. See the
+**Active implementation: M2 organizer review, then applicant UI.**
+Next: **P4-REVIEW with P4-UI-CORE's review scope**, then P5-APPLICATION with
+P5-UI-APPLICATION. P4-CORE and its setup UI are complete locally; see the
 [implementation order](#implementation-order) and [organizer roadmap](docs/roadmap/organizer.md).
-This documentation maintenance task advances no application or release task.
+Local technical completion does not close the external M2 release gate.
 
 ## Current state
+
+- **Test feedback setup (2026-11-10):** user-requested P9-TEST-SPEED adds focused
+  file/database commands, baseline timing and CI dependency-store caching while
+  retaining full validation gates. [Testing](docs/TESTING.md#fast-development-loop)
+  owns usage; [operations](docs/roadmap/operations.md) owns remaining measurement/
+  isolation work. The next feature task remains P4-REVIEW.
 
 - **UI design direction (2026-11-10):** the user rejects the entire current UI as
   a placeholder and requires a full Hallmark redesign.
   [Design direction](docs/DESIGN_SYSTEM.md#required-full-redesign) owns the brief;
   P9-UI-REDESIGN tracks delivery across existing workflow slices. Technical
   completion remains distinct from visual approval. The implementation queue
-  below is unchanged; this update implements no UI redesign.
+  now records the bounded Cobalt organizer/event implementation in
+  [DESIGN](DESIGN.md); the shared shell, other workflows and human approval remain open.
 - Phases 0–1 and the applicable Phase 2 local security/auth/scope/audit/onboarding
   foundations are technically delivered. Cookie-session recovery, translated
   auth/shell/profile, account language preferences and scoped staff administration
@@ -28,16 +35,22 @@ This documentation maintenance task advances no application or release task.
   are complete locally (2026-11-09): independent approvals, derived access,
   deadline/timezone, correction revisions, retained cancel/reapply and explicit
   content fallback. P3-UX-CONTRACTS and I18N-CONTENT stay open for later scope.
-  P4/P5 own setup/review/application UI, notification intent and authored-content
-  storage/editors. Entry/music, live/scoring and results workflows remain unfinished;
-  role dashboards are placeholders. No external milestone is complete.
+  P4-CORE and its S05/S01/S02 setup UI are complete locally (2026-11-10): event
+  details/contact/timezone/deadline/limits, authored-description storage/editors,
+  actionable readiness, confirmed M2 stages, revision/retry recovery and audit.
+  Final validation fixed exact-instant retention and modal focus, and checked
+  ET/EN/RU layout and recovery. P4-REVIEW/P5 still own review/application UI and
+  notification intent. Entry/music, live/scoring and results remain unfinished;
+  judge/moderator/representative dashboards are placeholders. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
   limits, deploy/rollback/restore and observability; delivered-scope human
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 30 migrations. The user's **2026-11-09 startup record**
+- Repository schema has 31 migrations, including P4-CORE's additive event setup
+  migration. [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records its local
+  application and current isolated fresh/upgrade/API/browser checks. The user's **2026-11-09 startup record**
   verified localhost:5432/dance_comp in repository Compose and applied 12 pending
   migrations (all 30 applied), without reset/reseed. It recorded API port 4000,
   authentication enabled, a process-only EMAIL_PROVIDER=fake override for legacy
@@ -47,9 +60,10 @@ This documentation maintenance task advances no application or release task.
 - Current development rows are disposable under the scoped
   [database policy](AGENTS.md#development-database-policy); verify the resolved
   target before reset/reseed or migration-history changes. Domain integrity/history
-  requirements still apply. No database operation was performed for this maintenance.
+  requirements still apply. This completion pass used isolated test databases/
+  schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [registration lifecycle, 2026-11-09](docs/REGISTRATION_LIFECYCLE_VALIDATION.md).
+Latest recorded runtime evidence: [organizer setup, 2026-11-10](docs/EVENT_SETUP_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -60,7 +74,7 @@ Documentation maintenance (2026-11-10): corrected source mismatches, clarified
 ownership/selective routing, archived repetitive checkpoint narratives and
 reconciled the documentation backlog. Scope/validation/remaining work:
 [documentation audit](docs/DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).
-Implementation priority and external release status are unchanged.
+That maintenance record did not advance implementation or external release status.
 
 ## Task map
 
@@ -116,14 +130,14 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | --- | --- | --- |
 | 1 - complete locally | P3-REGISTRATION | ADR-003 M2 policy, migration/API/DTO/client alignment and denial/concurrency/rollback checks pass, including the reapply slice. |
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
-| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; content storage/editors remain with P4. |
-| 4 - next | P4-CORE with P4-UI-CORE setup scope | Consume #1–3; expose organizer configuration, time/deadline/contact and actionable prerequisites through the UI. Do not implement a second lifecycle model or require scoring setup. |
-| 5 | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
+| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; P4-CORE also delivers event-description storage/editors. Later content remains open. |
+| 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Organizer configuration, time/deadline/contact, authored descriptions, readiness and confirmed M2 stages pass UI/API/database checks. No second lifecycle model or scoring prerequisite. |
+| 5 - next | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
 | 6 | P5-APPLICATION with P5-UI-APPLICATION | Consume #1–5 and P2 onboarding; complete role-independent apply/status, verified draft continuation, pending cancellation/reapply and uncertain-response recovery end to end. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
-ADR-019's M2 source-language/fallback policy is accepted before P4 adds authored
-content storage/editors. Later multilingual content retains its owning workflow.
+ADR-019's M2 source-language/fallback policy is implemented for event descriptions
+by P4-CORE under ADR-020. Later multilingual content retains its owning workflow.
 
 Attach authorization/audit, ET/EN/RU, component/browser/recovery checks and
 documentation to each task. Cross-cutting P3-UX-CONTRACTS and UI/QA checkboxes

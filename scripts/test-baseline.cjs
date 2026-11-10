@@ -10,7 +10,20 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 
 const root = path.resolve(__dirname, '..');
 const registrationOnly = process.argv.includes('--registration-only');
-if (process.argv.slice(2).some(arg => arg !== '--registration-only')) throw new Error('Unsupported baseline option');
+const eventSetupOnly = process.argv.includes('--event-setup-only');
+if (process.argv.slice(2).some(arg => !['--registration-only', '--event-setup-only'].includes(arg)) || (registrationOnly && eventSetupOnly)) throw new Error('Unsupported baseline option');
+const focused = registrationOnly || eventSetupOnly;
+const startedAt = performance.now();
+
+async function timed(name, run) {
+  const start = performance.now();
+  try { return await run(); }
+  finally { console.log(`TIME ${name}: ${((performance.now() - start) / 1000).toFixed(2)}s`); }
+}
+
+async function check(name, context) {
+  return timed(name, () => require(`./${name}.cjs`)(context));
+}
 const database = `dance_baseline_${randomUUID().replaceAll('-', '')}`;
 // Only the checked-in Compose fixture is used, never application .env credentials.
 const env = {
@@ -41,9 +54,11 @@ function pnpm(...args) {
   if (!args.every((arg) => /^[a-z:-]+$/.test(arg))) throw new Error('Invalid baseline task name');
   const command = process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : 'pnpm';
   const commandArgs = process.platform === 'win32' ? ['/d', '/s', '/c', `pnpm.cmd ${args.join(' ')}`] : args;
+  const start = performance.now();
   const result = spawnSync(command, commandArgs, {
     cwd: root, env, encoding: 'utf8', timeout: 60000,
   });
+  console.log(`TIME pnpm ${args.join(' ')}: ${((performance.now() - start) / 1000).toFixed(2)}s`);
   if (result.error || result.status !== 0) throw new Error(`pnpm ${args.join(' ')} failed; run this command against an isolated database for diagnostics.`);
 }
 
@@ -70,11 +85,11 @@ async function main() {
     psql(`CREATE DATABASE ${database};`);
     created = true;
     pnpm('db:migrate');
-    if (!registrationOnly) {
-    require('./check-scope-upgrade.cjs')(database);
-    require('./check-email-upgrade.cjs')(database);
-    require('./check-token-upgrade.cjs')(database);
-    require('./check-token-constraints.cjs')(database);
+    if (!focused) {
+      await check('check-scope-upgrade', database);
+      await check('check-email-upgrade', database);
+      await check('check-token-upgrade', database);
+      await check('check-token-constraints', database);
     }
     client = new PrismaClient({ adapter: new PrismaPg({ connectionString: env.DATABASE_URL }) });
     const migrations = await client.$queryRaw`SELECT count(*)::int AS count FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL`;
@@ -88,22 +103,24 @@ async function main() {
     await client.studio.updateMany({ data: { approvalStatus: 'APPROVED' } });
     await client.studioEventRegistration.updateMany({ data: { status: 'LOCKED', canEditDuringReview: true } });
     await client.ageGroup.updateMany({ where: { minAge: 6 }, data: { minAge: 7 } });
-    const first = await snapshot();
-    // Counts alone would miss credential/status resets or replacements.
-    pnpm('seed');
-    assert.ok(isDeepStrictEqual(await snapshot(), first), 'Rerunning seed must preserve complete seeded records');
-    assert.equal(first.ageGroup.length, 3);
-    assert.equal(first.danceFormat.length, 3);
-    assert.equal(first.studio.length, 1);
-    env.NODE_ENV = 'production';
-    try {
-      assert.throws(() => pnpm('seed'), /failed/, 'Demonstration seed must refuse production');
-    } finally {
-      env.NODE_ENV = 'test';
+    if (!focused) {
+      const first = await snapshot();
+      // Counts alone would miss credential/status resets or replacements.
+      pnpm('seed');
+      assert.ok(isDeepStrictEqual(await snapshot(), first), 'Rerunning seed must preserve complete seeded records');
+      assert.equal(first.ageGroup.length, 3);
+      assert.equal(first.danceFormat.length, 3);
+      assert.equal(first.studio.length, 1);
+      env.NODE_ENV = 'production';
+      try {
+        assert.throws(() => pnpm('seed'), /failed/, 'Demonstration seed must refuse production');
+      } finally {
+        env.NODE_ENV = 'test';
+      }
+      assert.ok(isDeepStrictEqual(await snapshot(), first), 'Refused production seed must leave data unchanged');
+      pnpm('db:migrate');
+      assert.ok(isDeepStrictEqual(await snapshot(), first), 'Redeploying migrations must preserve data');
     }
-    assert.ok(isDeepStrictEqual(await snapshot(), first), 'Refused production seed must leave data unchanged');
-    pnpm('db:migrate');
-    assert.ok(isDeepStrictEqual(await snapshot(), first), 'Redeploying migrations must preserve data');
 
     const listener = net.createServer();
     listener.listen(0, '127.0.0.1');
@@ -132,34 +149,36 @@ async function main() {
       method: 'POST', headers: { Authorization: `Bearer ${judgeToken}`, 'Content-Type': 'application/json' }, body: '{}',
     });
     assert.equal(forbidden.status, 403);
-    await require('./check-studio-registrations.cjs')({
-      client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
-    });
-    await require('./check-registration-lifecycle.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-event-setup.cjs')({ client, baseUrl, adminToken: token, login });
-    if (registrationOnly) { console.log('PASS: isolated registration baseline.'); return; }
-    await require('./check-dancers.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-performances.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-studios.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-setup.cjs')({ client, baseUrl, adminToken: token });
-    await require('./check-public-onboarding.cjs')({ client, baseUrl, jwtSecret: env.JWT_SECRET });
-    await require('./check-staff-access.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
-    await require('./check-account-preferences.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
-    await require('./check-invitation-lifecycle.cjs')({ client, baseUrl, adminToken: token });
-    await require('./check-invitations.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
-    await require('./check-admin-scope.cjs')({ client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
-    await require('./check-scope-integrity.cjs')({ client, baseUrl, adminToken: token });
-    await require('./check-categories.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-judges.cjs')({ client, baseUrl, adminToken: token, login });
-    await require('./check-events.cjs')({ client, baseUrl, adminToken: token });
-    await require('./check-auth.cjs')({ client, baseUrl, login });
-    await require('./check-browser-session.cjs')({ client, baseUrl, login });
-    await require('./check-auth-eligibility.cjs')({ client, baseUrl, login });
-    await require('./check-identity-tokens.cjs')({ client, baseUrl });
-    await require('./check-dev-auth.cjs')({ client, serverEnv: env });
-    require('./check-auth-recovery.cjs')({ serverEnv: env });
-    require('./check-foundation.cjs')({ serverEnv: env });
-    require('./check-image-boundaries.cjs')({ serverEnv: env });
+    if (!eventSetupOnly) {
+      await check('check-studio-registrations', {
+        client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
+      });
+      await check('check-registration-lifecycle', { client, baseUrl, adminToken: token, login });
+    }
+    await check('check-event-setup', { client, baseUrl, adminToken: token, login });
+    if (focused) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }
+    await check('check-dancers', { client, baseUrl, adminToken: token, login });
+    await check('check-performances', { client, baseUrl, adminToken: token, login });
+    await check('check-studios', { client, baseUrl, adminToken: token, login });
+    await check('check-setup', { client, baseUrl, adminToken: token });
+    await check('check-public-onboarding', { client, baseUrl, jwtSecret: env.JWT_SECRET });
+    await check('check-staff-access', { client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
+    await check('check-account-preferences', { client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
+    await check('check-invitation-lifecycle', { client, baseUrl, adminToken: token });
+    await check('check-invitations', { client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
+    await check('check-admin-scope', { client, baseUrl, adminToken: token, jwtSecret: env.JWT_SECRET });
+    await check('check-scope-integrity', { client, baseUrl, adminToken: token });
+    await check('check-categories', { client, baseUrl, adminToken: token, login });
+    await check('check-judges', { client, baseUrl, adminToken: token, login });
+    await check('check-events', { client, baseUrl, adminToken: token });
+    await check('check-auth', { client, baseUrl, login });
+    await check('check-browser-session', { client, baseUrl, login });
+    await check('check-auth-eligibility', { client, baseUrl, login });
+    await check('check-identity-tokens', { client, baseUrl });
+    await check('check-dev-auth', { client, serverEnv: env });
+    await check('check-auth-recovery', { serverEnv: env });
+    await check('check-foundation', { serverEnv: env });
+    await check('check-image-boundaries', { serverEnv: env });
     console.log('PASS: empty-database Prisma deployment, full-record seed idempotency, migration redeployment, built API health/login/profile and authorization smoke checks.');
   } finally {
     if (server && server.exitCode === null) {
@@ -172,6 +191,7 @@ async function main() {
       if (!/^dance_baseline_[a-f0-9]{32}$/.test(database)) throw new Error('Invalid test database cleanup target');
       psql(`DROP DATABASE ${database};`);
     }
+    console.log(`TIME baseline total: ${((performance.now() - startedAt) / 1000).toFixed(2)}s`);
   }
 }
 

@@ -59,6 +59,12 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await expect(cancel).toBeFocused(); await page.keyboard.press("Escape"); await expect(open).toBeFocused(); expect(state.writes).toHaveLength(1);
     await open.click(); await dialog.getByRole("button", { name: label("Setup.confirm", locale), exact: true }).click();
     await expect(page.getByText(label("Setup.stageSaved", locale), { exact: true })).toBeVisible(); expect(state.current.stage).toBe("REGISTRATION_OPEN");
+    // Action labels must fit the graphite rail in all delivered locales/widths.
+    const actionsFit = await page.locator(".setup-rail button").evaluateAll(buttons => buttons.every(button => {
+      const range = document.createRange(); range.selectNodeContents(button);
+      return range.getClientRects().length === 1;
+    }));
+    expect(actionsFit).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const contrast = await page.evaluate(() => {
       const canvas = document.createElement("canvas"); canvas.width = 1; canvas.height = 1;
@@ -151,6 +157,7 @@ test("S05 confirmed close and cancellation retain history and restore logical ke
   await expect(page.getByRole("button", { name: label("Setup.open"), exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true }).click(); await dialog.getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
   await expect(page.getByText(label("Setup.stageSaved"), { exact: true })).toBeVisible(); expect(state.current.stage).toBe("CANCELLED");
+  await expect(page.locator("#event-stage-heading")).toBeFocused();
   await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(0);
   await page.goto("/events/e"); await expect(page.getByText(label("Setup.windowClosed"), { exact: true })).toBeVisible();
 });
@@ -184,3 +191,68 @@ test("S05 event-bound direct links and guest recovery cannot display another set
   await page.route("**/api/v1/auth/profile", route => route.fulfill({ status: 401, json: error("authenticationRequired") }));
   await page.goto("/admin/events/e/setup"); await expect(page).toHaveURL(/\/auth\/login\?returnTo=%2Fadmin%2Fevents%2Fe%2Fsetup/);
 });
+
+test("S05 unrelated edits retain exact stored instants, including a repeated DST minute", async ({ page }) => {
+  const state = await install(page);
+  const dates = {
+    startsAt: "2026-10-25T01:30:42.123Z",
+    endsAt: "2026-10-25T03:00:17.456Z",
+    registrationDeadline: "2026-10-24T12:00:59.789Z",
+  };
+  state.current = { ...state.current, ...dates };
+  await page.goto("/admin/events/e/setup");
+  await expect(page.locator("#event-startsAt-offset")).toHaveValue("2026-10-25T01:30:00.000Z");
+  await page.locator("#event-city").fill("Unrelated change"); await save(page);
+  await expect(page.getByText(label("Setup.saved"), { exact: true })).toBeVisible();
+  expect(state.writes[0]).toMatchObject(dates);
+  await page.locator("#event-startsAt-offset").selectOption("2026-10-25T00:30:00.000Z"); await save(page);
+  await expect(page.getByText(label("Setup.saved"), { exact: true })).toBeVisible();
+  expect(state.writes[1]).toMatchObject({ ...dates, startsAt: "2026-10-25T00:30:00.000Z" });
+});
+
+for (const [locale, width] of [["en", 320], ["ru", 390], ["et", 768], ["en", 1440]] as const) {
+  test(`${locale} S01/S02/S05 organizer screens and discovery states at ${width}px`, async ({ page }, info) => {
+    const state = await install(page, locale, width);
+    for (const [path, file, title] of [
+      ["/admin", "dashboard", label("Setup.dashboard", locale)],
+      ["/events", "event-list", label("Events.listTitle", locale)],
+      ["/events/e", "event-detail", state.current.name],
+      ["/events/new", "event-create", label("Events.createTitle", locale)],
+    ] as const) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { name: title, exact: true })).toBeFocused();
+      if (path === "/events") {
+        const details = page.getByRole("link", { name: label("Events.moreInfo", locale) + ": " + state.current.name, exact: true });
+        await expect(details).toBeVisible();
+        expect(await details.evaluate(element => { const range = document.createRange(); range.selectNodeContents(element); return range.getClientRects().length; })).toBe(1);
+      }
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await page.screenshot({ path: info.outputPath(file + ".png"), fullPage: true });
+    }
+    state.empty = true;
+    await page.goto("/admin"); await expect(page.getByText(label("Setup.noEvents", locale), { exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath("dashboard-empty.png"), fullPage: true });
+    state.admin = false;
+    await page.goto("/events"); await expect(page.getByText(label("Events.noEventsYet", locale), { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: label("Events.createTitle", locale), exact: true })).toHaveCount(0);
+    state.empty = false; state.current.stage = "DATA_REVIEW";
+    await page.goto("/events/e"); await expect(page.getByText(label("Setup.windowClosed", locale), { exact: true })).toBeVisible();
+    await expect(page.getByRole("link", { name: label("Setup.title", locale), exact: true })).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath("event-closed.png"), fullPage: true });
+    state.readFail = true;
+    await page.goto("/events"); await expect(page.locator(".ui-error-summary")).toBeVisible();
+    await expect(page.locator(".ui-error-summary").getByRole("heading", { name: label("Events.loadError", locale), exact: true })).toBeVisible();
+    await expect(page.getByText(label("Events.noEventsYet", locale), { exact: true })).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath("event-list-error.png"), fullPage: true });
+    state.readFail = false;
+    await page.getByRole("button", { name: label("Shell.retry", locale), exact: true }).click();
+    await expect(page.getByRole("heading", { name: state.current.name, exact: true })).toBeVisible();
+    state.admin = true; state.readFail = true;
+    for (const path of ["/admin", "/events/e", "/admin/events/e/setup"]) {
+      await page.goto(path);
+      await expect(page.locator(".ui-error-summary").getByRole("heading", { name: label("Events.loadError", locale), exact: true })).toBeVisible();
+      await expect(page.locator(".ui-error-summary").getByRole("heading", { name: label("Feedback.validation", locale), exact: true })).toHaveCount(0);
+    }
+    expect(state.writes).toHaveLength(0); expect(state.creates).toHaveLength(0);
+  });
+}

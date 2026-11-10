@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { CreateEventBodySchema, UpdateEventBodySchema, eventSetupBlockers } from "@dance/schemas";
-import { offsetLabel, wallTime, wallTimeCandidates } from "../src/features/events/eventTime";
+import { minuteInstant, offsetLabel, resolveWallTime, wallTime, wallTimeCandidates } from "../src/features/events/eventTime";
 
 test("event wall times reject gaps and invalid dates and expose both offsets at folds", () => {
   assert.deepEqual(wallTimeCandidates("2026-03-29T03:30", "Europe/Tallinn"), []);
@@ -13,6 +13,17 @@ test("event wall times reject gaps and invalid dates and expose both offsets at 
   assert.deepEqual(wallTimeCandidates("2026-01-01T10:00", "Asia/Kathmandu"), ["2026-01-01T04:15:00.000Z"]);
   assert.equal(wallTime("2026-01-01T00:00:00.000Z", "Pacific/Honolulu"), "2025-12-31T14:00");
   assert.equal(wallTimeCandidates("2026-04-05T01:45", "Australia/Lord_Howe").length, 2);
+});
+test("minute inputs retain exact stored instants and offset choices until the user changes the time", () => {
+  const original = "2026-10-25T01:30:42.123Z";
+  assert.equal(minuteInstant(original), "2026-10-25T01:30:00.000Z");
+  assert.equal(resolveWallTime("2026-10-25T03:30", "Europe/Tallinn", original), original);
+  assert.equal(resolveWallTime("2026-10-25T03:30", "Europe/Tallinn", "2026-10-25T00:30:00.000Z"), "2026-10-25T00:30:00.000Z");
+  assert.equal(resolveWallTime("2026-10-25T03:30", "Europe/Tallinn", ""), null);
+  assert.equal(resolveWallTime("2026-03-29T03:30", "Europe/Tallinn", original), null);
+  assert.equal(resolveWallTime("2026-10-25T04:00", "Europe/Tallinn", original), "2026-10-25T02:00:00.000Z");
+  assert.equal(resolveWallTime("2026-10-24T12:00", "UTC", "2026-10-24T12:00:59.789Z"), "2026-10-24T12:00:59.789Z");
+  assert.equal(minuteInstant("invalid"), "");
 });
 test("setup contracts require revision, bound authored content and keep optional setup independent of scoring", () => {
   const ready = { venue: "Hall", country: "EE", city: "Tallinn", organizerEmail: "organizer@example.invalid", unclassifiedDescription: null };
