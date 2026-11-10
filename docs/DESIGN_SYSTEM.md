@@ -321,3 +321,10 @@ setup/create/dashboard and authenticated event list/detail, preserving the share
 shell while its own redesign slice remains open. It does not approve the old
 shell or close P9-UI-REDESIGN. [Setup evidence](EVENT_SETUP_VALIDATION.md) owns
 rendered/functional checks and remaining human review limits.
+
+P4-REVIEW/P5-APPLICATION extend this bounded baseline to S06–S08 with a ruled
+queue/detail and independent decision ledger, short form, profile/self-contact
+editors and retained recovery. [Review/application evidence](APPLICATION_REVIEW_VALIDATION.md)
+records the fresh-context finish review, rendered states and technical gate limits.
+The required full redesign, accessibility and ET/EN/RU constraints remain unchanged;
+human approval and the shared shell/other workflow redesigns remain open.

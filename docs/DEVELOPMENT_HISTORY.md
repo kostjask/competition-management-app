@@ -19,6 +19,7 @@ for present delivery. In particular, old “next task” statements are historic
 | 2026-11-05 auth / boundaries / shell | [Boundaries/roles](BOUNDARIES_ROLES_VALIDATION.md), [sessions/shell](SESSION_SHELL_VALIDATION.md), [onboarding/invitations](ONBOARDING_INVITATIONS_VALIDATION.md) |
 | 2026-11-06 staff / preferences | [Acceptance/offboarding/preferences](STAFF_PREFERENCES_VALIDATION.md), [staff UI](STAFF_UI_VALIDATION.md) |
 | 2026-11-09 M2 registration | [Registration lifecycle](REGISTRATION_LIFECYCLE_VALIDATION.md) |
+| 2026-11-10 organizer / applicant M2 | [Event setup](EVENT_SETUP_VALIDATION.md), [review/application](APPLICATION_REVIEW_VALIDATION.md) |
 | Documentation / planning | [Documentation audit and maintenance](DOCUMENTATION_AUDIT.md), [2026-11-06 plan revalidation](PLAN_REVALIDATION.md) |
 
 ## Archived progress through 2026-10-24

@@ -23,6 +23,7 @@ export function AuthNav() {
     {open && <div id="account-disclosure" className="absolute right-0 z-40 mt-2 grid w-64 max-w-[calc(100vw-2rem)] gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
       <p className="break-words">{user.name}</p>
       <Link to="/auth/profile" onClick={() => setOpen(false)}>{t("Shell.profile")}</Link>
+      <Link to="/applications" onClick={() => setOpen(false)}>{t("Application.title")}</Link>
       <Link to="/auth/onboarding" onClick={() => setOpen(false)}>{t("Flow.onboarding")}</Link>
       <ErrorFeedback error={error} />
       <Button variant="quiet" disabled={loading} onClick={() => {

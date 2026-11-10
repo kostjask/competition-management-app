@@ -122,14 +122,14 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | Screen ID | Route | Current implementation / target gate |
 | --- | --- | --- |
 | S01 | `/`, `/events` | Home is minimal; authenticated event index delivered in P4-CORE |
-| S02 | `/events/:id` | Event-zone facts, content fallback/contact/window state; setup/staff links; P5 apply/resume pending |
+| S02 | `/events/:id` | Event-zone facts, content fallback/contact/window state; setup/staff/review and application/status links |
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
 | S03 | `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/correct-email`, `/auth/onboarding` | Mounted recovery and owner draft pages; ADR-017 |
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
-| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | P4-CORE setup/checklist/lifecycle/editor delivered; review counts remain P4-REVIEW |
-| S06 | P `/admin/events/:id/applications` | P4-REVIEW |
-| S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
-| S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | Unmounted; P5-APPLICATION |
+| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | Setup/checklist/lifecycle/editor plus separate pending review counts/queue links delivered locally |
+| S06 | `/admin/events/:eventId/applications` | Independent queues/detail, reasons, confirmation, history and truthful notification states |
+| S07 | `/applications`; `/representative` | Role-independent application home delivered; representative entry console remains placeholder |
+| S08 | `/events/:id/register`, `/events/:id/studio?studio=:studioId`; P `/studios/:studioId` | Application/status/profile/contact delivered; standalone studio route remains proposed |
 | S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |
 | S10 | P `/events/:id/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | P5-ENTRIES |
 | S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |

@@ -278,13 +278,28 @@ async function registrationFixture(t) {
     updateMany: async (args) => { calls.push({ name: 'cancel', args }); return { count: 1 }; },
   };
   prisma.role = { findUnique: async () => ({ id: 'representative-role' }) };
-  prisma.studioRepresentative = { findFirst: async () => ({ id: 'eligible' }) };
+  prisma.studioRepresentative = { findFirst: async () => ({ id: 'eligible' }), findMany: async () => [] };
+  prisma.reviewNotice = { create: async () => ({ id: 'notice' }) };
   prisma.userRole.upsert = async (args) => { calls.push({ name: 'assign', args }); return { id: 'assignment', ...args.create }; };
   return context;
 }
 
 const registrationPath = '/api/v1/events/e/studio-registrations';
 const application = { name: ' Fixture ', representativeName: ' Applicant ', representativeEmail: 'applicant@example.invalid' };
+
+test('application review history requires exact active membership and event', async t => {
+  const { request, prisma } = await registrationFixture(t);
+  prisma.auditLog.findMany = async () => [{ action: 'REGISTRATION_CREATED', metadata: { revision: 1 }, createdAt: new Date('2026-01-01') }];
+  prisma.reviewNotice.findMany = async () => [];
+  assert.equal((await request(registrationPath + '/s/review', { user: 'applicant' })).status, 200);
+  const result = await request(registrationPath + '/s/review', { user: 'admin' });
+  assert.deepEqual(Object.keys(result.body.history[0]).sort(), ['action', 'createdAt', 'fromStatus', 'reason', 'revision', 'toStatus']);
+  assert.equal((await request('/api/v1/events/other/studio-registrations/s/review', { user: 'admin' })).status, 404);
+  prisma.studio.findFirst = async () => ({ representatives: [] });
+  assert.equal((await request(registrationPath + '/s/review', { user: 'applicant' })).status, 403);
+  prisma.studio.findFirst = async () => null;
+  assert.equal((await request(registrationPath + '/s/review', { user: 'admin' })).status, 404);
+});
 
 test('roleless applicants create a pending registration and their own membership in one nested write', async (t) => {
   const { request, calls } = await registrationFixture(t);
@@ -690,10 +705,12 @@ async function studioFixture(t) {
     return where.id === 's' ? studio : null;
   };
   prisma.studio.findMany = async (args) => { calls.push({ name: 'studio-list', args }); return [studio]; };
-  prisma.studioEventRegistration = { updateMany: async () => ({ count: 1 }) };
+  prisma.studioEventRegistration = { updateMany: async () => ({ count: 1 }), update: async () => ({ id: 'registration', studioId: 's', revision: 2 }) };
+  prisma.reviewNotice = { create: async () => ({ id: 'notice' }) };
   prisma.studio.update = async (args) => { calls.push({ name: 'studio-update', args }); return { ...studio, ...args.data }; };
   prisma.studio.updateMany = async (args) => { calls.push({ name: 'studio-archive', args }); return { count: 1 }; };
   prisma.studioRepresentative = {
+    findMany: async () => [],
     findFirst: async ({ where }) => where.id === rep.id && where.studioId === rep.studioId && rep.active ? rep : null,
     update: async (args) => { calls.push({ name: 'representative-update', args }); return { ...rep, ...args.data }; },
   };
@@ -760,7 +777,7 @@ test('studio PATCH trims text, preserves omitted values, permits explicit cleari
   assert.equal(updated.status, 200); assert.equal(updated.body.directorName, 'New director');
   assert.equal(updated.body.country, 'EE'); assert.equal(updated.body.city, null);
   assert.deepEqual(calls.find(({ name }) => name === 'studio-update').args.data,
-    { approvalStatus: 'PENDING', directorName: 'New director', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
+    { approvalStatus: 'PENDING', approvalReason: null, directorName: 'New director', city: null, invoiceDetails: { nested: { tax: 1 }, items: [null, true] } });
   for (const body of [{}, { name: ' ' }, { name: null }, { country: '' }, { eventId: 'foreign' },
     { approvalStatus: 'APPROVED' }, { representatives: [] }, { logoUrl: 'url' }, { deletedAt: null }, { invoiceDetails: [] }]) {
     const result = await patch(body); assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
@@ -795,7 +812,7 @@ test('studio representative and approval operations enforce active parents, self
   assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'Blocked' } })).status, 404);
   assert.equal((await request(`${studioPath}/representatives/foreign`, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);
   assert.equal((await request(`${studioPath}/approval`, { user: 'owner', method: 'PATCH', body: { status: 'APPROVED' } })).status, 403);
-  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED' } })).body.approvalStatus, 'APPROVED');
+  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', revision: 1 } })).body.approvalStatus, 'APPROVED');
   assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', eventId: 'other' } })).status, 400);
   prisma.studio.findFirst = async () => null;
   assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);

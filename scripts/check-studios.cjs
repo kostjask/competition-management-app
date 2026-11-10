@@ -27,6 +27,10 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
   const item = `/studios/${studio.id}`;
   const repItem = `${item}/representatives/${studio.representatives[0].id}`;
   const request = async (route, token = ownerToken, method = 'GET', body) => {
+    if (method === 'PATCH' && route.endsWith('/approval') && body.revision === undefined) {
+      const studio = await client.studio.findUniqueOrThrow({ where: { id: route.split('/')[2] } });
+      body = { ...body, revision: (await client.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId: studio.id, eventId: studio.eventId } } })).revision };
+    }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),

@@ -16,8 +16,10 @@ This clarification changes planning order, not deployment authorization.
 
 The M2 registration subset is technically complete locally (2026-11-09),
 including reapplication and ADR-003's application/time/approval matrix. M2 content
-policy/contracts are accepted in ADR-019. Next consume these contracts in P4 setup/
-review and P5 applicant UI; no scoring/live schema is needed for M2. Validation:
+policy/contracts are accepted in ADR-019. P4 setup/review and P5 applicant UI now
+consume these contracts; [review/application evidence](../APPLICATION_REVIEW_VALIDATION.md)
+records the local implementation and inherited test gate. Next model work after
+that gate is P3-PERFORMANCE-OWNER; no scoring/live schema is needed for M2. Validation:
 [registration evidence](../REGISTRATION_LIFECYCLE_VALIDATION.md).
 
 P3-UX-CONTRACTS is a cross-cutting contract checklist, not a separate all-domain

@@ -39,8 +39,17 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
-This baseline covers organizer dashboard, event create/setup and authenticated
-list/detail. The shared shell, auth, staff and unfinished workflows retain their
+This baseline covers organizer dashboard, event create/setup, authenticated
+list/detail and the P4-REVIEW/P5-APPLICATION S06–S08 slice: independent decision
+ledger, ruled queue/detail, short application form and profile/contact editors.
+URL filters retain the selected studio; phone layouts stack the same information.
+The shared shell, auth, staff and unfinished workflows retain their
 own bounded P9-UI-REDESIGN slices. Preserve their behavior during future adoption;
 do not interpret the old visuals as approved or restyle unrelated screens within
-P4-CORE. Human visual, fluent-language and assistive review remain open.
+P4-CORE or its P4/P5 review/application extension. Human visual, fluent-language
+and assistive review remain open.
+
+The review/application finish pass resolved misleading filtered-empty guidance
+and repeated approval copy. The two decisions, contact and actual mail state
+carry the hierarchy; no imagery or material slots are needed. Validation and
+current local completion limits: [review/application evidence](docs/APPLICATION_REVIEW_VALIDATION.md).

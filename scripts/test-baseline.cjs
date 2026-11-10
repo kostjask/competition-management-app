@@ -154,6 +154,7 @@ async function main() {
         client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
       });
       await check('check-registration-lifecycle', { client, baseUrl, adminToken: token, login });
+      await check('check-application-review', { client, baseUrl, adminToken: token, login });
     }
     await check('check-event-setup', { client, baseUrl, adminToken: token, login });
     if (focused) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }

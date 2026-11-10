@@ -61,6 +61,6 @@ export const eventSetupTranslations = {
   dashboard: { et: "Korraldaja töölaud", en: "Organizer workspace", ru: "Рабочее место организатора" },
   noEvents: { et: "Loo esimene sündmus ja täida selle seadistus.", en: "Create your first event and complete its setup.", ru: "Создайте первое событие и настройте его." },
   authenticated: { et: "Sündmusi näevad praegu ainult sisselogitud kasutajad.", en: "Event discovery currently requires sign-in.", ru: "Для просмотра событий сейчас требуется вход." },
-  windowOpen: { et: "Taotluste esitamise aken on avatud. Taotlusvorm lisandub järgmises arendusetapis.", en: "The application window is open. The application form is coming in the next development scope.", ru: "Период подачи заявок открыт. Форма заявки появится на следующем этапе разработки." },
+  windowOpen: { et: "Taotluste esitamise aken on avatud.", en: "The application window is open.", ru: "Период подачи заявок открыт." },
   windowClosed: { et: "Taotluste esitamise aken on suletud.", en: "The application window is closed.", ru: "Период подачи заявок закрыт." },
 };

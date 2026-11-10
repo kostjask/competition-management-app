@@ -24,7 +24,8 @@ organization-profile edits do not require organization or event approval; entry
 operations retain their separate approval gates. Pending active owners may PATCH profile details without a role during the
 application window (before a configured deadline); their correction increments
 the registration revision and returns organization approval to PENDING for review; this exception does not allow
-representative changes or archival. Other writes retain the permission rule. PATCH, representative PATCH,
+archival. The pending-owner exception also permits updating the owner's own active
+representative contact during the application window. Other writes retain the permission rule. PATCH, representative PATCH,
 and DELETE are allowed to owners only in `PRE_REGISTRATION` or
 `REGISTRATION_OPEN`. The existing review override unlocks dancers/performances,
 not studio profiles. Admins bypass membership/permission/stage gates; active
@@ -53,15 +54,29 @@ update another active member, but cannot substitute a member from a different
 studio or update an inactive member. Changing representative contact email never
 changes account/login identity. Membership/role/activation fields are not accepted.
 
-`PATCH /api/v1/studios/:studioId/approval` accepts only
-`{ "status": "PENDING" | "APPROVED" | "REJECTED" }` and requires admin.
-It changes organization approval only; event registrations, review permission,
-are untouched; derived representative access is reconciled transactionally when
+Profile and representative PATCH optionally accept expectedRevision; the delivered
+UI always supplies the current same-event application revision. A changed receipt
+conflicts unless it is the immediately preceding matching saved request. Profile
+and revisioned contact saves increment that receipt atomically, invalidating stale
+review decisions. Profile corrections also clear approvalReason when returning
+organization verification to PENDING. An otherwise empty revision-only PATCH is
+invalid. Existing callers omitting expectedRevision keep their previous write
+contract; the UI's revisioned commands support safe uncertain-response recovery.
+
+`PATCH /api/v1/studios/:studioId/approval` accepts required status
+(PENDING/APPROVED/REJECTED) and positive revision, plus optional reason from the
+event-decision semantic codes. Rejection defaults to CONTACT_ORGANIZER; other
+statuses clear it. It requires global admin and consumes/increments the studio's
+canonical same-event application revision. Matching immediate retries are no-ops;
+stale conflicting receipts return 409. It changes organization approval only;
+event decision and review allowance are untouched. Derived representative access is reconciled transactionally when
 both approvals qualify, or removed with retained history when none qualify. All studio errors use the global envelope. Writes use
-transactions and active-record predicates.
+transactions and active-record predicates. Audit and transactional notification
+intent commit with the decision; [registration review status](registrations.md#review-history-and-notification-status)
+describes delivery states and private-field boundaries.
 
 List/detail/profile update/approval return the same explicit studio DTO: `id`,
-`eventId`, `name`, `approvalStatus`, nullable `country`, `city`, `directorName`,
+`eventId`, `name`, `approvalStatus`, nullable `approvalReason`, `country`, `city`, `directorName`,
 `directorPhone`, `invoiceDetails`, `logoUrl`, `registrations`, and `representatives`.
 Registration summaries include IDs, status (including `LOCKED` and `CANCELLED`), revision, nullable decisionReason, review
 permission, and ISO UTC creation/update timestamps, limited to the studio's
@@ -78,5 +93,6 @@ The shared schemas validate backend serialization and frontend responses.
 argument; `updateStudioRepresentative` also requires the actual representative ID.
 `getMyStudios` calls the profile collection and `updateStudioApproval` calls the
 organization approval action. Existing event-specific `getStudios` continues to
-list application DTOs. No existing screen consumes these profile helpers.
+list application DTOs. S06/S07/S08 consume these helpers for organizer review and
+role-independent application/status/profile/contact recovery.
 Retired event-nested studio paths and singular `/representative` have no handlers.

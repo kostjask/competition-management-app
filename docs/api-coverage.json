@@ -217,6 +217,22 @@
       "router": "studio-registrations",
       "exportName": "studioRegistrationsRouter",
       "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studio-registrations/:studioId/review",
+      "tests": {
+        "success": "application review history requires exact active membership and event",
+        "invalidInput": "N/A: no writable body; exact event/studio validated",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests",
+        "permission": "application review history requires exact active membership and event",
+        "crossParent": "application review history requires exact active membership and event",
+        "inactiveRecord": "application review history requires exact active membership and event",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
       "method": "POST",
       "path": "/:eventId/studio-registrations",
       "tests": {

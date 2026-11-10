@@ -480,3 +480,25 @@ Other browser suites keep their prior scope. Run this file alone with
 suites concurrently because each owns port 4177 and its output directory.
 Use [setup evidence](EVENT_SETUP_VALIDATION.md) for final commands/results and
 human/provider/hosted limits. Screenshots/traces use synthetic data and stay ignored.
+
+## Organizer review and applicant applications (S06–S08/F03)
+
+Start with `pnpm test:focus api routes.test.cjs`,
+`pnpm test:focus web applications.test.tsx`, `pnpm test:registration`, and
+`pnpm test:focus browser applications.spec.ts`. The full baseline now also runs
+check-application-review.cjs, proving exact owner/event reads, private history/notice
+DTOs, revisioned organization/event conflict races, semantic reasons, profile JSON
+retry, notice/audit rollback and atomic verified draft completion. Its existing
+provider-configured foundation child invokes check-review-email.cjs for encrypted
+verified-account recipients, all locales, rollback, retry, acceptance and expiry.
+These checks use random disposable databases, never provider network calls.
+
+applications.spec.ts adds 21 Chromium cases: ET/EN/RU at four widths, two decision
+rows, filter/detail recovery, actual dashboard pending counts, confirmation focus,
+synthetic signup/verify/apply/review/return, strict guest event/studio continuation,
+uncertain create/save, cancellation/reapply, failed readback and session/language
+input preservation. Update old unsupported-route assertions when their owning
+feature becomes implemented; retain hostile return/scope tests. Full workspace,
+browser and migration gates remain required. [Review/application evidence](APPLICATION_REVIEW_VALIDATION.md)
+records results and the inherited API inventory-test recognition blocker separately
+from behavior checks and external human/provider/hosted release gates.

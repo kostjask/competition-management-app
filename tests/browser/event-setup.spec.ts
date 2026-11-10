@@ -34,6 +34,7 @@ async function install(page: Page, locale: Locale = "en", width = 390) {
     if (state.readFail) return route.abort();
     if (path === "/api/v1/events") return route.fulfill({ json: state.empty ? [] : [state.current] });
     if (path === "/api/v1/events/e") return route.fulfill({ json: state.current });
+    if (path.endsWith("/studio-registrations") && route.request().method() === "GET") return route.fulfill({ json: [] });
     return route.fulfill({ status: 404, json: error("recordNotFound") });
   });
   return state;

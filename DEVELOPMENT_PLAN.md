@@ -6,10 +6,13 @@ tasks to contracts/specifications. Read history only to investigate past evidenc
 
 ## Next action
 
-**Active implementation: M2 organizer review, then applicant UI.**
-Next: **P4-REVIEW with P4-UI-CORE's review scope**, then P5-APPLICATION with
-P5-UI-APPLICATION. P4-CORE and its setup UI are complete locally; see the
-[implementation order](#implementation-order) and [organizer roadmap](docs/roadmap/organizer.md).
+**Active validation: P4-REVIEW and P5-APPLICATION with their owning UI scopes.**
+Both implementations are delivered locally. Finish the required test gate:
+an inherited API coverage-inventory test does not recognize the baseline's
+timed suite helper; a test-only correction awaits authorization under AGENTS.
+[Review/application evidence](docs/APPLICATION_REVIEW_VALIDATION.md) records
+completed checks and remaining validation. Then take **P3-PERFORMANCE-OWNER**
+before dependent M3 entry work; no entry implementation is authorized by this note.
 Local technical completion does not close the external M2 release gate.
 
 ## Current state
@@ -18,7 +21,8 @@ Local technical completion does not close the external M2 release gate.
   file/database commands, baseline timing and CI dependency-store caching while
   retaining full validation gates. [Testing](docs/TESTING.md#fast-development-loop)
   owns usage; [operations](docs/roadmap/operations.md) owns remaining measurement/
-  isolation work. The next feature task remains P4-REVIEW.
+  isolation work. Review/application implementation is now delivered; the inherited
+  coverage-inventory recognition mismatch is a current local validation blocker.
 
 - **UI design direction (2026-11-10):** the user rejects the entire current UI as
   a placeholder and requires a full Hallmark redesign.
@@ -39,8 +43,12 @@ Local technical completion does not close the external M2 release gate.
   details/contact/timezone/deadline/limits, authored-description storage/editors,
   actionable readiness, confirmed M2 stages, revision/retry recovery and audit.
   Final validation fixed exact-instant retention and modal focus, and checked
-  ET/EN/RU layout and recovery. P4-REVIEW/P5 still own review/application UI and
-  notification intent. Entry/music, live/scoring and results remain unfinished;
+  ET/EN/RU layout and recovery. P4-REVIEW/P5-APPLICATION now implement independent
+  review queues/detail/reasons/history, transactional notification intent, and
+  role-independent apply/status/profile/contact/cancel/reapply with verified draft
+  completion and recovery. ADR-021/migration 32 and [evidence](docs/APPLICATION_REVIEW_VALIDATION.md)
+  describe validation and the inherited workspace-test blocker; completion flags
+  remain open until that required gate passes. Entry/music, live/scoring and results remain unfinished;
   judge/moderator/representative dashboards are placeholders. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
@@ -48,8 +56,10 @@ Local technical completion does not close the external M2 release gate.
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 31 migrations, including P4-CORE's additive event setup
-  migration. [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records its local
+- Repository schema has 32 migrations, including P4-CORE's additive event setup
+  and P4-REVIEW's additive reasons/notification relations. The application database
+  was not migrated in this slice; all new database checks use isolated fixtures.
+  [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records the prior migration's local
   application and current isolated fresh/upgrade/API/browser checks. The user's **2026-11-09 startup record**
   verified localhost:5432/dance_comp in repository Compose and applied 12 pending
   migrations (all 30 applied), without reset/reseed. It recorded API port 4000,
@@ -63,7 +73,7 @@ Local technical completion does not close the external M2 release gate.
   requirements still apply. This completion pass used isolated test databases/
   schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [organizer setup, 2026-11-10](docs/EVENT_SETUP_VALIDATION.md).
+Latest recorded runtime evidence: [review/application, 2026-11-10](docs/APPLICATION_REVIEW_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -132,8 +142,8 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
 | 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; P4-CORE also delivers event-description storage/editors. Later content remains open. |
 | 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Organizer configuration, time/deadline/contact, authored descriptions, readiness and confirmed M2 stages pass UI/API/database checks. No second lifecycle model or scoring prerequisite. |
-| 5 - next | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
-| 6 | P5-APPLICATION with P5-UI-APPLICATION | Consume #1–5 and P2 onboarding; complete role-independent apply/status, verified draft continuation, pending cancellation/reapply and uncertain-response recovery end to end. |
+| 5 - implemented; validation open | P4-REVIEW with P4-UI-CORE review scope | Independent queues/detail, reasons/corrections, next actor, revisioned decisions/audit and transactional notification intent delivered. Resolve inherited coverage-test recognition before completion. |
+| 6 - implemented; validation open | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply and uncertain-response/session recovery delivered. Same required workspace gate remains open. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
 ADR-019's M2 source-language/fallback policy is implemented for event descriptions

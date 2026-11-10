@@ -5,6 +5,7 @@ import {
   type Studio, type StudioRepresentative, type StudioRegistration,
   type CreateStudioRegistrationInput, type UpdateStudioRegistrationInput,
   type UpdateStudioInput, type UpdateRepresentativeInput, type UpdateStudioApprovalInput,
+  ApplicationReviewSchema, type ApplicationReview,
 } from "@dance/schemas";
 
 export type { Studio } from "@dance/schemas";
@@ -15,6 +16,8 @@ export type UpdateRegistrationRequest = UpdateStudioRegistrationInput;
 export type UpdateRepresentativeRequest = UpdateRepresentativeInput;
 const studioPath = (studioId: string) => `/studios/${encodeURIComponent(studioId)}`;
 const registrationsPath = (eventId: string) => `/events/${encodeURIComponent(eventId)}/studio-registrations`;
+export const getApplicationReview = async (eventId: string, studioId: string): Promise<ApplicationReview> =>
+  decode(ApplicationReviewSchema, await apiClient.get(`${registrationsPath(eventId)}/${encodeURIComponent(studioId)}/review`));
 
 /** Event applications; each result includes a studio summary. */
 export const getStudios = async (eventId: string): Promise<StudioRegistration[]> =>

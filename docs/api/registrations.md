@@ -89,10 +89,45 @@ revision, nullable decisionReason, canEditDuringReview, ISO UTC createdAt/update
 nextActor (ORGANIZER/APPLICANT/NONE) and studio { id, name, approvalStatus, country,
 city }. nextActor describes who should inspect next; it grants no permission or
 promise that a closed window permits a write. Private contacts/billing/storage,
-creator and retry digests are omitted. Studio profile registration summaries add
+creator and retry digests are omitted. The studio summary also includes nullable
+approvalReason using the same semantic reason vocabulary. Studio profile registration summaries add
 revision/reason but omit nextActor. All errors use the global localized envelope.
 
 Frontend helpers use shared inferred contracts; createStudio also accepts the
 reapplication body, updateStudioRegistration requires revision and cancellation
-requires revision as a separate argument. No application UI is claimed here;
-P4/P5 own review/status/correction/browser journeys and notification intent.
+requires revision as a separate argument. P4/P5 mount review/status/correction
+pages; [current evidence](../APPLICATION_REVIEW_VALIDATION.md) records their scope.
+
+## Verified draft continuation
+
+New application POST optionally supplies positive onboardingRevision. It requires
+the caller's current DRAFT with that exact revision and intendedEventId equal to
+this event (or null). It atomically marks the draft COMPLETED, incrementing its
+revision, with studio/membership/application/audit creation. Stale, cancelled,
+completed, another-event or admin draft commands conflict without changing rows.
+The private operationId binding reconciles an already-created application before
+checking the draft or application window. The browser retains the frozen command
+through uncertain responses and retries exactly that command.
+
+## Review history and notification status
+
+GET `/events/:eventId/studio-registrations/:studioId/review` requires the exact
+active event/studio and active owner or global admin. It returns:
+
+- history: action, createdAt, nullable revision/fromStatus/toStatus/reason;
+- notifications: id, revision, axis (ORGANIZATION/EVENT), createdAt and state.
+
+No audit actors, recipients, encrypted bodies, provider IDs or credentials appear.
+History is chronological and notification intents newest first. Organization and
+event decisions each increment the same application revision and atomically queue
+one notice per changed decision. Matching retries add neither notice nor audit.
+Notification persistence/audit/access failure rolls back the entire decision.
+
+States are SIMULATED (fake mode, no email), NO_RECIPIENT (no eligible verified
+membership account), QUEUED, RETRYING, ACCEPTED (provider acceptance, never an inbox
+receipt), or EXPIRED. The existing worker retries pending failures automatically
+with the frozen body/idempotency key; refreshing status does not repeat a decision.
+Expired/no-recipient notices remain visible with account/contact recovery. Active
+verified membership accounts receive neutral review-update mail in their saved
+locale (ET default), never the editable representative contact address. The email
+links to `/applications` to read both current approvals. [ADR-021](../adr/021-m2-review-notifications.md).

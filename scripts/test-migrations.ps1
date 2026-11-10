@@ -58,6 +58,8 @@ try {
     $expectedSql += "`n" + (($registrationSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $eventSetupSql = Get-Content -Raw apps/api/prisma/migrations/20261110000000_event_setup/migration.sql
     $expectedSql += "`n" + (($eventSetupSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $reviewSql = Get-Content -Raw apps/api/prisma/migrations/20261110010000_application_review/migration.sql
+    $expectedSql += "`n" + (($reviewSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {

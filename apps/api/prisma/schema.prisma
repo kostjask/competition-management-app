@@ -47,19 +47,35 @@ enum OnboardingStatus {
 }
 
 model EmailDelivery {
-  id            String    @id
-  ciphertext    String?
-  bindingDigest String?
-  purpose       String?
-  state         String    @default("PENDING")
-  attempts      Int       @default(0)
-  nextAttemptAt DateTime  @default(now())
-  expiresAt     DateTime
-  createdAt     DateTime  @default(now())
-  acceptedAt    DateTime?
-  providerId    String?
+  id             String        @id
+  ciphertext     String?
+  bindingDigest  String?
+  purpose        String?
+  state          String        @default("PENDING")
+  attempts       Int           @default(0)
+  nextAttemptAt  DateTime      @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime      @default(now())
+  acceptedAt     DateTime?
+  providerId     String?
+  reviewNoticeId String?
+  reviewNotice   ReviewNotice? @relation(fields: [reviewNoticeId], references: [id], onDelete: Restrict)
 
   @@index([state, nextAttemptAt])
+  @@index([reviewNoticeId])
+}
+
+model ReviewNotice {
+  id             String                  @id @default(uuid())
+  registrationId String
+  revision       Int
+  axis           String
+  mode           String
+  createdAt      DateTime                @default(now())
+  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+  deliveries     EmailDelivery[]
+
+  @@unique([registrationId, revision, axis])
 }
 
 model Event {
@@ -136,6 +152,7 @@ model Studio {
   eventId        String
   name           String
   approvalStatus StudioApprovalStatus @default(PENDING)
+  approvalReason String?
   country        String?
   city           String?
   directorName   String?
@@ -187,6 +204,8 @@ model StudioEventRegistration {
 
   studio Studio @relation(fields: [studioId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
+
+  reviewNotices ReviewNotice[]
 
   @@unique([studioId, eventId])
 }

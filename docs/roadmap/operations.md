@@ -39,6 +39,10 @@ introduce new test libraries only for a concrete need.
   timing, audit environment/generated-client inputs before hosted Turbo caching,
   and isolate shared baseline fixtures before attempting suite parallelism.
   Keep browser workers at two pending repeated comparative measurements.
+  Current inherited blocker: API coverage.test.cjs still recognizes direct
+  baseline require calls, while this runner uses the timed check helper.
+  [Review/application evidence](../APPLICATION_REVIEW_VALIDATION.md) records the
+  failure and requested authorization for the test-only correction.
 
 Development and external release are separate gates under the
 [checkpoint](../../DEVELOPMENT_PLAN.md#development-and-release-gates).
@@ -54,7 +58,7 @@ required operational prerequisite takes priority over the feature queue.
 
 - [ ] P9-UI-REGRESSION: start with P2-UI-FOUNDATION/SHELL and expand per feature: minimal interactive component/user-flow tests and reviewed screenshots for delivered S/F IDs at phone/portrait tablet/desktop in ET/EN/RU. Cover focus/error/empty/denied/locked/reconnect states with deterministic synthetic data; record manual screen-reader/keyboard/contrast/touch and fluent-language evidence. No blanket baseline acceptance. UI exit evidence is milestone-scoped and must exist before release, not after all phases finish. See [TESTING](../TESTING.md).
 
-- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. Delivered auth/shell/preferences and event staff now have 108 Chromium cases;
+- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. Delivered auth/shell/preferences and event staff have 108 Chromium cases; event setup adds 27, and review/applications add 21 (156 total; [latest evidence](../APPLICATION_REVIEW_VALIDATION.md));
   [staff UI evidence](../STAFF_UI_VALIDATION.md) records the S17/F06 extension.
   The completed P9-BROWSER-STAFF execution slice is tracked under P4-STAFF in
   [organizer tasks](organizer.md). Full domain journeys and human review remain open; gate M2 on signup/verify/apply/approve/status, M3 on entries/corrections, M4 on staff acceptance/removal, and M5 on judging/results. Expand CI alongside each journey.

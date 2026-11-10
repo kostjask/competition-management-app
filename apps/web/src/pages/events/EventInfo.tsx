@@ -58,6 +58,7 @@ export default function EventInfo() {
               <h1>{data.name}</h1>
               <p className="ui-help">{t("Setup.authenticated")}</p>
               <p className="event-status">{t(open ? "Setup.windowOpen" : "Setup.windowClosed")}</p>
+              <Link to={`/events/${encodeURIComponent(data.id)}/register`}>{t("Application.open")}</Link>
             </div>
             <RoleGate adminOnly>
               <div className="event-heading-actions">
@@ -65,6 +66,7 @@ export default function EventInfo() {
                   {t("Setup.title")}
                 </Link>
                 <Link to={`/admin/events/${encodeURIComponent(data.id)}/staff`}>{t("Staff.title")}</Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/applications`}>{t("Application.review")}</Link>
               </div>
             </RoleGate>
           </header>
