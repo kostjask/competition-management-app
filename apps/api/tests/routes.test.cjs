@@ -570,7 +570,7 @@ async function performanceFixture(t) {
   const f = await fixture(t);
   const { prisma, calls } = f;
   const dancer = { id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: new Date('2012-02-29'), photoUrl: null };
-  const performance = { id: 'p', eventId: 'e', studioId: 's', registrationId: 'registration', title: 'Title', durationSec: 60, orderOnStage: 1,
+  const performance = { revision: 1, id: 'p', eventId: 'e', studioId: 's', registrationId: 'registration', title: 'Title', durationSec: 60, orderOnStage: 1,
     categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [{ dancerId: 'd', dancer }] };
   const studio = { approvalStatus: 'APPROVED', event: { stage: 'REGISTRATION_OPEN' },
     representatives: [{ id: 'r' }], registrations: [{ id: 'registration', status: 'APPROVED', canEditDuringReview: false }] };
@@ -588,19 +588,44 @@ async function performanceFixture(t) {
     findFirst: async ({ where }) => where.id === 'p' && where.eventId === 'e' ? performance : null,
     findMany: async (args) => { calls.push({ name: 'performance-list', args }); return [performance]; },
     create: async (args) => { calls.push({ name: 'performance-create', args }); return performance; },
-    update: async (args) => { calls.push({ name: 'performance-update', args }); return { ...performance, ...args.data, participants: performance.participants }; },
+    update: async (args) => { calls.push({ name: 'performance-update', args }); return { ...performance, ...args.data, revision: performance.revision + (args.data.revision?.increment ?? 0), participants: performance.participants }; },
     updateMany: async (args) => { calls.push({ name: 'performance-delete', args }); return { count: 1 }; },
   };
+  prisma.$executeRaw = async () => 1;
+  prisma.performanceRevision = { findMany: async () => [] };
   prisma.$transaction = async (fn) => fn(prisma);
-  return { ...f, studio, performance };
+  return { ...f, studio, performance, rawRequest: f.request, request: (path, options = {}) => f.request(options.method === 'DELETE' ? path + '?expectedRevision=1' : path, { ...options, ...(options.method === 'PATCH' && { body: { expectedRevision: 1, ...options.body } }) }) };
 }
+
+test('performance history and revisions reject stale writes and enforce exact owner/event access', async (t) => {
+  const { request, rawRequest, calls, studio, prisma } = await performanceFixture(t);
+  const history = `${performancePath}/p/history`;
+  assert.equal((await request(history)).status, 401);
+  assert.equal((await request(history, { user: 'wrong-event' })).status, 403);
+  assert.equal((await request('/api/v1/events/other/performances/p/history', { user: 'admin' })).status, 404);
+  assert.deepEqual((await request(history, { user: 'owner' })).body, []);
+  studio.representatives = [];
+  assert.equal((await request(history, { user: 'owner' })).status, 403);
+  studio.representatives = [{ id: 'r' }];
+  assert.equal((await rawRequest(performancePath + '/p', { user: 'owner', method: 'PATCH', body: { title: 'Missing revision' } })).status, 400);
+  assert.equal((await rawRequest(performancePath + '/p', { user: 'owner', method: 'DELETE' })).status, 400);
+  assert.equal((await request(performancePath + '/p', { user: 'owner', method: 'PATCH', body: { title: 'Stale', expectedRevision: 2 } })).status, 409);
+  assert.equal((await rawRequest(performancePath + '/p?expectedRevision=2', { user: 'owner', method: 'DELETE' })).status, 409);
+  assert.equal(calls.some(({ name }) => name === 'performance-update'), false);
+  const { Prisma } = require('@prisma/client');
+  prisma.$executeRaw = async () => { throw new Prisma.PrismaClientKnownRequestError('Synthetic revision conflict', {
+    code: 'P2002', clientVersion: 'test', meta: { target: ['performanceId', 'revision'] },
+  }); };
+  const collision = await request(performancePath + '/p', { user: 'owner', method: 'PATCH', body: { title: 'Conflicting capture' } });
+  assert.equal(collision.status, 409); assert.equal(collision.body.reason, 'concurrentChange');
+});
 
 test('performance canonical CRUD uses explicit DTOs and transactional nested participant writes', async (t) => {
   const { request, calls } = await performanceFixture(t);
   assert.equal((await request(performancePath, { user: 'owner' })).status, 200);
   const created = await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput });
   assert.equal(created.status, 201);
-  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'studioId', 'title']);
+  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'revision', 'studioId', 'title']);
   assert.equal(created.body.participants[0].dancer.birthDate, '2012-02-29');
   const data = calls.find(({ name }) => name === 'performance-create').args.data;
   assert.equal(data.title, 'Title');
@@ -612,9 +637,9 @@ test('performance canonical CRUD uses explicit DTOs and transactional nested par
   assert.equal(patched.body.title, 'Changed');
   const update = calls.find(({ name }) => name === 'performance-update').args;
   assert.deepEqual(update.data.participants.deleteMany, {});
-  assert.deepEqual(update.where, { id: 'p', eventId: 'e', deletedAt: null });
+  assert.deepEqual(update.where, { id: 'p', eventId: 'e', deletedAt: null, revision: 1 });
   assert.equal((await request(`${performancePath}/p`, { user: 'owner', method: 'DELETE' })).status, 204);
-  const archive = calls.find(({ name }) => name === 'performance-delete').args;
+  const archive = calls.filter(({ name }) => name === 'performance-update').at(-1).args;
   assert.equal(archive.data.deletedBy, 'owner');
   assert.ok(archive.data.deletedAt instanceof Date);
 });

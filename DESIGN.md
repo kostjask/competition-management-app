@@ -48,6 +48,11 @@ register: ruled desktop rows, labelled phone rows, a persistent URL studio filte
 direct owning-application links and ledger-shaped loading placeholders. It adds
 no entry editor or fabricated submission/music status. The Hallmark finish review
 resolved the loading shape; no imagery or material slots are needed.
+P3-HISTORY/CALENDAR-DATES extend the register with a URL-selected, ruled revision
+ledger and the event-local age reference date. Captured studio/configuration names
+and explicit migration provenance carry the history; participant personal details
+stay out of the rendered register. Loading, empty, error/retry, session restoration
+and close-to-trigger focus use the same controls and ET/EN/RU system.
 The shared shell, auth, staff and unfinished workflows retain their
 own bounded P9-UI-REDESIGN slices. Preserve their behavior during future adoption;
 do not interpret the old visuals as approved or restyle unrelated screens within

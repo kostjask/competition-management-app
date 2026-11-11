@@ -3,7 +3,9 @@ import { IdSchema } from "./common.schema.js";
 
 export const DancerCollectionParamsSchema = z.object({ studioId: IdSchema });
 export const DancerItemParamsSchema = DancerCollectionParamsSchema.extend({ dancerId: IdSchema });
-export const DancerBirthDateSchema = z.iso.date();
+export const DancerBirthDateSchema = z.iso.date().refine(value => !value.startsWith("0000-"), {
+  message: "A calendar birth date must use a supported year", params: { reason: "calendarDate" },
+});
 
 export const DancerSchema = z.strictObject({
   id: IdSchema,

@@ -22,7 +22,7 @@ POST accepts:
 }
 ```
 
-PATCH accepts a nonempty subset of those fields except `studioId`. Unknown
+PATCH requires `expectedRevision` and a nonempty subset of those fields except `studioId`. Unknown
 fields, blank titles, empty/duplicate dancer lists, and nonpositive/noninteger
 or PostgreSQL-incompatible duration/order values are rejected. IDs in category,
 age group, and format must belong to the route event. Every selected dancer must
@@ -57,7 +57,7 @@ retained by PATCH; replace them with active same-studio participants. Performanc
 DELETE remains possible and preserves all participants and scores.
 
 Create returns 201; list/detail/update return 200; DELETE returns 204. The shared
-DTO contains `id`, `eventId`, `studioId`, `registrationId`, `title`, `durationSec`, `orderOnStage`, `categoryId`,
+DTO contains positive `revision`, `id`, `eventId`, `studioId`, `registrationId`, `title`, `durationSec`, `orderOnStage`, `categoryId`,
 `ageGroupId`, `formatId`, and `participants` (`dancerId` plus the shared dancer
 DTO). It omits nonexistent timestamps, private storage
 paths, and audit fields. Backend serialization and frontend responses are
@@ -80,5 +80,39 @@ bounds. Configuration and participant keys also apply to direct SQL. The owner-c
 trigger and restrictive foreign keys preserve identity, including archived rows.
 Migration fresh/upgrade/refusal and API/database/UI checks are in
 [ownership evidence](../PERFORMANCE_OWNERSHIP_VALIDATION.md).
-Restore, order reuse, optimistic editing revisions,
-performance snapshots, and cross-event studio reuse remain later work.
+Restore, order reuse and cross-event studio reuse remain later work.
+
+## Saved revisions and organizer history
+
+[ADR-023](../adr/023-entry-history-and-calendar-dates.md) and migration 35 add
+immutable, privacy-minimal saved snapshots. POST starts at revision 1; PATCH and
+DELETE increment once and atomically capture the resulting entry, participants,
+studio display name, category/age/format labels and bounds, event timezone and
+age reference date. Durable audit includes actor/IDs/revision only. Later source
+edits never rewrite a saved snapshot. DELETE supplies the expected revision in
+`?expectedRevision=3`; omitted, malformed or unknown query keys return 400.
+All actors obey revision checks. Stale/concurrent writes return 409; reload and
+compare before retrying. A lost response must be reconciled through GET/history,
+never blindly replayed. A failed capture or audit rolls back the entire write.
+
+`GET /events/:eventId/performances/:performanceId/history` uses the same current
+active-owner/permission/approval checks as item reads, including exact route event.
+It returns newest-first `{ revision, origin, capturedAt, actorKind, snapshot }`.
+`origin` is CREATE/EDIT/ARCHIVE or LEGACY_BASELINE; actorKind is USER or MIGRATION.
+No raw actor account data is exposed. Snapshot fields are policyVersion (1),
+eventId/studioId/registrationId, studioName, title, durationSec/orderOnStage,
+timeZone/ageDate, configuration (category id/name; age-group id/name/minAge/maxAge;
+format id/name/minParticipants/maxParticipants/maxDurationSeconds), participants
+(dancerId/firstName/lastName/birthDate), and archived. No contact, billing, image,
+storage path or score fields are retained. This is private authorized history.
+
+Migration baselines include archived performances, retain source identities and
+scores, and explicitly claim no original author/save time or prior submission.
+capturedAt is capture time. SQL prevents snapshot updates/deletes. Archival retains
+versions but standard endpoints, including history, still return 404 for archived
+entries. The organizer register selects history with `?performance=:performanceId`,
+retains the studio filter across reload/session recovery and displays only saved
+title, studio/configuration, participant count, reference date and provenance.
+Its date policy describes the shared rule; these complete-field CRUD endpoints do
+not newly enforce eligibility. No submission receipt/correction action is exposed;
+P3-ENTRIES consumes these foundations and owns their lifecycle/consumer tests.

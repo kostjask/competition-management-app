@@ -60,8 +60,8 @@ test("one stored error re-renders in all locales without technical prose or a ne
 test("shared validation preserves nested/root/date/range/duplicate rules and safe bounds", () => {
   const cases = [
     CreateEventBodySchema.safeParse({ name: " ", startsAt: "2026-11-02T00:00:00Z", endsAt: "2026-11-01T00:00:00Z" }),
-    UpdatePerformanceBodySchema.safeParse({ dancerIds: ["d", "d"] }),
-    UpdatePerformanceBodySchema.safeParse({}),
+    UpdatePerformanceBodySchema.safeParse({ expectedRevision: 1, dancerIds: ["d", "d"] }),
+    UpdatePerformanceBodySchema.safeParse({ expectedRevision: 1 }),
     CreateDancerBodySchema.safeParse({ firstName: "D", lastName: "D", birthDate: "2025-02-29" }),
     RegisterSchema.safeParse({ email: "private-invalid", name: "N", password: "short" }),
   ];

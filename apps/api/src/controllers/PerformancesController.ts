@@ -3,12 +3,16 @@ import { Prisma } from "@prisma/client";
 import {
   CreatePerformanceBodySchema, UpdatePerformanceBodySchema, PerformanceSchema,
   PerformanceCollectionParamsSchema, PerformanceItemParamsSchema, PerformanceQuerySchema,
+  PerformanceDeleteQuerySchema, PerformanceHistorySchema,
 } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
+import { appendAudit } from "../services/audit";
+import { serializeDto } from "../utils/dto";
 
 const performanceSelect = {
+  revision: true,
   id: true, eventId: true, studioId: true, registrationId: true, title: true, durationSec: true, orderOnStage: true,
   categoryId: true, ageGroupId: true, formatId: true,
   participants: { select: { dancerId: true, dancer: { select: {
@@ -28,6 +32,13 @@ function serialize(performance: PerformanceRecord) {
 }
 
 export class PerformancesController extends BaseController {
+  private async capture(req: Request, db: Prisma.TransactionClient, performance: PerformanceRecord, origin: "CREATE" | "EDIT" | "ARCHIVE") {
+    const actorId = this.getUserId(req);
+    await db.$executeRaw`SELECT capture_performance_revision(${performance.id}, ${origin}, ${actorId})`;
+    await appendAudit(db, { action: origin === "CREATE" ? "PERFORMANCE_CREATED" : origin === "EDIT" ? "PERFORMANCE_UPDATED" : "PERFORMANCE_ARCHIVED",
+      actor: { kind: "USER", userId: actorId }, targetType: "PERFORMANCE", targetId: performance.id,
+      eventId: performance.eventId, studioId: performance.studioId, metadata: { revision: performance.revision } });
+  }
   private requirePermission(req: Request, eventId: string) {
     if (!this.isAdmin(req) && !this.hasPermission(req, "performance.manage", eventId) &&
       !this.hasPermission(req, "performance.manage", null)) throw new ForbiddenError();
@@ -94,9 +105,13 @@ export class PerformancesController extends BaseController {
     try { return await this.prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }); }
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        const target = error.meta?.target;
+        if (Array.isArray(target) && target.includes("performanceId") && target.includes("revision")) {
+          throw new ConflictError("Performance history changed; reload before retrying", undefined, "concurrentChange");
+        }
         throw new ConflictError("Stage order is already reserved for this event", undefined, "orderReserved");
       }
-      if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2003"].includes(error.code)) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2003", "P2025"].includes(error.code)) {
         throw new ConflictError("Performance relationships changed; reload and retry", undefined, "relationshipConflict");
       }
       throw error;
@@ -125,34 +140,51 @@ export class PerformancesController extends BaseController {
     res.json(serialize(performance));
   }
 
+  async history(req: Request, res: Response): Promise<void> {
+    const { eventId, performanceId } = PerformanceItemParamsSchema.parse(req.params);
+    await this.findItem(req, this.prisma, eventId, performanceId);
+    const revisions = await this.prisma.performanceRevision.findMany({
+      where: { performanceId }, orderBy: { revision: "desc" },
+      select: { revision: true, origin: true, capturedAt: true, actorId: true, snapshot: true },
+    });
+    res.json(serializeDto(PerformanceHistorySchema, revisions.map(({ actorId, capturedAt, ...row }) => ({
+      ...row, capturedAt: capturedAt.toISOString(), actorKind: actorId === null ? "MIGRATION" : "USER",
+    }))));
+  }
+
   async create(req: Request, res: Response): Promise<void> {
     const { eventId } = PerformanceCollectionParamsSchema.parse(req.params);
     const { studioId, dancerIds, ...fields } = CreatePerformanceBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const registrationId = await this.requireAccess(req, db, eventId, studioId, true);
       await this.validateSelection(db, eventId, studioId, { ...fields, dancerIds });
-      return serialize(await db.performance.create({
+      const created = await db.performance.create({
         data: { eventId, studioId, registrationId, ...fields, participants: { createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) } } },
         select: performanceSelect,
-      }));
+      });
+      await this.capture(req, db, created, "CREATE");
+      return serialize(created);
     });
     res.status(201).json(result);
   }
 
   async update(req: Request, res: Response): Promise<void> {
     const { eventId, performanceId } = PerformanceItemParamsSchema.parse(req.params);
-    const { dancerIds, ...fields } = UpdatePerformanceBodySchema.parse(req.body);
+    this.requirePermission(req, eventId);
+    const { dancerIds, expectedRevision, ...fields } = UpdatePerformanceBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const { performance, studioId } = await this.findItem(req, db, eventId, performanceId, true);
+      if (performance.revision !== expectedRevision) throw new ConflictError("Performance changed; reload before retrying", undefined, "concurrentChange");
       await this.validateSelection(db, eventId, studioId, {
         categoryId: fields.categoryId ?? performance.categoryId,
         ageGroupId: fields.ageGroupId ?? performance.ageGroupId,
         formatId: fields.formatId ?? performance.formatId,
         dancerIds: dancerIds ?? performance.participants.map(({ dancerId }) => dancerId),
       });
-      return serialize(await db.performance.update({
-        where: { id: performanceId, eventId, deletedAt: null },
+      const updated = await db.performance.update({
+        where: { id: performanceId, eventId, deletedAt: null, revision: expectedRevision },
         data: {
+          revision: { increment: 1 },
           ...(fields.title !== undefined && { title: fields.title }),
           ...(fields.durationSec !== undefined && { durationSec: fields.durationSec }),
           ...(fields.orderOnStage !== undefined && { orderOnStage: fields.orderOnStage }),
@@ -163,20 +195,25 @@ export class PerformancesController extends BaseController {
             deleteMany: {}, createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) },
           } }),
         }, select: performanceSelect,
-      }));
+      });
+      await this.capture(req, db, updated, "EDIT");
+      return serialize(updated);
     });
     res.json(result);
   }
 
   async delete(req: Request, res: Response): Promise<void> {
     const { eventId, performanceId } = PerformanceItemParamsSchema.parse(req.params);
+    this.requirePermission(req, eventId);
+    const { expectedRevision } = PerformanceDeleteQuerySchema.parse(req.query);
     await this.transaction(async (db) => {
-      await this.findItem(req, db, eventId, performanceId, true);
-      const result = await db.performance.updateMany({
-        where: { id: performanceId, eventId, deletedAt: null },
-        data: { deletedAt: new Date(), deletedBy: this.getUserId(req) },
+      const { performance } = await this.findItem(req, db, eventId, performanceId, true);
+      if (performance.revision !== expectedRevision) throw new ConflictError("Performance changed; reload before retrying", undefined, "concurrentChange");
+      const archived = await db.performance.update({
+        where: { id: performanceId, eventId, deletedAt: null, revision: expectedRevision },
+        data: { deletedAt: new Date(), deletedBy: this.getUserId(req), revision: { increment: 1 } }, select: performanceSelect,
       });
-      if (result.count !== 1) throw new NotFoundError("Performance", performanceId);
+      await this.capture(req, db, archived, "ARCHIVE");
     });
     res.status(204).send();
   }

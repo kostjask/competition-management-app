@@ -60,6 +60,14 @@ privacy-minimal snapshots decided by their owning tasks. Active accounts and
 legitimate roleless applicants retain access and recoverable work. Never delete
 or deactivate roleless/unverified users merely because they lack an approved role.
 
+[ADR-023](adr/023-entry-history-and-calendar-dates.md) limits saved performance
+snapshots to entry/owner display identity, participant names/calendar birth dates
+and the rules needed to explain eligibility. They exclude contacts, billing,
+photos, storage paths and scores. History access follows current event/owner
+authorization; removal of access does not erase historical evidence. No automatic
+retention or erasure period is introduced; organizational review remains required
+before real data use. Legacy baselines never claim unknown original authors/times.
+
 Revoking a pending invitation, removing accepted access, archiving a studio/entry,
 disabling an account and erasing personal data are separate operations. Retain
 judge/score and approval history during access removal. Soft deletion is not

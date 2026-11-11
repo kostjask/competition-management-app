@@ -45,6 +45,7 @@ pnpm test:focus api routes.test.cjs
 pnpm test:focus browser event-setup.spec.ts
 pnpm test:event-setup
 pnpm test:registration
+pnpm test:entry-foundations
 ```
 
 Use a basename from the selected test directory; unknown files, path traversal
@@ -56,6 +57,10 @@ but omit seed rerun/production-refusal/redeployment and unrelated upgrade checks
 Those assertions remain mandatory in the full baseline. Registration mode also
 runs event setup; event-setup mode runs only that workflow after common smoke checks.
 Both modes retain the full suite's initial fixture state and finally cleanup.
+The entry-foundations mode runs dancer/performance HTTP/PostgreSQL checks after
+the same migration/seed/authentication smoke setup, with identical random-database
+ownership and cleanup. It skips unrelated upgrade/registration checks; the full
+baseline remains mandatory. Use it first after a dancer/history failure.
 
 Once the change is stable, run the applicable workspace checks and full browser/
 database/migration gates required by the task before handoff. Focused success is
@@ -493,6 +498,29 @@ scope/stage denials, concurrency and rollback. The migration suite tests whole-D
 refusal and full fresh/upgrade parity. [Ownership evidence](PERFORMANCE_OWNERSHIP_VALIDATION.md)
 records commands/results and external release limits. The organizer register is
 read-only; future entry editing/configuration retains its M3 prerequisites.
+
+## Saved entry history and calendar foundations
+
+For P3-HISTORY/CALENDAR-DATES, start with `pnpm test:entry-foundations`,
+`pnpm test:focus api routes.test.cjs`, `pnpm test:focus web history-calendar.test.tsx`
+and `pnpm test:focus browser performances.spec.ts`. Existing dancer checks now
+assert native DATE/Prisma/HTTP round trips in three database-session zones;
+performance checks cover immutable snapshots across roster/profile/configuration/
+event edits, exact owner/event denials, stale/concurrent saves, audit rollback,
+privacy field allowlists and retained archive versions. The migration suite
+proves atomic non-midnight refusal, leap-day/date preservation and baseline
+snapshots for active/archived entries without inventing original authors/times.
+Shared calendar tests cover completed years, leap birthdays, midnight boundaries,
+DST transitions and unsupported birth years. Entry submission/correction consumer
+tests remain with P3-ENTRIES; there is no submission endpoint in this slice.
+
+The full Chromium suite now has 177 cases. All 18 register cases include the
+history extension: ET/EN/RU at 320/390/768/1440/1920px, keyboard/close focus,
+URL/reload/session restoration and loading/empty/error/retry. Synthetic captures
+remain ignored. Hallmark's static sweep and fresh-context finish review accompany
+these authenticated renders; missing optional puppeteer-core prevents the skill's
+own render tier. [History/calendar evidence](ENTRY_HISTORY_CALENDAR_VALIDATION.md)
+records completed commands and remaining human/provider/hosted release gates.
 
 ## Organizer review and applicant applications (S06–S08/F03)
 

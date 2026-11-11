@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import type { Event, Performance, StudioRegistration } from "@dance/schemas";
+import { eventAgeDate, type Event, type Performance, type StudioRegistration } from "@dance/schemas";
 import { getEvent } from "../../api/events";
 import { getPerformances } from "../../api/performances";
 import { getStudios } from "../../api/studios";
@@ -8,6 +8,8 @@ import { toUiError, type UiError } from "../../api/error";
 import { Button, EmptyState, ErrorSummary, Field } from "../../components/ui/Foundation";
 import { useTranslation } from "../../i18n/useTranslation";
 import "./performance-register.css";
+import PerformanceHistory from "./PerformanceHistory";
+const historyRegionId = "performance-history";
 
 function Register({ eventId, studioId, clear }: { eventId: string; studioId: string; clear: () => void }) {
   const { t, locale } = useTranslation();
@@ -21,7 +23,8 @@ function Register({ eventId, studioId, clear }: { eventId: string; studioId: str
       .catch((err: unknown) => { if (active) setError({ eventId, studioId, error: toUiError(err) }); });
     return () => { active = false; };
   }, [eventId, studioId, attempt]);
-  const [, setParams] = useSearchParams();
+  const [params, setParams] = useSearchParams();
+  const selected = params.get("performance") ?? "";
   const value = data?.event.id === eventId && data.studioId === studioId ? data : null;
   const issue = error?.eventId === eventId && error.studioId === studioId ? error.error : null;
   const studios = data?.event.id === eventId ? data.studios : [];
@@ -30,9 +33,10 @@ function Register({ eventId, studioId, clear }: { eventId: string; studioId: str
       <Link to={`/events/${encodeURIComponent(eventId)}`}>{t("Staff.eventDetails")}</Link>
     </header>
     <p>{t("Performance.help")}</p>
+    {value && <p className="performance-date-policy">{t("Performance.agePolicy")} <time dateTime={eventAgeDate(value.event.startsAt, value.event.timeZone)}>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: value.event.timeZone }).format(new Date(value.event.startsAt))}</time> ({value.event.timeZone}). {t("Performance.leapPolicy")}</p>}
     <div className="performance-filter">
       <Field id="performance-studio" label={t("Performance.filter")}>{attrs => <select {...attrs} className="ui-input" value={studioId}
-        onChange={event => setParams(params => { const next = new URLSearchParams(params); if (event.target.value) next.set("studio", event.target.value); else next.delete("studio"); return next; })}>
+        onChange={event => setParams(params => { const next = new URLSearchParams(params); next.delete("performance"); if (event.target.value) next.set("studio", event.target.value); else next.delete("studio"); return next; })}>
         <option value="">{t("Performance.all")}</option>
         {studioId && !studios.some(row => row.studioId === studioId) && <option value={studioId}>{t("Performance.unavailable")}</option>}
         {studios.map(row => <option key={row.id} value={row.studioId}>{row.studio.name}</option>)}
@@ -48,13 +52,17 @@ function Register({ eventId, studioId, clear }: { eventId: string; studioId: str
             <caption className="sr-only">{t("Performance.title")}</caption>
             <thead><tr><th scope="col">{t("Performance.performance")}</th><th scope="col">{t("Performance.owner")}</th><th scope="col">{t("Performance.participants")}</th></tr></thead>
             <tbody>{value.rows.map(row => <tr key={row.id}>
-              <th scope="row">{row.title}</th>
+              <th scope="row">{row.title}<span className="performance-row-action"><Button id={`history-${row.id}`} variant="quiet" aria-expanded={selected === row.id} aria-controls={selected === row.id ? historyRegionId : undefined}
+                onClick={() => setParams(params => { const next = new URLSearchParams(params); next.set("performance", row.id); return next; })}>{t("Performance.history")} {new Intl.NumberFormat(locale).format(row.revision)}</Button></span></th>
               <td data-label={t("Performance.owner")}><Link to={`/admin/events/${encodeURIComponent(eventId)}/applications?studio=${encodeURIComponent(row.studioId)}`}>
                 {value.studios.find(studio => studio.id === row.registrationId && studio.studioId === row.studioId)?.studio.name ?? t("Performance.unavailable")}
               </Link></td>
               <td data-label={t("Performance.participants")}>{new Intl.NumberFormat(locale).format(row.participants.length)}</td>
             </tr>)}</tbody>
           </table>}
+    {selected && value && !issue && <PerformanceHistory key={`${eventId}:${studioId}:${selected}`} eventId={eventId} performanceId={selected}
+      close={() => { setParams(params => { const next = new URLSearchParams(params); next.delete("performance"); return next; });
+        document.getElementById(`history-${selected}`)?.focus(); }} />}
   </>;
 }
 

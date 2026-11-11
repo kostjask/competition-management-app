@@ -62,6 +62,10 @@ try {
     $expectedSql += "`n" + (($reviewSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $ownershipSql = Get-Content -Raw apps/api/prisma/migrations/20261111000000_performance_ownership/migration.sql
     $expectedSql += "`n" + (($ownershipSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $historySql = Get-Content -Raw apps/api/prisma/migrations/20261111020000_performance_history/migration.sql
+    $calendarSql = Get-Content -Raw apps/api/prisma/migrations/20261111010000_calendar_birth_dates/migration.sql
+    $expectedSql += "`n" + (($calendarSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $expectedSql += "`n" + (($historySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -99,6 +103,28 @@ UPDATE "Event" SET description = E'  Retained organizer prose\nSecond line  ' WH
             $migrationSql = Get-Content -Raw (Join-Path $migration.FullName 'migration.sql')
             # Each migration gets one transaction even when it declares its own.
             $migrationSql = $migrationSql -replace '(?m)^(BEGIN|COMMIT);\r?$', ''
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261111010000_calendar_birth_dates') {
+                $sql += @"
+DO `$probe`$ BEGIN
+  BEGIN
+    UPDATE "Dancer" SET "birthDate" = '2012-02-29 23:30:00' WHERE id = 'dancer';
+    EXECUTE `$migration`$$migrationSql`$migration`$;
+    RAISE EXCEPTION 'Calendar migration accepted ambiguous legacy value';
+  EXCEPTION WHEN SQLSTATE 'P0001' THEN
+    IF SQLERRM <> 'Birth-date migration requires reviewed repair of unsupported or non-midnight legacy values' THEN RAISE; END IF;
+  END;
+  IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'Dancer' AND column_name = 'birthDate' AND data_type = 'timestamp without time zone') THEN RAISE EXCEPTION 'Failed calendar migration retained DDL'; END IF;
+  IF NOT EXISTS (SELECT FROM "Dancer" WHERE id = 'dancer' AND "birthDate" = '2010-01-01') THEN RAISE EXCEPTION 'Failed calendar migration changed data'; END IF;
+  UPDATE "Dancer" SET "birthDate" = '2012-02-29' WHERE id = 'dancer';
+  SET TIME ZONE 'Pacific/Kiritimati';
+END `$probe`$;
+"@
+            }
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261111020000_performance_history') {
+                $sql += @'
+INSERT INTO "Performance" (id, "eventId", "studioId", "registrationId", "categoryId", "ageGroupId", "formatId", title, "durationSec", "orderOnStage", "deletedAt", "deletedBy") VALUES ('archived-performance', 'event', 'studio', 'registration', 'category', 'age', 'format', 'Retained archive', 60, 2, '2026-01-02', 'user');
+'@
+            }
             if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261111000000_performance_ownership') {
                 $sql += @'
 INSERT INTO "Judge" (id, "userId", "eventId", name) VALUES ('ownership-judge', 'user', 'event', 'Fixture');
@@ -144,6 +170,12 @@ END $$;
 '@
         if ($testSchema -eq $upgradeSchema) {
             $sql += @'
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT FROM "Dancer" WHERE id = 'dancer' AND "birthDate" = DATE '2012-02-29') THEN RAISE EXCEPTION 'Calendar migration lost leap day'; END IF;
+  IF NOT EXISTS (SELECT FROM "PerformanceRevision" WHERE "performanceId" = 'performance' AND revision = 1 AND origin = 'LEGACY_BASELINE' AND "actorId" IS NULL AND snapshot->>'title' = 'Fixture' AND snapshot->>'studioName' = 'Fixture studio' AND snapshot->'participants'->0->>'birthDate' = '2012-02-29') THEN RAISE EXCEPTION 'History baseline lost retained fields or invented provenance'; END IF;
+  IF NOT EXISTS (SELECT FROM "PerformanceRevision" WHERE "performanceId" = 'archived-performance' AND revision = 1 AND origin = 'LEGACY_BASELINE' AND snapshot->>'archived' = 'true' AND snapshot->>'title' = 'Retained archive') THEN RAISE EXCEPTION 'History baseline lost archive'; END IF;
+  IF EXISTS (SELECT FROM "PerformanceRevision" WHERE "capturedAt" NOT BETWEEN (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') - INTERVAL '1 minute' AND (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') + INTERVAL '1 minute') THEN RAISE EXCEPTION 'History capture time depends on database session timezone'; END IF;
+END $$;
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM "Event" WHERE id = 'event' AND description = E'  Retained organizer prose\nSecond line  ' AND "descriptionSourceLocale" IS NULL AND "descriptionTranslations" = '{}'::jsonb AND revision = 1 AND "organizerEmail" IS NULL AND "organizerPhone" IS NULL) THEN RAISE EXCEPTION 'Event setup migration changed retained prose or inferred setup'; END IF;
 END $$;

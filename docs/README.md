@@ -73,6 +73,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [020](adr/020-organizer-event-setup.md) | Organizer readiness, retained content and revision/retry-safe event setup |
 | [021](adr/021-m2-review-notifications.md) | Revisioned independent review, truthful notification intent and verified draft completion |
 | [022](adr/022-performance-ownership-and-constraints.md) | Immutable performance registration ownership, event/participant keys and row constraints |
+| [023](adr/023-entry-history-and-calendar-dates.md) | Immutable saved revisions, privacy-minimal snapshots and event-local calendar eligibility |
 
 ADR-003 accepts the M2 application/review subset; live operation remains pending.
 ADR-004 scoring is reserved and unaccepted; its required scope is in

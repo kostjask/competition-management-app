@@ -662,6 +662,22 @@
       "router": "performances",
       "exportName": "performancesRouter",
       "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/performances/:performanceId/history",
+      "tests": {
+        "success": "performance history and revisions",
+        "invalidInput": "N/A: no writable body; event/item scope is checked",
+        "authentication": "performance history and revisions",
+        "permission": "performance history and revisions",
+        "crossParent": "performance history and revisions",
+        "inactiveRecord": "scripts/check-performances.cjs",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
       "method": "PATCH",
       "path": "/:eventId/performances/:performanceId",
       "tests": {
@@ -682,7 +698,7 @@
       "path": "/:eventId/performances/:performanceId",
       "tests": {
         "success": "performance canonical CRUD",
-        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "invalidInput": "performance history and revisions",
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",

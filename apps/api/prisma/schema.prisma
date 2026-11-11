@@ -223,7 +223,7 @@ model Dancer {
   studioId                String
   firstName               String
   lastName                String
-  birthDate               DateTime
+  birthDate               DateTime                 @db.Date
   photoUrl                String?
   photoPath               String?
   deletedAt               DateTime?
@@ -247,6 +247,7 @@ model Performance {
   orderOnStage   Int
   deletedAt      DateTime?
   deletedBy      String?
+  revision       Int       @default(1)
 
   studio       Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   registration StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
@@ -256,9 +257,25 @@ model Performance {
   format       DanceFormat              @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   participants PerformanceParticipant[]
   scores       Score[]
+  revisions    PerformanceRevision[]
 
   @@unique([eventId, orderOnStage])
   @@unique([id, studioId])
+}
+
+model PerformanceRevision {
+  id            String      @id @default(uuid())
+  performanceId String
+  revision      Int
+  origin        String
+  actorId       String?
+  capturedAt    DateTime    @default(now())
+  snapshot      Json
+  performance   Performance @relation(fields: [performanceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor         User?       @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([performanceId, revision])
+  @@index([actorId])
 }
 
 model PerformanceParticipant {
@@ -321,6 +338,7 @@ model User {
   judges                Judge[]
   accountTokens         AccountToken[]
   auditActions          AuditLog[]             @relation("AuditActor")
+  performanceRevisions  PerformanceRevision[]
   preferredLocale       RecipientLocale?
   onboardingDraft       OnboardingDraft?
 }

@@ -11,8 +11,10 @@ const { PrismaPg } = require('@prisma/adapter-pg');
 const root = path.resolve(__dirname, '..');
 const registrationOnly = process.argv.includes('--registration-only');
 const eventSetupOnly = process.argv.includes('--event-setup-only');
-if (process.argv.slice(2).some(arg => !['--registration-only', '--event-setup-only'].includes(arg)) || (registrationOnly && eventSetupOnly)) throw new Error('Unsupported baseline option');
-const focused = registrationOnly || eventSetupOnly;
+const entryFoundationsOnly = process.argv.includes('--entry-foundations-only');
+if (process.argv.slice(2).some(arg => !['--registration-only', '--event-setup-only', '--entry-foundations-only'].includes(arg)) ||
+  [registrationOnly, eventSetupOnly, entryFoundationsOnly].filter(Boolean).length > 1) throw new Error('Unsupported baseline option');
+const focused = registrationOnly || eventSetupOnly || entryFoundationsOnly;
 const startedAt = performance.now();
 
 async function timed(name, run) {
@@ -149,17 +151,18 @@ async function main() {
       method: 'POST', headers: { Authorization: `Bearer ${judgeToken}`, 'Content-Type': 'application/json' }, body: '{}',
     });
     assert.equal(forbidden.status, 403);
-    if (!eventSetupOnly) {
+    if (!eventSetupOnly && !entryFoundationsOnly) {
       await check('check-studio-registrations', {
         client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
       });
       await check('check-registration-lifecycle', { client, baseUrl, adminToken: token, login });
       await check('check-application-review', { client, baseUrl, adminToken: token, login });
     }
-    await check('check-event-setup', { client, baseUrl, adminToken: token, login });
-    if (focused) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }
+    if (!entryFoundationsOnly) await check('check-event-setup', { client, baseUrl, adminToken: token, login });
+    if (focused && !entryFoundationsOnly) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }
     await check('check-dancers', { client, baseUrl, adminToken: token, login });
     await check('check-performances', { client, baseUrl, adminToken: token, login });
+    if (entryFoundationsOnly) { console.log('PASS: isolated entry foundations baseline (focused; full gate still required).'); return; }
     await check('check-studios', { client, baseUrl, adminToken: token, login });
     await check('check-setup', { client, baseUrl, adminToken: token });
     await check('check-public-onboarding', { client, baseUrl, jwtSecret: env.JWT_SECRET });

@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const { createRequire } = require('node:module');
 const path = require('node:path');
-const { PerformanceSchema } = createRequire(path.resolve(__dirname, '../apps/api/package.json'))('@dance/schemas');
+const { PerformanceSchema, PerformanceHistorySchema } = createRequire(path.resolve(__dirname, '../apps/api/package.json'))('@dance/schemas');
 
 // Runs only in the disposable PostgreSQL database owned by test-baseline.cjs.
 module.exports = async function checkPerformances({ client, baseUrl, adminToken, login }) {
@@ -34,6 +34,12 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   const collection = `/events/${event.id}/performances`;
   const otherCollection = `/events/${other.id}/performances`;
   const request = async (route, token = ownerToken, method = 'GET', body) => {
+    if (method === 'PATCH' || method === 'DELETE') {
+      const id = route.split('/').at(-1);
+      const stored = await client.performance.findUnique({ where: { id }, select: { revision: true } });
+      if (method === 'PATCH') body = { expectedRevision: stored?.revision ?? 1, ...body };
+      else route += '?expectedRevision=' + (stored?.revision ?? 1);
+    }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),
@@ -53,6 +59,51 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   assert.equal('photoPath' in performance.participants[0].dancer, false);
   assert.equal('createdAt' in performance, false);
   const item = `${collection}/${performance.id}`;
+  const initialHistory = PerformanceHistorySchema.parse((await request(item + '/history')).body);
+  assert.equal(initialHistory.length, 1); assert.equal(initialHistory[0].origin, 'CREATE');
+  assert.equal(initialHistory[0].actorKind, 'USER');
+  assert.equal(initialHistory[0].snapshot.studioName, studio.name);
+  assert.equal(initialHistory[0].snapshot.participants[0].birthDate, '2012-02-29');
+  assert.deepEqual(Object.keys(initialHistory[0].snapshot.participants[0]).sort(), ['birthDate', 'dancerId', 'firstName', 'lastName']);
+  assert.equal((await request(item + '/history', outsiderToken)).status, 403);
+  assert.equal((await request(`${otherCollection}/${performance.id}/history`, adminToken)).status, 404);
+  const originalDancer = studio.dancers[0];
+  await client.dancer.update({ where: { id: originalDancer.id }, data: { firstName: 'Changed after capture', birthDate: new Date('2010-01-01') } });
+  await client.studio.update({ where: { id: studio.id }, data: { name: 'Renamed after capture' } });
+  await client.danceCategory.update({ where: { id: input.categoryId }, data: { name: 'Changed category' } });
+  await client.ageGroup.update({ where: { id: input.ageGroupId }, data: { minAge: 5 } });
+  await client.danceFormat.update({ where: { id: input.formatId }, data: { maxDurationSeconds: 250 } });
+  await client.event.update({ where: { id: event.id }, data: { startsAt: new Date('2026-11-01T00:30:00Z'), timeZone: 'America/Los_Angeles' } });
+  assert.deepEqual((await request(item + '/history')).body, initialHistory, 'All historical display must use frozen source values');
+  assert.equal((await request(item, ownerToken, 'PATCH', { title: 'New revision', expectedRevision: 1 })).status, 200);
+  assert.equal((await request(item, ownerToken, 'PATCH', { title: 'Stale overwrite', expectedRevision: 1 })).status, 409);
+  const latest = PerformanceHistorySchema.parse((await request(item + '/history')).body);
+  assert.equal(latest[0].revision, 2); assert.equal(latest[0].snapshot.ageDate, '2026-10-31');
+  assert.equal(latest[0].snapshot.studioName, 'Renamed after capture');
+  assert.equal(latest[0].snapshot.participants[0].firstName, 'Changed after capture');
+  assert.deepEqual(latest[1], initialHistory[0]);
+  const savedRevision = await client.performanceRevision.findFirstOrThrow({ where: { performanceId: performance.id } });
+  await assert.rejects(client.performanceRevision.update({ where: { id: savedRevision.id }, data: { origin: 'EDIT' } }));
+  await assert.rejects(client.performanceRevision.delete({ where: { id: savedRevision.id } }));
+  const concurrent = await Promise.all(['One', 'Two'].map(title => request(item, ownerToken, 'PATCH', { title, expectedRevision: 2 })));
+  assert.deepEqual(concurrent.map(row => row.status).sort(), [200, 409]);
+  assert.equal(await client.performanceRevision.count({ where: { performanceId: performance.id } }), 3);
+  // An audit failure must roll back the saved fields, participant replacement and snapshot.
+  const beforeAuditFailure = await client.performance.findUniqueOrThrow({ where: { id: performance.id }, include: { participants: true } });
+  await client.$executeRawUnsafe(`CREATE FUNCTION reject_history_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'PERFORMANCE_UPDATED' THEN RAISE EXCEPTION 'Synthetic history audit failure'; END IF; RETURN NEW; END $$`);
+  await client.$executeRawUnsafe(`CREATE TRIGGER history_audit_failure BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION reject_history_audit()`);
+  try {
+    assert.equal((await request(item, ownerToken, 'PATCH', { title: 'Must roll back', dancerIds: [studio.dancers[1].id] })).status, 500);
+    assert.deepEqual(await client.performance.findUniqueOrThrow({ where: { id: performance.id }, include: { participants: true } }), beforeAuditFailure);
+    assert.equal(await client.performanceRevision.count({ where: { performanceId: performance.id } }), 3);
+  } finally {
+    await client.$executeRawUnsafe('DROP TRIGGER history_audit_failure ON "AuditLog"');
+    await client.$executeRawUnsafe('DROP FUNCTION reject_history_audit()');
+  }
+  const historyAudits = await client.auditLog.findMany({ where: { targetId: performance.id, targetType: 'PERFORMANCE' }, orderBy: { createdAt: 'asc' } });
+  assert.equal(historyAudits.length, 3);
+  assert.deepEqual(historyAudits.map(row => row.metadata.revision).sort(), [1, 2, 3]);
+  assert.ok(historyAudits.every(row => Object.keys(row.metadata).join() === 'revision'));
   const siblingCreated = await request(collection, outsiderToken, 'POST', inputFor(event, sibling, 2));
   assert.equal(siblingCreated.status, 201);
   assert.deepEqual((await request(collection)).body.map((p) => p.id), [performance.id]);
@@ -170,6 +221,9 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   const score = await client.score.create({ data: { performanceId: performance.id, judgeId: judge.id, criterion: 'Fixture', value: 5 } });
   assert.equal((await request(item, ownerToken, 'DELETE')).status, 204);
   const archived = await client.performance.findUniqueOrThrow({ where: { id: performance.id }, include: { participants: true } });
+  const archiveVersion = await client.performanceRevision.findUniqueOrThrow({ where: { performanceId_revision: { performanceId: performance.id, revision: archived.revision } } });
+  assert.equal(archiveVersion.origin, 'ARCHIVE'); assert.equal(archiveVersion.snapshot.archived, true);
+  assert.equal((await request(item + '/history', adminToken)).status, 404);
   assert.equal(archived.deletedBy, owner.id); assert.ok(archived.deletedAt instanceof Date);
   assert.equal(archived.participants.length, 1);
   assert.deepEqual(await client.score.findUniqueOrThrow({ where: { id: score.id } }), score);
