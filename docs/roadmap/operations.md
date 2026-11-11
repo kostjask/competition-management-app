@@ -39,10 +39,11 @@ introduce new test libraries only for a concrete need.
   timing, audit environment/generated-client inputs before hosted Turbo caching,
   and isolate shared baseline fixtures before attempting suite parallelism.
   Keep browser workers at two pending repeated comparative measurements.
-  Current inherited blocker: API coverage.test.cjs still recognizes direct
-  baseline require calls, while this runner uses the timed check helper.
+  The inherited coverage-inventory recognition mismatch is corrected (2026-11-11):
+  awaited timed/direct suites count; comments, strings and unused imports do not.
   [Review/application evidence](../APPLICATION_REVIEW_VALIDATION.md) records the
-  failure and requested authorization for the test-only correction.
+  regression and current validation. This correction does not close the remaining
+  hosted measurement/isolation work above.
 
 Development and external release are separate gates under the
 [checkpoint](../../DEVELOPMENT_PLAN.md#development-and-release-gates).

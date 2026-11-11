@@ -1,6 +1,6 @@
 # M2 organizer review and applicant validation
 
-Date: 2026-11-10. Scope: P4-REVIEW with P4-UI-CORE review and
+Implementation: 2026-11-10; completion validation: 2026-11-11. Scope: P4-REVIEW with P4-UI-CORE review and
 P5-APPLICATION with P5-UI-APPLICATION, S02/S05–S08/F01–F03/F05.
 Working tree started clean. No commit, push, deployment, dependency change or
 application-database migration/reset was performed. Migration 32 is additive;
@@ -41,7 +41,8 @@ Key changes: [application screens](../apps/web/src/pages/applications),
 [studio controller](../apps/api/src/controllers/StudiosController.ts),
 [shared contracts](../packages/schemas/src/studio-registration.schema.ts), and
 [additive migration](../apps/api/prisma/migrations/20261110010000_application_review/migration.sql).
-The owning roadmaps/checkpoint keep completion open for the inherited test gate.
+The ledger below records the original implementation pass. The completion pass
+below supersedes its inherited coverage-test blocker.
 
 | Command | Result |
 | --- | --- |
@@ -86,16 +87,52 @@ Browser fixtures exercise the real clients/components with synthetic HTTP state;
 PostgreSQL independently proves actual relationships, authorization, transactions,
 constraints and rollback. These are not hosted/live-provider end-to-end evidence.
 
-## Open gates
+## Completion validation — 2026-11-11
 
-The inherited coverage test checks for direct require calls in the baseline, which
-already uses a timed check(name, context) helper. Both patterns are present in HEAD
-before this task. Thus invitation conflict evidence is reported missing even though
-the registered check-staff-access suite executes in the full database baseline.
-Repository instructions prohibit unrelated fixes without a request; authorization
-to correct this test-only recognition mismatch was requested. P4/P5 implementation
-is delivered, but their completion checkboxes remain open until this required
-workspace test gate is resolved.
+The working tree started clean. The next two queued task IDs were P4-REVIEW and
+P5-APPLICATION, with their owning UI scopes. The current continuation request
+authorizes resolving their recorded validation blocker. No new domain policy,
+contract, migration, dependency, deployment or application-database change was
+needed.
+
+The focused API test first reproduced the missing invitation-conflict evidence
+failure. Its inventory now uses the existing TypeScript parser to recognize
+awaited timed-helper and direct suite invocations. Regression fixtures exclude
+comments, strings, unused imports, unawaited calls and unrelated helpers. This is
+static registration evidence; the full database baseline still must execute.
+
+The browser regression first failed in ET/EN/RU because a studio-name error also
+marked the representative name invalid. Profile and contact forms now own separate
+errors and summaries, with links targeting their own fields. The browser fixture
+now models the real representative response contract and revisioned contact save.
+Three new cases prove correct focus, isolated invalid states, no invalid writes
+and successful corrected contact readback. This extends the file to 24 cases.
+
+| Command / review | Completion-pass result |
+| --- | --- |
+| pnpm.cmd test:focus api coverage.test.cjs | 2/2 passed after reproducing the original failure |
+| pnpm.cmd exec playwright test tests/browser/applications.spec.ts --grep 'validation focus' | 3/3 passed after reproducing the form error in all locales |
+| pnpm.cmd test | Tooling 3/3, web 22/22, API 118/118 passed; localization guard passed |
+| pnpm.cmd build / pnpm.cmd typecheck / pnpm.cmd lint | Passed |
+| pnpm.cmd db:generate / pnpm.cmd db:validate / Prisma format --check | Passed with explicit nonconnecting placeholder URL |
+| pnpm.cmd test:browser | 159/159 Chromium cases passed (8.5m), including all 24 review/application cases |
+| pnpm.cmd test:baseline | Full baseline passed on rerun, including all 32 migrations, seed/redeploy, upgrade/HTTP/domain/provider-fake checks and cleanup (349.32s). First run timed out in a fixture SQL subprocess under concurrent validation load, then cleaned up |
+| powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.ps1 | Fresh history, upgrade preservation, uniqueness and schema parity passed for all 32 migrations |
+| Hallmark sloplint apps/web/src/pages/applications --scope app --genre modern-minimal --render | Scoped static sweep: 0 FAIL/REFLEX/WARN across 11 files. Render tier reports no HTML; authenticated captures come from Playwright |
+| Documentation checker / git diff --check | Passed after final documentation and diff review |
+
+Docker Desktop was initially stopped; it and the checked-in Compose PostgreSQL
+service were started. Database commands use runner-created disposable targets.
+The application database and environment files were not migrated/reset/edited.
+No commit, push or deploy was performed.
+
+Hallmark finish review ran in-thread using generated desktop/phone review,
+applicant and Russian invalid-form captures. The existing Cobalt app hierarchy,
+field error placement, focus and reflow remain coherent; no new visual finding
+was observed. No new imagery/material slots or composition were introduced.
+This is automated/agent evidence, not human visual or fluent-language approval.
+
+## Open release gates
 
 Real inbox evidence, intended-target scope provenance, hosted CI/ingress/
 deployment/rollback/restore/observability and human visual/fluent ET/EN/RU/
@@ -103,9 +140,9 @@ assistive review remain external M2 release gates. Full-UI redesign remains open
 for the shared shell, auth/staff and other workflows. This slice does not implement
 entries, billing editing, music, multi-event identity/reuse, live or results work.
 
-Next: resolve the inherited test gate and finish local P4/P5 validation; then
-P3-PERFORMANCE-OWNER before dependent M3 entry contracts/UI. No external milestone
-is closed by these local checks.
+P4-REVIEW/P5-APPLICATION and their owning UI scopes are complete locally.
+Next: P3-PERFORMANCE-OWNER before dependent M3 entry contracts/UI. No external
+milestone is closed by these local checks.
 
 To use these changes against the application database, apply the additive migration
 through the normal verified local setup process, regenerate Prisma and restart the

@@ -493,12 +493,17 @@ provider-configured foundation child invokes check-review-email.cjs for encrypte
 verified-account recipients, all locales, rollback, retry, acceptance and expiry.
 These checks use random disposable databases, never provider network calls.
 
-applications.spec.ts adds 21 Chromium cases: ET/EN/RU at four widths, two decision
+applications.spec.ts has 24 Chromium cases: ET/EN/RU at four widths, two decision
 rows, filter/detail recovery, actual dashboard pending counts, confirmation focus,
 synthetic signup/verify/apply/review/return, strict guest event/studio continuation,
 uncertain create/save, cancellation/reapply, failed readback and session/language
-input preservation. Update old unsupported-route assertions when their owning
+input preservation, plus form-specific profile/contact validation links, focus,
+isolated invalid-field states and corrected contact saves in all three locales.
+Update old unsupported-route assertions when their owning
 feature becomes implemented; retain hostile return/scope tests. Full workspace,
 browser and migration gates remain required. [Review/application evidence](APPLICATION_REVIEW_VALIDATION.md)
-records results and the inherited API inventory-test recognition blocker separately
-from behavior checks and external human/provider/hosted release gates.
+records results separately from external human/provider/hosted release gates.
+The API coverage inventory parses awaited baseline suite calls, including the
+timed check helper; comments, string mentions and unused imports do not count as
+script execution evidence. The inventory is a registration guard, not a substitute
+for actually running the full database baseline.

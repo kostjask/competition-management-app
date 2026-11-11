@@ -84,10 +84,11 @@ owns target behavior, not a second implementation checklist.
   image authorization are enforced. See [contracts](API.md) and [security](SECURITY.md).
 - Event discovery is authenticated; create/edit routes require admin. Event forms
   expose event-zone/DST/deadline/contact/checklist and authored-content controls under P4-CORE/ADR-020.
-- The organizer dashboard prioritizes setup blockers; other role dashboards remain placeholders. Application/review, entry/music and
-  live/scoring/results screens remain their owning roadmap scopes. Event details
-  show the actual application window and explain that the application form is pending; P5-APPLICATION owns
-  the future apply/resume routes and actions.
+- The organizer dashboard prioritizes setup blockers and independent application
+  queues. P4-REVIEW/P5-APPLICATION implement review, apply/status/profile/contact
+  and event apply/resume links; [evidence](APPLICATION_REVIEW_VALIDATION.md) owns
+  their validation limits. Other role dashboards, entry/music and live/scoring/
+  results remain their owning roadmap scopes.
 - Automated Chromium coverage exists for delivered slices; real inbox/hosted,
   full-journey human language and assistive review remain release evidence.
 
@@ -278,7 +279,7 @@ Record substantial decisions in their owning ADR before dependent schema/code.
 | UX-D02 Public access | Keep authenticated events versus publication-safe discovery; recommend explicit public event/results DTOs with publication controls, never opening private current DTOs. | ADR-002 follow-up before public event/result release; P7-PUBLISH |
 | UX-D03 Account/session recovery | Accepted in ADR-013/016/017: server-owned owner drafts, HttpOnly browser cookies/native bearer separation, explicit internal returns and neutral recovery. | Delivered local scope in foundation roadmap; external workflow review remains |
 | UX-D04 Locale/content | ADR-013 defines account/recipient precedence; ADR-019 accepts M2 authored-content source-language and explicit fallback. Later workflow content remains open. | I18N-PREFERENCES delivered locally; I18N-CONTENT remains open for storage/editors/later workflows |
-| UX-D05 Registration policy | M2 application policy accepted in [ADR-003](adr/003-registration-lifecycle.md): independent decisions, deadline/timezone, retained revisioned cancel/reapply, semantic reasons and pending profile correction. Entry transitions remain M3. | P3 registration backend/contracts delivered; P4/P5 screens remain pending |
+| UX-D05 Registration policy | M2 application policy accepted in [ADR-003](adr/003-registration-lifecycle.md): independent decisions, deadline/timezone, retained revisioned cancel/reapply, semantic reasons and pending profile correction. Entry transitions remain M3. | P3 registration backend/contracts and P4/P5 application/review screens are implemented locally; release gates remain open |
 | UX-D06 Entries/history | Draft representation, versioned submission, withdrawal, corrections and global roster locks; recommend server drafts without schedule position plus revision-based conflict detection. | P3-ENTRIES/HISTORY/OWNER and ADR-001 migration before related P5 UI |
 | UX-D07 Eligibility/media | Age date/leap rules, participant/duration limits, required music, formats/limits and replacement; recommend explicit upfront event rules and server enforcement. | P3-CALENDAR-DATES/ENTRIES/MUSIC-MODEL before M3 |
 | UX-D08 Staff authority | ADR-013/017/018 select global-admin staff management with explicit event scope and retained offboarding. Studio inviter/member extension remains P5-MEMBERS; separate stage authority remains a live-model decision. | Staff model/UI delivered locally; member/live extensions retain their own gates |

@@ -30,7 +30,9 @@ Target screen contracts, not an implementation claim. Inherit all shared
 P5-APPLICATION delivers the local minimal form/status/profile/contact slice,
 including verified draft completion and retained cancel/reapply. Optional billing
 editing and broader entry task summaries are postponed; existing billing API data
-is preserved. No standalone studio route is needed for this event-owned M2 path.
+is preserved. Profile/contact validation belongs to its own form, with field-linked
+summaries and independent invalid states. No standalone studio route is needed for
+this event-owned M2 path.
 [Evidence](../APPLICATION_REVIEW_VALIDATION.md) records browser/database scope and
 remaining human, real-inbox and hosted release gates.
 

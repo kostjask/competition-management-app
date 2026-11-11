@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { EventSchema, StudioSchema, StudioRegistrationSchema, NewStudioRegistrationBodySchema, UpdateStudioApprovalBodySchema, UpdateStudioRegistrationBodySchema, RegisterSchema, type StudioRegistration, type UserProfile } from "../../packages/schemas/src/index";
+import { EventSchema, StudioSchema, StudioRegistrationSchema, NewStudioRegistrationBodySchema, UpdateStudioApprovalBodySchema, UpdateStudioRegistrationBodySchema, UpdateRepresentativeBodySchema, RegisterSchema, type StudioRegistration, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey, type TranslationArgs } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
 type PlainKey = { [K in TranslationKey]: TranslationArgs<K> extends [] ? K : never }[TranslationKey];
@@ -40,10 +40,14 @@ async function fixture(page: Page, options: { admin?: boolean; empty?: boolean; 
     } else if (method === "DELETE" && state.row) { state.row = { ...state.row, status: "CANCELLED", revision: state.row.revision + 1 }; }
     else if (path.endsWith("/studio-registrations/s") && state.row) {
       const parsed = UpdateStudioRegistrationBodySchema.parse(body); expect(parsed.revision).toBe(state.row.revision); state.row = { ...state.row, status: parsed.status, decisionReason: parsed.reason ?? null, canEditDuringReview: parsed.canEditDuringReview ?? false, revision: state.row.revision + 1 };
+    } else if (path.endsWith("/representatives/rep") && state.row) {
+      const parsed = UpdateRepresentativeBodySchema.parse(body); expect(parsed.expectedRevision).toBe(state.row.revision);
+      state.contact = parsed.name ?? state.contact; state.contactEmail = parsed.email ?? state.contactEmail;
+      state.row = { ...state.row, revision: state.row.revision + 1 };
     } else if (state.row) { state.city = typeof body.city === "string" ? body.city : state.city; state.row = { ...state.row, revision: state.row.revision + 1 }; }
     if (state.loseResponse) { state.loseResponse = false; return route.abort(); }
     if (state.failReadback) { state.failRead = true; state.failReadback = false; }
-    return route.fulfill({ ...(method === "DELETE" ? { status: 204 } : { json: path === "/api/v1/studios/s" || path.endsWith("/approval") ? profile() : state.row }) });
+    return route.fulfill({ ...(method === "DELETE" ? { status: 204 } : { json: path.endsWith("/representatives/rep") ? profile()?.representatives[0] : path === "/api/v1/studios/s" || path.endsWith("/approval") ? profile() : state.row }) });
   });
   return state;
 }
@@ -85,6 +89,32 @@ test("organizer dashboard shows independent pending counts and keeps selected fi
   await page.getByRole("button", { name: label("Application.showAll"), exact: true }).click();
   await expect(page.getByRole("link", { name: "Synthetic studio", exact: true })).toBeVisible();
 });
+
+for (const locale of ["et", "en", "ru"] as const) {
+  test(`profile and contact validation focus their own fields in ${locale}`, async ({ page }, info) => {
+    const state = await fixture(page, { locale }); await page.goto("/events/e/studio?studio=s");
+    await page.locator("#profile-studioName").fill("");
+    await page.getByRole("button", { name: label("Application.saveProfile", locale), exact: true }).click();
+    await page.locator('.ui-error-summary a[href="#profile-studioName"]').click();
+    await expect(page.locator("#profile-studioName")).toBeFocused();
+    await expect(page.locator("#contact-name")).toHaveAttribute("aria-invalid", "false");
+    await page.locator("#contact-name").fill(""); await page.locator("#contact-email").fill("invalid-email");
+    await page.getByRole("button", { name: label("Application.saveContact", locale), exact: true }).click();
+    const contact = page.locator("form").filter({ has: page.locator("#contact-name") });
+    await contact.locator('.ui-error-summary a[href="#contact-name"]').click();
+    await expect(page.locator("#contact-name")).toBeFocused();
+    await contact.locator('.ui-error-summary a[href="#contact-email"]').click();
+    await expect(page.locator("#contact-email")).toBeFocused();
+    await page.screenshot({ path: info.outputPath(`validation-${locale}.png`), fullPage: true });
+    await page.locator("#contact-name").fill("Corrected contact"); await page.locator("#contact-email").fill("corrected@example.invalid");
+    await page.getByRole("button", { name: label("Application.saveContact", locale), exact: true }).click();
+    await expect(page.getByText(label("Application.saved", locale), { exact: true })).toBeVisible();
+    expect(state.writes).toHaveLength(1);
+    expect(state.writes[0]).toMatchObject({ name: "Corrected contact", email: "corrected@example.invalid", expectedRevision: 1 });
+    await expect(page.locator("#contact-name")).toHaveValue("Corrected contact");
+    await expect(page.locator("#contact-email")).toHaveValue("corrected@example.invalid");
+  });
+}
 
 test("synthetic signup, verification, application, independent review and returning applicant journey", async ({ page }) => {
   const state = await fixture(page, { empty: true, draft: true }); state.valid = false;

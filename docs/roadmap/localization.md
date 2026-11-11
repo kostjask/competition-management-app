@@ -24,9 +24,9 @@ remaining human/provider release evidence.
 P4-REVIEW/P5-APPLICATION add translated S06–S08 decisions, reasons, next actor,
 profile/contact/cancel/reapply/recovery and neutral review-update mail. Maintained
 ET/EN/RU captures and encrypted-recipient/provider fixtures are recorded in
-[review/application evidence](../APPLICATION_REVIEW_VALIDATION.md). The unrelated
-workspace coverage-test gate remains open; fluent/assistive release review and
-future workflow coverage still keep the umbrella UI/QA tasks open.
+[review/application evidence](../APPLICATION_REVIEW_VALIDATION.md). Full local gates
+and independent form-error focus pass (2026-11-11); fluent/assistive release review
+and future workflow coverage still keep the umbrella UI/QA tasks open.
 
 - [x] I18N-CONTRACT (Phase 1): extend shared error/success contracts with stable semantic reason/message identifiers, safe typed interpolation parameters, and structured field issues while retaining HTTP status and generic error codes. Preserve these in ApiError and render through one localized presenter; do not match English sentences or infer every domain reason from status alone. Cover auth, global/local route errors, uploads, network failures, non-JSON responses and success notices. Pair backend/client/schema changes so strict DTO validation remains compatible. Acceptance: the same business error renders in ET/EN/RU, unknown/legacy reasons produce a localized safe fallback, raw technical/PII messages are not shown, and changing language updates an already-visible error without a refetch.
 - [x] I18N-CORE (Phase 1): infer valid catalogue keys/types from the actual dictionary, enforce all three nonempty locale values, validate saved locale at initialization and define one supported-locale/default/fallback policy. Add typed interpolation and plural handling for ET/EN/RU without sentence concatenation; keep structured message descriptors in UI state and translate at render time. Missing/malformed keys must have safe production behavior and visible development/test diagnostics, not undefined output or raw key leakage. Acceptance: invalid storage, missing keys/locales, parameter mismatches, zero/one/multiple/Russian plural cases, and live locale switching are covered; the selector uses descriptive language names and accessible selected-state labels.

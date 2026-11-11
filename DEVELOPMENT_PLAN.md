@@ -1,18 +1,20 @@
 # Development checkpoint
 
-Updated: 2026-11-10. This file owns current priority, state summary and milestone
+Updated: 2026-11-11. This file owns current priority, state summary and milestone
 gates. Roadmap files own task checkboxes; [the map](docs/README.md) routes selected
 tasks to contracts/specifications. Read history only to investigate past evidence.
 
 ## Next action
 
-**Active validation: P4-REVIEW and P5-APPLICATION with their owning UI scopes.**
-Both implementations are delivered locally. Finish the required test gate:
-an inherited API coverage-inventory test does not recognize the baseline's
-timed suite helper; a test-only correction awaits authorization under AGENTS.
+**Next: P3-PERFORMANCE-OWNER before dependent M3 entry work.**
+P4-REVIEW and P5-APPLICATION with their owning UI scopes are complete locally
+(2026-11-11). The inherited coverage-inventory blocker is fixed; independent
+profile/contact validation and field focus now pass in ET/EN/RU. Full workspace,
+159 Chromium cases, isolated database baseline, migration and Prisma gates pass.
 [Review/application evidence](docs/APPLICATION_REVIEW_VALIDATION.md) records
-completed checks and remaining validation. Then take **P3-PERFORMANCE-OWNER**
-before dependent M3 entry work; no entry implementation is authorized by this note.
+results and the resolved first-run fixture timeout. Establish explicit performance
+ownership and event-consistent keys before dependent contracts/migrations/entry UI;
+no entry implementation is authorized by this note.
 Local technical completion does not close the external M2 release gate.
 
 ## Current state
@@ -21,8 +23,8 @@ Local technical completion does not close the external M2 release gate.
   file/database commands, baseline timing and CI dependency-store caching while
   retaining full validation gates. [Testing](docs/TESTING.md#fast-development-loop)
   owns usage; [operations](docs/roadmap/operations.md) owns remaining measurement/
-  isolation work. Review/application implementation is now delivered; the inherited
-  coverage-inventory recognition mismatch is a current local validation blocker.
+  isolation work. The inherited coverage-inventory recognition mismatch is fixed
+  (2026-11-11); comments/strings/unused imports cannot stand in for suite calls.
 
 - **UI design direction (2026-11-10):** the user rejects the entire current UI as
   a placeholder and requires a full Hallmark redesign.
@@ -47,8 +49,8 @@ Local technical completion does not close the external M2 release gate.
   review queues/detail/reasons/history, transactional notification intent, and
   role-independent apply/status/profile/contact/cancel/reapply with verified draft
   completion and recovery. ADR-021/migration 32 and [evidence](docs/APPLICATION_REVIEW_VALIDATION.md)
-  describe validation and the inherited workspace-test blocker; completion flags
-  remain open until that required gate passes. Entry/music, live/scoring and results remain unfinished;
+  describe completed local validation (2026-11-11), including form-specific error
+  isolation/focus and the corrected coverage gate. Entry/music, live/scoring and results remain unfinished;
   judge/moderator/representative dashboards are placeholders. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
@@ -73,7 +75,7 @@ Local technical completion does not close the external M2 release gate.
   requirements still apply. This completion pass used isolated test databases/
   schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [review/application, 2026-11-10](docs/APPLICATION_REVIEW_VALIDATION.md).
+Latest recorded runtime evidence: [review/application, 2026-11-11](docs/APPLICATION_REVIEW_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -142,8 +144,8 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
 | 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; P4-CORE also delivers event-description storage/editors. Later content remains open. |
 | 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Organizer configuration, time/deadline/contact, authored descriptions, readiness and confirmed M2 stages pass UI/API/database checks. No second lifecycle model or scoring prerequisite. |
-| 5 - implemented; validation open | P4-REVIEW with P4-UI-CORE review scope | Independent queues/detail, reasons/corrections, next actor, revisioned decisions/audit and transactional notification intent delivered. Resolve inherited coverage-test recognition before completion. |
-| 6 - implemented; validation open | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply and uncertain-response/session recovery delivered. Same required workspace gate remains open. |
+| 5 - complete locally | P4-REVIEW with P4-UI-CORE review scope | Independent queues/detail, reasons/corrections, next actor, revisioned decisions/audit and transactional notification intent pass full local gates (2026-11-11). |
+| 6 - complete locally | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply, form-specific validation and uncertain-response/session recovery pass full local gates (2026-11-11). |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
 ADR-019's M2 source-language/fallback policy is implemented for event descriptions
