@@ -134,7 +134,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |
 | S10 | P `/events/:id/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | P5-ENTRIES |
 | S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |
-| S12 | P `/events/:id/studios/:studioId/review`, `/admin/events/:id/review` | P5-SUBMISSION/P4-ENTRY-CONFIG |
+| S12 | I `/admin/events/:eventId/performances` (read-only ownership foundation); P `/events/:id/studios/:studioId/review`, `/admin/events/:id/review` | P3-PERFORMANCE-OWNER/CONSTRAINTS foundation; full checklist P5-SUBMISSION/P4-ENTRY-CONFIG |
 | S13 | P `/admin/events/:id/schedule` | P6-SCHEDULE |
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |

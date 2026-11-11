@@ -6,18 +6,29 @@ tasks to contracts/specifications. Read history only to investigate past evidenc
 
 ## Next action
 
-**Next: P3-PERFORMANCE-OWNER before dependent M3 entry work.**
-P4-REVIEW and P5-APPLICATION with their owning UI scopes are complete locally
-(2026-11-11). The inherited coverage-inventory blocker is fixed; independent
-profile/contact validation and field focus now pass in ET/EN/RU. Full workspace,
-159 Chromium cases, isolated database baseline, migration and Prisma gates pass.
-[Review/application evidence](docs/APPLICATION_REVIEW_VALIDATION.md) records
-results and the resolved first-run fixture timeout. Establish explicit performance
-ownership and event-consistent keys before dependent contracts/migrations/entry UI;
-no entry implementation is authorized by this note.
-Local technical completion does not close the external M2 release gate.
+**Next: P3-HISTORY; P3-CALENDAR-DATES also precedes P3-ENTRIES.**
+P3-PERFORMANCE-OWNER and P3-CONSTRAINTS with their read-only organizer ownership
+register are complete locally (2026-11-11). ADR-022/migration 33 establish immutable
+studio/registration ownership, event/participant keys and row bounds. Full workspace,
+176 Chromium cases, isolated database baseline, migration and Prisma gates pass.
+[Ownership evidence](docs/PERFORMANCE_OWNERSHIP_VALIDATION.md) records the initial
+Prisma nested-write fix, coverage-reference reconciliation and an existing staff
+focus assertion that passed its exact retry and the standalone full browser rerun.
+Define submitted snapshots/revisions/corrections and calendar eligibility before
+dependent entry editing; no entry editor/music/submission is implemented here.
+Local technical completion does not close an external milestone or whole-UI approval.
 
 ## Current state
+
+- **M3 ownership/integrity foundations (2026-11-11):** P3-PERFORMANCE-OWNER and
+  P3-CONSTRAINTS pass locally under ADR-022. Explicit owners replace participant
+  inference, compound keys prevent event/studio substitutions and SQL-only guards
+  protect row bounds/owner immutability. Migration audits/backfills unambiguous
+  owners or refuses reviewed-repair cases atomically, preserving IDs/participants/
+  scores. The Cobalt organizer register exposes saved titles, owning applications
+  and participant counts with ET/EN/RU and recovery; full entry editing/configuration
+  remains gated. [Evidence](docs/PERFORMANCE_OWNERSHIP_VALIDATION.md) records checks,
+  render-tool limits, the resolved first-run failures and remaining external gates.
 
 - **Test feedback setup (2026-11-10):** user-requested P9-TEST-SPEED adds focused
   file/database commands, baseline timing and CI dependency-store caching while
@@ -58,8 +69,9 @@ Local technical completion does not close the external M2 release gate.
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 32 migrations, including P4-CORE's additive event setup
-  and P4-REVIEW's additive reasons/notification relations. The application database
+- Repository schema has 33 migrations, including P4-CORE's additive event setup,
+  P4-REVIEW's reasons/notification relations and ADR-022's ownership/constraints.
+  The application database
   was not migrated in this slice; all new database checks use isolated fixtures.
   [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records the prior migration's local
   application and current isolated fresh/upgrade/API/browser checks. The user's **2026-11-09 startup record**
@@ -75,7 +87,7 @@ Local technical completion does not close the external M2 release gate.
   requirements still apply. This completion pass used isolated test databases/
   schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [review/application, 2026-11-11](docs/APPLICATION_REVIEW_VALIDATION.md).
+Latest recorded runtime evidence: [ownership/constraints, 2026-11-11](docs/PERFORMANCE_OWNERSHIP_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -134,9 +146,10 @@ promote unrelated later work indefinitely.
 
 ## Implementation order
 
-The immediate outcome is a verified roleless applicant applying to one event,
-receiving independent organization/event decisions, and returning to status.
-Finish this local M2 path before promoting entry/music or live/results work.
+The local M2 path is complete: a verified roleless applicant applies to one event,
+receives independent organization/event decisions, and returns to status. Preserve
+that path while completing the remaining M3 history/calendar/entry prerequisites;
+music and live/results work retain their own gates.
 
 | Order | Existing task | Concrete scope / dependency |
 | --- | --- | --- |
@@ -146,6 +159,8 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Organizer configuration, time/deadline/contact, authored descriptions, readiness and confirmed M2 stages pass UI/API/database checks. No second lifecycle model or scoring prerequisite. |
 | 5 - complete locally | P4-REVIEW with P4-UI-CORE review scope | Independent queues/detail, reasons/corrections, next actor, revisioned decisions/audit and transactional notification intent pass full local gates (2026-11-11). |
 | 6 - complete locally | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply, form-specific validation and uncertain-response/session recovery pass full local gates (2026-11-11). |
+| 7 - complete locally | P3-PERFORMANCE-OWNER with read-only organizer ownership register | ADR-022/migration 33, canonical owner DTOs, active access validation, unambiguous backfill/refusal, retained history and translated organizer reads pass local gates (2026-11-11). |
+| 8 - complete locally | P3-CONSTRAINTS | Event/owner/configuration/participant compound keys, row bounds, direct SQL/API/rollback/concurrency and fresh/upgrade parity pass local gates (2026-11-11). Score/judge consistency remains P6-SCORING-MODEL. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
 ADR-019's M2 source-language/fallback policy is implemented for event descriptions
@@ -158,8 +173,8 @@ or requirements to finish all future screens before the current workflow.
 External operations proceed alongside this path when access is available; they
 remain release blockers without becoming blanket development blockers.
 
-After local M2 works, take the M3 P3 ownership/date/constraints/history/entry
-foundations, then P4-ENTRY-CONFIG/P5-ENTRIES and the
+Local M2 and the M3 ownership/constraint foundations now pass. Next take P3-HISTORY
+and P3-CALENDAR-DATES before P3-ENTRIES, then P4-ENTRY-CONFIG/P5-ENTRIES and the
 P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION path. Develop the
 history/constraint contracts before dependent drafts/submission. Keep calendar
 birth dates separate from M2 event instants, and scheduling separate from entry

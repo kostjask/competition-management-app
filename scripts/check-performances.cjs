@@ -48,6 +48,7 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   assert.equal(created.status, 201);
   const performance = PerformanceSchema.parse(created.body);
   assert.equal(performance.title, 'Title');
+  assert.equal(performance.studioId, studio.id); assert.equal(performance.registrationId, studio.registrations[0].id);
   assert.equal(performance.participants[0].dancer.birthDate, '2012-02-29');
   assert.equal('photoPath' in performance.participants[0].dancer, false);
   assert.equal('createdAt' in performance, false);
@@ -117,26 +118,54 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   assert.equal((await request(item, adminToken)).status, 404);
   assert.equal((await request(collection, adminToken)).body.length, 1);
   await client.studio.update({ where: { id: studio.id }, data: { deletedAt: null } });
-  await client.studio.update({ where: { id: studio.id }, data: { eventId: other.id } });
-  assert.equal((await request(item, adminToken)).status, 404, 'A contradictory legacy registration cannot replace Studio.eventId');
-  assert.deepEqual((await request(collection)).body, []);
-  await client.studio.update({ where: { id: studio.id }, data: { eventId: event.id } });
-
-  // Legacy mixed/empty participants never grant access through any one owner.
-  const mixed = await client.performance.create({ data: {
-    eventId: event.id, categoryId: input.categoryId, ageGroupId: input.ageGroupId, formatId: input.formatId,
-    title: 'Legacy mixed', durationSec: 60, orderOnStage: 20,
-    participants: { create: [studio.dancers[0], sibling.dancers[0]].map((d) => ({ dancerId: d.id })) },
-  } });
+  await assert.rejects(client.studio.update({ where: { id: studio.id }, data: { eventId: other.id } }), { code: 'P2003' });
+  // Empty participant sets retain an explicit owner. Mixed sets are impossible.
   const empty = await client.performance.create({ data: {
-    eventId: event.id, categoryId: input.categoryId, ageGroupId: input.ageGroupId, formatId: input.formatId,
-    title: 'Legacy empty', durationSec: 60, orderOnStage: 21,
+    eventId: event.id, studioId: studio.id, registrationId: regId,
+    categoryId: input.categoryId, ageGroupId: input.ageGroupId, formatId: input.formatId,
+    title: 'Empty owned fixture', durationSec: 60, orderOnStage: 21,
   } });
-  for (const p of [mixed, empty]) {
-    assert.equal((await request(`${collection}/${p.id}`, adminToken)).status, 409);
-    assert.equal((await request(`${collection}/${p.id}`)).status, 409);
-    assert.equal((await request(collection, adminToken)).body.some((row) => row.id === p.id), false);
+  const emptyDetail = await request(collection + '/' + empty.id);
+  assert.equal(emptyDetail.status, 200); assert.equal(emptyDetail.body.studioId, studio.id);
+  assert.equal((await request(collection)).body.some(p => p.id === empty.id), true);
+  await assert.rejects(client.performanceParticipant.create({ data: {
+    performanceId: empty.id, dancerId: sibling.dancers[0].id, studioId: studio.id,
+  } }), { code: 'P2003' });
+  await assert.rejects(client.performanceParticipant.create({ data: {
+    performanceId: empty.id, dancerId: sibling.dancers[0].id, studioId: sibling.id,
+  } }), { code: 'P2003' });
+  for (const data of [{ studioId: sibling.id, registrationId: sibling.registrations[0].id },
+    { eventId: other.id }, { registrationId: otherStudio.registrations[0].id }]) {
+    await assert.rejects(client.performance.update({ where: { id: empty.id }, data }));
+    assert.equal((await client.performance.findUniqueOrThrow({ where: { id: empty.id } })).studioId, studio.id);
   }
+  for (const field of ['categoryId', 'ageGroupId', 'formatId']) {
+    await assert.rejects(client.performance.update({ where: { id: empty.id }, data: { [field]: inputFor(other, otherStudio, 1)[field] } }), { code: 'P2003' });
+  }
+  await assert.rejects(client.studioEventRegistration.delete({ where: { id: regId } }), { code: 'P2003' });
+  await assert.rejects(client.dancer.update({ where: { id: studio.dancers[1].id }, data: { studioId: sibling.id } }), { code: 'P2003' });
+  // Direct SQL bypasses Zod/controllers and must still preserve all row bounds.
+  for (const [table, id, assignment] of [
+    ['Event', event.id, '"endsAt" = "startsAt" - interval \'1 second\''],
+    ['Event', event.id, '"maxStudios" = 0'],
+    ['Event', event.id, '"maxPerformances" = -1'],
+    ['AgeGroup', input.ageGroupId, '"minAge" = -1'],
+    ['AgeGroup', input.ageGroupId, '"minAge" = 10, "maxAge" = 9'],
+    ['DanceFormat', input.formatId, '"minParticipants" = 0'],
+    ['DanceFormat', input.formatId, '"maxParticipants" = 0'],
+    ['DanceFormat', input.formatId, '"maxDurationSeconds" = -1'],
+    ['Performance', empty.id, '"durationSec" = 0'],
+    ['Performance', empty.id, '"orderOnStage" = -1'],
+  ]) {
+    // Table/assignment are constant test-owned SQL, never request data.
+    const before = await client.$queryRawUnsafe(`SELECT * FROM "${table}" WHERE id = $1`, id);
+    await assert.rejects(client.$executeRawUnsafe(`UPDATE "${table}" SET ${assignment} WHERE id = $1`, id));
+    assert.deepEqual(await client.$queryRawUnsafe(`SELECT * FROM "${table}" WHERE id = $1`, id), before);
+  }
+  // Concurrent creates cannot duplicate an event's reserved order or participants.
+  const races = await Promise.all([1, 2].map(() => request(collection, ownerToken, 'POST', { ...input, orderOnStage: 30 })));
+  assert.deepEqual(races.map(row => row.status).sort(), [201, 409]);
+  assert.equal(await client.performance.count({ where: { eventId: event.id, orderOnStage: 30 } }), 1);
   const judge = await client.judge.create({ data: { eventId: event.id, userId: template.id, name: 'Archive fixture judge' } });
   const score = await client.score.create({ data: { performanceId: performance.id, judgeId: judge.id, criterion: 'Fixture', value: 5 } });
   assert.equal((await request(item, ownerToken, 'DELETE')).status, 204);
@@ -148,5 +177,5 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
     assert.equal((await request(item, adminToken, method, method === 'PATCH' ? { title: 'Restore' } : undefined)).status, 404);
   assert.equal((await request(collection)).body.some((row) => row.id === performance.id), false);
   assert.equal((await request(collection, ownerToken, 'POST', input)).status, 409, 'Archived orders remain reserved by the existing database constraint');
-  console.log('PASS: performance canonical CRUD/DTOs, event/global scope, ownership/approvals, configuration/participants, stage/review, nested-write rollback, legacy guards and audited soft deletion.');
+  console.log('PASS: performance canonical CRUD/DTOs, event/global scope, ownership/approvals, configuration/participants, stage/review, nested-write rollback, explicit empty ownership, composite membership keys and retained soft deletion.');
 };

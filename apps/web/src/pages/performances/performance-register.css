@@ -1,0 +1,21 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: studio ownership register · v2.0.0 */
+/* Hallmark · pre-emit critique: hierarchy rests on performance and owning application; participant counts stay secondary. */
+/* Hallmark · finish-review: subagent · 1 finding resolved: loading uses ledger-shaped placeholders; no material slots. */
+@import "../events/event-setup.css";
+.performance-filter { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); margin-block: var(--space-lg); }
+.performance-filter .ui-field { flex: 1 1 16rem; max-width: 28rem; }
+.performance-register { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.performance-register th, .performance-register td { padding: var(--space-md); text-align: start; border-bottom: 1px solid var(--color-rule-2); overflow-wrap: anywhere; }
+.performance-register thead th { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; border-bottom-color: var(--color-ink); }
+.performance-register tbody th { font-weight: 600; }
+.performance-register a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+.performance-register td:last-child { font-variant-numeric: tabular-nums; }
+.performance-skeleton-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-column); padding: var(--space-lg) var(--space-md); border-bottom: 1px solid var(--color-rule-2); }
+.performance-skeleton-row span { height: var(--space-md); background: var(--color-paper-3); }
+@media (max-width: 48rem) {
+  .performance-register thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: clip; }
+  .performance-register tbody, .performance-register tr, .performance-register th, .performance-register td { display: block; width: 100%; }
+  .performance-register tr { border-bottom: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+  .performance-register th, .performance-register td { border: 0; padding: var(--space-xs) 0; }
+  .performance-register td::before { content: attr(data-label); display: block; color: var(--color-ink-secondary); font-size: var(--text-sm); }
+}

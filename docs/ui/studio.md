@@ -71,6 +71,14 @@ remaining human, real-inbox and hosted release gates.
 
 ## S12 — Data-review checklist and submission
 
+Delivered foundation (2026-11-11): global-admin-only
+`/admin/events/:eventId/performances?studio=:studioId` shows saved entries, their
+explicit owning application and participant counts. It is a read-only Cobalt
+register with loading/empty/error/retry, ET/EN/RU, URL-filter and session recovery;
+it makes no eligibility, music, receipt or submission claims. The checklist and
+correction/submission controls below retain their model gates.
+[Ownership evidence](../PERFORMANCE_OWNERSHIP_VALIDATION.md).
+
 - **Purpose / roles / routes:** resolve blockers and submit/review; own approved reps and admin review, proposed routes in inventory.
 - **Primary action:** fix a linked issue, then submit entries or request authorized correction.
 - **Data:** latest entries/music, validation issues, warnings, revision, deadlines and lock consequences, receipt/correction metadata.

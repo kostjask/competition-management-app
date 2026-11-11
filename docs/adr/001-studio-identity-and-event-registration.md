@@ -51,14 +51,14 @@ target permits shared display names and disambiguates studios through stable IDs
 and authorized context; this ADR does not itself remove uniqueness or authorize
 identity merging. Applied migrations remain immutable.
 
-P3-PERFORMANCE-OWNER will define explicit studio/event-registration ownership for
-performances, replacing participant-derived ownership only after audited backfill
-and relationship tests. Empty/mixed legacy participant sets must be flagged for
+[ADR-022](022-performance-ownership-and-constraints.md) now defines explicit
+studio/event-registration performance ownership, implemented with audited
+backfill and relationship tests. Empty/mixed legacy participant sets must be flagged for
 review, never assigned to an arbitrary first dancer's studio. P3-HISTORY must
 define submitted participant/configuration snapshots or versions before shared
 roster/profile edits can affect historical entries. These implementation decisions
 and migration gates are described in [database review](../DATABASE_REVIEW.md)
-and the [development plan](../../DEVELOPMENT_PLAN.md); no schema change is claimed.
+and the [development plan](../../DEVELOPMENT_PLAN.md). ADR-001's reusable-studio migration remains pending.
 
 ## Implementation sequence and data safety
 

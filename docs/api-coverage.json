@@ -622,7 +622,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -638,7 +638,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },
@@ -654,7 +654,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -670,7 +670,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },
@@ -686,7 +686,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },

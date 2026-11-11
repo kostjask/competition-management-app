@@ -9,7 +9,7 @@ import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } fro
 import { isActionAllowed } from "../utils/stageChecks";
 
 const performanceSelect = {
-  id: true, eventId: true, title: true, durationSec: true, orderOnStage: true,
+  id: true, eventId: true, studioId: true, registrationId: true, title: true, durationSec: true, orderOnStage: true,
   categoryId: true, ageGroupId: true, formatId: true,
   participants: { select: { dancerId: true, dancer: { select: {
     id: true, studioId: true, firstName: true, lastName: true, birthDate: true, photoUrl: true,
@@ -17,10 +17,6 @@ const performanceSelect = {
 } satisfies Prisma.PerformanceSelect;
 type PerformanceRecord = Prisma.PerformanceGetPayload<{ select: typeof performanceSelect }>;
 
-function studioFor(performance: PerformanceRecord): string | undefined {
-  const studios = new Set(performance.participants.map(({ dancer }) => dancer.studioId));
-  return studios.size === 1 ? studios.values().next().value : undefined;
-}
 function serialize(performance: PerformanceRecord) {
   const result = PerformanceSchema.safeParse({
     ...performance, participants: performance.participants.map(({ dancerId, dancer }) => ({
@@ -55,18 +51,20 @@ export class PerformancesController extends BaseController {
       select: {
         approvalStatus: true, event: { select: { stage: true } },
         representatives: { where: { userId: this.getUserId(req), active: true }, select: { id: true } },
-        registrations: { where: { eventId }, select: { status: true, canEditDuringReview: true } },
+        registrations: { where: { eventId }, select: { id: true, status: true, canEditDuringReview: true } },
       },
     });
     if (!studio) throw new NotFoundError("Studio", studioId);
-    if (this.isAdmin(req)) return;
     const registration = studio.registrations[0];
+    if (!registration) throw new ConflictError("Performance ownership requires an event registration", undefined, "relationshipConflict");
+    if (this.isAdmin(req)) return registration.id;
     if (!studio.representatives.length || studio.approvalStatus !== "APPROVED" || registration?.status !== "APPROVED") {
       throw new ForbiddenError("Access to studio performances denied", "ownershipRequired");
     }
     if (write && !isActionAllowed(studio.event.stage, "performance.manage", registration.canEditDuringReview)) {
       throw new ForbiddenError("Performance management not allowed in current event stage", "stageLocked");
     }
+    return registration.id;
   }
 
   private async findItem(req: Request, db: Prisma.TransactionClient, eventId: string, performanceId: string, write = false) {
@@ -75,8 +73,7 @@ export class PerformancesController extends BaseController {
       where: { id: performanceId, eventId, deletedAt: null }, select: performanceSelect,
     });
     if (!performance) throw new NotFoundError("Performance", performanceId);
-    const studioId = studioFor(performance);
-    if (!studioId) throw new ConflictError("Performance participants require a single studio; legacy data needs review", undefined, "ambiguousStudio");
+    const studioId = performance.studioId;
     await this.requireAccess(req, db, eventId, studioId, write);
     return { performance, studioId };
   }
@@ -94,10 +91,13 @@ export class PerformancesController extends BaseController {
   }
 
   private async transaction<T>(work: (db: Prisma.TransactionClient) => Promise<T>): Promise<T> {
-    try { return await this.prisma.$transaction(work); }
+    try { return await this.prisma.$transaction(work, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }); }
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("Stage order is already reserved for this event", undefined, "orderReserved");
+      }
+      if (error instanceof Prisma.PrismaClientKnownRequestError && ["P2034", "P2003"].includes(error.code)) {
+        throw new ConflictError("Performance relationships changed; reload and retry", undefined, "relationshipConflict");
       }
       throw error;
     }
@@ -114,11 +114,9 @@ export class PerformancesController extends BaseController {
     });
     const ids = studios.map(({ id }) => id);
     const performances = await this.prisma.performance.findMany({
-      where: { eventId, deletedAt: null, participants: {
-        some: { dancer: { studioId: { in: ids } } }, every: { dancer: { studioId: { in: ids } } },
-      } }, select: performanceSelect, orderBy: [{ orderOnStage: "asc" }, { id: "asc" }],
+      where: { eventId, deletedAt: null, studioId: { in: ids } }, select: performanceSelect, orderBy: [{ orderOnStage: "asc" }, { id: "asc" }],
     });
-    res.json(performances.filter((performance) => studioFor(performance) !== undefined).map(serialize));
+    res.json(performances.map(serialize));
   }
 
   async getById(req: Request, res: Response): Promise<void> {
@@ -131,10 +129,10 @@ export class PerformancesController extends BaseController {
     const { eventId } = PerformanceCollectionParamsSchema.parse(req.params);
     const { studioId, dancerIds, ...fields } = CreatePerformanceBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
-      await this.requireAccess(req, db, eventId, studioId, true);
+      const registrationId = await this.requireAccess(req, db, eventId, studioId, true);
       await this.validateSelection(db, eventId, studioId, { ...fields, dancerIds });
       return serialize(await db.performance.create({
-        data: { eventId, ...fields, participants: { createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) } } },
+        data: { eventId, studioId, registrationId, ...fields, participants: { createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) } } },
         select: performanceSelect,
       }));
     });

@@ -124,6 +124,7 @@ model DanceCategory {
   performances Performance[]
 
   @@unique([eventId, name])
+  @@unique([id, eventId])
 }
 
 model AgeGroup {
@@ -134,6 +135,8 @@ model AgeGroup {
   maxAge       Int?
   event        Event         @relation(fields: [eventId], references: [id])
   performances Performance[]
+
+  @@unique([id, eventId])
 }
 
 model DanceFormat {
@@ -145,6 +148,8 @@ model DanceFormat {
   maxDurationSeconds Int
   event              Event         @relation(fields: [eventId], references: [id])
   performances       Performance[]
+
+  @@unique([id, eventId])
 }
 
 model Studio {
@@ -168,6 +173,7 @@ model Studio {
   representatives StudioRepresentative[]
   registrations   StudioEventRegistration[]
   invitations     Invitation[]
+  performances    Performance[]
 
   @@unique([id, eventId])
 }
@@ -206,8 +212,10 @@ model StudioEventRegistration {
   event  Event  @relation(fields: [eventId], references: [id])
 
   reviewNotices ReviewNotice[]
+  performances  Performance[]
 
   @@unique([studioId, eventId])
+  @@unique([id, studioId, eventId])
 }
 
 model Dancer {
@@ -222,36 +230,44 @@ model Dancer {
   deletedBy               String?
   studio                  Studio                   @relation(fields: [studioId], references: [id])
   performanceParticipants PerformanceParticipant[]
+
+  @@unique([id, studioId])
 }
 
 model Performance {
-  id           String    @id @default(cuid())
-  eventId      String
-  categoryId   String
-  ageGroupId   String
-  formatId     String
-  title        String
-  durationSec  Int
-  orderOnStage Int
-  deletedAt    DateTime?
-  deletedBy    String?
+  id             String    @id @default(cuid())
+  eventId        String
+  studioId       String
+  registrationId String
+  categoryId     String
+  ageGroupId     String
+  formatId       String
+  title          String
+  durationSec    Int
+  orderOnStage   Int
+  deletedAt      DateTime?
+  deletedBy      String?
 
-  ageGroup     AgeGroup                 @relation(fields: [ageGroupId], references: [id])
-  category     DanceCategory            @relation(fields: [categoryId], references: [id])
+  studio       Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  registration StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  ageGroup     AgeGroup                 @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  category     DanceCategory            @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   event        Event                    @relation(fields: [eventId], references: [id])
-  format       DanceFormat              @relation(fields: [formatId], references: [id])
+  format       DanceFormat              @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   participants PerformanceParticipant[]
   scores       Score[]
 
   @@unique([eventId, orderOnStage])
+  @@unique([id, studioId])
 }
 
 model PerformanceParticipant {
   performanceId String
   dancerId      String
+  studioId      String
 
-  dancer      Dancer      @relation(fields: [dancerId], references: [id])
-  performance Performance @relation(fields: [performanceId], references: [id])
+  dancer      Dancer      @relation(fields: [dancerId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
+  performance Performance @relation(fields: [performanceId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([performanceId, dancerId])
 }

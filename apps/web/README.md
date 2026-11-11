@@ -45,6 +45,13 @@ See [event contract](../../docs/api/events.md) and
 
 ## M2 review and applications
 
+The read-only organizer performance register is at
+`/admin/events/:eventId/performances?studio=:studioId`, linked from event details.
+It shows saved performance titles, explicit studio applications and participant
+counts, including zero. URL filters, error/retry, loading/empty states and session
+recovery use Cobalt and ET/EN/RU. Entry editing/configuration/submission retain
+their M3 gates. [Ownership evidence](../../docs/PERFORMANCE_OWNERSHIP_VALIDATION.md).
+
 Global admins review independent decisions at /admin/events/:eventId/applications;
 dashboard counts link into each pending queue. All verified members can use
 /applications and /events/:id/register or /events/:id/studio?studio=:studioId

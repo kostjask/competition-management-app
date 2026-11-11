@@ -74,7 +74,9 @@ implemented by these contracts.
 P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
 intent commits with each changed decision under ADR-021; fake mode never claims
 sent mail and provider acceptance never claims inbox delivery. The next feature
-task is P3-PERFORMANCE-OWNER, before dependent M3 entry work.
+task is P3-HISTORY, with P3-CALENDAR-DATES before dependent M3 entry editing.
+P3-PERFORMANCE-OWNER/CONSTRAINTS and the read-only organizer register are locally
+implemented under [ADR-022](adr/022-performance-ownership-and-constraints.md).
 ADR-019 content policy is accepted and ADR-020 implements event content storage/editors. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and
 delivered-scope human review remain mandatory before M2/M4 external release.

@@ -60,6 +60,8 @@ try {
     $expectedSql += "`n" + (($eventSetupSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $reviewSql = Get-Content -Raw apps/api/prisma/migrations/20261110010000_application_review/migration.sql
     $expectedSql += "`n" + (($reviewSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $ownershipSql = Get-Content -Raw apps/api/prisma/migrations/20261111000000_performance_ownership/migration.sql
+    $expectedSql += "`n" + (($ownershipSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -97,6 +99,39 @@ UPDATE "Event" SET description = E'  Retained organizer prose\nSecond line  ' WH
             $migrationSql = Get-Content -Raw (Join-Path $migration.FullName 'migration.sql')
             # Each migration gets one transaction even when it declares its own.
             $migrationSql = $migrationSql -replace '(?m)^(BEGIN|COMMIT);\r?$', ''
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261111000000_performance_ownership') {
+                $sql += @'
+INSERT INTO "Judge" (id, "userId", "eventId", name) VALUES ('ownership-judge', 'user', 'event', 'Fixture');
+INSERT INTO "Score" (id, "performanceId", "judgeId", criterion, value) VALUES ('ownership-score', 'performance', 'ownership-judge', 'Fixture', 5);
+'@
+                # Every probe is rolled back by a PL/pgSQL exception subtransaction.
+                # Test the entire migration, including DDL rollback after range/FK errors.
+                $probes = @(
+                    @{ Mutation = 'DELETE FROM "PerformanceParticipant" WHERE "performanceId" = ''performance'';'; State = 'P0001' },
+                    @{ Mutation = 'DELETE FROM "StudioEventRegistration" WHERE id = ''registration'';'; State = 'P0001' },
+                    @{ Mutation = 'UPDATE "Studio" SET "eventId" = ''APPROVED'' WHERE id = ''studio'';'; State = 'P0001' },
+                    @{ Mutation = 'INSERT INTO "Studio" (id,"eventId",name) VALUES (''mixed-studio'',''event'',''Mixed fixture''); INSERT INTO "StudioEventRegistration" (id,"studioId","eventId","updatedAt") VALUES (''mixed-reg'',''mixed-studio'',''event'',now()); INSERT INTO "Dancer" (id,"studioId","firstName","lastName","birthDate") VALUES (''mixed-dancer'',''mixed-studio'',''Fixture'',''Mixed'',''2010-01-01''); INSERT INTO "PerformanceParticipant" ("performanceId","dancerId") VALUES (''performance'',''mixed-dancer'');'; State = 'P0001' },
+                    @{ Mutation = 'UPDATE "DanceCategory" SET "eventId" = ''APPROVED'' WHERE id = ''category'';'; State = '23503' },
+                    @{ Mutation = 'UPDATE "AgeGroup" SET "minAge" = -1 WHERE id = ''age'';'; State = '23514' },
+                    @{ Mutation = 'UPDATE "Event" SET "maxStudios" = 0 WHERE id = ''event'';'; State = '23514' }
+                )
+                foreach ($probe in $probes) {
+                    $sql += @"
+DO `$probe`$ BEGIN
+  BEGIN
+    $($probe.Mutation)
+    EXECUTE `$migration`$$migrationSql`$migration`$;
+    RAISE EXCEPTION 'Ownership migration accepted invalid upgrade';
+  EXCEPTION WHEN SQLSTATE '$($probe.State)' THEN
+    IF SQLERRM = 'Ownership migration accepted invalid upgrade' THEN RAISE; END IF;
+    IF '$($probe.State)' = 'P0001' AND SQLERRM NOT LIKE 'Performance ownership requires reviewed repair:%' THEN RAISE; END IF;
+  END;
+  IF EXISTS (SELECT FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'Performance' AND column_name = 'studioId') THEN RAISE EXCEPTION 'Failed ownership migration retained DDL'; END IF;
+  IF NOT EXISTS (SELECT FROM "PerformanceParticipant" WHERE "performanceId" = 'performance' AND "dancerId" = 'dancer') THEN RAISE EXCEPTION 'Failed ownership migration lost participants'; END IF;
+END `$probe`$;
+"@
+                }
+            }
             $sql += "`nBEGIN;`n$migrationSql`nCOMMIT;`n"
         }
         $sql += @'

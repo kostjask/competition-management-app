@@ -570,10 +570,10 @@ async function performanceFixture(t) {
   const f = await fixture(t);
   const { prisma, calls } = f;
   const dancer = { id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: new Date('2012-02-29'), photoUrl: null };
-  const performance = { id: 'p', eventId: 'e', title: 'Title', durationSec: 60, orderOnStage: 1,
+  const performance = { id: 'p', eventId: 'e', studioId: 's', registrationId: 'registration', title: 'Title', durationSec: 60, orderOnStage: 1,
     categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [{ dancerId: 'd', dancer }] };
   const studio = { approvalStatus: 'APPROVED', event: { stage: 'REGISTRATION_OPEN' },
-    representatives: [{ id: 'r' }], registrations: [{ status: 'APPROVED', canEditDuringReview: false }] };
+    representatives: [{ id: 'r' }], registrations: [{ id: 'registration', status: 'APPROVED', canEditDuringReview: false }] };
   prisma.userRole.findMany = async ({ where }) => where.userId === 'admin'
     ? [{ eventId: null, role: { key: 'admin', permissions: [] } }]
     : [{ eventId: where.userId === 'wrong-event' ? 'other' : 'e', role: { key: 'representative',
@@ -600,11 +600,11 @@ test('performance canonical CRUD uses explicit DTOs and transactional nested par
   assert.equal((await request(performancePath, { user: 'owner' })).status, 200);
   const created = await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput });
   assert.equal(created.status, 201);
-  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'title']);
+  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'studioId', 'title']);
   assert.equal(created.body.participants[0].dancer.birthDate, '2012-02-29');
   const data = calls.find(({ name }) => name === 'performance-create').args.data;
   assert.equal(data.title, 'Title');
-  assert.equal('studioId' in data, false);
+  assert.equal(data.studioId, 's'); assert.equal(data.registrationId, 'registration');
   assert.deepEqual(data.participants.createMany.data, [{ dancerId: 'd' }]);
   assert.equal((await request(`${performancePath}/p`, { user: 'owner' })).status, 200);
   const patched = await request(`${performancePath}/p`, { user: 'owner', method: 'PATCH', body: { title: ' Changed ', dancerIds: ['d'] } });
@@ -644,7 +644,7 @@ test('performance authentication, event permissions, ownership, approval and rev
 
 test('performance strict inputs reject spoofing, invalid selections and duplicate participants', async (t) => {
   const { request, calls } = await performanceFixture(t);
-  for (const body of [{ ...performanceInput, eventId: 'other' }, { ...performanceInput, title: ' ' },
+  for (const body of [{ ...performanceInput, eventId: 'other' }, { ...performanceInput, registrationId: 'foreign' }, { ...performanceInput, title: ' ' },
     { ...performanceInput, dancerIds: [] }, { ...performanceInput, dancerIds: ['d', 'd'] },
     { ...performanceInput, durationSec: 2147483648 }]) {
     const result = await request(performancePath, { user: 'owner', method: 'POST', body });
@@ -660,26 +660,32 @@ test('performance strict inputs reject spoofing, invalid selections and duplicat
   assert.equal((await request(`${performancePath}?eventId=other`, { user: 'owner' })).status, 400);
 });
 
-test('performance parent substitution and ambiguous legacy participants fail closed for admins too', async (t) => {
+test('performance parent substitution fails closed and empty participants retain explicit ownership', async (t) => {
   const { request, performance } = await performanceFixture(t);
   for (const method of ['GET', 'PATCH', 'DELETE']) {
     assert.equal((await request('/api/v1/events/other/performances/p', { user: 'admin', method, body: method === 'PATCH' ? { title: 'x' } : undefined })).status, 404);
   }
   assert.equal((await request(performancePath, { user: 'admin', method: 'POST', body: { ...performanceInput, studioId: 'other' } })).status, 404);
-  const original = performance.participants;
-  for (const participants of [[], [...original, { dancerId: 'foreign', dancer: { ...original[0].dancer, id: 'foreign', studioId: 'other' } }]]) {
-    performance.participants = participants;
-    assert.equal((await request(`${performancePath}/p`, { user: 'admin' })).status, 409);
-    assert.deepEqual((await request(performancePath, { user: 'admin' })).body, []);
-  }
+  performance.participants = [];
+  const detail = await request(performancePath + '/p', { user: 'owner' });
+  assert.equal(detail.status, 200); assert.equal(detail.body.studioId, 's');
+  assert.equal(detail.body.registrationId, 'registration');
+  assert.equal((await request(performancePath, { user: 'owner' })).body.length, 1);
 });
 
-test('performance lists constrain every participant and retired routes cannot mutate', async (t) => {
+test('performance creation requires an existing registration even for admins', async (t) => {
+  const { request, studio, calls } = await performanceFixture(t);
+  studio.registrations = [];
+  assert.equal((await request(performancePath, { user: 'admin', method: 'POST', body: performanceInput })).status, 409);
+  assert.equal(calls.some(({ name }) => name === 'performance-create'), false);
+});
+
+test('performance lists constrain explicit owners and retired routes cannot mutate', async (t) => {
   const { request, calls } = await performanceFixture(t);
   assert.equal((await request(`${performancePath}?studioId=s`, { user: 'owner' })).status, 200);
   const where = calls.find(({ name }) => name === 'performance-list').args.where;
   assert.equal(where.eventId, 'e'); assert.equal(where.deletedAt, null);
-  assert.deepEqual(where.participants.every.dancer.studioId.in, ['s']);
+  assert.deepEqual(where.studioId.in, ['s']);
   const studios = calls.find(({ name }) => name === 'performance-studios').args.where;
   assert.deepEqual(studios.representatives, { some: { userId: 'owner', active: true } });
   assert.deepEqual(studios.registrations, { some: { eventId: 'e', status: 'APPROVED' } });

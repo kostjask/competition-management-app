@@ -55,7 +55,7 @@ module.exports = async function ({ client, baseUrl, adminToken, jwtSecret }) {
     const category = await client.danceCategory.create({data:{name:'Staff fixture',eventId:event.id}});
     const format = await client.danceFormat.create({data:{name:'Staff fixture',eventId:event.id,minParticipants:1,maxParticipants:10,maxDurationSeconds:120}});
     const ageGroup = await client.ageGroup.create({data:{name:'Staff fixture',eventId:event.id,minAge:0}});
-    return client.performance.create({data:{eventId:event.id,categoryId:category.id,formatId:format.id,ageGroupId:ageGroup.id,title:'Staff history',durationSec:60,orderOnStage:1}});
+    return client.performance.create({ data: { ...await require("./performance-fixture.cjs")(client, event.id, "check-staff-access.cjs owner"),eventId:event.id,categoryId:category.id,formatId:format.id,ageGroupId:ageGroup.id,title:'Staff history',durationSec:60,orderOnStage:1}});
   })();
   const score = await client.score.create({data:{judgeId:judge.id,performanceId:performance.id,criterion:'staff-preservation',value:5}});
   const path = '/events/' + event.id + '/staff/' + assignment.id + '/remove';

@@ -18,7 +18,7 @@ export const UpdatePerformanceBodySchema = z.strictObject(fields).partial().refi
   { message: "At least one performance field is required", params: { reason: "nonemptyPatch" } },
 );
 export const PerformanceSchema = z.strictObject({
-  id: IdSchema, eventId: IdSchema, title: z.string(), durationSec: z.number().int(),
+  id: IdSchema, eventId: IdSchema, studioId: IdSchema, registrationId: IdSchema, title: z.string(), durationSec: z.number().int(),
   orderOnStage: z.number().int(), categoryId: IdSchema, ageGroupId: IdSchema, formatId: IdSchema,
   participants: z.array(z.strictObject({ dancerId: IdSchema, dancer: DancerSchema })),
 });

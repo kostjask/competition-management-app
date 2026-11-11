@@ -481,6 +481,19 @@ suites concurrently because each owns port 4177 and its output directory.
 Use [setup evidence](EVENT_SETUP_VALIDATION.md) for final commands/results and
 human/provider/hosted limits. Screenshots/traces use synthetic data and stay ignored.
 
+## Performance ownership and organizer register
+
+For P3-PERFORMANCE-OWNER/CONSTRAINTS, start with
+`pnpm.cmd test:focus api routes.test.cjs` and
+`pnpm.cmd test:focus browser performances.spec.ts` on Windows (use `pnpm` elsewhere).
+Run the full workspace, browser, baseline and migration gates before completion.
+The existing baseline's `check-performances.cjs` covers explicit owners, zero
+participants, direct SQL bounds/compound keys, owner immutability, active approval/
+scope/stage denials, concurrency and rollback. The migration suite tests whole-DDL
+refusal and full fresh/upgrade parity. [Ownership evidence](PERFORMANCE_OWNERSHIP_VALIDATION.md)
+records commands/results and external release limits. The organizer register is
+read-only; future entry editing/configuration retains its M3 prerequisites.
+
 ## Organizer review and applicant applications (S06–S08/F03)
 
 Start with `pnpm test:focus api routes.test.cjs`,
