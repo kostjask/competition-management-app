@@ -55,8 +55,8 @@ remaining human, real-inbox and hosted release gates.
 - **Sections / components:** title/details, searchable participant selection with counts, configuration/eligibility guidance, duration, music link and save status.
 - **States:** no entries/configuration, loading roster/options, field/relationship error, lock/deadline, unsaved/saving/saved/failed/conflict; preserve selection.
 - **Responsive / accessibility:** mobile sequential form, desktop details/participants with summary; selection uses actual checkboxes, selected counts and linked nested errors.
-- **API:** event performances CRUD plus dancer/configuration reads. Setup reads currently require event.manage; P5-ENTRIES must supply an authorized representative configuration-read contract, not grant management permission. Draft/revision contracts require P3-ENTRIES/HISTORY.
-- **Acceptance:** no schedule order required by target draft workflow; current API still requires order/full fields, so do not fake draft success. Backend rejects cross-event options/cross-studio participants. F04.
+- **API:** event performances CRUD plus dancer/configuration reads. Setup reads currently require event.manage; P5-ENTRIES must supply an authorized representative configuration-read contract, not grant management permission. ADR-023/024 now provide revisioned nullable unscheduled draft contracts; full representative S10 editing remains gated on P3-ENTRIES/P4-ENTRY-CONFIG.
+- **Acceptance:** no schedule order is required for draft saves. Backend rejects supplied cross-event options/cross-studio participants. Draft acknowledgement never implies submission eligibility. F04.
 
 ## S11 — Music upload
 
@@ -78,6 +78,12 @@ register with loading/empty/error/retry, ET/EN/RU, URL-filter and session recove
 it makes no eligibility, music, receipt or submission claims. The checklist and
 correction/submission controls below retain their model gates.
 [Ownership evidence](../PERFORMANCE_OWNERSHIP_VALIDATION.md).
+
+P3-ENTRIES-DRAFT extends this foundation with inline owner/optional-title creation,
+missing-field summaries and separate unscheduled labels under ADR-024. Uncertain
+creates retain their body/operation for explicit retry through filter/session
+recovery; decoded acknowledgement is required for success. Nullable saved history
+is readable. This does not deliver the representative S10 editor or S12 submission.
 
 - **Purpose / roles / routes:** resolve blockers and submit/review; own approved reps and admin review, proposed routes in inventory.
 - **Primary action:** fix a linked issue, then submit entries or request authorized correction.

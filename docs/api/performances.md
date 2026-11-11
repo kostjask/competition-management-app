@@ -12,6 +12,7 @@ POST accepts:
 ```json
 {
   "studioId": "studio-id",
+  "operationId": "8b0eef37-d79f-40be-8f9e-d1e181d6df59",
   "title": "Example performance",
   "durationSec": 120,
   "orderOnStage": 1,
@@ -23,13 +24,15 @@ POST accepts:
 ```
 
 PATCH requires `expectedRevision` and a nonempty subset of those fields except `studioId`. Unknown
-fields, blank titles, empty/duplicate dancer lists, and nonpositive/noninteger
+fields, blank supplied titles, duplicate dancer lists, and nonpositive/noninteger
 or PostgreSQL-incompatible duration/order values are rejected. IDs in category,
 age group, and format must belong to the route event. Every selected dancer must
 be active and belong to the chosen studio. PATCH revalidates the resulting
-configuration and participant set even when those fields are omitted. Invalid
+configuration and participant set even when those fields are omitted. Participant
+lists are limited to 1,000 supplied IDs. Null
+configuration is valid for drafts; supplied IDs still require exact relationships. Invalid
 configuration/participants return 409. Format limits and age eligibility remain
-Phase 5 work; no new age policy is implied here.
+P3-ENTRIES submission work; no submission eligibility is implied by a draft save.
 
 The model stores immutable `studioId` and `registrationId` ownership under
 [ADR-022](../adr/022-performance-ownership-and-constraints.md). Compound keys
@@ -44,7 +47,13 @@ parent/participant/active-record constraints still apply.
 
 GET collection returns performances of authorized active owners in that event,
 ordered by stage order then ID. Empty participant sets retain their owner and are
-readable; create/PATCH still require nonempty complete selections until P3-ENTRIES.
+readable. Under [ADR-024](../adr/024-incomplete-entry-drafts.md), POST requires
+only `studioId`: omitted title/duration/order/category/age-group/format become null,
+and omitted participants become an empty list. PATCH omission retains values,
+explicit null clears entry/configuration fields, and `dancerIds: []` clears the
+participant set. Positive supplied values and all relationship checks remain.
+Title is limited to 500 characters. Null stage order is independent of missing
+entry fields and is never required for drafting or future submission.
 Optional strict query `?studioId=...` narrows this scope; it never grants access.
 No authorized studio yields an empty array; an explicitly requested inaccessible
 studio fails access checks. Missing event/item/active studio yields 404. A missing
@@ -64,8 +73,10 @@ paths, and audit fields. Backend serialization and frontend responses are
 runtime-validated. Client helpers now take `eventId`; creation carries `studioId`
 in its body; the server derives the registration ID. PATCH cannot transfer ownership
 and POST rejects a caller-supplied registration ID. List accepts an optional studio
-filter. Global admins use these canonical reads in the read-only organizer register
-at `/admin/events/:eventId/performances?studio=:studioId`; the UI displays no dancer
+filter. Global admins use these canonical reads in the organizer register
+at `/admin/events/:eventId/performances?studio=:studioId`; its inline form now creates
+owner/title-only drafts with a retained operation ID and lists missing fields.
+Presence checks are not eligibility, music or submission validation. The UI displays no dancer
 personal details and links the owner to its application. The unused duplicate performance type in `packages/types` is
 removed; shared schemas are canonical. Unused legacy nomination schemas/types are now removed.
 
@@ -75,12 +86,29 @@ stage-order conflict rolls back replacement too. The existing unique
 `(eventId, orderOnStage)` constraint returns 409 on conflict, including orders
 held by archived performances. DELETE writes `deletedAt`/`deletedBy` and retains
 relations; archived performances cannot be read, patched, or deleted again.
-Row CHECKs enforce positive duration/order, event limits/date ordering and age/format
+Row CHECKs enforce positive supplied duration/order, event limits/date ordering and age/format
 bounds. Configuration and participant keys also apply to direct SQL. The owner-change
 trigger and restrictive foreign keys preserve identity, including archived rows.
 Migration fresh/upgrade/refusal and API/database/UI checks are in
 [ownership evidence](../PERFORMANCE_OWNERSHIP_VALIDATION.md).
+Multiple null stage orders are permitted; assigned orders remain reserved.
 Restore, order reuse and cross-event studio reuse remain later work.
+
+## Draft creation recovery
+
+POST optionally accepts UUID `operationId`. Organizer clients always supply it.
+Migration 36 retains the ID with a normalized actor/event-bound digest; it is not
+returned in DTOs. Matching retries recheck current access and return the current
+active performance with 201 without adding another revision or audit. Reconciliation
+uses current read access even after the write window closes; a new operation still
+requires write access. Changed
+payload/actor/event reuse and archived-entry reuse return 409. A concurrent first
+attempt may return 409; retry the same body/ID. Calls without an operation ID have
+no create deduplication guarantee and must reconcile uncertain outcomes manually.
+The form freezes uncertain requests for explicit retry, preserves fields through
+session recovery/filter changes, and reports saved only after decoding the server
+response. A definite first-attempt input/access rejection permits editing retained
+fields. A denial after an uncertain attempt retains the original operation.
 
 ## Saved revisions and organizer history
 
@@ -89,7 +117,9 @@ immutable, privacy-minimal saved snapshots. POST starts at revision 1; PATCH and
 DELETE increment once and atomically capture the resulting entry, participants,
 studio display name, category/age/format labels and bounds, event timezone and
 age reference date. Durable audit includes actor/IDs/revision only. Later source
-edits never rewrite a saved snapshot. DELETE supplies the expected revision in
+edits never rewrite a saved snapshot. New captures use policyVersion 2 with null
+entry fields/configuration allowed; existing version 1 records remain unchanged.
+DELETE supplies the expected revision in
 `?expectedRevision=3`; omitted, malformed or unknown query keys return 400.
 All actors obey revision checks. Stale/concurrent writes return 409; reload and
 compare before retrying. A lost response must be reconciled through GET/history,

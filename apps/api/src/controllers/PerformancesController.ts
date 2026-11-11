@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import { createHash } from "node:crypto";
 import {
   CreatePerformanceBodySchema, UpdatePerformanceBodySchema, PerformanceSchema,
   PerformanceCollectionParamsSchema, PerformanceItemParamsSchema, PerformanceQuerySchema,
@@ -90,14 +91,16 @@ export class PerformancesController extends BaseController {
   }
 
   private async validateSelection(db: Prisma.TransactionClient, eventId: string, studioId: string,
-    selection: { categoryId: string; ageGroupId: string; formatId: string; dancerIds: string[] }) {
+    selection: { categoryId: string | null; ageGroupId: string | null; formatId: string | null; dancerIds: string[] }) {
     const [category, ageGroup, format, dancers] = await Promise.all([
-      db.danceCategory.findFirst({ where: { id: selection.categoryId, eventId }, select: { id: true } }),
-      db.ageGroup.findFirst({ where: { id: selection.ageGroupId, eventId }, select: { id: true } }),
-      db.danceFormat.findFirst({ where: { id: selection.formatId, eventId }, select: { id: true } }),
+      selection.categoryId === null ? null : db.danceCategory.findFirst({ where: { id: selection.categoryId, eventId }, select: { id: true } }),
+      selection.ageGroupId === null ? null : db.ageGroup.findFirst({ where: { id: selection.ageGroupId, eventId }, select: { id: true } }),
+      selection.formatId === null ? null : db.danceFormat.findFirst({ where: { id: selection.formatId, eventId }, select: { id: true } }),
       db.dancer.findMany({ where: { id: { in: selection.dancerIds }, studioId, deletedAt: null }, select: { id: true } }),
     ]);
-    if (!category || !ageGroup || !format) throw new ConflictError("Invalid event configuration", undefined, "invalidConfiguration");
+    if ((selection.categoryId !== null && !category) || (selection.ageGroupId !== null && !ageGroup) || (selection.formatId !== null && !format)) {
+      throw new ConflictError("Invalid event configuration", undefined, "invalidConfiguration");
+    }
     if (dancers.length !== selection.dancerIds.length) throw new ConflictError("Participants must be active dancers of the performance studio", undefined, "invalidParticipants");
   }
 
@@ -106,7 +109,7 @@ export class PerformancesController extends BaseController {
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         const target = error.meta?.target;
-        if (Array.isArray(target) && target.includes("performanceId") && target.includes("revision")) {
+        if (Array.isArray(target) && (target.includes("creationOperationId") || (target.includes("performanceId") && target.includes("revision")))) {
           throw new ConflictError("Performance history changed; reload before retrying", undefined, "concurrentChange");
         }
         throw new ConflictError("Stage order is already reserved for this event", undefined, "orderReserved");
@@ -154,12 +157,29 @@ export class PerformancesController extends BaseController {
 
   async create(req: Request, res: Response): Promise<void> {
     const { eventId } = PerformanceCollectionParamsSchema.parse(req.params);
-    const { studioId, dancerIds, ...fields } = CreatePerformanceBodySchema.parse(req.body);
+    const body = CreatePerformanceBodySchema.parse(req.body);
+    const { studioId, dancerIds, operationId, ...fields } = body;
+    // Bind retries to the authenticated actor and route; never return another owner's entry.
+    const digest = createHash("sha256").update(JSON.stringify([this.getUserId(req), eventId, body])).digest("hex");
     const result = await this.transaction(async (db) => {
-      const registrationId = await this.requireAccess(req, db, eventId, studioId, true);
+      const registrationId = await this.requireAccess(req, db, eventId, studioId);
+      if (operationId) {
+        const existing = await db.performance.findUnique({ where: { creationOperationId: operationId },
+          select: { id: true, eventId: true, creationDigest: true, deletedAt: true } });
+        if (existing) {
+          if (existing.creationDigest !== digest || existing.eventId !== eventId || existing.deletedAt !== null) {
+            throw new ConflictError("Creation changed; reconcile before retrying", undefined, "concurrentChange");
+          }
+          const { performance } = await this.findItem(req, db, eventId, existing.id);
+          return serialize(performance);
+        }
+      }
+      await this.requireAccess(req, db, eventId, studioId, true);
       await this.validateSelection(db, eventId, studioId, { ...fields, dancerIds });
       const created = await db.performance.create({
-        data: { eventId, studioId, registrationId, ...fields, participants: { createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) } } },
+        data: { eventId, studioId, registrationId, ...fields,
+          ...(operationId && { creationOperationId: operationId, creationDigest: digest }),
+          participants: { createMany: { data: dancerIds.map((dancerId) => ({ dancerId })) } } },
         select: performanceSelect,
       });
       await this.capture(req, db, created, "CREATE");
@@ -176,9 +196,9 @@ export class PerformancesController extends BaseController {
       const { performance, studioId } = await this.findItem(req, db, eventId, performanceId, true);
       if (performance.revision !== expectedRevision) throw new ConflictError("Performance changed; reload before retrying", undefined, "concurrentChange");
       await this.validateSelection(db, eventId, studioId, {
-        categoryId: fields.categoryId ?? performance.categoryId,
-        ageGroupId: fields.ageGroupId ?? performance.ageGroupId,
-        formatId: fields.formatId ?? performance.formatId,
+        categoryId: fields.categoryId === undefined ? performance.categoryId : fields.categoryId,
+        ageGroupId: fields.ageGroupId === undefined ? performance.ageGroupId : fields.ageGroupId,
+        formatId: fields.formatId === undefined ? performance.formatId : fields.formatId,
         dancerIds: dancerIds ?? performance.participants.map(({ dancerId }) => dancerId),
       });
       const updated = await db.performance.update({

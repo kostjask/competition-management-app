@@ -57,7 +57,7 @@ but omit seed rerun/production-refusal/redeployment and unrelated upgrade checks
 Those assertions remain mandatory in the full baseline. Registration mode also
 runs event setup; event-setup mode runs only that workflow after common smoke checks.
 Both modes retain the full suite's initial fixture state and finally cleanup.
-The entry-foundations mode runs dancer/performance HTTP/PostgreSQL checks after
+The entry-foundations mode runs dancer/performance/draft HTTP/PostgreSQL checks after
 the same migration/seed/authentication smoke setup, with identical random-database
 ownership and cleanup. It skips unrelated upgrade/registration checks; the full
 baseline remains mandatory. Use it first after a dancer/history failure.

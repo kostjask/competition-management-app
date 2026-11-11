@@ -583,7 +583,7 @@ async function performanceFixture(t) {
   prisma.studio.findMany = async (args) => { calls.push({ name: 'performance-studios', args }); return [{ id: 's' }]; };
   prisma.danceCategory.findFirst = prisma.ageGroup.findFirst = prisma.danceFormat.findFirst = async ({ where }) =>
     where.id === 'foreign' ? null : { id: where.id };
-  prisma.dancer.findMany = async ({ where }) => where.id.in.every((id) => id === 'd') ? [{ id: 'd' }] : [];
+  prisma.dancer.findMany = async ({ where }) => where.id.in.every((id) => id === 'd') ? where.id.in.map(id => ({ id })) : [];
   prisma.performance = {
     findFirst: async ({ where }) => where.id === 'p' && where.eventId === 'e' ? performance : null,
     findMany: async (args) => { calls.push({ name: 'performance-list', args }); return [performance]; },
@@ -670,7 +670,7 @@ test('performance authentication, event permissions, ownership, approval and rev
 test('performance strict inputs reject spoofing, invalid selections and duplicate participants', async (t) => {
   const { request, calls } = await performanceFixture(t);
   for (const body of [{ ...performanceInput, eventId: 'other' }, { ...performanceInput, registrationId: 'foreign' }, { ...performanceInput, title: ' ' },
-    { ...performanceInput, dancerIds: [] }, { ...performanceInput, dancerIds: ['d', 'd'] },
+    { ...performanceInput, dancerIds: ['d', 'd'] },
     { ...performanceInput, durationSec: 2147483648 }]) {
     const result = await request(performancePath, { user: 'owner', method: 'POST', body });
     assert.equal(result.status, 400); assert.equal(result.body.code, 'VALIDATION_ERROR');
@@ -696,6 +696,20 @@ test('performance parent substitution fails closed and empty participants retain
   assert.equal(detail.status, 200); assert.equal(detail.body.studioId, 's');
   assert.equal(detail.body.registrationId, 'registration');
   assert.equal((await request(performancePath, { user: 'owner' })).body.length, 1);
+});
+
+test('incomplete performance drafts retain nulls, clear selections and still validate supplied relationships', async (t) => {
+  const { request, calls, performance } = await performanceFixture(t);
+  assert.equal((await request(performancePath, { user: 'owner', method: 'POST', body: { studioId: 's' } })).status, 201);
+  const created = calls.find(call => call.name === 'performance-create').args.data;
+  assert.equal(created.title, null); assert.equal(created.orderOnStage, null);
+  assert.equal(created.categoryId, null); assert.deepEqual(created.participants.createMany.data, []);
+  performance.categoryId = null; performance.ageGroupId = null; performance.formatId = null;
+  assert.equal((await request(performancePath + '/p', { user: 'owner', method: 'PATCH', body: { title: null, durationSec: null, dancerIds: [] } })).status, 200);
+  const updated = calls.find(call => call.name === 'performance-update').args.data;
+  assert.equal(updated.title, null); assert.equal(updated.durationSec, null);
+  assert.deepEqual(updated.participants.createMany.data, []);
+  assert.equal((await request(performancePath, { user: 'owner', method: 'POST', body: { studioId: 's', categoryId: 'foreign' } })).status, 409);
 });
 
 test('performance creation requires an existing registration even for admins', async (t) => {

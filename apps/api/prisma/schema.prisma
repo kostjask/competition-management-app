@@ -239,22 +239,25 @@ model Performance {
   eventId        String
   studioId       String
   registrationId String
-  categoryId     String
-  ageGroupId     String
-  formatId       String
-  title          String
-  durationSec    Int
-  orderOnStage   Int
+  categoryId     String?
+  ageGroupId     String?
+  formatId       String?
+  title          String?
+  durationSec    Int?
+  orderOnStage   Int?
   deletedAt      DateTime?
   deletedBy      String?
   revision       Int       @default(1)
 
+  creationOperationId String? @unique @db.Uuid
+  creationDigest      String?
+
   studio       Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   registration StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
-  ageGroup     AgeGroup                 @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  category     DanceCategory            @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  ageGroup     AgeGroup?                @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  category     DanceCategory?           @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   event        Event                    @relation(fields: [eventId], references: [id])
-  format       DanceFormat              @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  format       DanceFormat?             @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   participants PerformanceParticipant[]
   scores       Score[]
   revisions    PerformanceRevision[]

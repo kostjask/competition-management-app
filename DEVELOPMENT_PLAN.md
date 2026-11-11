@@ -1,23 +1,32 @@
 # Development checkpoint
 
-Updated: 2026-11-11. This file owns current priority, state summary and milestone
+Updated: 2026-11-12. This file owns current priority, state summary and milestone
 gates. Roadmap files own task checkboxes; [the map](docs/README.md) routes selected
 tasks to contracts/specifications. Read history only to investigate past evidence.
 
 ## Next action
 
-**Next: P3-ENTRIES.** P3-CALENDAR-DATES and P3-HISTORY's pre-entry design,
-immutable snapshot/revision storage and read-only organizer history foundations
-are delivered locally (2026-11-11). ADR-023/migrations 34-35 establish native birth
-dates, event-local age policy, frozen source values, optimistic conflict checks
-and atomic audit. [History/calendar evidence](docs/ENTRY_HISTORY_CALENDAR_VALIDATION.md)
-records full local gates, 177 Chromium cases and the focused post-review rerun.
-P3-HISTORY stays open for submission/receipt/correction consumer tests in
-P3-ENTRIES; its required design gates are ready. Decide incomplete draft
-representation before implementing unscheduled saves and pinned receipts. Entry
-editing/music/submission, external milestones and whole-UI approval remain open.
+**Next: P3-ENTRIES submission/receipt/correction lifecycle.** Its bounded
+P3-ENTRIES-DRAFT prerequisite implements nullable unscheduled saves on the same
+entry identity, revision/history preservation, actor-bound creation retries and
+the translated Cobalt organizer creation/completeness view under ADR-024/migration
+36. [Draft evidence](docs/ENTRY_DRAFT_VALIDATION.md) records validation and limits.
+ADR-023/migrations 34-35 already establish native dates, event-local ages, frozen
+source values and atomic audit. Before the next lifecycle implementation, record
+the submission unit, eligibility aggregation, entry/music deadlines and correction
+scope/lock/withdrawal matrix, coordinating later P4-ENTRY-CONFIG and music gates.
+Then implement pinned receipt/retry and scoped correction consumers with their
+organizer UI. P3-ENTRIES and P3-HISTORY remain open. Representative editing,
+music/submission UI, external milestones and whole-UI approval remain open.
 
 ## Current state
+
+- **M3 incomplete drafts (2026-11-11):** P3-ENTRIES-DRAFT adds nullable fields and
+  stage order without replacing entry IDs, immutable owners or snapshots. Canonical
+  CRUD validates supplied relationships, revisions and active access. Organizer
+  draft creation shows actual acknowledgement, missing fields and unscheduled
+  state; uncertain operations survive filter/session recovery. Completeness does
+  not imply eligibility/submission. [Evidence](docs/ENTRY_DRAFT_VALIDATION.md).
 
 - **M3 history/calendar foundations (2026-11-11):** ADR-023, native DATE, immutable
   saved snapshots, revisioned writes/audit and the translated Cobalt history
@@ -74,8 +83,9 @@ editing/music/submission, external milestones and whole-UI approval remain open.
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 35 migrations, including P4-CORE's additive event setup,
-  P4-REVIEW's reasons/notification relations ADR-022's ownership/constraints and ADR-023's calendar/history foundations.
+- Repository schema has 36 migrations, including P4-CORE's additive event setup,
+  P4-REVIEW's reasons/notification relations, ADR-022's ownership/constraints,
+  ADR-023's calendar/history foundations and ADR-024's incomplete drafts.
   The application database
   was not migrated in this slice; all new database checks use isolated fixtures.
   [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records the prior migration's local
@@ -92,7 +102,7 @@ editing/music/submission, external milestones and whole-UI approval remain open.
   requirements still apply. This completion pass used isolated test databases/
   schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [history/calendar, 2026-11-11](docs/ENTRY_HISTORY_CALENDAR_VALIDATION.md).
+Latest recorded runtime evidence: [entry drafts, 2026-11-11](docs/ENTRY_DRAFT_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -168,6 +178,7 @@ music and live/results work retain their own gates.
 | 8 - complete locally | P3-CONSTRAINTS | Event/owner/configuration/participant compound keys, row bounds, direct SQL/API/rollback/concurrency and fresh/upgrade parity pass local gates (2026-11-11). Score/judge consistency remains P6-SCORING-MODEL. |
 | 9 - foundations delivered; parent open | P3-HISTORY | ADR-023/migration 35 implement frozen snapshots, revisions/audit and organizer history. Concurrent submit/receipt/correction consumer tests remain P3-ENTRIES; pre-entry design gates are ready. |
 | 10 - complete locally | P3-CALENDAR-DATES | Migration 34 safely converts audited calendar dates; event-local completed-age/leap policy, shared calculation and organizer reference display pass local gates. Submit-time enforcement remains P3-ENTRIES. |
+| 11 - complete locally | P3-ENTRIES-DRAFT within P3-ENTRIES | ADR-024/migration 36, nullable unscheduled drafts, revisioned clearing/completion, actor-bound create retries and organizer creation/completeness UI pass local gates (2026-11-12). Submission/receipt/correction consumers keep the parent open. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
 ADR-019's M2 source-language/fallback policy is implemented for event descriptions
@@ -181,7 +192,8 @@ External operations proceed alongside this path when access is available; they
 remain release blockers without becoming blanket development blockers.
 
 Local M2 and the M3 ownership/constraint/calendar/history design foundations now
-pass. Next take P3-ENTRIES, completing P3-HISTORY consumer tests there, then
+pass. The bounded P3-ENTRIES-DRAFT slice delivers incomplete unscheduled saves.
+Next finish P3-ENTRIES lifecycle and P3-HISTORY consumer tests there, then
 P4-ENTRY-CONFIG/P5-ENTRIES and the
 P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION path. Develop the
 history/constraint contracts before dependent drafts/submission. Keep calendar

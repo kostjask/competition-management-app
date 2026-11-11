@@ -66,6 +66,8 @@ try {
     $calendarSql = Get-Content -Raw apps/api/prisma/migrations/20261111010000_calendar_birth_dates/migration.sql
     $expectedSql += "`n" + (($calendarSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $expectedSql += "`n" + (($historySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $draftSql = Get-Content -Raw apps/api/prisma/migrations/20261111030000_entry_drafts/migration.sql
+    $expectedSql += "`n" + (($draftSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {

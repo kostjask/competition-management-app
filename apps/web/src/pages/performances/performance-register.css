@@ -1,6 +1,6 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: saved studio and configuration revision ledger · v2.0.0 */
-/* Hallmark · pre-emit critique: performance and captured ownership lead; provenance is explicit and personal participant details stay private. */
-/* Hallmark · finish-review: subagent · 2 findings resolved after inspected recapture: history-specific error and fact-ledger loading. No material slots. */
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: incomplete entry and saved ownership ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: missing fields and unscheduled state remain distinct from submission; retries preserve identity and captured configuration is labelled. */
+/* Hallmark · finish-review: subagent · 1 Finish finding resolved: labelled null/mixed configuration. Playwright recapture; no material slots. */
 @import "../events/event-setup.css";
 .performance-filter { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); margin-block: var(--space-lg); }
 .performance-filter .ui-field { flex: 1 1 16rem; max-width: 28rem; }
@@ -36,3 +36,8 @@
 .performance-history-skeleton-facts span:last-child { max-width: 18rem; }
 @media (max-width: 48rem) { .performance-history-skeleton-facts { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 48rem) { .performance-revisions dl { grid-template-columns: minmax(0, 1fr); } }
+.performance-completeness { display: block; color: var(--color-ink-secondary); font-weight: 400; font-size: var(--text-sm); margin-block-start: var(--space-xs); }
+.performance-draft { border-top: 2px solid var(--color-ink); margin-block-start: var(--space-xl); padding-block: var(--space-lg); }
+.performance-draft-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-column); margin-block: var(--space-lg); }
+@media (max-width: 48rem) { .performance-draft-fields { grid-template-columns: minmax(0, 1fr); } }
+.performance-configuration-value { display: block; }

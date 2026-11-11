@@ -53,6 +53,11 @@ ledger and the event-local age reference date. Captured studio/configuration nam
 and explicit migration provenance carry the history; participant personal details
 stay out of the rendered register. Loading, empty, error/retry, session restoration
 and close-to-trigger focus use the same controls and ET/EN/RU system.
+P3-ENTRIES-DRAFT adds an inline owner/optional-title form, honest missing-field
+summaries and separate stage-order availability. Uncertain saves retain their
+operation and fields across filters/session recovery. New nullable snapshots use
+the same ledger with explicit unselected labels. Presence never implies eligibility
+or submission. No material/image slots are needed.
 The shared shell, auth, staff and unfinished workflows retain their
 own bounded P9-UI-REDESIGN slices. Preserve their behavior during future adoption;
 do not interpret the old visuals as approved or restyle unrelated screens within
