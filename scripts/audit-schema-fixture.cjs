@@ -43,8 +43,8 @@ INSERT INTO "Dancer" (id,"studioId","firstName","lastName","birthDate") SELECT '
 INSERT INTO "DanceCategory" (id,"eventId",name) SELECT 'c'||i,'e'||i,'Fixture' FROM generate_series(1,100) i;
 INSERT INTO "AgeGroup" (id,"eventId",name,"minAge") SELECT 'a'||i,'e'||i,'Fixture',0 FROM generate_series(1,100) i;
 INSERT INTO "DanceFormat" (id,"eventId",name,"minParticipants","maxParticipants","maxDurationSeconds") SELECT 'f'||i,'e'||i,'Fixture',1,10,300 FROM generate_series(1,100) i;
-INSERT INTO "Performance" (id,"eventId","categoryId","ageGroupId","formatId",title,"durationSec","orderOnStage") SELECT 'p'||i,'e'||(i%100+1),'c'||(i%100+1),'a'||(i%100+1),'f'||(i%100+1),'Fixture',60,i FROM generate_series(1,10000) i;
-INSERT INTO "PerformanceParticipant" ("performanceId","dancerId") SELECT 'p'||i,'d'||i FROM generate_series(1,10000) i;
+INSERT INTO "Performance" (id,"studioId","registrationId","eventId","categoryId","ageGroupId","formatId",title,"durationSec","orderOnStage") SELECT 'p'||i,'s'||i,'reg'||i,'e'||(i%100+1),'c'||(i%100+1),'a'||(i%100+1),'f'||(i%100+1),'Fixture',60,i FROM generate_series(1,10000) i;
+INSERT INTO "PerformanceParticipant" ("performanceId","dancerId","studioId") SELECT 'p'||i,'d'||i,'s'||i FROM generate_series(1,10000) i;
 ANALYZE "UserRole"; ANALYZE "AccountToken"; ANALYZE "Invitation"; ANALYZE "StudioRepresentative";
 ANALYZE "StudioEventRegistration"; ANALYZE "Judge"; ANALYZE "Dancer"; ANALYZE "PerformanceParticipant";
 `);

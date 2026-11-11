@@ -30,7 +30,100 @@ remaining application/domain journeys extend P9-BROWSER.
 
 Turbo may reuse unchanged local results. To run fresh HTTP tests after building,
 use pnpm --filter api test. In CI each job begins with a fresh checkout and
-installation; the workflow does not restore build outputs or a Turbo cache.
+frozen installation; setup-node restores the pnpm store keyed by pnpm-lock.yaml.
+It does not restore node_modules, build outputs or a Turbo cache. See the
+[official caching guidance](https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#caching-packages-data).
+
+## Fast development loop
+
+During editing, run the affected test file first. These commands build only its
+runtime dependencies through Turbo, then always execute the selected test:
+
+```text
+pnpm test:focus web event-setup.test.tsx
+pnpm test:focus api routes.test.cjs
+pnpm test:focus browser event-setup.spec.ts
+pnpm test:event-setup
+pnpm test:registration
+pnpm test:entry-foundations
+```
+
+Use a basename from the selected test directory; unknown files, path traversal
+and extra arguments fail before a build. Prisma generation is still required
+after schema/client changes. The browser command requires installed Chromium.
+Focused database commands build the API and use the same random disposable
+Compose database as the full baseline. They deploy all migrations and seed once,
+but omit seed rerun/production-refusal/redeployment and unrelated upgrade checks.
+Those assertions remain mandatory in the full baseline. Registration mode also
+runs event setup; event-setup mode runs only that workflow after common smoke checks.
+Both modes retain the full suite's initial fixture state and finally cleanup.
+The entry-foundations mode runs dancer/performance/draft HTTP/PostgreSQL checks after
+the same migration/seed/authentication smoke setup, with identical random-database
+ownership and cleanup. It skips unrelated upgrade/registration checks; the full
+baseline remains mandatory. Use it first after a dancer/history failure.
+
+Once the change is stable, run the applicable workspace checks and full browser/
+database/migration gates required by the task before handoff. Focused success is
+never evidence that a full gate passed. After a failure, rerun the failing suite
+first; repeat broader checks only for subsequent changes or unresolved concerns.
+Documentation-only changes retain their separate checks below.
+
+The baseline prints `TIME` lines for migrations/seed commands, every child suite
+(also on failure), and the total including normal cleanup. Playwright's list
+reporter provides individual test durations and total time. To compare browser
+worker counts on the same machine, run the same file sequentially, for example:
+
+```text
+pnpm exec playwright test tests/browser/event-setup.spec.ts --workers=2
+pnpm exec playwright test tests/browser/event-setup.spec.ts --workers=4
+```
+
+Keep the default two workers until repeated measurements show a reliable benefit
+without failures. Browser invocations must run sequentially because they own port
+4177 and the output directory. Baseline child suites remain sequential because
+they share mutable fixtures; isolate those fixtures before parallelizing them.
+Hosted Turbo caching is deferred until environment and generated-client inputs
+are audited; cached test success must not hide configuration changes.
+`pnpm test:tooling` checks focused-runner selection and rejection behavior and is
+included in `pnpm test`.
+
+## Test runner validation (2026-11-10)
+
+This tooling change preserves pre-existing application/UI edits. No application
+database was migrated or reset; database checks use runner-created random
+`dance_baseline_*` databases in the checked-in Compose PostgreSQL fixture.
+
+Completed checks:
+
+- `pnpm test:tooling`: three focused-runner selection/rejection tests passed.
+- `pnpm test:focus web event-setup.test.tsx`: three tests passed; dependency
+  builds were local Turbo hits (121ms reported by Turbo).
+- `pnpm test:focus api routes.test.cjs`: 73 tests passed (6.84s test-runner time);
+  dependency builds were local Turbo hits (134ms reported by Turbo).
+- `pnpm test:focus browser event-setup.spec.ts`: all 27 Chromium tests passed
+  in 2.0 minutes with the existing two workers.
+- `pnpm test:event-setup`: passed; baseline total including cleanup was 23.13s.
+- `pnpm test:registration`: passed; baseline total including cleanup was 23.99s.
+- `pnpm test:baseline`: the full upgrade/seed/HTTP/database suite passed;
+  baseline total including cleanup was 154.11s. All pre-existing full-suite
+  assertions and child suites remain in their original order.
+- `pnpm build`, `pnpm test`, `pnpm typecheck`, `pnpm lint`: passed. Workspace
+  results were local Turbo cache hits; the root tooling/localization checks and
+  browser TypeScript check ran outside that cache.
+- `pnpm db:generate`, `pnpm db:validate` and
+  `pnpm exec prisma format --check --schema apps/api/prisma/schema.prisma`:
+  passed with an explicit nonconnecting placeholder URL.
+- Node syntax checks for the baseline, focused runner and runner tests passed.
+- Official actionlint release (downloaded to a temporary directory and checked
+  against its published SHA-256 checksum): CI workflow validation passed.
+- `node --check scripts/check-docs.cjs`, `node scripts/check-docs.cjs` and
+  `git diff --check`: passed after documentation and final diff review.
+
+Timings are observations from this workstation, with
+other validation work running, rather than a controlled before/after benchmark.
+Hosted cache behavior, repeated browser worker comparisons and isolated database
+suite parallelism remain follow-up work under P9-TEST-SPEED. The next product
+task remains P4-REVIEW.
 
 ## Development database and disposable data
 
@@ -357,9 +450,11 @@ commands, reviewed screenshots and remaining human/real-mail/hosted release gate
 
 ## M2 registration lifecycle checks (2026-11-09)
 
-Start narrow with node scripts/test-baseline.cjs --registration-only after build.
-It uses the same random disposable database/cleanup and seed checks as the full
-baseline, but runs only check-studio-registrations and check-registration-lifecycle.
+Start narrow with pnpm test:registration (or node scripts/test-baseline.cjs
+--registration-only after build). It uses the same random disposable database/
+cleanup and initial seed as the full baseline, but omits repeated seed/deployment
+checks and runs check-studio-registrations, check-registration-lifecycle and
+check-event-setup.
 It does not replace pnpm test:baseline or fresh/upgrade migration parity. New checks
 cover independent approvals in both orders, retained assignments, correction
 revisions, cancellation/reapplication races and stale/lost responses, event scopes,
@@ -377,10 +472,79 @@ SQL guards and audit rollback. scripts/test-migrations.ps1 additionally checks
 verbatim pre-migration event prose, unknown source language and fresh/upgrade parity.
 
 Web event-setup.test.tsx checks calendar/DST gaps/folds, explicit offsets (including
-half-hour and non-hour zones), setup prerequisites and shared mutation contracts.
-Browser event-setup.spec.ts adds 22 cases across ET/EN/RU and four widths, including
+half-hour and non-hour zones), exact stored sub-minute retention, setup prerequisites
+and shared mutation contracts.
+Browser event-setup.spec.ts has 27 cases across ET/EN/RU and four widths, including
 computed contrast, keyboard modal/error/checklist focus, create/save/stage flows,
 uncertain responses, stale comparison, language/session preservation, pending
-controls and private image recovery. Other browser suites keep their prior scope.
+controls and private image recovery. The final five cases add exact-instant/DST
+offset retention plus S01/S02/S05 dashboard/list/detail/create and empty/error/
+closed discovery captures; rail and details actions must remain on one line.
+Other browser suites keep their prior scope. Run this file alone with
+`pnpm exec playwright test tests/browser/event-setup.spec.ts`; do not run browser
+suites concurrently because each owns port 4177 and its output directory.
 Use [setup evidence](EVENT_SETUP_VALIDATION.md) for final commands/results and
 human/provider/hosted limits. Screenshots/traces use synthetic data and stay ignored.
+
+## Performance ownership and organizer register
+
+For P3-PERFORMANCE-OWNER/CONSTRAINTS, start with
+`pnpm.cmd test:focus api routes.test.cjs` and
+`pnpm.cmd test:focus browser performances.spec.ts` on Windows (use `pnpm` elsewhere).
+Run the full workspace, browser, baseline and migration gates before completion.
+The existing baseline's `check-performances.cjs` covers explicit owners, zero
+participants, direct SQL bounds/compound keys, owner immutability, active approval/
+scope/stage denials, concurrency and rollback. The migration suite tests whole-DDL
+refusal and full fresh/upgrade parity. [Ownership evidence](PERFORMANCE_OWNERSHIP_VALIDATION.md)
+records commands/results and external release limits. The organizer register is
+read-only; future entry editing/configuration retains its M3 prerequisites.
+
+## Saved entry history and calendar foundations
+
+For P3-HISTORY/CALENDAR-DATES, start with `pnpm test:entry-foundations`,
+`pnpm test:focus api routes.test.cjs`, `pnpm test:focus web history-calendar.test.tsx`
+and `pnpm test:focus browser performances.spec.ts`. Existing dancer checks now
+assert native DATE/Prisma/HTTP round trips in three database-session zones;
+performance checks cover immutable snapshots across roster/profile/configuration/
+event edits, exact owner/event denials, stale/concurrent saves, audit rollback,
+privacy field allowlists and retained archive versions. The migration suite
+proves atomic non-midnight refusal, leap-day/date preservation and baseline
+snapshots for active/archived entries without inventing original authors/times.
+Shared calendar tests cover completed years, leap birthdays, midnight boundaries,
+DST transitions and unsupported birth years. Entry submission/correction consumer
+tests remain with P3-ENTRIES; there is no submission endpoint in this slice.
+
+The full Chromium suite now has 177 cases. All 18 register cases include the
+history extension: ET/EN/RU at 320/390/768/1440/1920px, keyboard/close focus,
+URL/reload/session restoration and loading/empty/error/retry. Synthetic captures
+remain ignored. Hallmark's static sweep and fresh-context finish review accompany
+these authenticated renders; missing optional puppeteer-core prevents the skill's
+own render tier. [History/calendar evidence](ENTRY_HISTORY_CALENDAR_VALIDATION.md)
+records completed commands and remaining human/provider/hosted release gates.
+
+## Organizer review and applicant applications (S06–S08/F03)
+
+Start with `pnpm test:focus api routes.test.cjs`,
+`pnpm test:focus web applications.test.tsx`, `pnpm test:registration`, and
+`pnpm test:focus browser applications.spec.ts`. The full baseline now also runs
+check-application-review.cjs, proving exact owner/event reads, private history/notice
+DTOs, revisioned organization/event conflict races, semantic reasons, profile JSON
+retry, notice/audit rollback and atomic verified draft completion. Its existing
+provider-configured foundation child invokes check-review-email.cjs for encrypted
+verified-account recipients, all locales, rollback, retry, acceptance and expiry.
+These checks use random disposable databases, never provider network calls.
+
+applications.spec.ts has 24 Chromium cases: ET/EN/RU at four widths, two decision
+rows, filter/detail recovery, actual dashboard pending counts, confirmation focus,
+synthetic signup/verify/apply/review/return, strict guest event/studio continuation,
+uncertain create/save, cancellation/reapply, failed readback and session/language
+input preservation, plus form-specific profile/contact validation links, focus,
+isolated invalid-field states and corrected contact saves in all three locales.
+Update old unsupported-route assertions when their owning
+feature becomes implemented; retain hostile return/scope tests. Full workspace,
+browser and migration gates remain required. [Review/application evidence](APPLICATION_REVIEW_VALIDATION.md)
+records results separately from external human/provider/hosted release gates.
+The API coverage inventory parses awaited baseline suite calls, including the
+timed check helper; comments, string mentions and unused imports do not count as
+script execution evidence. The inventory is a registration guard, not a substitute
+for actually running the full database baseline.

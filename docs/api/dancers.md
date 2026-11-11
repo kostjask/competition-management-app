@@ -32,11 +32,15 @@ POST accepts trimmed, nonblank `firstName`, `lastName`, and calendar `birthDate`
 PATCH accepts a nonempty subset of those fields. Unknown fields, including studio
 IDs, event IDs, photos, and audit fields, are rejected. Calendar validation rejects
 impossible dates and non-leap February 29. Birth dates must use `YYYY-MM-DD`;
-timestamp strings are no longer accepted. New dates are stored at UTC midnight
-and returned as calendar dates, avoiding local-time day shifts. Existing stored
-timestamps are not rewritten; reads expose their UTC calendar day. Historical
-timezone interpretation and any required data correction remain a Phase 3 audit.
-Age eligibility and further birth-date policy remain later workflow work.
+timestamp strings are no longer accepted. Migration 34 stores native PostgreSQL
+DATE; Prisma maps it to UTC midnight and HTTP keeps YYYY-MM-DD. Its preflight
+audits all legacy rows, including archives, and refuses non-midnight timestamps
+for reviewed repair instead of guessing a timezone. Midnight rows retain the
+previously displayed UTC day. Leap days and database-session timezone independence
+are tested. [ADR-023](../adr/023-entry-history-and-calendar-dates.md) defines completed
+years on the event-local start date, with March 1 advancement for February 29 in
+non-leap years. The shared calculation is implemented; submission eligibility
+enforcement remains P3-ENTRIES, not these roster CRUD endpoints.
 
 Create returns 201, list/detail/update return 200, and DELETE returns 204.
 The shared dancer DTO contains only `id`, `studioId`, `firstName`, `lastName`,
@@ -50,4 +54,5 @@ and the authenticated actor's `deletedBy`; it keeps the row and its relations.
 Archived dancers disappear from lists and cannot be read, edited, or deleted again
 through standard endpoints. Writes use transactions; restoration and comprehensive
 concurrent-update handling remain separate work. Dancer errors use the global
-error envelope. No schema or migration changes were required.
+error envelope. Migration 34 changes only the birth-date storage type; identity,
+archive actors and relations are retained.

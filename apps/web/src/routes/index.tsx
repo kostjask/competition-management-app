@@ -24,6 +24,10 @@ import { FullPageLoading } from "../components/LoadingSpinner.tsx";
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard.tsx"));
 const InvitationsPage = lazy(() => import("../pages/admin/InvitationsPage.tsx"));
 const StaffPage = lazy(() => import("../pages/admin/StaffPage.tsx"));
+const ReviewPage = lazy(() => import("../pages/applications/ReviewPage.tsx"));
+const PerformanceRegister = lazy(() => import("../pages/performances/PerformanceRegister.tsx"));
+const ApplicationsPage = lazy(() => import("../pages/applications/ApplicationsPage.tsx"));
+const EventApplicationPage = lazy(() => import("../pages/applications/EventApplicationPage.tsx"));
 const JudgeInterface = lazy(() => import("../pages/judge/JudgeInterface.tsx"));
 const RepresentativeConsole = lazy(() => import("../pages/representative/RepresentativeConsole.tsx"));
 const ModeratorControls = lazy(() => import("../pages/moderator/ModeratorControls.tsx"));
@@ -92,6 +96,9 @@ export function AppRoutes() {
               <Route path="/events/new" element={<RequireRole role="admin"><EventsCreate /></RequireRole>} />
               <Route path="/events/:id" element={<RequireAuth><EventInfo /></RequireAuth>} />
               <Route path="/events/:id/edit" element={<RequireRole role="admin"><EventEdit /></RequireRole>} />
+              <Route path="/applications" element={<RequireAuth><LazyWrapper><ApplicationsPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:id/register" element={<RequireAuth><LazyWrapper><EventApplicationPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:id/studio" element={<RequireAuth><LazyWrapper><EventApplicationPage /></LazyWrapper></RequireAuth>} />
 
               {/* Profile */}
               <Route
@@ -114,6 +121,8 @@ export function AppRoutes() {
               >
                 <Route path="invitations" element={<LazyWrapper><InvitationsPage /></LazyWrapper>} />
                 <Route path="events/:eventId/staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
+                <Route path="events/:eventId/applications" element={<LazyWrapper><ReviewPage /></LazyWrapper>} />
+                <Route path="events/:eventId/performances" element={<LazyWrapper><PerformanceRegister /></LazyWrapper>} />
                 <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
                 <Route
                   index

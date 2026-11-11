@@ -51,11 +51,17 @@ translation fallback. M2 review reasons use translated semantic codes. Event
 event content migration/editors are delivered in P4-CORE under ADR-020; future rubric/announcement content is not
 implemented by these contracts.
 
-## Missing journey work
+## Delivered local journey and remaining work
 
-- Application/status pages are not mounted; the organizer setup dashboard is delivered, while other role dashboards remain placeholders.
-  Applicants need role-independent event applications, both approval states,
-  verified draft continuation and permitted cancellation/correction/reapply paths.
+- P4-REVIEW/P5-APPLICATION mount organizer review at
+  `/admin/events/:eventId/applications`, role-independent `/applications`, and
+  `/events/:id/register` / `/events/:id/studio?studio=:studioId`. They show both
+  approval states, semantic reasons, next actor/contact, event-zone cutoff,
+  verified draft continuation and permitted profile/contact/cancel/reapply paths.
+  Pending profile edits and review decisions use revision receipts. Frozen
+  commands, explicit server comparison and session recovery preserve mounted work.
+  [Evidence](APPLICATION_REVIEW_VALIDATION.md) separates synthetic browser/database
+  checks from external release gates. Entry dashboards remain placeholders.
 - Delivered auth pages cover studio signup, owner draft recovery, verification,
   resend/correction/reset and cookie-session recovery. Transactional encrypted
   provider dispatch is implemented; real inbox/hosted release evidence stays open.
@@ -65,8 +71,12 @@ implemented by these contracts.
   Judge/Score history. Additional studio members remain P5-MEMBERS.
 - Durable entry drafts/receipts, music and scoped corrections remain future work.
 
-P4-CORE setup is delivered locally. Implementation now proceeds to organizer review and applicant UI
-after the registration/reapplication and M2 content policy checks.
+P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
+intent commits with each changed decision under ADR-021; fake mode never claims
+sent mail and provider acceptance never claims inbox delivery. The next feature
+task is P3-HISTORY, with P3-CALENDAR-DATES before dependent M3 entry editing.
+P3-PERFORMANCE-OWNER/CONSTRAINTS and the read-only organizer register are locally
+implemented under [ADR-022](adr/022-performance-ownership-and-constraints.md).
 ADR-019 content policy is accepted and ADR-020 implements event content storage/editors. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and
 delivered-scope human review remain mandatory before M2/M4 external release.

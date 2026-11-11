@@ -46,6 +46,17 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   const item = `${collection}/${dancer.id}`;
   const stored = await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } });
   assert.equal(stored.birthDate.toISOString(), '2012-02-29T00:00:00.000Z');
+  const column = await client.$queryRaw`SELECT data_type FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'Dancer' AND column_name = 'birthDate'`;
+  assert.equal(column[0].data_type, 'date');
+  for (const zone of ['Pacific/Kiritimati', 'America/Los_Angeles', 'Europe/Tallinn']) {
+    await client.$transaction(async tx => {
+      await tx.$queryRaw`SELECT set_config('TimeZone', ${zone}, true)`;
+      const [calendar] = await tx.$queryRaw`SELECT "birthDate"::text AS day FROM "Dancer" WHERE id = ${dancer.id}`;
+      assert.equal(calendar.day, '2012-02-29', 'Native birth dates must not depend on database session timezone');
+      assert.equal((await tx.dancer.findUniqueOrThrow({ where: { id: dancer.id } })).birthDate.toISOString(), '2012-02-29T00:00:00.000Z');
+    });
+  }
   assert.equal(DancersSchema.parse((await request(collection)).body).length, 1);
   assert.equal((await request(item)).body.birthDate, '2012-02-29');
   const patched = await request(item, ownerToken, 'PATCH', { lastName: ' Changed ' });
@@ -90,21 +101,21 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   await client.event.update({ where: { id: event.id }, data: { stage: 'REGISTRATION_OPEN' } });
 
   for (const body of [
-    { ...input, birthDate: '2011-02-29' }, { ...input, birthDate: '2012-02-30' },
+    { ...input, birthDate: '2011-02-29' }, { ...input, birthDate: '2012-02-30' }, { ...input, birthDate: '0000-01-01' },
     { ...input, birthDate: '2012-02-29T00:00:00Z' }, { ...input, firstName: ' ' },
     { ...input, studioId: sibling.id },
   ]) assert.equal((await request(collection, ownerToken, 'POST', body)).status, 400);
   assert.equal((await request(item, ownerToken, 'PATCH', {})).status, 400);
 
-  // Reads project the existing UTC calendar day without rewriting legacy times.
+  // Native DATE records retain calendar days and never expose private paths.
   const legacy = await client.dancer.create({ data: {
-    studioId: studio.id, firstName: 'Legacy', lastName: 'Fixture', birthDate: new Date('2012-02-29T23:30:00Z'),
+    studioId: studio.id, firstName: 'Native date', lastName: 'Fixture', birthDate: new Date('2012-02-29T00:00:00Z'),
     photoPath: 'private-storage-path',
   } });
   const legacyResponse = await request(`${collection}/${legacy.id}`);
   assert.equal(legacyResponse.body.birthDate, '2012-02-29');
   assert.equal('photoPath' in legacyResponse.body, false);
-  assert.equal((await client.dancer.findUniqueOrThrow({ where: { id: legacy.id } })).birthDate.toISOString(), '2012-02-29T23:30:00.000Z');
+  assert.equal((await client.dancer.findUniqueOrThrow({ where: { id: legacy.id } })).birthDate.toISOString(), '2012-02-29T00:00:00.000Z');
 
   await client.studio.update({ where: { id: studio.id }, data: { deletedAt: new Date() } });
   assert.equal((await request(collection, adminToken)).status, 404);

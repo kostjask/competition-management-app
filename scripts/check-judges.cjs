@@ -62,7 +62,7 @@ module.exports = async function checkJudges({ client, baseUrl, adminToken, login
   const format = await client.danceFormat.create({ data: {
     eventId: event.id, name: 'Judge format', minParticipants: 1, maxParticipants: 2, maxDurationSeconds: 300,
   } });
-  const performance = await client.performance.create({ data: {
+  const performance = await client.performance.create({ data: { ...await require("./performance-fixture.cjs")(client, event.id, "check-judges.cjs owner"),
     eventId: event.id, categoryId: category.id, ageGroupId: age.id, formatId: format.id,
     title: 'Scored judge fixture', durationSec: 60, orderOnStage: 1,
   } });

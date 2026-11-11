@@ -6,6 +6,7 @@ import { toUiError, type UiError } from "../../api/error";
 import { useTranslation } from "../../i18n/useTranslation";
 import { Button, EmptyState, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
 import { stageKey } from "../../features/events/setup";
+import { EventReviewSummary } from "../applications/EventReviewSummary";
 import "../events/event-setup.css";
 
 export default function AdminDashboard() {
@@ -40,7 +41,7 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      <ErrorSummary error={error} title={t("Feedback.validation")} />
+      <ErrorSummary error={error} title={t("Events.loadError")} />
       {loading ? (
         <LoadingState label={t("Access.loading")} />
       ) : error ? (
@@ -65,8 +66,10 @@ export default function AdminDashboard() {
                 <p className="event-status">
                   {t(eventSetupBlockers(event).length ? "Setup.incomplete" : "Setup.ready")}
                 </p>
+                <EventReviewSummary eventId={event.id} />
               </div>
               <div className="event-row-actions">
+                <Link to={`/admin/events/${encodeURIComponent(event.id)}/applications`}>{t("Application.review")}: {event.name}</Link>
                 <Link to={`/admin/events/${encodeURIComponent(event.id)}/setup`}>
                   {t("Setup.title")}: {event.name}
                 </Link>

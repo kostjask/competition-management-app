@@ -1,25 +1,63 @@
 # Development checkpoint
 
-Updated: 2026-11-10. This file owns current priority, state summary and milestone
+Updated: 2026-11-12. This file owns current priority, state summary and milestone
 gates. Roadmap files own task checkboxes; [the map](docs/README.md) routes selected
 tasks to contracts/specifications. Read history only to investigate past evidence.
 
 ## Next action
 
-**Active implementation: M2 organizer setup/review, then applicant UI.**
-Next: **P4-CORE with P4-UI-CORE's setup scope**, then P4-REVIEW with its review UI
-scope, then P5-APPLICATION with P5-UI-APPLICATION. See the
-[implementation order](#implementation-order) and [organizer roadmap](docs/roadmap/organizer.md).
-This documentation maintenance task advances no application or release task.
+**Next: P3-ENTRIES submission/receipt/correction lifecycle.** Its bounded
+P3-ENTRIES-DRAFT prerequisite implements nullable unscheduled saves on the same
+entry identity, revision/history preservation, actor-bound creation retries and
+the translated Cobalt organizer creation/completeness view under ADR-024/migration
+36. [Draft evidence](docs/ENTRY_DRAFT_VALIDATION.md) records validation and limits.
+ADR-023/migrations 34-35 already establish native dates, event-local ages, frozen
+source values and atomic audit. Before the next lifecycle implementation, record
+the submission unit, eligibility aggregation, entry/music deadlines and correction
+scope/lock/withdrawal matrix, coordinating later P4-ENTRY-CONFIG and music gates.
+Then implement pinned receipt/retry and scoped correction consumers with their
+organizer UI. P3-ENTRIES and P3-HISTORY remain open. Representative editing,
+music/submission UI, external milestones and whole-UI approval remain open.
 
 ## Current state
+
+- **M3 incomplete drafts (2026-11-11):** P3-ENTRIES-DRAFT adds nullable fields and
+  stage order without replacing entry IDs, immutable owners or snapshots. Canonical
+  CRUD validates supplied relationships, revisions and active access. Organizer
+  draft creation shows actual acknowledgement, missing fields and unscheduled
+  state; uncertain operations survive filter/session recovery. Completeness does
+  not imply eligibility/submission. [Evidence](docs/ENTRY_DRAFT_VALIDATION.md).
+
+- **M3 history/calendar foundations (2026-11-11):** ADR-023, native DATE, immutable
+  saved snapshots, revisioned writes/audit and the translated Cobalt history
+  ledger pass local workspace, database, migration and browser checks. Calendar
+  policy/calculation is implemented; submission eligibility/receipt/correction
+  consumers remain P3-ENTRIES and keep the P3-HISTORY parent open.
+
+- **M3 ownership/integrity foundations (2026-11-11):** P3-PERFORMANCE-OWNER and
+  P3-CONSTRAINTS pass locally under ADR-022. Explicit owners replace participant
+  inference, compound keys prevent event/studio substitutions and SQL-only guards
+  protect row bounds/owner immutability. Migration audits/backfills unambiguous
+  owners or refuses reviewed-repair cases atomically, preserving IDs/participants/
+  scores. The Cobalt organizer register exposes saved titles, owning applications
+  and participant counts with ET/EN/RU and recovery; full entry editing/configuration
+  remains gated. [Evidence](docs/PERFORMANCE_OWNERSHIP_VALIDATION.md) records checks,
+  render-tool limits, the resolved first-run failures and remaining external gates.
+
+- **Test feedback setup (2026-11-10):** user-requested P9-TEST-SPEED adds focused
+  file/database commands, baseline timing and CI dependency-store caching while
+  retaining full validation gates. [Testing](docs/TESTING.md#fast-development-loop)
+  owns usage; [operations](docs/roadmap/operations.md) owns remaining measurement/
+  isolation work. The inherited coverage-inventory recognition mismatch is fixed
+  (2026-11-11); comments/strings/unused imports cannot stand in for suite calls.
 
 - **UI design direction (2026-11-10):** the user rejects the entire current UI as
   a placeholder and requires a full Hallmark redesign.
   [Design direction](docs/DESIGN_SYSTEM.md#required-full-redesign) owns the brief;
   P9-UI-REDESIGN tracks delivery across existing workflow slices. Technical
   completion remains distinct from visual approval. The implementation queue
-  below is unchanged; this update implements no UI redesign.
+  now records the bounded Cobalt organizer/event implementation in
+  [DESIGN](DESIGN.md); the shared shell, other workflows and human approval remain open.
 - Phases 0–1 and the applicable Phase 2 local security/auth/scope/audit/onboarding
   foundations are technically delivered. Cookie-session recovery, translated
   auth/shell/profile, account language preferences and scoped staff administration
@@ -28,16 +66,30 @@ This documentation maintenance task advances no application or release task.
   are complete locally (2026-11-09): independent approvals, derived access,
   deadline/timezone, correction revisions, retained cancel/reapply and explicit
   content fallback. P3-UX-CONTRACTS and I18N-CONTENT stay open for later scope.
-  P4/P5 own setup/review/application UI, notification intent and authored-content
-  storage/editors. Entry/music, live/scoring and results workflows remain unfinished;
-  role dashboards are placeholders. No external milestone is complete.
+  P4-CORE and its S05/S01/S02 setup UI are complete locally (2026-11-10): event
+  details/contact/timezone/deadline/limits, authored-description storage/editors,
+  actionable readiness, confirmed M2 stages, revision/retry recovery and audit.
+  Final validation fixed exact-instant retention and modal focus, and checked
+  ET/EN/RU layout and recovery. P4-REVIEW/P5-APPLICATION now implement independent
+  review queues/detail/reasons/history, transactional notification intent, and
+  role-independent apply/status/profile/contact/cancel/reapply with verified draft
+  completion and recovery. ADR-021/migration 32 and [evidence](docs/APPLICATION_REVIEW_VALIDATION.md)
+  describe completed local validation (2026-11-11), including form-specific error
+  isolation/focus and the corrected coverage gate. Entry/music, live/scoring and results remain unfinished;
+  judge/moderator/representative dashboards are placeholders. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
   limits, deploy/rollback/restore and observability; delivered-scope human
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 30 migrations. The user's **2026-11-09 startup record**
+- Repository schema has 36 migrations, including P4-CORE's additive event setup,
+  P4-REVIEW's reasons/notification relations, ADR-022's ownership/constraints,
+  ADR-023's calendar/history foundations and ADR-024's incomplete drafts.
+  The application database
+  was not migrated in this slice; all new database checks use isolated fixtures.
+  [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records the prior migration's local
+  application and current isolated fresh/upgrade/API/browser checks. The user's **2026-11-09 startup record**
   verified localhost:5432/dance_comp in repository Compose and applied 12 pending
   migrations (all 30 applied), without reset/reseed. It recorded API port 4000,
   authentication enabled, a process-only EMAIL_PROVIDER=fake override for legacy
@@ -47,9 +99,10 @@ This documentation maintenance task advances no application or release task.
 - Current development rows are disposable under the scoped
   [database policy](AGENTS.md#development-database-policy); verify the resolved
   target before reset/reseed or migration-history changes. Domain integrity/history
-  requirements still apply. No database operation was performed for this maintenance.
+  requirements still apply. This completion pass used isolated test databases/
+  schemas; it did not reset/reseed or migrate the application database.
 
-Latest recorded runtime evidence: [registration lifecycle, 2026-11-09](docs/REGISTRATION_LIFECYCLE_VALIDATION.md).
+Latest recorded runtime evidence: [entry drafts, 2026-11-11](docs/ENTRY_DRAFT_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -60,7 +113,7 @@ Documentation maintenance (2026-11-10): corrected source mismatches, clarified
 ownership/selective routing, archived repetitive checkpoint narratives and
 reconciled the documentation backlog. Scope/validation/remaining work:
 [documentation audit](docs/DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).
-Implementation priority and external release status are unchanged.
+That maintenance record did not advance implementation or external release status.
 
 ## Task map
 
@@ -108,22 +161,28 @@ promote unrelated later work indefinitely.
 
 ## Implementation order
 
-The immediate outcome is a verified roleless applicant applying to one event,
-receiving independent organization/event decisions, and returning to status.
-Finish this local M2 path before promoting entry/music or live/results work.
+The local M2 path is complete: a verified roleless applicant applies to one event,
+receives independent organization/event decisions, and returns to status. Preserve
+that path while completing the remaining M3 history/calendar/entry prerequisites;
+music and live/results work retain their own gates.
 
 | Order | Existing task | Concrete scope / dependency |
 | --- | --- | --- |
 | 1 - complete locally | P3-REGISTRATION | ADR-003 M2 policy, migration/API/DTO/client alignment and denial/concurrency/rollback checks pass, including the reapply slice. |
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
-| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; content storage/editors remain with P4. |
-| 4 - next | P4-CORE with P4-UI-CORE setup scope | Consume #1–3; expose organizer configuration, time/deadline/contact and actionable prerequisites through the UI. Do not implement a second lifecycle model or require scoring setup. |
-| 5 | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
-| 6 | P5-APPLICATION with P5-UI-APPLICATION | Consume #1–5 and P2 onboarding; complete role-independent apply/status, verified draft continuation, pending cancellation/reapply and uncertain-response recovery end to end. |
+| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; P4-CORE also delivers event-description storage/editors. Later content remains open. |
+| 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Organizer configuration, time/deadline/contact, authored descriptions, readiness and confirmed M2 stages pass UI/API/database checks. No second lifecycle model or scoring prerequisite. |
+| 5 - complete locally | P4-REVIEW with P4-UI-CORE review scope | Independent queues/detail, reasons/corrections, next actor, revisioned decisions/audit and transactional notification intent pass full local gates (2026-11-11). |
+| 6 - complete locally | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply, form-specific validation and uncertain-response/session recovery pass full local gates (2026-11-11). |
+| 7 - complete locally | P3-PERFORMANCE-OWNER with read-only organizer ownership register | ADR-022/migration 33, canonical owner DTOs, active access validation, unambiguous backfill/refusal, retained history and translated organizer reads pass local gates (2026-11-11). |
+| 8 - complete locally | P3-CONSTRAINTS | Event/owner/configuration/participant compound keys, row bounds, direct SQL/API/rollback/concurrency and fresh/upgrade parity pass local gates (2026-11-11). Score/judge consistency remains P6-SCORING-MODEL. |
+| 9 - foundations delivered; parent open | P3-HISTORY | ADR-023/migration 35 implement frozen snapshots, revisions/audit and organizer history. Concurrent submit/receipt/correction consumer tests remain P3-ENTRIES; pre-entry design gates are ready. |
+| 10 - complete locally | P3-CALENDAR-DATES | Migration 34 safely converts audited calendar dates; event-local completed-age/leap policy, shared calculation and organizer reference display pass local gates. Submit-time enforcement remains P3-ENTRIES. |
+| 11 - complete locally | P3-ENTRIES-DRAFT within P3-ENTRIES | ADR-024/migration 36, nullable unscheduled drafts, revisioned clearing/completion, actor-bound create retries and organizer creation/completeness UI pass local gates (2026-11-12). Submission/receipt/correction consumers keep the parent open. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
-ADR-019's M2 source-language/fallback policy is accepted before P4 adds authored
-content storage/editors. Later multilingual content retains its owning workflow.
+ADR-019's M2 source-language/fallback policy is implemented for event descriptions
+by P4-CORE under ADR-020. Later multilingual content retains its owning workflow.
 
 Attach authorization/audit, ET/EN/RU, component/browser/recovery checks and
 documentation to each task. Cross-cutting P3-UX-CONTRACTS and UI/QA checkboxes
@@ -132,8 +191,10 @@ or requirements to finish all future screens before the current workflow.
 External operations proceed alongside this path when access is available; they
 remain release blockers without becoming blanket development blockers.
 
-After local M2 works, take the M3 P3 ownership/date/constraints/history/entry
-foundations, then P4-ENTRY-CONFIG/P5-ENTRIES and the
+Local M2 and the M3 ownership/constraint/calendar/history design foundations now
+pass. The bounded P3-ENTRIES-DRAFT slice delivers incomplete unscheduled saves.
+Next finish P3-ENTRIES lifecycle and P3-HISTORY consumer tests there, then
+P4-ENTRY-CONFIG/P5-ENTRIES and the
 P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION path. Develop the
 history/constraint contracts before dependent drafts/submission. Keep calendar
 birth dates separate from M2 event instants, and scheduling separate from entry

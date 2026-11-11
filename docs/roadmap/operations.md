@@ -30,6 +30,21 @@ Baseline CI is P1-CI. Tests, localization/accessibility and privacy apply when e
 feature is built, not first in Phase 9. Existing Node/API/PostgreSQL tests remain;
 introduce new test libraries only for a concrete need.
 
+- [ ] P9-TEST-SPEED (user-requested, 2026-11-10): focused file/database commands,
+  baseline per-suite timings and pnpm-store CI caching are implemented; local
+  validation is recorded in [TESTING](../TESTING.md#test-runner-validation-2026-11-10).
+  The focused registration baseline passed in 23.99s and full baseline in 154.11s;
+  tooling tests, selected browser checks, workspace/Prisma/docs and actionlint passed.
+  Full acceptance gates remain required. Next: collect hosted cold/warm cache
+  timing, audit environment/generated-client inputs before hosted Turbo caching,
+  and isolate shared baseline fixtures before attempting suite parallelism.
+  Keep browser workers at two pending repeated comparative measurements.
+  The inherited coverage-inventory recognition mismatch is corrected (2026-11-11):
+  awaited timed/direct suites count; comments, strings and unused imports do not.
+  [Review/application evidence](../APPLICATION_REVIEW_VALIDATION.md) records the
+  regression and current validation. This correction does not close the remaining
+  hosted measurement/isolation work above.
+
 Development and external release are separate gates under the
 [checkpoint](../../DEVELOPMENT_PLAN.md#development-and-release-gates).
 P2-SCOPE-DEPLOY, real P2-EMAIL inbox delivery, hosted CI/ingress/rollout/restore
@@ -44,7 +59,7 @@ required operational prerequisite takes priority over the feature queue.
 
 - [ ] P9-UI-REGRESSION: start with P2-UI-FOUNDATION/SHELL and expand per feature: minimal interactive component/user-flow tests and reviewed screenshots for delivered S/F IDs at phone/portrait tablet/desktop in ET/EN/RU. Cover focus/error/empty/denied/locked/reconnect states with deterministic synthetic data; record manual screen-reader/keyboard/contrast/touch and fluent-language evidence. No blanket baseline acceptance. UI exit evidence is milestone-scoped and must exist before release, not after all phases finish. See [TESTING](../TESTING.md).
 
-- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. Delivered auth/shell/preferences and event staff now have 108 Chromium cases;
+- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. Delivered auth/shell/preferences and event staff have 108 Chromium cases; event setup adds 27, and review/applications add 21 (156 total; [latest evidence](../APPLICATION_REVIEW_VALIDATION.md));
   [staff UI evidence](../STAFF_UI_VALIDATION.md) records the S17/F06 extension.
   The completed P9-BROWSER-STAFF execution slice is tracked under P4-STAFF in
   [organizer tasks](organizer.md). Full domain journeys and human review remain open; gate M2 on signup/verify/apply/approve/status, M3 on entries/corrections, M4 on staff acceptance/removal, and M5 on judging/results. Expand CI alongside each journey.

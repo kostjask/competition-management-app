@@ -41,5 +41,25 @@ changes require confirmation. Setup PATCH sends expectedRevision; stale/unknown
 outcomes retain input and require an explicit same-request retry or server
 comparison. Creation retains its UUID operationId across uncertain responses.
 See [event contract](../../docs/api/events.md) and
-[design baseline](../../DESIGN.md). Review queues and application routes remain
-their next owning tasks; they are not implied by setup completion.
+[design baseline](../../DESIGN.md).
+
+## M2 review and applications
+
+The read-only organizer performance register is at
+`/admin/events/:eventId/performances?studio=:studioId`, linked from event details.
+It shows saved performance titles, explicit studio applications and participant
+counts, including zero. URL filters, error/retry, loading/empty states and session
+recovery use Cobalt and ET/EN/RU. Entry editing/configuration/submission retain
+their M3 gates. [Ownership evidence](../../docs/PERFORMANCE_OWNERSHIP_VALIDATION.md).
+
+Global admins review independent decisions at /admin/events/:eventId/applications;
+dashboard counts link into each pending queue. All verified members can use
+/applications and /events/:id/register or /events/:id/studio?studio=:studioId
+without a representative role. The short form consumes a verified onboarding
+draft atomically when supplied. Status shows both approvals, reason, next actor,
+cutoff/contact, history and truthful mail state. Profile/self-contact edits,
+confirmed pending cancellation and same-studio reapply retain revisions/history.
+Frozen commands survive uncertain responses/session recovery; explicit server
+comparison preserves local input until replacement. Private form data stays in
+mounted state. [Contracts/evidence](../../docs/APPLICATION_REVIEW_VALIDATION.md)
+record limits; entry/billing-editor extensions and external release gates remain.

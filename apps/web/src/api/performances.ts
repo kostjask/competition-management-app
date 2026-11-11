@@ -1,6 +1,6 @@
 import { decode } from "./client.js";
 import { apiClient } from "./client.js";
-import { PerformanceSchema, PerformancesSchema, type Performance, type CreatePerformanceInput, type UpdatePerformanceInput } from "@dance/schemas";
+import { PerformanceSchema, PerformancesSchema, PerformanceHistorySchema, type Performance, type CreatePerformanceInput, type UpdatePerformanceInput } from "@dance/schemas";
 
 export type { Performance } from "@dance/schemas";
 export type PerformanceWithDetails = Performance;
@@ -17,5 +17,7 @@ export const createPerformance = async (eventId: string, body: CreatePerformance
   decode(PerformanceSchema, await apiClient.post<CreatePerformanceRequest>(collectionPath(eventId), body));
 export const updatePerformance = async (eventId: string, performanceId: string, body: UpdatePerformanceRequest): Promise<Performance> =>
   decode(PerformanceSchema, await apiClient.patch<UpdatePerformanceRequest>(itemPath(eventId, performanceId), body));
-export const deletePerformance = (eventId: string, performanceId: string): Promise<void> =>
-  apiClient.delete(itemPath(eventId, performanceId));
+export const deletePerformance = (eventId: string, performanceId: string, expectedRevision: number): Promise<void> =>
+  apiClient.delete(`${itemPath(eventId, performanceId)}?expectedRevision=${expectedRevision}`);
+export const getPerformanceHistory = async (eventId: string, performanceId: string) =>
+  decode(PerformanceHistorySchema, await apiClient.get(`${itemPath(eventId, performanceId)}/history`));

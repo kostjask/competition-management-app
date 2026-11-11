@@ -3,13 +3,14 @@ import { EmailSchema, RecipientLocaleSchema } from "@dance/schemas";
 
 export const EmailContentSchema = z.strictObject({
   to: EmailSchema, locale: RecipientLocaleSchema,
-  kind: z.enum(["verification", "invitation", "recovery", "applicationApproved", "applicationRejected"]),
+  kind: z.enum(["verification", "invitation", "recovery", "applicationApproved", "applicationRejected", "reviewChanged"]),
   token: z.string().min(1).optional(),
 });
 export type EmailContent = z.infer<typeof EmailContentSchema>;
 
 const copy = {
   et: {
+    reviewChanged: ["Taotluse ülevaatus on muutunud", "Organisatsiooni või sündmuse otsus on muutunud. Vaata mõlema otsuse hetkeseisu oma taotluste lehel."],
     verification: ["Kinnita oma e-posti aadress", "Konto kinnitamiseks ava allolev link."],
     invitation: ["Kutse võistluse meeskonda", "Kutse ülevaatamiseks ava allolev link. Kutse ei anna ligipääsu enne kinnitamist."],
     recovery: ["Parooli lähtestamine", "Uue parooli määramiseks ava allolev link."],
@@ -19,6 +20,7 @@ const copy = {
     action: "Ava turvaline link",
   },
   en: {
+    reviewChanged: ["Application review updated", "An organization or event decision has changed. Check both current decisions on your applications page."],
     verification: ["Verify your email address", "Open the link below to verify your account."],
     invitation: ["Competition staff invitation", "Open the link below to review your invitation. Access starts only after acceptance."],
     recovery: ["Reset your password", "Open the link below to choose a new password."],
@@ -28,6 +30,7 @@ const copy = {
     action: "Open secure link",
   },
   ru: {
+    reviewChanged: ["Рассмотрение заявки обновлено", "Решение по организации или событию изменилось. Проверьте оба текущих решения на странице своих заявок."],
     verification: ["Подтвердите адрес электронной почты", "Откройте ссылку ниже, чтобы подтвердить аккаунт."],
     invitation: ["Приглашение в команду соревнования", "Откройте ссылку ниже, чтобы просмотреть приглашение. Доступ появится только после принятия."],
     recovery: ["Сброс пароля", "Откройте ссылку ниже, чтобы установить новый пароль."],
@@ -42,7 +45,7 @@ const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll(
 export function renderEmail(input: EmailContent, origin: string) {
   const data = EmailContentSchema.parse(input);
   const language = copy[data.locale]; const [subject, body] = language[data.kind];
-  const paths = { verification: "/verify-email", invitation: "/auth/accept-invitation", recovery: "/auth/reset-password", applicationApproved: "/auth/profile", applicationRejected: "/auth/profile" };
+  const paths = { verification: "/verify-email", invitation: "/auth/accept-invitation", recovery: "/auth/reset-password", applicationApproved: "/applications", applicationRejected: "/applications", reviewChanged: "/applications" };
   const link = new URL(paths[data.kind], origin);
   link.searchParams.set("lang", data.locale);
   if (["verification", "invitation", "recovery"].includes(data.kind)) {

@@ -22,6 +22,18 @@ export function wallTimeCandidates(value: string, timeZone: string): string[] {
   return [...offsets].map(offset => new Date(wall - offset).toISOString())
     .filter(instant => wallTime(instant, timeZone) === value).sort();
 }
+// The editor displays minutes, but an unchanged instant may contain seconds.
+// Normalize only the offset option; retain the exact instant until its time changes.
+export function minuteInstant(instant: string): string {
+  const timestamp = Date.parse(instant);
+  return Number.isFinite(timestamp) ? new Date(Math.floor(timestamp / 60000) * 60000).toISOString() : "";
+}
+export function resolveWallTime(value: string, timeZone: string, choice: string): string | null {
+  const candidates = wallTimeCandidates(value, timeZone);
+  const selected = candidates.length === 1 ? candidates[0] : candidates.find(instant => instant === minuteInstant(choice));
+  if (!selected) return null;
+  return minuteInstant(choice) === selected && wallTime(choice, timeZone) === value ? new Date(choice).toISOString() : selected;
+}
 export function offsetLabel(instant: string, timeZone: string): string {
   const offset = (Date.parse(wallTime(instant, timeZone) + ":00Z") - Date.parse(instant)) / 60000;
   return `UTC${offset < 0 ? "−" : "+"}${String(Math.floor(Math.abs(offset) / 60)).padStart(2, "0")}:${String(Math.abs(offset) % 60).padStart(2, "0")}`;

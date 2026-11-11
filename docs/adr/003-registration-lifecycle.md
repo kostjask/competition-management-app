@@ -56,8 +56,10 @@ or identity conflicts. Without it, callers must reconcile GET before retrying.
 Clients generate and retain it across uncertain responses. The global active-name
 index remains unchanged. Durable audit records creation, pending profile corrections, decisions, cancellation,
 reapplication and event updates in the same serializable transaction. Conflicting
-transactions return 409; audit failure rolls all changes back. No mail delivery is
-claimed by these operations; notification intent is P4-REVIEW.
+transactions return 409; audit failure rolls all changes back.
+[ADR-021](021-m2-review-notifications.md) extends organization review revisions,
+semantic reasons, transactional notification intent and verified draft completion.
+Provider acceptance remains separate from inbox delivery.
 
 No existing identity, registration or audit record is deleted by the migration.
 Rollback after use requires retaining/exporting new cancellation/audit history;
@@ -66,7 +68,8 @@ Revisioned transitions plus immutable audit retain attempts on the stable pair;
 this is not a separate mutable attempt table or a multi-event identity migration.
 
 Content policy is [ADR-019](019-m2-authored-content.md). UI-ready application/status
-screens and human/browser review remain P4/P5; this decision alone delivers none.
+screens are delivered locally under P4/P5; this decision alone is not their evidence.
+Human/provider/hosted release review remains open.
 
 Localized contract examples (ET / EN / RU) live in Registration catalogue keys:
 pending is Ootel / Pending / На рассмотрении; the structured

@@ -1,10 +1,14 @@
 import { isLocale, DEFAULT_LOCALE, type Locale } from "./locale";
 import { formatNumber } from "./format";
 import { eventSetupTranslations } from "./eventSetupTranslations";
+import { applicationTranslations } from "./applicationTranslations";
+import { performanceTranslations } from "./performanceTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 export const translations = {
   Setup: eventSetupTranslations,
+  Application: applicationTranslations,
+  Performance: performanceTranslations,
   Registration: {
     pending: { et: "Ootel", en: "Pending", ru: "На рассмотрении" },
     approved: { et: "Heaks kiidetud", en: "Approved", ru: "Одобрено" },
@@ -131,7 +135,7 @@ export const translations = {
     notFound: { et: "Lehte ei leitud", en: "Page not found", ru: "Страница не найдена" },
     welcome: { et: "Vali oma järgmine tegevus", en: "Choose your next step", ru: "Выберите следующее действие" },
     welcomeText: { et: "Vaata võistlusi ja oma kontole antud ligipääsu.", en: "Browse events and review the access assigned to your account.", ru: "Просматривайте конкурсы и права доступа своего аккаунта." },
-    noRoles: { et: "Sulle pole veel rolle määratud. Võistlusi saad vaadata; osalemisavalduste esitamine pole veel saadaval.", en: "You have no roles yet. You can browse events; applications are not available yet.", ru: "Роли пока не назначены. Можно просматривать конкурсы; подача заявок пока недоступна." },
+    noRoles: { et: "Taotluste esitamiseks ja nende oleku vaatamiseks pole rolli vaja.", en: "You can apply and track your applications without a role.", ru: "Вы можете подавать заявки и следить за ними без назначенной роли." },
     pendingFeature: { et: "Selle tööruumi tegevused pole veel saadaval.", en: "Actions in this workspace are not available yet.", ru: "Действия в этом рабочем разделе пока недоступны." },
     administrator: { et: "Administraator", en: "Administrator", ru: "Администратор" },
     judge: { et: "Kohtunik", en: "Judge", ru: "Судья" },

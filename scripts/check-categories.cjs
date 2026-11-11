@@ -53,7 +53,7 @@ module.exports = async function checkCategories({ client, baseUrl, adminToken, l
   assert.equal((await request(other.id, '', 'GET', undefined, token)).status, 200);
   const age = await client.ageGroup.create({ data: { eventId: event.id, name: 'Category age', minAge: 0 } });
   const format = await client.danceFormat.create({ data: { eventId: event.id, name: 'Category format', minParticipants: 1, maxParticipants: 2, maxDurationSeconds: 300 } });
-  const performance = await client.performance.create({ data: { eventId: event.id, categoryId: category.id, ageGroupId: age.id, formatId: format.id, title: 'Category usage', durationSec: 60, orderOnStage: 1 } });
+  const performance = await client.performance.create({ data: { ...await require("./performance-fixture.cjs")(client, event.id, "check-categories.cjs owner"), eventId: event.id, categoryId: category.id, ageGroupId: age.id, formatId: format.id, title: 'Category usage', durationSec: 60, orderOnStage: 1 } });
   const blocked = await request(event.id, '/' + category.id, 'DELETE');
   assert.equal(blocked.status, 409); assert.equal(blocked.body.code, 'CONFLICT');
   assert.ok(await client.danceCategory.findUnique({ where: { id: category.id } }));

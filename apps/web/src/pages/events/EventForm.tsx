@@ -5,7 +5,7 @@ import { formatIssue } from "../../i18n/errors";
 import { useTranslation } from "../../i18n/useTranslation";
 import { isLocale, languageNames, type Locale } from "../../i18n/locale";
 import { Button, ErrorSummary, Field, Input } from "../../components/ui/Foundation";
-import { offsetLabel, wallTime, wallTimeCandidates } from "../../features/events/eventTime";
+import { minuteInstant, offsetLabel, resolveWallTime, wallTime, wallTimeCandidates } from "../../features/events/eventTime";
 import { eventFieldIds } from "../../features/events/setup";
 import "./event-setup.css";
 
@@ -23,7 +23,7 @@ function TimeField({ id, label, value, zone, choice, onChange, onChoice, error }
   return <div><Field id={id} label={label} required {...(error && { error })}>{props => <Input {...props} type="datetime-local" value={value} onChange={event => onChange(event.target.value)} />}</Field>
     {value && zone && candidates.length === 0 && <p className="ui-field-error">{t("Setup.invalidTime")}</p>}
     {candidates.length > 1 && <Field id={id + "-offset"} label={label + ": " + t("Setup.offset")} hint={t("Setup.ambiguousTime")} required>{props =>
-      <select {...props} className="ui-input" value={candidates.includes(choice) ? choice : ""} onChange={event => onChoice(event.target.value)}>
+      <select {...props} className="ui-input" value={candidates.includes(minuteInstant(choice)) ? minuteInstant(choice) : ""} onChange={event => onChoice(event.target.value)}>
         <option value="">{t("Setup.choose")}</option>{candidates.map(instant => <option key={instant} value={instant}>{offsetLabel(instant, zone)}</option>)}
       </select>}</Field>}
   </div>;
@@ -58,8 +58,7 @@ export function EventForm({ title, initialValues, unclassifiedDescription, submi
     setError(null);
     const issues: UiError["issues"] = [];
     const instant = (key: keyof typeof offsets) => {
-      const candidates = wallTimeCandidates(form[key], form.timeZone);
-      const result = candidates.length === 1 ? candidates[0] : candidates.find(value => value === offsets[key]);
+      const result = resolveWallTime(form[key], form.timeZone, offsets[key]);
       if (!result) issues.push({ path: [key], rule: "invalid", params: {} });
       return result ?? "";
     };

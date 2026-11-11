@@ -7,6 +7,48 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { test } = require('node:test');
+const ts = require('typescript');
+
+function baselineScripts(source) {
+  const scripts = new Set();
+  const tree = ts.createSourceFile('test-baseline.cjs', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+  function visit(node) {
+    if (ts.isAwaitExpression(node) && ts.isCallExpression(node.expression)) {
+      const call = node.expression;
+      // Count awaited suite invocations, never comments, strings or unused imports.
+      if (ts.isIdentifier(call.expression) && call.expression.text === 'check'
+        && call.arguments.length === 2 && ts.isStringLiteral(call.arguments[0])) {
+        scripts.add(`scripts/${call.arguments[0].text}.cjs`);
+      } else if (ts.isCallExpression(call.expression)) {
+        const loader = call.expression;
+        if (ts.isIdentifier(loader.expression) && loader.expression.text === 'require'
+          && loader.arguments.length === 1 && ts.isStringLiteral(loader.arguments[0])) {
+          scripts.add(`scripts/${loader.arguments[0].text.replace(/^\.\//, '')}`);
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
+  return scripts;
+}
+
+test('baseline evidence recognizes awaited timed and direct suites without counting mentions', () => {
+  const source = `async function main() {
+    await check('check-staff-access', { client });
+    await require('./check-invitations.cjs')({ client });
+    // await check('check-comment', context);
+    const mention = "await check('check-string', context)";
+    const unused = require('./check-unused.cjs');
+    check('check-unawaited', context);
+    await other('check-other', context);
+    await check('check-missing-context');
+  }`;
+  assert.deepEqual([...baselineScripts(source)].sort(), [
+    'scripts/check-invitations.cjs', 'scripts/check-staff-access.cjs',
+  ]);
+});
+
 test('Phase 1 coverage inventory matches every mounted resource method/path and names evidence', () => {
   const { operations } = require('../../../docs/api-coverage.json');
   const actual = [];
@@ -19,10 +61,11 @@ test('Phase 1 coverage inventory matches every mounted resource method/path and 
   const tests = fs.readdirSync(__dirname).filter(name => name.endsWith('.test.cjs'))
     .map(name => fs.readFileSync(path.join(__dirname, name), 'utf8')).join('\n');
   const baseline = fs.readFileSync(path.join(__dirname, '../../../scripts/test-baseline.cjs'), 'utf8');
+  const executedScripts = baselineScripts(baseline);
   for (const operation of operations) for (const [dimension, evidence] of Object.entries(operation.tests)) {
     const scriptEvidence = /^scripts\/check-[a-z-]+\.cjs$/.test(evidence)
       && fs.existsSync(path.join(__dirname, '../../..', evidence))
-      && baseline.includes("require('./" + path.basename(evidence) + "')");
+      && executedScripts.has(evidence);
     assert.ok(evidence.startsWith('N/A:') || tests.includes(evidence) || scriptEvidence,
       operation.router + ' ' + operation.method + ' ' + operation.path + ': missing ' + dimension + ' evidence');
   }

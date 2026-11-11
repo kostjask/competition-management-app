@@ -27,7 +27,7 @@ export default function EventsList() {
           </RoleGate>
         </div>
       </header>
-      <ErrorSummary error={error} title={t("Feedback.validation")} />
+      <ErrorSummary error={error} title={t("Events.loadError")} />
       {loading ? (
         <LoadingState label={t("Access.loading")} />
       ) : error ? (
@@ -43,7 +43,6 @@ export default function EventsList() {
               <div className="event-row-meta">
                 <p>
                   <time dateTime={event.startsAt}>{eventDate(event.startsAt, locale, event.timeZone)}</time>
-                  {", "}
                   <time dateTime={event.endsAt}>{eventDate(event.endsAt, locale, event.timeZone)}</time>
                 </p>
                 <p>{event.timeZone}</p>
@@ -54,8 +53,8 @@ export default function EventsList() {
                 <EventContent event={event} />
               </section>
               <div className="event-row-actions">
-                <Link className="ui-button ui-button-secondary" to={`/events/${encodeURIComponent(event.id)}`}>
-                  {t("Events.moreInfo")}: {event.name}
+                <Link className="ui-button ui-button-secondary" to={`/events/${encodeURIComponent(event.id)}`} aria-label={`${t("Events.moreInfo")}: ${event.name}`}>
+                  {t("Events.moreInfo")}
                 </Link>
                 <RoleGate adminOnly>
                   <Link to={`/admin/events/${encodeURIComponent(event.id)}/setup`}>
