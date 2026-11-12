@@ -54,7 +54,6 @@ const EventCard: React.FC<EventCardProps> = ({
   event,
   status,
   stageBadge,
-  formatDateTime,
   locale,
 }) => {
   const isEditable = status !== EventStatus.PAST;
@@ -92,7 +91,7 @@ const EventCard: React.FC<EventCardProps> = ({
               {event.name}
             </h3>
             <time className="mt-1 block text-xs text-slate-500">
-              {formatDateTime(event.startsAt)} – {formatDateTime(event.endsAt)}
+              {new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: event.timeZone }).format(new Date(event.startsAt))} – {new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: event.timeZone }).format(new Date(event.endsAt))} ({event.timeZone})
             </time>
             <p className="mt-1 text-sm text-slate-700">{event.description}</p>
           </div>

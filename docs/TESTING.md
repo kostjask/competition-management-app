@@ -351,18 +351,45 @@ transactional history and authorization. The complete suite has 108 cases.
 The baseline's check-staff-access.cjs now additionally verifies the global-admin
 read DTO, missing event, guest/staff/scoped-admin denial, other-event exclusion,
 removed/missing-Judge/unavailable-account states, accepted history and exact public
-field allowlists. The global-admin inventory covers 22 operations. No schema or
-migration change is needed. [Staff UI evidence](STAFF_UI_VALIDATION.md) records
+field allowlists. That dated staff slice covered 22 global-admin operations;
+the organizer extension below brings the current inventory to 24. No schema or
+migration change was needed for staff UI. [Staff UI evidence](STAFF_UI_VALIDATION.md) records
 commands, reviewed screenshots and remaining human/real-mail/hosted release gates.
 
 ## M2 registration lifecycle checks (2026-11-09)
 
+The following registration evidence predates the organizer slice. Current
+organizer checks are described in the section below.
+
 Start narrow with node scripts/test-baseline.cjs --registration-only after build.
 It uses the same random disposable database/cleanup and seed checks as the full
-baseline, but runs only check-studio-registrations and check-registration-lifecycle.
+baseline, and now runs check-studio-registrations, check-registration-lifecycle
+and check-organizer.
 It does not replace pnpm test:baseline or fresh/upgrade migration parity. New checks
 cover independent approvals in both orders, retained assignments, correction
 revisions, cancellation/reapplication races and stale/lost responses, event scopes,
 admin/deadline denials, direct SQL constraints and audit rollback. No application
 database or environment file is migrated/reset. Failure reporting prints stack
 frames without assertion snapshots or environment values.
+
+## Organizer setup and review checks (2026-11-12)
+
+After building, run `pnpm test` and `pnpm exec playwright test tests/browser/organizer.spec.ts`.
+The organizer suite covers ET/EN/RU at four widths, native date/DST selection,
+keyboard stage confirmation, independent decisions, stale/uncertain saves,
+session recovery and separate expired-notification retry. Unit checks exercise
+DST gaps/folds, stored instant precision and encrypted account-recipient language.
+The full browser suite includes the existing auth/staff/role checks; do not rebuild
+or modify source concurrently with it, since Vite reload can invalidate stripped
+one-time-link fixture state. Screenshots/traces remain ignored under test-results.
+
+`pnpm test:baseline` now invokes `scripts/check-organizer.cjs`: event content/contact/
+revision persistence, active/event/owner/global-admin denials, independent decisions,
+shared stale revisions, matching retries, notification deduplication, decision races,
+PostgreSQL notification/audit rollback, transport-state/retry guards and private-field
+exclusion. The global-admin matrix includes both new review operations and snapshots
+notification/dispatch rows when asserting denied-write preservation. Fixtures remove
+only their own synthetic transport receipt before the separate queue-worker suite.
+Run migration regression for fresh/upgrade/schema parity and retained unknown-language
+legacy content. [Organizer validation](ORGANIZER_VALIDATION.md) separates these isolated
+checks from the divergent local development database's pending reconciliation.

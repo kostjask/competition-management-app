@@ -1,243 +1,377 @@
-import { validationIssues, type FieldIssue } from "@dance/schemas";
+import { languageNames } from "../../i18n/locale";
+import { useState } from "react";
+import {
+  CreateEventBodySchema,
+  EventStageSchema,
+  eventStageTargets,
+  resolveAuthoredContent,
+  type CreateEventInput,
+  type EventStage,
+  type AuthoredContent,
+} from "@dance/schemas";
 import { toUiError, type UiError } from "../../api/error";
+import { useTranslation } from "../../i18n/useTranslation";
 import { formatIssue } from "../../i18n/errors";
-import { ErrorFeedback } from "../../components/ErrorFeedback";
-import { useMemo, useState } from "react";
-import { CreateEventBodySchema, EventStageSchema, eventStageTargets, type CreateEventInput } from "@dance/schemas";
-import { useTranslation } from "@i18n/useTranslation";
+import { Button, Field, Input, ErrorSummary, Alert } from "../../components/ui/Foundation";
+import { matchingInstants, wallTime, minuteInstant, resolveWallTime } from "./eventTime";
+import { OrganizerConfirmation } from "./OrganizerConfirmation";
+import "./Organizer.css";
 
-const inputBaseClass =
-  "w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200";
-
-const getInputClassName = (hasError: boolean) =>
-  hasError
-    ? `${inputBaseClass} border-rose-400 focus:border-rose-400 focus:ring-rose-200`
-    : inputBaseClass;
-
-type EventStage = (typeof EventStageSchema)["options"][number];
-
-type EventFormValues = {
-  name: string;
-  startsAt: string;
-  endsAt: string;
-  stage: EventStage;
-};
-
-type EventFormProps = {
+type Props = {
   title: string;
   initialValues: CreateEventInput;
   currentStage?: EventStage;
   submitLabel: string;
   submitError?: UiError | null;
   isSubmitting?: boolean;
+  blocked?: boolean;
   onSubmit: (values: CreateEventInput) => Promise<void>;
   onCancel: () => void;
 };
-
-const toUtcInputValue = (value: string | Date): string => {
-  const date = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toISOString().slice(0, 16);
-};
-
-const toIsoString = (value: string): string => {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value + "Z");
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  return date.toISOString();
-};
-
+const languages = ["et", "en", "ru"] as const;
 export function EventForm({
   title,
-  initialValues,
+  initialValues: initial,
   currentStage,
   submitLabel,
   submitError,
   isSubmitting,
+  blocked,
   onSubmit,
   onCancel,
-}: EventFormProps) {
+}: Props) {
   const { t, locale } = useTranslation();
-  const [localError, setLocalError] = useState<UiError | null>(null);
-  const visibleError = localError ?? submitError ?? null;
-  const fieldErrors: Partial<Record<string, FieldIssue>> = {};
-  for (const issue of visibleError?.issues ?? []) fieldErrors[issue.path.join(".")] = issue;
-  const fieldMessage = (field: string) => { const issue = fieldErrors[field]; return issue ? formatIssue(issue, locale) : null; };
-  const [formValues, setFormValues] = useState<EventFormValues>(() => ({
-    name: initialValues.name ?? "",
-    startsAt: toUtcInputValue(initialValues.startsAt),
-    endsAt: toUtcInputValue(initialValues.endsAt),
-    stage: initialValues.stage ?? EventStageSchema.options[0],
+  const [localError, setError] = useState<UiError | null>(null);
+  const [timeError, setTimeError] = useState(false);
+  const [confirmation, setConfirmation] = useState<CreateEventInput | null>(null);
+  const [values, setValues] = useState(() => ({
+    name: initial.name,
+    venue: initial.venue ?? "",
+    city: initial.city ?? "",
+    country: initial.country ?? "",
+    organizerEmail: initial.organizerEmail ?? "",
+    organizerPhone: initial.organizerPhone ?? "",
+    timeZone: initial.timeZone ?? "UTC",
+    maxStudios: initial.maxStudios?.toString() ?? "",
+    maxPerformances: initial.maxPerformances?.toString() ?? "",
+    stage: initial.stage ?? "PRE_REGISTRATION",
+    startsAt: wallTime(initial.startsAt, initial.timeZone ?? "UTC"),
+    endsAt: wallTime(initial.endsAt, initial.timeZone ?? "UTC"),
+    registrationDeadline: initial.registrationDeadline
+      ? wallTime(initial.registrationDeadline, initial.timeZone ?? "UTC")
+      : "",
+    sourceLocale: initial.authoredDescription?.sourceLocale ?? "",
+    sourceText: initial.authoredDescription?.sourceText ?? initial.description ?? "",
+    et: initial.authoredDescription?.translations.et ?? "",
+    en: initial.authoredDescription?.translations.en ?? "",
+    ru: initial.authoredDescription?.translations.ru ?? "",
   }));
-
-  const stageLabels = useMemo<Record<EventStage, string>>(
-    () => ({
+  const [chosen, setChosen] = useState<Record<string, string>>(() => ({
+    startsAt: minuteInstant(initial.startsAt),
+    endsAt: minuteInstant(initial.endsAt),
+    registrationDeadline: initial.registrationDeadline ? minuteInstant(initial.registrationDeadline) : "",
+  }));
+  const error = localError ?? submitError ?? null;
+  const issues = Object.fromEntries(
+    (error?.issues ?? []).map((issue) => [issue.path.join("."), issue]),
+  );
+  const labels = {
+    name: t("Events.nameLabel"),
+    venue: t("Events.venue"),
+    city: t("Common.city"),
+    country: t("Common.country"),
+    organizerEmail: t("Organizer.email"),
+    organizerPhone: t("Organizer.phone"),
+    timeZone: t("Organizer.zone"),
+    maxStudios: t("Organizer.maxStudios"),
+    maxPerformances: t("Organizer.maxPerformances"),
+    startsAt: t("Events.startsAtLabel"),
+    endsAt: t("Events.endsAtLabel"),
+    registrationDeadline: t("Organizer.deadline"),
+  };
+  const stageLabel = (stage: EventStage) =>
+    ({
       PRE_REGISTRATION: t("Events.stagePreRegistration"),
       REGISTRATION_OPEN: t("Events.stageRegistrationOpen"),
       DATA_REVIEW: t("Events.stageDataReview"),
       FINALIZED: t("Events.stageFinalized"),
       ENDED: t("Events.stageEnded"),
       CANCELLED: t("Events.stageCancelled"),
-    }),
-    [t]
+    })[stage];
+  const field = (key: keyof typeof labels, type = "text", required = false) => (
+    <Field
+      key={key}
+      id={`event-${key}`}
+      label={labels[key]}
+      required={required}
+      {...(issues[key] && { error: formatIssue(issues[key], locale) })}
+    >
+      {(attrs) => (
+        <Input
+          {...attrs}
+          type={type}
+          value={values[key]}
+          onChange={(e) => {
+            setValues((v) => ({ ...v, [key]: e.target.value }));
+            if (key === "timeZone") setChosen({});
+          }}
+        />
+      )}
+    </Field>
   );
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setLocalError(null);
-
-    const payload: CreateEventInput = {
-      name: formValues.name.trim(),
-      startsAt: toIsoString(formValues.startsAt),
-      endsAt: toIsoString(formValues.endsAt),
-      stage: formValues.stage,
-    };
-
-    const parsed = CreateEventBodySchema.safeParse(payload);
-
-    if (!parsed.success) {
-      setLocalError({ ...toUiError(parsed.error), issues: validationIssues(parsed.error.issues) });
-      return;
-    }
-
-    try {
-      await onSubmit(parsed.data);
-    } catch {
-      // Error state is handled by the parent.
-    }
-  };
-
-  return (
-    <div className="mx-auto w-full max-w-4xl">
-      <div className="rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-xl shadow-slate-200/50">
-        <div className="flex flex-col gap-2">
-          <p className="text-xs uppercase tracking-[0.3em] text-amber-500">{t("Common.events")}</p>
-          <h1 className="font-display text-3xl text-slate-900">{title}</h1>
-          <p>{t("Shell.utc")}</p>
-          <p className="text-sm text-slate-500">{t("Events.formHint")}</p>
-        </div>
-
-        <form noValidate className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="grid gap-6 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-              {t("Events.nameLabel")}
-              <input
-                id={"event-name"}
-                aria-describedby={fieldErrors.name ? "event-name-error" : undefined}
-                className={getInputClassName(Boolean(fieldErrors.name))}
-                value={formValues.name}
-                onChange={(eventValue) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    name: eventValue.target.value,
-                  }))
-                }
-                placeholder={t("Events.nameLabel")}
-                aria-invalid={Boolean(fieldErrors.name)}
-                required
-              />
-              {fieldErrors.name ? (
-                <span id="event-name-error" className="text-xs font-medium text-rose-600">{fieldMessage("name")}</span>
-              ) : null}
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-              {t("Events.stageLabel")}
+  const dateField = (key: "startsAt" | "endsAt" | "registrationDeadline") => {
+    const candidates = matchingInstants(values[key], values.timeZone);
+    return (
+      <div key={key}>
+        {field(key, "datetime-local", key !== "registrationDeadline")}
+        {candidates.length > 1 && (
+          <Field
+            id={`event-${key}-offset`}
+            label={t("Organizer.offset")}
+            hint={t("Organizer.ambiguous")}
+          >
+            {(attrs) => (
               <select
-                id={"event-stage"}
-                aria-describedby={fieldErrors.stage ? "event-stage-error" : undefined}
-                className={getInputClassName(Boolean(fieldErrors.stage))}
-                value={formValues.stage}
-                onChange={(eventValue) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    stage: EventStageSchema.parse(eventValue.target.value),
-                  }))
-                }
-                aria-invalid={Boolean(fieldErrors.stage)}
+                {...attrs}
+                className="ui-input"
+                value={candidates.includes(chosen[key] ?? "") ? chosen[key] : ""}
+                onChange={(e) => setChosen((v) => ({ ...v, [key]: e.target.value }))}
               >
-                {eventStageTargets(currentStage).map((stage) => (
-                  <option key={stage} value={stage}>
-                    {stageLabels[stage]}
+                <option value="">{t("Organizer.offset")}</option>
+                {candidates.map((instant) => (
+                  <option key={instant} value={instant}>
+                    {instant}
                   </option>
                 ))}
               </select>
-              {fieldErrors.stage ? (
-                <span id="event-stage-error" className="text-xs font-medium text-rose-600">{fieldMessage("stage")}</span>
-              ) : null}
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-              {t("Events.startsAtLabel")}
-              <input
-                type="datetime-local"
-                id={"event-startsAt"}
-                aria-describedby={fieldErrors.startsAt ? "event-startsAt-error" : undefined}
-                className={getInputClassName(Boolean(fieldErrors.startsAt))}
-                value={formValues.startsAt}
-                onChange={(eventValue) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    startsAt: eventValue.target.value,
-                  }))
-                }
-                aria-invalid={Boolean(fieldErrors.startsAt)}
-                required
-              />
-              {fieldErrors.startsAt ? (
-                <span id="event-startsAt-error" className="text-xs font-medium text-rose-600">{fieldMessage("startsAt")}</span>
-              ) : null}
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-semibold text-slate-700">
-              {t("Events.endsAtLabel")}
-              <input
-                type="datetime-local"
-                id={"event-endsAt"}
-                aria-describedby={fieldErrors.endsAt ? "event-endsAt-error" : undefined}
-                className={getInputClassName(Boolean(fieldErrors.endsAt))}
-                value={formValues.endsAt}
-                onChange={(eventValue) =>
-                  setFormValues((prev) => ({
-                    ...prev,
-                    endsAt: eventValue.target.value,
-                  }))
-                }
-                aria-invalid={Boolean(fieldErrors.endsAt)}
-                required
-              />
-              {fieldErrors.endsAt ? (
-                <span id="event-endsAt-error" className="text-xs font-medium text-rose-600">{fieldMessage("endsAt")}</span>
-              ) : null}
-            </label>
-          </div>
-
-          <ErrorFeedback error={visibleError} fields={{ name: "event-name", stage: "event-stage", startsAt: "event-startsAt", endsAt: "event-endsAt" }} />
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-              onClick={onCancel}
-            >
-              {t("Common.cancel")}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={isSubmitting}
-            >
-              {submitLabel}
-            </button>
-          </div>
-        </form>
+            )}
+          </Field>
+        )}
       </div>
-    </div>
+    );
+  };
+  const content = (): AuthoredContent | null => {
+    if (!languages.some((language) => language === values.sourceLocale)) return null;
+    const sourceLocale = languages.find((language) => language === values.sourceLocale);
+    if (!sourceLocale) return null;
+    return {
+      sourceLocale,
+      sourceText: values.sourceText,
+      translations: Object.fromEntries(
+        languages
+          .filter((language) => language !== sourceLocale && values[language].trim())
+          .map((language) => [language, values[language]]),
+      ),
+    };
+  };
+  const commit = async (data: CreateEventInput) => {
+    setConfirmation(null);
+    try {
+      await onSubmit(data);
+    } catch {
+      /* Parent owns server errors and recovery. */
+    }
+  };
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting || blocked) return;
+    setError(null);
+    setTimeError(false);
+    const instant = (key: "startsAt" | "endsAt" | "registrationDeadline") => {
+      return resolveWallTime(values[key], values.timeZone, chosen[key], initial[key], initial.timeZone ?? "UTC");
+    };
+    const startsAt = instant("startsAt"),
+      endsAt = instant("endsAt"),
+      deadline = values.registrationDeadline ? instant("registrationDeadline") : null;
+    if (!startsAt || !endsAt || deadline === undefined) {
+      setTimeError(true);
+      return;
+    }
+    if (values.sourceText.trim() && !values.sourceLocale) {
+      setError({
+        reason: "invalidInput",
+        params: {},
+        issues: [{ path: ["sourceLocale"], rule: "invalid", params: {} }],
+      });
+      return;
+    }
+    const parsed = CreateEventBodySchema.safeParse({
+      name: values.name,
+      stage: values.stage,
+      startsAt,
+      endsAt,
+      timeZone: values.timeZone,
+      registrationDeadline: deadline,
+      venue: values.venue || null,
+      city: values.city || null,
+      country: values.country || null,
+      organizerEmail: values.organizerEmail || null,
+      organizerPhone: values.organizerPhone || null,
+      maxStudios: values.maxStudios ? Number(values.maxStudios) : null,
+      maxPerformances: values.maxPerformances ? Number(values.maxPerformances) : null,
+      authoredDescription: content(),
+      ...(values.sourceLocale && { description: null }),
+    });
+    if (!parsed.success) {
+      setError(toUiError(parsed.error));
+      return;
+    }
+    if (parsed.data.stage !== (currentStage ?? "PRE_REGISTRATION")) setConfirmation(parsed.data);
+    else void commit(parsed.data);
+  };
+  const preview = content();
+  return (
+    <section className="organizer">
+      <h1>{title}</h1>
+      <p>{t("Organizer.requiredFields")}</p>
+      <form noValidate onSubmit={submit}>
+        <ErrorSummary
+          error={error}
+          title={t("Organizer.setup")}
+          fields={Object.fromEntries(
+            [...Object.keys(labels), "sourceLocale"].map((key) => [key, `event-${key}`]),
+          )}
+        />
+        {timeError && <Alert tone="danger">{t("Organizer.timeInvalid")}</Alert>}
+        <fieldset disabled={isSubmitting}>
+          <legend>{t("Organizer.details")}</legend>
+          <div className="organizer-fields">
+            {field("name", "text", true)}
+            {field("venue")}
+            {field("city")}
+            {field("country")}
+          </div>
+        </fieldset>
+        <fieldset disabled={isSubmitting}>
+          <legend>{t("Organizer.registration")}</legend>
+          <p>{t("Organizer.dateHelp")}</p>
+          {field("timeZone", "text", true)}
+          <div className="organizer-fields">
+            {dateField("startsAt")}
+            {dateField("endsAt")}
+            {dateField("registrationDeadline")}
+          </div>
+          <p className="ui-help">{t("Organizer.noDeadline")}</p>
+          <Field id="event-stage" label={t("Events.stageLabel")}>
+            {(attrs) => (
+              <select
+                {...attrs}
+                className="ui-input"
+                value={values.stage}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, stage: EventStageSchema.parse(e.target.value) }))
+                }
+              >
+                {eventStageTargets(currentStage).map((stage) => (
+                  <option key={stage} value={stage}>
+                    {stageLabel(stage)}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          <div className="organizer-fields">
+            {field("maxStudios", "number")}
+            {field("maxPerformances", "number")}
+          </div>
+          <p className="ui-help">{t("Organizer.limitsHelp")}</p>
+        </fieldset>
+        <fieldset disabled={isSubmitting}>
+          <legend>{t("Organizer.contact")}</legend>
+          <div className="organizer-fields">
+            {field("organizerEmail", "email")}
+            {field("organizerPhone", "tel")}
+          </div>
+        </fieldset>
+        <fieldset disabled={isSubmitting}>
+          <legend>{t("Organizer.description")}</legend>
+          {initial.description && !initial.authoredDescription && <p>{t("Organizer.legacy")}</p>}
+          <Field
+            id="event-sourceLocale"
+            label={t("Organizer.source")}
+            {...(issues.sourceLocale && { error: t("Organizer.chooseSource") })}
+          >
+            {(attrs) => (
+              <select
+                {...attrs}
+                className="ui-input"
+                value={values.sourceLocale}
+                onChange={(e) => setValues((v) => ({ ...v, sourceLocale: e.target.value }))}
+              >
+                <option value="">{t("Organizer.chooseSource")}</option>
+                {languages.map((language) => (
+                  <option key={language} value={language}>
+                    {languageNames[language]}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
+          <Field id="event-sourceText" label={t("Organizer.sourceText")}>
+            {(attrs) => (
+              <textarea
+                {...attrs}
+                className="ui-input"
+                maxLength={20000}
+                value={values.sourceText}
+                onChange={(e) => setValues((v) => ({ ...v, sourceText: e.target.value }))}
+              />
+            )}
+          </Field>
+          {languages
+            .filter((language) => language !== values.sourceLocale)
+            .map((language) => (
+              <Field
+                key={language}
+                id={`event-translation-${language}`}
+                label={`${t("Organizer.translation")} (${language})`}
+              >
+                {(attrs) => (
+                  <textarea
+                    {...attrs}
+                    className="ui-input"
+                    maxLength={20000}
+                    value={values[language]}
+                    onChange={(e) => setValues((v) => ({ ...v, [language]: e.target.value }))}
+                  />
+                )}
+              </Field>
+            ))}
+          {preview && (
+            <details>
+              <summary>{t("Organizer.preview")}</summary>
+              {languages.map((language) => {
+                const resolved = resolveAuthoredContent(preview, language);
+                return (
+                  <section className="organizer-preview" key={language}>
+                    <h3>{language}</h3>
+                    {resolved.fallback && <p>{t("Registration.contentFallback")}</p>}
+                    <p lang={resolved.lang}>{resolved.text}</p>
+                  </section>
+                );
+              })}
+            </details>
+          )}
+        </fieldset>
+        <div className="ui-actions">
+          <Button type="submit" pending={!!isSubmitting} disabled={blocked}>
+            {submitLabel}
+          </Button>
+          <Button variant="secondary" onClick={onCancel}>
+            {t("Common.cancel")}
+          </Button>
+        </div>
+      </form>
+      {confirmation && (
+        <OrganizerConfirmation
+          title={t("Organizer.confirmStage")}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => void commit(confirmation)}
+        >
+          <p>{stageLabel(confirmation.stage ?? "PRE_REGISTRATION")}</p>
+          <p>{t("Organizer.stageEffect")}</p>
+        </OrganizerConfirmation>
+      )}
+    </section>
   );
 }

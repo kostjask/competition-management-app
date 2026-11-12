@@ -94,5 +94,39 @@ revision/reason but omit nextActor. All errors use the global localized envelope
 
 Frontend helpers use shared inferred contracts; createStudio also accepts the
 reapplication body, updateStudioRegistration requires revision and cancellation
-requires revision as a separate argument. No application UI is claimed here;
-P4/P5 own review/status/correction/browser journeys and notification intent.
+requires revision as a separate argument. Organizer setup/review is implemented;
+applicant status/correction journeys remain P5.
+
+## Organizer review and notifications
+
+Global-admin-only `GET /events/:eventId/review` returns a serializable snapshot
+of the event and its active, event-owned applications, authorized studio profiles,
+minimal scoped audit history and notification states. Non-admins (including scoped
+admin assignments) receive 403; missing events receive 404. Private queue ciphertext,
+binding digests, account recipient IDs and retry secrets never enter this DTO.
+
+Organization and event decision writes use the existing canonical PATCH routes.
+Both advance the shared registration revision. A changed decision atomically saves
+the decision, reconciles derived access, appends audit and creates one notification
+per active member whose linked account is active and verified. Contact email does
+not establish recipient identity. The account's language preference selects ET/EN/RU
+with the existing ET default. No active eligible recipient means no notification.
+
+Migration 31 adds `ReviewNotification`, with a unique registration/kind/revision/
+recipient key and restrictive registration/dispatch relations. It retains decision
+kind/status/reason/revision and links to the existing encrypted P2 email queue.
+Matching write retries create no duplicate intent. Queue/intent/audit failures
+roll back the decision and access together. Neutral mail says a decision changed;
+it never claims both independent approvals succeeded. Links currently lead to the
+account; P5 owns the applicant status route. No sensitive evidence appears in mail.
+
+States are `TEST_ONLY` (fake provider; no mail sent), `PENDING` (automatic retry,
+delivery unconfirmed), `ACCEPTED` (provider accepted, inbox delivery unconfirmed),
+and `CANCELLED` (expired/cancelled dispatch; decision remains saved). Expired pending
+intent is displayed as cancelled even before the worker processes it.
+`POST /events/:eventId/review/:notificationId/retry` is global-admin-only and returns
+204. It verifies the notification's active studio/event and current eligible owner.
+Pending live intent and provider-accepted intent are no-ops; expired intent is
+cancelled before a replacement is queued. It never repeats the decision. Wrong
+event, missing/archived studio or notification returns 404; an ineligible recipient
+returns 403. Actual provider delivery and human language review remain release gates.

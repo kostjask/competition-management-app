@@ -5,16 +5,19 @@ import { EventStageSchema, type CreateEventInput } from "@dance/schemas";
 import { createEvent } from "../../api/events";
 import { useTranslation } from "@i18n/useTranslation";
 import { getTranslation } from "@i18n/translations";
+import { Alert } from "../../components/ui/Foundation";
 import { EventForm } from "./EventForm";
 
 export default function EventsCreate() {
   const { locale } = useTranslation();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uncertain, setUncertain] = useState(false);
   const [submitError, setSubmitError] = useState<UiError | null>(null);
 
   const initialValues = useMemo<CreateEventInput>(() => {
     const startsAt = new Date();
+    startsAt.setUTCSeconds(0, 0);
     const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
     return {
       name: "",
@@ -28,11 +31,12 @@ export default function EventsCreate() {
     try {
       setIsSubmitting(true);
       setSubmitError(null);
-      await createEvent(values);
-      navigate("/events");
+      const created = await createEvent(values);
+      navigate(`/admin/events/${encodeURIComponent(created.id)}/setup`);
     } catch (err) {
       const message = toUiError(err);
       setSubmitError(message);
+      if (message.reason !== "invalidInput") setUncertain(true);
       throw err;
     } finally {
       setIsSubmitting(false);
@@ -49,7 +53,8 @@ export default function EventsCreate() {
           <span aria-hidden>←</span>
           {getTranslation("Events.backToList", locale)}
         </Link>
-        <EventForm
+        {uncertain && <Alert tone="warning">{getTranslation("Organizer.stale", locale)} <Link to="/admin">{getTranslation("Organizer.title", locale)}</Link></Alert>}
+        <EventForm blocked={uncertain}
           title={getTranslation("Events.createTitle", locale)}
           initialValues={initialValues}
           submitLabel={getTranslation("Events.createSubmit", locale)}

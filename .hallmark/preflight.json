@@ -1,0 +1,22 @@
+{
+  "scanned": "2026-11-11",
+  "findings": {
+    "fonts": "DESIGN.md:15, local system-ui/Segoe UI operational app family",
+    "palette": "apps/web/src/features/events/design/tokens.css:1, scoped Cobalt paper/graphite/accent roles",
+    "motion": "apps/web/src/features/events/design/base.css:18, reduced-motion control feedback",
+    "spacing": "apps/web/src/pages/events/event-setup.css:7, capped app workbench and shared scale",
+    "framework": "apps/web/package.json, React/Vite/Tailwind/Router"
+  },
+  "preserve": [
+    "DESIGN.md Cobalt app system",
+    "docs/DESIGN_SYSTEM.md accessibility and full-redesign scope",
+    "ET/EN/RU",
+    "current shared shell behavior"
+  ],
+  "introduce": [
+    "Inline owner/title draft creation with frozen operation retry",
+    "Translated missing-field and unscheduled summaries",
+    "Nullable history configuration"
+  ],
+  "inferences": "Existing DESIGN.md provides material, audience and tone: real operational records, global organizers, inspect the owning application, restrained utilitarian Cobalt. No image/material slots."
+}

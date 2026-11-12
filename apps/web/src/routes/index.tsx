@@ -23,6 +23,7 @@ import { FullPageLoading } from "../components/LoadingSpinner.tsx";
 // Lazy load role-specific sections
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard.tsx"));
 const InvitationsPage = lazy(() => import("../pages/admin/InvitationsPage.tsx"));
+const ReviewPage = lazy(() => import("../pages/admin/ReviewPage.tsx"));
 const StaffPage = lazy(() => import("../pages/admin/StaffPage.tsx"));
 const JudgeInterface = lazy(() => import("../pages/judge/JudgeInterface.tsx"));
 const RepresentativeConsole = lazy(() => import("../pages/representative/RepresentativeConsole.tsx"));
@@ -112,6 +113,8 @@ export function AppRoutes() {
                   </RequireRole>
                 }
               >
+                <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
+                <Route path="events/:eventId/applications" element={<LazyWrapper><ReviewPage /></LazyWrapper>} />
                 <Route path="invitations" element={<LazyWrapper><InvitationsPage /></LazyWrapper>} />
                 <Route path="events/:eventId/staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
                 <Route

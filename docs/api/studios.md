@@ -54,11 +54,15 @@ studio or update an inactive member. Changing representative contact email never
 changes account/login identity. Membership/role/activation fields are not accepted.
 
 `PATCH /api/v1/studios/:studioId/approval` accepts only
-`{ "status": "PENDING" | "APPROVED" | "REJECTED" }` and requires admin.
-It changes organization approval only; event registrations, review permission,
+`{ "status": "PENDING" | "APPROVED" | "REJECTED", "eventId": "owning-event", "revision": 2 }` and requires global admin.
+The event must match the active studio's stored event. The owning registration
+revision is mandatory and increments for a changed decision, invalidating stale
+event/profile reviews. Matching immediate retries are no-ops; stale conflicting
+revisions return 409. It changes organization approval only; event decision and review permission
 are untouched; derived representative access is reconciled transactionally when
 both approvals qualify, or removed with retained history when none qualify. All studio errors use the global envelope. Writes use
-transactions and active-record predicates.
+transactions and active-record predicates. Decision, access, audit and notification
+intent commit together; see [organizer review](registrations.md#organizer-review-and-notifications).
 
 List/detail/profile update/approval return the same explicit studio DTO: `id`,
 `eventId`, `name`, `approvalStatus`, nullable `country`, `city`, `directorName`,

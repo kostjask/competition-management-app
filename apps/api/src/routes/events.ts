@@ -2,10 +2,14 @@ import { Router } from "express";
 import { PrismaClient } from "@prisma/client";
 import { asyncHandler } from "../errors/handler";
 import { EventsController } from "../controllers";
+import { ReviewController } from "../controllers/ReviewController";
 
 export const eventsRouter = (prisma: PrismaClient) => {
   const router = Router();
   const eventsController = new EventsController(prisma);
+  const reviews = new ReviewController(prisma);
+  router.get("/:eventId/review", asyncHandler((req, res) => reviews.overview(req, res)));
+  router.post("/:eventId/review/:notificationId/retry", asyncHandler((req, res) => reviews.retry(req, res)));
 
   // GET all events (authenticated)
   router.get(

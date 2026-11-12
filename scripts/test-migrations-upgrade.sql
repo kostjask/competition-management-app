@@ -1,5 +1,8 @@
 DO $$
 BEGIN
+    IF EXISTS (SELECT FROM "Event" WHERE revision <> 1 OR "organizerEmail" IS NOT NULL OR "organizerPhone" IS NOT NULL OR "authoredDescription" IS NOT NULL) THEN
+        RAISE EXCEPTION 'Organizer migration inferred authored language/contact or changed event revision defaults';
+    END IF;
     IF EXISTS (SELECT FROM "Event" WHERE "timeZone" <> 'UTC' OR "registrationDeadline" IS NOT NULL) THEN
         RAISE EXCEPTION 'Registration migration changed existing event time interpretation';
     END IF;

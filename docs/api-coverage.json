@@ -1130,6 +1130,40 @@
         "conflict": "scripts/check-staff-access.cjs",
         "globalAdmin": "scripts/check-staff-access.cjs"
       }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/review",
+      "tests": {
+        "success": "scripts/check-organizer.cjs",
+        "invalidInput": "scripts/check-organizer.cjs",
+        "authentication": "scripts/check-organizer.cjs",
+        "permission": "scripts/check-organizer.cjs",
+        "crossParent": "scripts/check-organizer.cjs",
+        "inactiveRecord": "scripts/check-organizer.cjs",
+        "conflict": "scripts/check-organizer.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
+      "router": "events",
+      "exportName": "eventsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/review/:notificationId/retry",
+      "tests": {
+        "success": "scripts/check-organizer.cjs",
+        "invalidInput": "scripts/check-organizer.cjs",
+        "authentication": "scripts/check-organizer.cjs",
+        "permission": "scripts/check-organizer.cjs",
+        "crossParent": "scripts/check-organizer.cjs",
+        "inactiveRecord": "scripts/check-organizer.cjs",
+        "conflict": "scripts/check-organizer.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
     }
   ]
 }

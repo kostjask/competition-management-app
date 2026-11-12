@@ -21,7 +21,7 @@ export const UpdateRegistrationBodySchema = z.object({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]), canEditDuringReview: z.boolean().optional(),
 });
 export const StudioApprovalStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
-export const UpdateStudioApprovalBodySchema = z.strictObject({ status: StudioApprovalStatusSchema });
+export const UpdateStudioApprovalBodySchema = z.strictObject({ status: StudioApprovalStatusSchema, eventId: IdSchema, revision: z.int().positive() });
 export const UpdateRepresentativeBodySchema = z.strictObject({ name: text.optional(), email: EmailSchema.optional() })
   .refine((body) => Object.values(body).some((value) => value !== undefined), { message: "At least one representative field is required", params: { reason: "nonemptyPatch" } });
 export const StudioRepresentativeSchema = z.strictObject({

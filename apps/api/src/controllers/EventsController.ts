@@ -6,14 +6,16 @@ import { appendAudit } from "../services/audit";
 import { assertStageTransition } from "../services/registrationPolicy";
 import { BaseController } from "./BaseController";
 
-const eventSelect = {
+export const eventSelect = {
+  revision: true, organizerEmail: true, organizerPhone: true, authoredDescription: true,
   timeZone: true, registrationDeadline: true, id: true, name: true, startsAt: true, endsAt: true, stage: true, createdAt: true,
   venue: true, country: true, city: true, description: true,
   maxStudios: true, maxPerformances: true, imageUrl: true,
 } satisfies Prisma.EventSelect;
 type EventRecord = Prisma.EventGetPayload<{ select: typeof eventSelect }>;
-function serialize(event: EventRecord) {
+export function serializeEvent(event: EventRecord) {
   const result = EventSchema.safeParse({
+    revision: event.revision, organizerEmail: event.organizerEmail, organizerPhone: event.organizerPhone, authoredDescription: event.authoredDescription,
     timeZone: event.timeZone, registrationDeadline: event.registrationDeadline?.toISOString() ?? null,
     id: event.id, name: event.name, startsAt: event.startsAt.toISOString(),
     endsAt: event.endsAt.toISOString(), stage: event.stage, createdAt: event.createdAt.toISOString(),
@@ -29,14 +31,14 @@ export class EventsController extends BaseController {
     const events = await this.prisma.event.findMany({
       select: eventSelect, orderBy: [{ startsAt: "asc" }, { id: "asc" }],
     });
-    res.json(events.map(serialize));
+    res.json(events.map(serializeEvent));
   }
 
   async getById(req: Request, res: Response): Promise<void> {
     const { eventId } = EventIdParamsSchema.parse(req.params);
     const event = await this.prisma.event.findUnique({ where: { id: eventId }, select: eventSelect });
     if (!event) throw new NotFoundError("Event", eventId);
-    res.json(serialize(event));
+    res.json(serializeEvent(event));
   }
 
   async create(req: Request, res: Response): Promise<void> {
@@ -45,7 +47,7 @@ export class EventsController extends BaseController {
     if (body.stage && !["PRE_REGISTRATION", "REGISTRATION_OPEN"].includes(body.stage)) throw new ForbiddenError("Unsupported initial stage", "stageLocked");
     const event = await this.prisma.$transaction(async tx => {
       const created = await tx.event.create({
-        data: { timeZone: body.timeZone ?? "UTC", registrationDeadline: body.registrationDeadline ? new Date(body.registrationDeadline) : null, name: body.name, startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt),
+        data: { organizerEmail: body.organizerEmail ?? null, organizerPhone: body.organizerPhone ?? null, authoredDescription: body.authoredDescription ?? Prisma.DbNull, timeZone: body.timeZone ?? "UTC", registrationDeadline: body.registrationDeadline ? new Date(body.registrationDeadline) : null, name: body.name, startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt),
           ...(body.stage !== undefined && { stage: body.stage }),
           ...(body.venue !== undefined && { venue: body.venue }),
           ...(body.country !== undefined && { country: body.country }),
@@ -59,7 +61,7 @@ export class EventsController extends BaseController {
       await appendAudit(tx, { action: "EVENT_UPDATED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "EVENT", targetId: created.id, eventId: created.id, metadata: { toStage: created.stage } });
       return created;
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    res.status(201).json(serialize(event));
+    res.status(201).json(serializeEvent(event));
   }
 
   async update(req: Request, res: Response): Promise<void> {
@@ -75,11 +77,16 @@ export class EventsController extends BaseController {
           ...body, registrationDeadline: body.registrationDeadline === undefined ? current.registrationDeadline?.toISOString() ?? null : body.registrationDeadline, startsAt: body.startsAt ?? current.startsAt.toISOString(),
           endsAt: body.endsAt ?? current.endsAt.toISOString(),
         });
+        if (body.expectedRevision !== undefined && current.revision !== body.expectedRevision) throw new ConflictError("Reload event", undefined, "concurrentChange");
         if (body.stage !== undefined) assertStageTransition(current.stage, body.stage, body.expectedStage);
         const deadline = body.registrationDeadline === undefined ? current.registrationDeadline : body.registrationDeadline ? new Date(body.registrationDeadline) : null;
         const updated = await tx.event.update({
           where: { id: eventId },
           data: {
+            revision: { increment: 1 },
+            ...(body.organizerEmail !== undefined && { organizerEmail: body.organizerEmail }),
+            ...(body.organizerPhone !== undefined && { organizerPhone: body.organizerPhone }),
+            ...(body.authoredDescription !== undefined && { authoredDescription: body.authoredDescription ?? Prisma.DbNull }),
             ...(body.timeZone !== undefined && { timeZone: body.timeZone }),
             ...(body.registrationDeadline !== undefined && { registrationDeadline: deadline }),
             ...(body.name !== undefined && { name: body.name }),
@@ -98,7 +105,7 @@ export class EventsController extends BaseController {
         await appendAudit(tx, { action: "EVENT_UPDATED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "EVENT", targetId: eventId, eventId, metadata: { fromStage: current.stage, toStage: updated.stage } });
         return updated;
       }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-      res.json(serialize(event));
+      res.json(serializeEvent(event));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2025") throw new NotFoundError("Event", eventId);

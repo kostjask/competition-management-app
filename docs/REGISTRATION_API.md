@@ -48,12 +48,13 @@ from profile corrections. Current admin profile override is retained explicitly.
 
 [ADR-019](adr/019-m2-authored-content.md) governs source language and authored
 translation fallback. M2 review reasons use translated semantic codes. Event
-content migration/editors remain P4; future rubric/announcement content is not
-implemented by these contracts.
+content storage/editors now implement that contract in P4; future
+rubric/announcement content remains outside this scope.
 
 ## Missing journey work
 
-- Application/status pages are not mounted; role dashboards remain placeholders.
+- Applicant application/status pages are not mounted; the admin workspace now
+  provides setup/review. Other role dashboards remain placeholders.
   Applicants need role-independent event applications, both approval states,
   verified draft continuation and permitted cancellation/correction/reapply paths.
 - Delivered auth pages cover studio signup, owner draft recovery, verification,
@@ -65,8 +66,9 @@ implemented by these contracts.
   Judge/Score history. Additional studio members remain P5-MEMBERS.
 - Durable entry drafts/receipts, music and scoped corrections remain future work.
 
-Local implementation order now proceeds to organizer setup/review and applicant UI
-after the registration/reapplication and M2 content policy checks.
+Organizer setup/review now has implementation and isolated validation; the
+development database still needs reconciliation as recorded in
+[organizer validation](ORGANIZER_VALIDATION.md). Applicant UI follows this slice.
 If the registration design needs authored content fields, settle their content
 policy before implementing those fields. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and

@@ -8,6 +8,7 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
   const token = await login(baseUrl, owner.email);
   const outsider = await login(baseUrl, 'judge@test.com');
   const request = async (path, auth = token, method = 'GET', body) => {
+    if (path.endsWith("/approval") && body && !body.revision) { const studioId = path.split("/")[2]; const current = await client.studioEventRegistration.findFirstOrThrow({ where: { studioId } }); body = { ...body, eventId: current.eventId, revision: current.revision }; }
     const response = await fetch(baseUrl + '/api/v1' + path, { method, headers: { Authorization: 'Bearer ' + auth, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(10000) });
     return { status: response.status, body: response.status === 204 ? null : await response.json() };

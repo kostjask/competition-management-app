@@ -18,3 +18,4 @@ export * from "./onboarding.schema.js";
 export * from "./return-path.js";
 export * from "./staff.schema.js";
 export * from "./content.schema.js";
+export * from "./review.schema.js";

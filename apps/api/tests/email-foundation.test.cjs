@@ -11,7 +11,7 @@ const { ResendProvider, FakeEmailProvider } = require('../dist/services/emailPro
 const { assertStaffScope, recipientLocale, invitationState } = require('../dist/services/staffPolicy.js');
 
 test('all transactional templates have recipient language, escaped links and truthful decision copy', () => {
-  for (const locale of ['et', 'en', 'ru']) for (const kind of ['verification', 'invitation', 'recovery', 'applicationApproved', 'applicationRejected']) {
+  for (const locale of ['et', 'en', 'ru']) for (const kind of ['verification', 'invitation', 'recovery', 'applicationApproved', 'applicationRejected', 'reviewUpdated']) {
     const message = renderEmail({ to: 'recipient@example.invalid', locale, kind, token: 'secret<&"' }, 'https://stage.example.invalid');
     assert.match(message.html, new RegExp('lang="' + locale + '"'));
     assert.ok(message.subject); assert.ok(message.text); assert.ok(!message.html.includes('secret<&"'));

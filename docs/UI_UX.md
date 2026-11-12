@@ -122,8 +122,8 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
 | S03 | `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/correct-email`, `/auth/onboarding` | Mounted recovery and owner draft pages; ADR-017 |
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
-| S05 | `/admin`, `/events/new`, `/events/:id/edit`; P `/admin/events/:id/setup` | Dashboard placeholder; partial forms; P4-CORE |
-| S06 | P `/admin/events/:id/applications` | P4-REVIEW |
+| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | Organizer workspace, setup/checklist; local database reconciliation recorded in organizer validation |
+| S06 | `/admin/events/:eventId/applications` | Independent approval queue/detail/history/notification recovery; P4-REVIEW validation |
 | S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
 | S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | Unmounted; P5-APPLICATION |
 | S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |

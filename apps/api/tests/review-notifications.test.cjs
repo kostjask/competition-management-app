@@ -1,0 +1,26 @@
+﻿const assert = require('node:assert/strict');
+const { test } = require('node:test');
+const { randomBytes } = require('node:crypto');
+process.env.NODE_ENV = 'test'; process.env.EMAIL_PROVIDER = 'resend';
+process.env.DATABASE_URL = 'postgresql://unused:unused@127.0.0.1:1/unused';
+process.env.JWT_SECRET = randomBytes(32).toString('hex');
+process.env.EMAIL_FROM = 'review-tests@example.invalid';
+process.env.EMAIL_QUEUE_KEY = randomBytes(32).toString('hex');
+process.env.RESEND_API_KEY = 're_synthetic';
+process.env.WEB_ORIGIN = 'https://review.example.invalid';
+const { notifyReview } = require('../dist/services/reviewNotifications.js');
+const { decryptEmail } = require('../dist/services/emailQueue.js');
+test('review notifications use eligible account identity and language, encrypted intent and stable revision', async () => {
+  let eligibility; const deliveries = []; const notices = [];
+  const tx = { studioEventRegistration: { findUniqueOrThrow: async args => { eligibility = args; return { studio: { representatives: [{ user: { id: 'owner', email: 'account@example.invalid', preferredLocale: 'ru' } }] } }; } }, emailDelivery: { create: async ({ data }) => { deliveries.push(data); return data; } }, reviewNotification: { create: async ({ data }) => { notices.push(data); return data; } } };
+  await notifyReview(tx, 'application', 'EVENT', 'APPROVED', 2);
+  assert.deepEqual(eligibility.select.studio.select.representatives.where, { active: true, user: { active: true, emailVerified: true } });
+  assert.equal(deliveries.length, 1); assert.equal(notices.length, 1);
+  assert.deepEqual(notices[0], { registrationId: 'application', recipientId: 'owner', kind: 'EVENT', status: 'APPROVED', revision: 2, reason: null, deliveryId: deliveries[0].id });
+  assert.equal(deliveries[0].ciphertext.includes('account@example.invalid'), false);
+  const envelope = decryptEmail(deliveries[0].ciphertext, deliveries[0].id, process.env.EMAIL_QUEUE_KEY);
+  assert.equal(envelope.message.to, 'account@example.invalid'); assert.match(envelope.message.html, /lang="ru"/);
+  assert.equal(envelope.message.text.includes('APPROVED'), false); assert.equal(deliveries[0].purpose, null);
+  tx.reviewNotification.create = async () => { throw new Error('fixture intent failure'); };
+  await assert.rejects(notifyReview(tx, 'application', 'ORGANIZATION', 'REJECTED', 3), /fixture intent failure/);
+});

@@ -46,6 +46,24 @@ List/detail/create/update use one explicit DTO: `id`, `name`, `startsAt`,
 Dates serialize as ISO UTC strings. DTOs omit `imagePath`, relations and the
 nonexistent `updatedAt`; the detail screen no longer renders that timestamp.
 Backend serialization and frontend responses validate shared schemas. Migration 30 adds timezone/deadline and registration history/retry fields without
-rewriting instants. The current editor remains explicitly UTC and offers only
-permitted M2 stage targets; P4-CORE owns timezone/deadline setup controls. DST
-wall-time selection must reject gaps and require an explicit offset for folds.
+rewriting instants. Migration 31 adds `revision` (initially 1), nullable
+`organizerEmail`, `organizerPhone`, and JSON `authoredDescription`. POST/PATCH
+validate contact details and the shared ADR-019 sourceLocale/sourceText/translations
+contract. Existing `description` is retained verbatim with unspecified language;
+the editor requires an explicit source-language choice before converting it.
+Only the source text is required; translations may be cleared. Names and addresses
+are never automatically translated. All event DTOs include these four new fields.
+
+PATCH may supply `expectedRevision`; mismatch returns 409. Every configuration or
+image write increments the event revision. The organizer editor always sends it,
+retains input on conflict/uncertain responses, and requires an authoritative read
+and comparison before another write. Creation has no idempotency key: an uncertain
+response blocks another create and directs the organizer to inspect the event list.
+
+The editor uses event-local wall times, rejects DST gaps, and exposes both UTC
+instants for an explicit choice during folds. Changing timezone reinterprets the
+entered wall times; stored instants are not inferred by the API. Event list/detail
+dates display the event timezone. Opening registration confirms the stage change;
+only existing ADR-003 transitions/date prerequisites are enforced. Contact, venue,
+description and image checklist omissions are actionable recommendations, not new
+publication requirements. Scoring is not a registration prerequisite.

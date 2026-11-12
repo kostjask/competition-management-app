@@ -6,15 +6,16 @@ import { CreateStudioRegistrationBodySchema, UpdateStudioRegistrationBodySchema,
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError, ValidationError } from "../errors";
 import { assertApplicationWindow, assertReviewWindow, registrationTransaction, reconcileRepresentativeAccess } from "../services/registrationPolicy";
+import { notifyReview } from "../services/reviewNotifications";
 import { appendAudit } from "../services/audit";
 
-const registrationSelect = {
+export const registrationSelect = {
   id: true, studioId: true, eventId: true, status: true, revision: true, decisionReason: true,
   canEditDuringReview: true, createdAt: true, updatedAt: true,
   studio: { select: { id: true, name: true, approvalStatus: true, country: true, city: true } },
 } satisfies Prisma.StudioEventRegistrationSelect;
 type RegistrationRecord = Prisma.StudioEventRegistrationGetPayload<{ select: typeof registrationSelect }>;
-function serialize(row: RegistrationRecord) {
+export function serializeRegistration(row: RegistrationRecord) {
   // Explicit projection also keeps private retry bindings out of DTOs.
   return StudioRegistrationSchema.parse({ id: row.id, studioId: row.studioId, eventId: row.eventId,
     nextActor: row.status === "LOCKED" ? "NONE" : ["CANCELLED", "REJECTED"].includes(row.status) || row.studio.approvalStatus === "REJECTED" ? "APPLICANT" : row.status === "PENDING" || row.studio.approvalStatus === "PENDING" ? "ORGANIZER" : "APPLICANT",
@@ -53,7 +54,7 @@ export class StudioRegistrationsController extends BaseController {
         if (existing) {
           if (existing.createdBy !== userId || existing.requestDigest !== digest) throw new ConflictError("Operation changed", undefined, "concurrentChange");
           await this.owner(req, tx, existing.studioId, eventId);
-          return serialize(existing);
+          return serializeRegistration(existing);
         }
       }
       assertApplicationWindow(event);
@@ -70,7 +71,7 @@ export class StudioRegistrationsController extends BaseController {
       if (!registration) throw new InternalServerError();
       await appendAudit(tx, { action: "REGISTRATION_CREATED", actor: { kind: "USER", userId },
         targetType: "REGISTRATION", targetId: registration.id, eventId, studioId: registration.studioId, metadata: { revision: registration.revision } });
-      return serialize(registration);
+      return serializeRegistration(registration);
     }).catch((error: unknown) => {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
@@ -86,7 +87,7 @@ export class StudioRegistrationsController extends BaseController {
     const rows = await this.prisma.studioEventRegistration.findMany({ where: { eventId, studio: { eventId, deletedAt: null,
       ...(!this.isAdmin(req) && { representatives: { some: { userId: this.getUserId(req), active: true } } }),
     } }, select: registrationSelect, orderBy: { studio: { name: "asc" } } });
-    res.json(rows.map(serialize));
+    res.json(rows.map(serializeRegistration));
   }
 
   async update(req: Request, res: Response): Promise<void> {
@@ -100,7 +101,7 @@ export class StudioRegistrationsController extends BaseController {
       const reason = body.status === "REJECTED" ? body.reason ?? "CONTACT_ORGANIZER" : null;
       const canEdit = body.canEditDuringReview ?? current.canEditDuringReview;
       if (current.status === body.status && current.decisionReason === reason && current.canEditDuringReview === canEdit
-        && (body.revision === current.revision || body.revision === current.revision - 1)) return serialize(current);
+        && (body.revision === current.revision || body.revision === current.revision - 1)) return serializeRegistration(current);
       if (body.revision !== current.revision) throw new ConflictError("Reload registration", undefined, "concurrentChange");
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true } });
       if (!event) throw new NotFoundError("Event");
@@ -111,7 +112,8 @@ export class StudioRegistrationsController extends BaseController {
       await reconcileRepresentativeAccess(tx, eventId, studio.representatives.map(r => r.userId), this.getUserId(req));
       await appendAudit(tx, { action: "REGISTRATION_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) },
         targetType: "REGISTRATION", targetId: current.id, eventId, studioId, metadata: { fromStatus: current.status, toStatus: body.status, revision: updated.revision, reasonCode: reason, reviewAllowed: canEdit } });
-      return serialize(updated);
+      await notifyReview(tx, current.id, "EVENT", body.status, updated.revision, reason);
+      return serializeRegistration(updated);
     });
     res.json(result);
   }
@@ -146,7 +148,7 @@ export class StudioRegistrationsController extends BaseController {
       await this.owner(req, tx, studioId, eventId);
       const current = await tx.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId, eventId } }, select: registrationSelect });
       if (!current) throw new NotFoundError("Registration");
-      if (current.status === "PENDING" && current.revision === revision + 1) return serialize(current);
+      if (current.status === "PENDING" && current.revision === revision + 1) return serializeRegistration(current);
       if (current.revision !== revision) throw new ConflictError("Reload registration", undefined, "concurrentChange");
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true, registrationDeadline: true } });
       if (!event) throw new NotFoundError("Event");
@@ -156,7 +158,7 @@ export class StudioRegistrationsController extends BaseController {
         data: { status: "PENDING", canEditDuringReview: false, decisionReason: null, revision: { increment: 1 } }, select: registrationSelect });
       await appendAudit(tx, { action: "REGISTRATION_REAPPLIED", actor: { kind: "USER", userId }, targetType: "REGISTRATION",
         targetId: current.id, eventId, studioId, metadata: { fromStatus: current.status, toStatus: "PENDING", revision: updated.revision } });
-      return serialize(updated);
+      return serializeRegistration(updated);
     });
     res.json(result);
   }

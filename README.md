@@ -65,8 +65,10 @@ own exact versions. [Architecture](docs/ARCHITECTURE.md) Â· [API](docs/API.md) Â
 Email defaults to a silent development fake; Resend dispatch/queue is implemented
 locally but real inbox/hosted release evidence remains open. Storage is local with
 private authenticated images. Signup requires studio intent; event reads require
-login. Auth and staff administration are delivered locally; role dashboards remain
-placeholders. Organizer/application, entry/music and live/results workflows remain
+login. Auth, staff administration and organizer setup/review are implemented with
+local isolated validation. The current development database needs migration-history
+reconciliation; [organizer validation](docs/ORGANIZER_VALIDATION.md) records that
+blocker. Other role dashboards, applicant UI, entry/music and live/results remain
 unfinished. [Security](docs/SECURITY.md) lists current gaps;
 [domain guide](docs/DOMAIN.md) distinguishes runtime from accepted targets.
 

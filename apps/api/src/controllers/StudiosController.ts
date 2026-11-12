@@ -8,6 +8,7 @@ import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } fro
 import { isActionAllowed } from "../utils/stageChecks";
 import { BaseController } from "./BaseController";
 import { assertApplicationWindow, reconcileRepresentativeAccess, registrationTransaction } from "../services/registrationPolicy";
+import { notifyReview } from "../services/reviewNotifications";
 import { appendAudit } from "../services/audit";
 
 const representativeSelect = {
@@ -44,6 +45,11 @@ function serialize(studio: StudioRecord) {
 }
 
 export class StudiosController extends BaseController {
+  static async readForReview(tx: Prisma.TransactionClient, studioId: string, eventId: string) {
+    const studio = await tx.studio.findFirst({ where: { id: studioId, eventId, deletedAt: null }, select: studioSelect });
+    if (!studio) throw new NotFoundError("Studio");
+    return serialize(studio);
+  }
   private async transaction<T>(work: (db: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     try { return await registrationTransaction(this.prisma, work); }
     catch (error) {
@@ -167,11 +173,18 @@ export class StudiosController extends BaseController {
     const body = UpdateStudioApprovalBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const current = await this.requireAccess(req, db, studioId);
+      if (current.eventId !== body.eventId) throw new NotFoundError("Studio");
+      const registration = current.registrations.find(r => r.eventId === body.eventId);
+      if (!registration) throw new NotFoundError("Registration");
+      if (current.approvalStatus === body.status && (body.revision === registration.revision || body.revision === registration.revision - 1)) return serialize(current);
+      if (body.revision !== registration.revision) throw new ConflictError("Reload review", undefined, "concurrentChange");
+      await db.studioEventRegistration.update({ where: { id: registration.id, revision: body.revision }, data: { revision: { increment: 1 } } });
       const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null }, data: { approvalStatus: body.status }, select: studioSelect,
       });
       await reconcileRepresentativeAccess(db, current.eventId, current.representatives.map(r => r.userId), this.getUserId(req));
-      await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status } });
+      await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status, revision: registration.revision + 1 } });
+      await notifyReview(db, registration.id, "ORGANIZATION", body.status, registration.revision + 1);
       return serialize(updated);
     });
     res.json(result);

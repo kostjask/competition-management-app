@@ -143,7 +143,7 @@ test('scoped admin cannot use any mounted global-admin operation', async t => {
   const { request, prisma } = await fixture(t);
   const { operations } = require('../../../docs/api-coverage.json');
   const adminOperations = operations.filter(row => row.tests.globalAdmin);
-  assert.equal(adminOperations.length, 22);
+  assert.equal(adminOperations.length, 24);
   let assignments;
   prisma.userRole.findMany = async ({ where }) => {
     assert.deepEqual(where, { userId: 'actor', removedAt: null });
@@ -274,6 +274,7 @@ async function registrationFixture(t) {
   prisma.studioEventRegistration = {
     findMany: async (args) => { calls.push({ name: 'list', args }); return [registrationRecord()]; },
     findUnique: async () => registrationRecord(),
+    findUniqueOrThrow: async () => ({ studio: { representatives: [] } }),
     update: async (args) => { calls.push({ name: 'update', args }); return registrationRecord(args.data.status); },
     updateMany: async (args) => { calls.push({ name: 'cancel', args }); return { count: 1 }; },
   };
@@ -690,7 +691,7 @@ async function studioFixture(t) {
     return where.id === 's' ? studio : null;
   };
   prisma.studio.findMany = async (args) => { calls.push({ name: 'studio-list', args }); return [studio]; };
-  prisma.studioEventRegistration = { updateMany: async () => ({ count: 1 }) };
+  prisma.studioEventRegistration = { updateMany: async () => ({ count: 1 }), update: async () => ({}), findUniqueOrThrow: async () => ({ studio: { representatives: [] } }) };
   prisma.studio.update = async (args) => { calls.push({ name: 'studio-update', args }); return { ...studio, ...args.data }; };
   prisma.studio.updateMany = async (args) => { calls.push({ name: 'studio-archive', args }); return { count: 1 }; };
   prisma.studioRepresentative = {
@@ -795,7 +796,7 @@ test('studio representative and approval operations enforce active parents, self
   assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'Blocked' } })).status, 404);
   assert.equal((await request(`${studioPath}/representatives/foreign`, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);
   assert.equal((await request(`${studioPath}/approval`, { user: 'owner', method: 'PATCH', body: { status: 'APPROVED' } })).status, 403);
-  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED' } })).body.approvalStatus, 'APPROVED');
+  assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', eventId: 'e', revision: 1 } })).body.approvalStatus, 'APPROVED');
   assert.equal((await request(`${studioPath}/approval`, { user: 'admin', method: 'PATCH', body: { status: 'APPROVED', eventId: 'other' } })).status, 400);
   prisma.studio.findFirst = async () => null;
   assert.equal((await request(route, { user: 'admin', method: 'PATCH', body: { name: 'x' } })).status, 404);
@@ -913,12 +914,12 @@ async function eventFixture(t) {
   const f = await fixture(t);
   let stored;
   f.prisma.event = {
-    create: async ({ data }) => (stored = { id: 'e', createdAt: new Date('2026-01-01'),
+    create: async ({ data }) => (stored = { id: 'e', revision: 1, organizerEmail: null, organizerPhone: null, authoredDescription: null, createdAt: new Date('2026-01-01'),
       stage: 'PRE_REGISTRATION', venue: null, country: null, city: null, description: null,
-      maxStudios: null, maxPerformances: null, imageUrl: null, ...data }),
+      maxStudios: null, maxPerformances: null, imageUrl: null, ...data, authoredDescription: data.authoredDescription === require('@prisma/client').Prisma.DbNull ? null : data.authoredDescription }),
     findUnique: async ({ where }) => stored?.id === where.id ? stored : null,
     findMany: async (args) => { f.calls.push({ name: 'event-list', args }); return stored ? [stored] : []; },
-    update: async ({ data }) => (stored = { ...stored, ...data }),
+    update: async ({ data }) => (stored = { ...stored, ...data, revision: stored.revision + (data.revision?.increment ?? 0) }),
   };
   f.prisma.$transaction = async (work, options) => {
     assert.equal(options.isolationLevel, 'Serializable');

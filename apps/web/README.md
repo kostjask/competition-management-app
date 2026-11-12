@@ -2,7 +2,8 @@
 
 React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
 [setup](../../README.md#local-setup) starts API and web together. API reads remain
-authenticated; role dashboards are placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
+authenticated. The admin workspace owns event setup and application review;
+other role dashboards remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
 For frontend-only development from the root: pnpm --filter web dev (port 5173).
 [Test commands and scope](../../docs/TESTING.md) own build/typecheck/lint, Node/static
@@ -28,3 +29,12 @@ states, keyboard/focus access and responsive ET/EN/RU text. Backend authorizes
 every operation. Read only the relevant screen/flow sections before feature work;
 their targets do not mean the corresponding route/API already exists.
 Do not add a UI/state library without a concrete need.
+
+Organizer routes: `/admin`, `/events/new`, `/events/:id/edit`,
+`/admin/events/:eventId/setup`, `/admin/events/:eventId/applications`.
+Setup covers event-local dates, explicit DST choices, contact, description source
+language/translations/previews and protected image upload. Review uses URL filters
+and studio selection, independent revisioned decisions, minimal history and
+truthful notification states. Neither screen retries an uncertain decision blindly.
+See [organizer validation](../../docs/ORGANIZER_VALIDATION.md) for evidence and
+the separate development-database setup issue. Applicant screens remain P5.

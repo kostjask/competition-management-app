@@ -1,16 +1,18 @@
 # Development checkpoint
 
-Updated: 2026-11-10. This file owns current priority, state summary and milestone
+Updated: 2026-11-12. This file owns current priority, state summary and milestone
 gates. Roadmap files own task checkboxes; [the map](docs/README.md) routes selected
 tasks to contracts/specifications. Read history only to investigate past evidence.
 
 ## Next action
 
-**Active implementation: M2 organizer setup/review, then applicant UI.**
-Next: **P4-CORE with P4-UI-CORE's setup scope**, then P4-REVIEW with its review UI
-scope, then P5-APPLICATION with P5-UI-APPLICATION. See the
+**Active: finish the M2 organizer setup/review runtime handoff, then applicant UI.**
+P4-CORE/P4-REVIEW and their S05/S06 UI are implemented with isolated validation.
+Next: reconcile the verified disposable development database's divergent migration
+history after Prisma's requested fresh reset consent, then close the local runtime
+handoff. **P5-APPLICATION with P5-UI-APPLICATION** follows. See the
 [implementation order](#implementation-order) and [organizer roadmap](docs/roadmap/organizer.md).
-This documentation maintenance task advances no application or release task.
+Checks and exact database blocker: [organizer validation](docs/ORGANIZER_VALIDATION.md).
 
 ## Current state
 
@@ -22,28 +24,37 @@ This documentation maintenance task advances no application or release task.
   are complete locally (2026-11-09): independent approvals, derived access,
   deadline/timezone, correction revisions, retained cancel/reapply and explicit
   content fallback. P3-UX-CONTRACTS and I18N-CONTENT stay open for later scope.
-  P4/P5 own setup/review/application UI, notification intent and authored-content
-  storage/editors. Entry/music, live/scoring and results workflows remain unfinished;
-  role dashboards are placeholders. No external milestone is complete.
+  P4 now implements setup/review UI, transactional notification intent and authored
+  event-content storage/editors; its local database handoff remains blocked below.
+  P5 application UI remains next. Entry/music, live/scoring and results workflows
+  remain unfinished; non-admin role dashboards are placeholders. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
   limits, deploy/rollback/restore and observability; delivered-scope human
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 30 migrations. The user's **2026-11-09 startup record**
+- Repository schema now has 31 migrations. The user's **2026-11-09 startup record**
   verified localhost:5432/dance_comp in repository Compose and applied 12 pending
   migrations (all 30 applied), without reset/reseed. It recorded API port 4000,
   authentication enabled, a process-only EMAIL_PROVIDER=fake override for legacy
   local mail configuration and GET /health 200/status ok. This is dated operational
   evidence, not a fresh process/health check or a release-gate change. The original
   user-edited record is preserved in [history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
+- **2026-11-12 development database blocker:** target verified as repository
+  Compose PostgreSQL at localhost:5432/dance_comp. It has two applied migrations
+  absent from this checkout; migration 31 is pending. Prisma blocked the permitted
+  disposable reset with a fresh-consent guard. No reset occurred; subsequent seed
+  refreshed fixture roles/users but failed at the divergent event schema. Fresh
+  consent is pending; no ready local runtime is claimed. Isolated migration/API
+  checks passed independently. Exact names/commands: [organizer validation](docs/ORGANIZER_VALIDATION.md).
 - Current development rows are disposable under the scoped
   [database policy](AGENTS.md#development-database-policy); verify the resolved
   target before reset/reseed or migration-history changes. Domain integrity/history
   requirements still apply. No database operation was performed for this maintenance.
 
-Latest recorded runtime evidence: [registration lifecycle, 2026-11-09](docs/REGISTRATION_LIFECYCLE_VALIDATION.md).
+Latest implementation evidence: [organizer setup/review, 2026-11-12](docs/ORGANIZER_VALIDATION.md).
+Earlier runtime evidence: [registration lifecycle, 2026-11-09](docs/REGISTRATION_LIFECYCLE_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
 [Audit corrections](docs/AUDIT_FOLLOWUP.md) map the 15 findings to task owners;
@@ -111,8 +122,8 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | 1 - complete locally | P3-REGISTRATION | ADR-003 M2 policy, migration/API/DTO/client alignment and denial/concurrency/rollback checks pass, including the reapply slice. |
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
 | 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; content storage/editors remain with P4. |
-| 4 - next | P4-CORE with P4-UI-CORE setup scope | Consume #1–3; expose organizer configuration, time/deadline/contact and actionable prerequisites through the UI. Do not implement a second lifecycle model or require scoring setup. |
-| 5 | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
+| 4 - runtime handoff pending | P4-CORE with P4-UI-CORE setup scope | Implementation is in place; reconcile the development database and finish the local runtime handoff. Consume #1–3; expose organizer configuration, time/deadline/contact and actionable prerequisites through the UI. Do not implement a second lifecycle model or require scoring setup. |
+| 5 - runtime handoff pending | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
 | 6 | P5-APPLICATION with P5-UI-APPLICATION | Consume #1–5 and P2 onboarding; complete role-independent apply/status, verified draft continuation, pending cancellation/reapply and uncertain-response recovery end to end. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.

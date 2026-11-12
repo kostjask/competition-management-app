@@ -33,3 +33,9 @@ IDs, source and authored translations and apply the same resolution rule; do not
 include review evidence, billing or private contact data in public content.
 Category/age/format names retain stable IDs; later multilingual labels follow a
 separate reviewed extension before those editors change storage.
+
+Implementation note (2026-11-12): P4 now stores event `authoredDescription` and
+provides source-language selection, optional translations and all-language previews.
+The migration keeps the original `description` column unchanged; conversion happens
+only after an organizer chooses the language. Current validation/runtime limits are
+recorded in [organizer validation](../ORGANIZER_VALIDATION.md).

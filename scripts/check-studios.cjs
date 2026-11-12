@@ -27,6 +27,7 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
   const item = `/studios/${studio.id}`;
   const repItem = `${item}/representatives/${studio.representatives[0].id}`;
   const request = async (route, token = ownerToken, method = 'GET', body) => {
+    if (route.endsWith("/approval") && body && !body.revision) { const current = await client.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId: studio.id, eventId: event.id } } }); body = { ...body, eventId: event.id, revision: current.revision }; }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),

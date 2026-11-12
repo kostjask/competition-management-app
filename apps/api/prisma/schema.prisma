@@ -47,22 +47,27 @@ enum OnboardingStatus {
 }
 
 model EmailDelivery {
-  id            String    @id
-  ciphertext    String?
-  bindingDigest String?
-  purpose       String?
-  state         String    @default("PENDING")
-  attempts      Int       @default(0)
-  nextAttemptAt DateTime  @default(now())
-  expiresAt     DateTime
-  createdAt     DateTime  @default(now())
-  acceptedAt    DateTime?
-  providerId    String?
+  reviewNotifications ReviewNotification[]
+  id                  String               @id
+  ciphertext          String?
+  bindingDigest       String?
+  purpose             String?
+  state               String               @default("PENDING")
+  attempts            Int                  @default(0)
+  nextAttemptAt       DateTime             @default(now())
+  expiresAt           DateTime
+  createdAt           DateTime             @default(now())
+  acceptedAt          DateTime?
+  providerId          String?
 
   @@index([state, nextAttemptAt])
 }
 
 model Event {
+  revision             Int        @default(1)
+  organizerEmail       String?
+  organizerPhone       String?
+  authoredDescription  Json?
   id                   String     @id @default(cuid())
   name                 String
   startsAt             DateTime
@@ -165,6 +170,7 @@ model StudioRepresentative {
 }
 
 model StudioEventRegistration {
+  notifications       ReviewNotification[]
   id                  String                  @id @default(cuid())
   studioId            String
   eventId             String
@@ -182,6 +188,23 @@ model StudioEventRegistration {
   event  Event  @relation(fields: [eventId], references: [id])
 
   @@unique([studioId, eventId])
+}
+
+model ReviewNotification {
+  id             String                  @id @default(cuid())
+  registrationId String
+  recipientId    String
+  kind           String
+  status         String
+  reason         String?
+  revision       Int
+  deliveryId     String?
+  createdAt      DateTime                @default(now())
+  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+  delivery       EmailDelivery?          @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@unique([registrationId, kind, revision, recipientId])
+  @@index([registrationId, createdAt])
 }
 
 model Dancer {

@@ -5,7 +5,7 @@ type TextKey = "Flow.signup" | "Flow.checkEmail" | "Flow.unconfirmed" | "Flow.on
 const denied = { code:"UNAUTHORIZED",reason:"authenticationRequired",params:{},issues:[] };
 const details = { studioName:"Synthetic studio",country:"EE",city:"Tallinn",directorName:"Synthetic director",directorPhone:"" };
 const owner: UserProfile = { id:"u",email:"owner@example.invalid",name:"Synthetic owner",preferredLocale:null,createdAt:"2026-01-01T00:00:00.000Z",isAdmin:false,roles:[],permissions:[] };
-const event = { id:"e",name:"Synthetic event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,maxStudios:null,maxPerformances:null,imageUrl:null };
+const event = { revision:1, organizerEmail:null, organizerPhone:null, authoredDescription:null, id:"e",name:"Synthetic event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,maxStudios:null,maxPerformances:null,imageUrl:null };
 for(const locale of ["et","en","ru"] as const) for(const width of [320,390,768,1440]) {
   test(locale+" studio signup and pending recovery at "+width+"px",async({page},info)=>{
     await page.setViewportSize({width,height:900}); await page.addInitScript(value=>localStorage.setItem("app-language",value),locale);

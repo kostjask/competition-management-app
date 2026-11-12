@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
+import { AuthoredContentSchema } from "./content.schema.js";
 
 export const EventStageSchema = z.enum([
   "PRE_REGISTRATION",
@@ -26,6 +27,9 @@ const InstantSchema = z.iso.datetime({ offset: true });
 const TextSchema = z.string().trim().min(1);
 const LimitSchema = z.number().int().positive().max(2147483647);
 const eventFields = {
+  organizerEmail: z.email().nullable().optional(),
+  organizerPhone: z.string().trim().min(1).max(100).nullable().optional(),
+  authoredDescription: AuthoredContentSchema.nullable().optional(),
   timeZone: EventTimeZoneSchema.optional(),
   registrationDeadline: InstantSchema.nullable().optional(),
   name: TextSchema,
@@ -56,8 +60,8 @@ export const CreateEventBodySchema = z.strictObject(eventFields).refine(
   { params: { reason: "dateOrder" }, message: "End date must be after start date", path: ["endsAt"] }
 ).refine(deadlineOrder, deadlineIssue);
 
-export const UpdateEventBodySchema = z.strictObject({ ...eventFields, expectedStage: EventStageSchema.optional() }).partial()
-.refine((body) => Object.keys(body).some(key => key !== "expectedStage"), { message: "At least one field is required", params: { reason: "nonemptyPatch" } })
+export const UpdateEventBodySchema = z.strictObject({ ...eventFields, expectedStage: EventStageSchema.optional(), expectedRevision: z.int().positive().optional() }).partial()
+.refine((body) => Object.keys(body).some(key => !["expectedStage", "expectedRevision"].includes(key)), { message: "At least one field is required", params: { reason: "nonemptyPatch" } })
 .refine(
   (data) => {
     if (data.startsAt && data.endsAt) {
@@ -72,6 +76,9 @@ export type CreateEventInput = z.infer<typeof CreateEventBodySchema>;
 export type UpdateEventInput = z.infer<typeof UpdateEventBodySchema>;
 
 export const EventSchema = z.strictObject({
+  revision: z.int().positive(),
+  organizerEmail: z.string().nullable(), organizerPhone: z.string().nullable(),
+  authoredDescription: AuthoredContentSchema.nullable(),
   id: IdSchema, name: z.string(), startsAt: z.iso.datetime(), endsAt: z.iso.datetime(),
   timeZone: EventTimeZoneSchema, registrationDeadline: z.iso.datetime().nullable(),
   stage: EventStageSchema, createdAt: z.iso.datetime(),

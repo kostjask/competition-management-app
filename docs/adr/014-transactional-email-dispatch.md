@@ -40,6 +40,12 @@ the old link; stale queued mail is cancelled on its next attempt. Application
 decision templates are ready for the later application workflow to enqueue in its
 own transaction; no new approval workflow is introduced here.
 
+P4 implementation note (2026-11-12): independent organizer decisions now enqueue
+neutral review-update mail in their own decision/access/audit transaction. A retained
+notification links each recipient/revision to this same encrypted queue, while fake
+mail is explicitly test-only. Provider acceptance remains distinct from inbox delivery.
+See [the review contract](../api/registrations.md#organizer-review-and-notifications).
+
 Real delivery, DNS/domain setup, provider account, staging hosting, backup/restore
 and operational scope review remain external gates. No staging account/environment
 currently exists. Do not expose the unfinished API merely to test email.
