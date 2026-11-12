@@ -104,6 +104,10 @@ export class StudiosController extends BaseController {
     const body = UpdateStudioBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const studio = await this.requireAccess(req, db, studioId, true, true);
+      const registration = studio.registrations.find(r => r.eventId === studio.eventId);
+      if (body.revision !== undefined && registration?.revision !== body.revision) {
+        throw new ConflictError("Reload application", undefined, "concurrentChange");
+      }
       const name = body.name ?? studio.name;
       // Match the SQL-only global partial unique index on active studio names.
       if (name !== studio.name && await db.studio.findFirst({
@@ -112,10 +116,11 @@ export class StudiosController extends BaseController {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
       const pending = studio.registrations.find(r => r.eventId === studio.eventId && r.status === "PENDING");
-      if (pending) {
-        const changed = await db.studioEventRegistration.updateMany({ where: { id: pending.id, revision: pending.revision, status: "PENDING" }, data: { revision: { increment: 1 } } });
+      const versioned = pending ?? (body.revision !== undefined ? registration : undefined);
+      if (versioned) {
+        const changed = await db.studioEventRegistration.updateMany({ where: { id: versioned.id, revision: versioned.revision }, data: { revision: { increment: 1 } } });
         if (changed.count !== 1) throw new ConflictError("Reload application", undefined, "concurrentChange");
-        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: pending.id, eventId: studio.eventId, studioId, metadata: { revision: pending.revision + 1 } });
+        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: versioned.id, eventId: studio.eventId, studioId, metadata: { revision: versioned.revision + 1 } });
       }
       const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null },
@@ -151,12 +156,20 @@ export class StudiosController extends BaseController {
     const { studioId, representativeId } = StudioIdRepIdParamsSchema.parse(req.params);
     const body = UpdateRepresentativeBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
-      await this.requireAccess(req, db, studioId, true);
+      const studio = await this.requireAccess(req, db, studioId, true);
+      const registration = studio.registrations.find(r => r.eventId === studio.eventId);
+      if (body.revision !== undefined && registration?.revision !== body.revision) {
+        throw new ConflictError("Reload application", undefined, "concurrentChange");
+      }
       const rep = await db.studioRepresentative.findFirst({
         where: { id: representativeId, studioId, active: true }, select: representativeSelect,
       });
       if (!rep) throw new NotFoundError("Representative", representativeId);
       if (!this.isAdmin(req) && rep.userId !== this.getUserId(req)) throw new ForbiddenError();
+      if (body.revision !== undefined && registration) {
+        await db.studioEventRegistration.update({ where: { id: registration.id, revision: body.revision }, data: { revision: { increment: 1 } } });
+        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: registration.id, eventId: studio.eventId, studioId, metadata: { revision: body.revision + 1 } });
+      }
       return serializeRepresentative(await db.studioRepresentative.update({
         where: { id: representativeId, studioId, active: true }, data: {
           ...(body.name !== undefined && { name: body.name }),

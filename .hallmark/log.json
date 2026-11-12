@@ -2,6 +2,41 @@
  {
   "scope": "app",
   "shape": "app screen",
+  "theme": "project design system",
+  "genre": "modern-minimal",
+  "axes": [
+   "independent approval rows",
+   "short exact-event application",
+   "canonical studio identity",
+   "immutable operation retry",
+   "explicit saved/local comparison",
+   "stacked phone facts"
+  ],
+  "hero": "none: app scope",
+  "nav": "existing project shell with role-independent applications",
+  "footer": "none: app scope",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/applications/StudioPage.tsx",
+  "fingerprint": "owner-bound applicant workflow with independent approval rows and immutable retry identity",
+  "sections": [
+   "owned application list",
+   "apply",
+   "approval status",
+   "permitted profile/contact",
+   "cancel and retained reapply"
+  ],
+  "signature": "independent organization and event approval rows",
+  "waived": [],
+  "prompt": "P5-APPLICATION with owning UI and P4-UI-CORE discovery integration; preserve project design system, accessibility and ET/EN/RU",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; render unavailable without puppeteer-core; Playwright screenshots; in-thread review moved approval rows and repaired disabled contrast",
+  "material": "No image slots or invented proof; fluent applicant feedback remains external review",
+  "date": "2026-11-12",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [

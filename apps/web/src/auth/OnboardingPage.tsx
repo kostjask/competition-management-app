@@ -14,6 +14,7 @@ import { Alert, Button, ErrorSummary, LoadingState } from "../components/ui/Foun
 type Context = z.infer<typeof OnboardingContextSchema>;
 type Proof = z.infer<typeof OnboardingReadSchema>;
 const sessionProof: Proof = {};
+const applicationsPath = "/applications";
 function DraftEditor({ proof, close }: { proof: Proof; close?: () => void }) {
   const { t } = useTranslation(); const [context,setContext]=useState<Context|null>(null); const [details,setDetails]=useState(emptyStudioDetails);
   const [operationId,setOperationId]=useState(()=>crypto.randomUUID()); const [dirty,setDirty]=useState(false); const [busy,setBusy]=useState(true); const [error,setError]=useState<UiError|null>(null); const [saved,setSaved]=useState(false);
@@ -37,7 +38,7 @@ function DraftEditor({ proof, close }: { proof: Proof; close?: () => void }) {
         <div className="flex flex-wrap gap-3"><Button type="submit" pending={busy}>{t("Flow.save")}</Button>
         {context.draft&&<Button variant="quiet" disabled={busy} onClick={()=>{if(!window.confirm(t("Flow.cancelConfirm")))return;setBusy(true);setError(null);setSaved(false);void cancelOnboarding({...proof,revision:context.draft?.revision??0}).then(install).catch((err:unknown)=>setError(toUiError(err))).finally(()=>setBusy(false));}}>{t("Flow.cancel")}</Button>}</div></fieldset>
       </form>}
-      {context.emailVerified&&<Link className="ui-button ui-button-secondary mt-4" to={context.returnTo}>{t("Shell.continue")}</Link>}
+      {context.emailVerified&&<Link className="ui-button ui-button-secondary mt-4" to={context.draft?.status === "DRAFT" && context.draft.intendedEventId ? `/events/${encodeURIComponent(context.draft.intendedEventId)}/register` : applicationsPath}>{t("Shell.continue")}</Link>}
     </>}
     <div className="my-4 flex flex-wrap gap-3"><Button variant="quiet" disabled={busy} onClick={reload}>{t("Flow.reload")}</Button>{close&&<Button variant="quiet" onClick={close}>{t("Flow.forgetProof")}</Button>}<Link to="/auth/resend-verification">{t("Flow.resend")}</Link><Link to="/auth/correct-email">{t("Flow.correct")}</Link></div>
   </>;

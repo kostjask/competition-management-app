@@ -58,6 +58,14 @@ export class StudioRegistrationsController extends BaseController {
         }
       }
       assertApplicationWindow(event);
+      if (body.onboarding) {
+        // Bind draft completion to this verified owner, exact revision and selected event.
+        const completed = await tx.onboardingDraft.updateMany({ where: {
+          id: body.onboarding.draftId, userId, revision: body.onboarding.revision, status: "DRAFT",
+          OR: [{ intendedEventId: null }, { intendedEventId: eventId }],
+        }, data: { status: "COMPLETED", revision: { increment: 1 } } });
+        if (completed.count !== 1) throw new ConflictError("Reload onboarding draft", undefined, "concurrentChange");
+      }
       const studio = await tx.studio.create({ data: {
         eventId, name: body.name, country: body.country ?? null, city: body.city ?? null, directorName: body.directorName ?? null,
         directorPhone: body.directorPhone ?? null, ...(body.invoiceDetails !== undefined && { invoiceDetails: body.invoiceDetails }), approvalStatus: "PENDING",

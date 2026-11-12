@@ -6,13 +6,14 @@ tasks to contracts/specifications. Read history only to investigate past evidenc
 
 ## Next action
 
-**Active: finish the M2 organizer setup/review runtime handoff, then applicant UI.**
-P4-CORE/P4-REVIEW and their S05/S06 UI are implemented with isolated validation.
-Next: reconcile the verified disposable development database's divergent migration
-history after Prisma's requested fresh reset consent, then close the local runtime
-handoff. **P5-APPLICATION with P5-UI-APPLICATION** follows. See the
-[implementation order](#implementation-order) and [organizer roadmap](docs/roadmap/organizer.md).
-Checks and exact database blocker: [organizer validation](docs/ORGANIZER_VALIDATION.md).
+**Next: P3-PERFORMANCE-OWNER.**
+The local M2 applicant path now implements P5-APPLICATION/P5-UI-APPLICATION and
+P4-UI-CORE's S01/S02 apply/resume integration (2026-11-12). Establish the explicit
+studio/event-registration ownership design and audit contradictory/empty participant
+sets before M3 entry work. Calendar dates, event-consistent constraints and history
+retain their own prerequisite gates. See [implementation order](#implementation-order),
+[registration roadmap](docs/roadmap/registration.md) and
+[applicant validation](docs/APPLICATION_VALIDATION.md). External M2 remains gated.
 
 ## Current state
 
@@ -25,9 +26,11 @@ Checks and exact database blocker: [organizer validation](docs/ORGANIZER_VALIDAT
   deadline/timezone, correction revisions, retained cancel/reapply and explicit
   content fallback. P3-UX-CONTRACTS and I18N-CONTENT stay open for later scope.
   P4 now implements setup/review UI, transactional notification intent and authored
-  event-content storage/editors; its local database handoff remains blocked below.
-  P5 application UI remains next. Entry/music, live/scoring and results workflows
-  remain unfinished; non-admin role dashboards are placeholders. No external milestone is complete.
+  event-content storage/editors; its local database handoff is complete below.
+  P5 application/status/profile/cancel/reapply UI and P4 discovery actions are
+  delivered locally with ET/EN/RU and recovery coverage. The representative section
+  opens owned applications; judge/moderator, entry/music, live/scoring and results
+  workflows remain unfinished. No external milestone is complete.
 - **Release blockers:** P2-SCOPE-DEPLOY's intended-target assignment provenance;
   real staging inbox delivery; hosted CI/required-check evidence, ingress/shared
   limits, deploy/rollback/restore and observability; delivered-scope human
@@ -41,19 +44,20 @@ Checks and exact database blocker: [organizer validation](docs/ORGANIZER_VALIDAT
   local mail configuration and GET /health 200/status ok. This is dated operational
   evidence, not a fresh process/health check or a release-gate change. The original
   user-edited record is preserved in [history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
-- **2026-11-12 development database blocker:** target verified as repository
-  Compose PostgreSQL at localhost:5432/dance_comp. It has two applied migrations
-  absent from this checkout; migration 31 is pending. Prisma blocked the permitted
-  disposable reset with a fresh-consent guard. No reset occurred; subsequent seed
-  refreshed fixture roles/users but failed at the divergent event schema. Fresh
-  consent is pending; no ready local runtime is claimed. Isolated migration/API
-  checks passed independently. Exact names/commands: [organizer validation](docs/ORGANIZER_VALIDATION.md).
+- **2026-11-12 development database reconciliation complete:** reverified repository
+  Compose PostgreSQL at localhost:5432/dance_comp. After fresh explicit user consent,
+  reset the disposable database from checked-in history and reseeded successfully;
+  all 31 migrations are current. Compiled API health, authenticated admin profile,
+  event/review DTOs and anonymous/judge denials passed with auth bypass disabled
+  and process-only fake mail. The temporary verification API was stopped. No source
+  migration history was rewritten. Exact commands: [organizer validation](docs/ORGANIZER_VALIDATION.md).
 - Current development rows are disposable under the scoped
   [database policy](AGENTS.md#development-database-policy); verify the resolved
   target before reset/reseed or migration-history changes. Domain integrity/history
-  requirements still apply. No database operation was performed for this maintenance.
+  requirements still apply. The verified disposable target was reset/reseeded above.
 
-Latest implementation evidence: [organizer setup/review, 2026-11-12](docs/ORGANIZER_VALIDATION.md).
+Latest implementation evidence: [applicant/discovery, 2026-11-12](docs/APPLICATION_VALIDATION.md).
+Organizer setup/review and database handoff: [2026-11-12](docs/ORGANIZER_VALIDATION.md).
 Earlier runtime evidence: [registration lifecycle, 2026-11-09](docs/REGISTRATION_LIFECYCLE_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
 [development history](docs/DEVELOPMENT_HISTORY.md#checkpoint-narrative-archived-2026-11-10).
@@ -121,13 +125,14 @@ Finish this local M2 path before promoting entry/music or live/results work.
 | --- | --- | --- |
 | 1 - complete locally | P3-REGISTRATION | ADR-003 M2 policy, migration/API/DTO/client alignment and denial/concurrency/rollback checks pass, including the reapply slice. |
 | 2 - complete locally | P3-REGISTRATION-REAPPLY | Canonical retained same-studio cancel/reapply, revision conflicts, safe retries and history/identity/access checks pass. |
-| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; content storage/editors remain with P4. |
-| 4 - runtime handoff pending | P4-CORE with P4-UI-CORE setup scope | Implementation is in place; reconcile the development database and finish the local runtime handoff. Consume #1–3; expose organizer configuration, time/deadline/contact and actionable prerequisites through the UI. Do not implement a second lifecycle model or require scoring setup. |
-| 5 - runtime handoff pending | P4-REVIEW with P4-UI-CORE review scope | Consume registration/setup contracts; deliver independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states. |
-| 6 | P5-APPLICATION with P5-UI-APPLICATION | Consume #1–5 and P2 onboarding; complete role-independent apply/status, verified draft continuation, pending cancellation/reapply and uncertain-response recovery end to end. |
+| 3 - M2 policy complete | I18N-CONTENT - M2 policy/contracts | ADR-019 source-language/translation/fallback contract and ET/EN/RU copy/tests pass; P4 event content storage/editors are delivered. Later content retains its workflow gates. |
+| 4 - complete locally | P4-CORE with P4-UI-CORE setup scope | Consumes #1–3; organizer configuration, event-local time/deadline/contact, authored content, protected images and actionable prerequisites are delivered with revision/recovery checks and the local runtime handoff. No scoring prerequisite. |
+| 5 - complete locally | P4-REVIEW with P4-UI-CORE review scope | Independent approval queues/detail, reasons/allowed corrections, next actor and transactional notification intent with truthful delivery states pass isolated and local runtime checks. |
+| 6 - complete locally | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status, exact owner-draft continuation, permitted revisioned profile/contact, retained cancellation/reapply and uncertain-response recovery. P4-UI-CORE S01/S02 apply/resume integration is delivered; external M2 release evidence remains open. |
+| 7 - next | P3-PERFORMANCE-OWNER | Record studio/event-registration ownership and event-consistent keys, audit empty/mixed participant sets, then align migration/API/DTOs and negative ownership checks before M3 entry UI. |
 
 ADR-003 uses semantic M2 review reasons rather than authored review prose.
-ADR-019's M2 source-language/fallback policy is accepted before P4 adds authored
+ADR-019's M2 source-language/fallback policy is implemented by P4's authored event
 content storage/editors. Later multilingual content retains its owning workflow.
 
 Attach authorization/audit, ET/EN/RU, component/browser/recovery checks and

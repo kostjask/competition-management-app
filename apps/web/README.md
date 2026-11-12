@@ -3,7 +3,8 @@
 React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
 [setup](../../README.md#local-setup) starts API and web together. API reads remain
 authenticated. The admin workspace owns event setup and application review;
-other role dashboards remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
+the representative section opens owned applications. Judge/moderator dashboards
+remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
 For frontend-only development from the root: pnpm --filter web dev (port 5173).
 [Test commands and scope](../../docs/TESTING.md) own build/typecheck/lint, Node/static
@@ -36,5 +37,15 @@ Setup covers event-local dates, explicit DST choices, contact, description sourc
 language/translations/previews and protected image upload. Review uses URL filters
 and studio selection, independent revisioned decisions, minimal history and
 truthful notification states. Neither screen retries an uncertain decision blindly.
-See [organizer validation](../../docs/ORGANIZER_VALIDATION.md) for evidence and
-the separate development-database setup issue. Applicant screens remain P5.
+See [organizer validation](../../docs/ORGANIZER_VALIDATION.md) for automated/browser
+evidence and the completed local database/runtime handoff.
+
+Applicant routes: role-independent `/applications`, `/events/:id/register`,
+`/events/:id/studio` and canonical `/studios/:studioId`. They continue an exact
+verified owner draft, keep the creation operation/payload through uncertain
+responses, and show independent approvals plus permitted revisioned profile/contact,
+cancel/reapply actions. Event discovery remains authenticated. No private form
+data or operation payload is written to browser storage; mounted input survives
+language changes and same-account session recovery. Reload/closing warns about
+unsaved work; saved onboarding and owned application status are the durable recovery
+paths. [Application validation](../../docs/APPLICATION_VALIDATION.md).

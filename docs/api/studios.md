@@ -18,6 +18,15 @@ nulls remain JSON values. Legacy stored JSON values remain readable. Unknown
 fields, including event/studio/user relationships, approval, logo, and audit
 fields, are rejected.
 
+Profile and representative PATCH accept an optional positive `revision` from the
+owning event registration. Applicant editors always send it. A stale revision
+returns 409 concurrentChange before changing fields; a successful versioned write
+advances the shared registration revision, including contact-only edits. Profile
+corrections and versioned contact edits append privacy-minimal correction audit
+events. Existing callers without revision retain their established policy; there
+is no new membership, permission or stage exception. Uncertain writes are read and
+compared before any new write; they are not automatically repeated.
+
 Non-admin writes need active membership plus `studio.manage` for the studio's
 stored event or globally. A different event's role is insufficient. Existing
 organization-profile edits do not require organization or event approval; entry
@@ -82,5 +91,5 @@ The shared schemas validate backend serialization and frontend responses.
 argument; `updateStudioRepresentative` also requires the actual representative ID.
 `getMyStudios` calls the profile collection and `updateStudioApproval` calls the
 organization approval action. Existing event-specific `getStudios` continues to
-list application DTOs. No existing screen consumes these profile helpers.
+list application DTOs. S07/S08 application/status/profile pages consume these helpers.
 Retired event-nested studio paths and singular `/representative` have no handlers.

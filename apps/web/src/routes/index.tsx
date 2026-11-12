@@ -32,6 +32,9 @@ const EventsList = lazy(() => import("../pages/events/EventsList.tsx"));
 const EventsCreate = lazy(() => import("../pages/events/EventsCreate.tsx"));
 const EventEdit = lazy(() => import("../pages/events/EventEdit.tsx"));
 const EventInfo = lazy(() => import("../pages/events/EventInfo.tsx"));
+const ApplicationsPage = lazy(() => import("../pages/applications/ApplicationsPage.tsx"));
+const ApplyPage = lazy(() => import("../pages/applications/ApplyPage.tsx"));
+const StudioPage = lazy(() => import("../pages/applications/StudioPage.tsx"));
 const FoundationFixture = import.meta.env.DEV ? lazy(() => import("../components/ui/FoundationFixture.tsx")) : null;
 const AccessFixture = import.meta.env.DEV ? lazy(() => import("../auth/AccessFixture.tsx")) : null;
 
@@ -90,6 +93,10 @@ export function AppRoutes() {
               {/* Public routes */}
               <Route path="/" element={<Home />} />
               <Route path="/events" element={<RequireAuth><EventsList /></RequireAuth>} />
+              <Route path="/applications" element={<RequireAuth><LazyWrapper><ApplicationsPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/studios/:studioId" element={<RequireAuth><LazyWrapper><StudioPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:id/register" element={<RequireAuth><LazyWrapper><ApplyPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:id/studio" element={<RequireAuth><LazyWrapper><StudioPage /></LazyWrapper></RequireAuth>} />
               <Route path="/events/new" element={<RequireRole role="admin"><EventsCreate /></RequireRole>} />
               <Route path="/events/:id" element={<RequireAuth><EventInfo /></RequireAuth>} />
               <Route path="/events/:id/edit" element={<RequireRole role="admin"><EventEdit /></RequireRole>} />

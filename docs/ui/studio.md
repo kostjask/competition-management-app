@@ -7,7 +7,7 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 ## S07 — Applicant and representative dashboard
 
-- **Purpose / roles / route:** find status and next work; pending owned applicants at proposed `/applications`, approved reps at `/representative`.
+- **Purpose / roles / route:** find status and next work; all verified applicants at `/applications`, approved reps also at `/representative`. Both show only owned active memberships.
 - **Primary action:** continue one selected application or resolve its top blocker.
 - **Data:** own studios, event applications and permitted task summaries/deadlines.
 - **Sections / components:** event/studio switcher, organization/event status rows, next action/contact, deadlines, corrections, entry/music/review progress when implemented.
@@ -18,13 +18,13 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 ## S08 — Application and studio profile
 
-- **Purpose / roles / routes:** apply and maintain authorized studio/contact details; `/events/:id/register`, `/events/:id/studio`, `/studios/:studioId` proposed.
+- **Purpose / roles / routes:** apply and maintain authorized studio/contact details; `/events/:id/register`, `/events/:id/studio`, canonical `/studios/:studioId` are mounted. Event status resolves a single owned studio or offers explicit selection; `?studio=` may select only an owned studio in that exact event.
 - **Primary action:** submit application, inspect status or save permitted profile changes.
 - **Data:** selected event, studio fields, representative contact, separate approvals, profile edit authority; optional invoice details private.
 - **Sections / components:** context/requirements, short application form, optional details, profile and contact sections, independent statuses and pending cancellation.
 - **States:** no application/form; uncertain create result reconciled via owned lists; duplicate-name conflict without other studio identity; locked profile explanation; missing/denied.
 - **Responsive / accessibility:** stacked labeled forms; desktop paired optional fields; explain required versus optional and cancellation consequences.
-- **API:** registration POST/list/DELETE; studio GET/PATCH, representative PATCH. Pending membership currently permits reads, not profile writes without studio.manage. Additional-member invitation is S17.
+- **API:** registration POST/list/DELETE; studio GET/PATCH, representative PATCH. Pending owners may correct studio profiles in the open application window, returning organization approval to pending. Contact writes retain studio.manage and stage policy; contact email never changes account identity. Editors send the shared registration revision, retain input on failure and require explicit replacement after conflicting reads. Initial creation freezes operationId/payload through uncertain retries; exact owner-draft completion is transactional. Additional-member invitation is S17.
 - **Acceptance:** no accidental duplicate retry, no auto-merge by name, contact email never changes account identity; approved-entry permissions are separate. F03/F04.
 
 ## S09 — Dancer management

@@ -1,22 +1,24 @@
 {
-  "scanned": "2026-11-11",
+  "scanned": "2026-11-12",
+  "task": "P5-APPLICATION and P4-UI-CORE discovery integration",
   "findings": {
-    "fonts": "DESIGN.md:15, local system-ui/Segoe UI operational app family",
-    "palette": "apps/web/src/features/events/design/tokens.css:1, scoped Cobalt paper/graphite/accent roles",
-    "motion": "apps/web/src/features/events/design/base.css:18, reduced-motion control feedback",
-    "spacing": "apps/web/src/pages/events/event-setup.css:7, capped app workbench and shared scale",
-    "framework": "apps/web/package.json, React/Vite/Tailwind/Router"
+    "design": "docs/DESIGN_SYSTEM.md:17, calm predictable administration; incremental tokens/native controls",
+    "fonts": "apps/web/src/pages/applications/Application.css:3, system-ui and Segoe UI through a root token",
+    "palette": "apps/web/src/index.css:4, established semantic theme tokens",
+    "framework": "apps/web/package.json:1, React/Vite/Tailwind/Router",
+    "shell": "apps/web/src/components/layouts/SiteChrome.tsx:27, existing accessible shared shell"
   },
   "preserve": [
-    "DESIGN.md Cobalt app system",
-    "docs/DESIGN_SYSTEM.md accessibility and full-redesign scope",
+    "docs/DESIGN_SYSTEM.md",
     "ET/EN/RU",
-    "current shared shell behavior"
+    "existing semantic tokens and shell",
+    "independent backend authorization and approval policy"
   ],
   "introduce": [
-    "Inline owner/title draft creation with frozen operation retry",
-    "Translated missing-field and unscheduled summaries",
-    "Nullable history configuration"
+    "role-independent owned application home",
+    "short application with exact owner draft continuation",
+    "independent approval rows and retained revision recovery",
+    "stage-aware discovery apply/resume actions"
   ],
-  "inferences": "Existing DESIGN.md provides material, audience and tone: real operational records, global organizers, inspect the owning application, restrained utilitarian Cobalt. No image/material slots."
+  "inferences": "Real operational data; verified applicants and organizers; apply or inspect exact owned application; calm utilitarian tone. No image/material slots. Root DESIGN.md is absent; older cached references to it are stale."
 }

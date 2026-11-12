@@ -391,5 +391,25 @@ exclusion. The global-admin matrix includes both new review operations and snaps
 notification/dispatch rows when asserting denied-write preservation. Fixtures remove
 only their own synthetic transport receipt before the separate queue-worker suite.
 Run migration regression for fresh/upgrade/schema parity and retained unknown-language
-legacy content. [Organizer validation](ORGANIZER_VALIDATION.md) separates these isolated
-checks from the divergent local development database's pending reconciliation.
+legacy content. [Organizer validation](ORGANIZER_VALIDATION.md) records these isolated
+checks and the completed disposable development-database reset/reseed/runtime verification.
+
+## Applicant and discovery checks
+
+`pnpm.cmd test:browser tests/browser/applications.spec.ts` exercises S07/S08 and
+P4-UI-CORE's S01/S02 integration with ET/EN/RU at 320/390/768/1440px. It covers
+verified draft prefill, field-summary focus, locale preservation, frozen uncertain
+create retries, both approval rows, corrections, cancel/reapply, returning status,
+stale replacement, changed owner drafts, closed stages, expired-session recovery,
+empty/read-failure/denied states, permitted contact writes and touch confirmation.
+The full browser command also protects existing organizer/auth/staff/shell slices.
+
+`pnpm.cmd test:baseline` includes the extended registration/studio regression
+scripts plus `check-applicant-journey.cjs`. The latter uses an isolated child,
+fake verification delivery and the baseline's random disposable database for
+signup → verification → exact draft application → independent admin decisions →
+returning login/status. Secret verification values stay in memory. Draft ownership,
+event/revision denial, failed-create rollback and stale profile/contact writes are
+checked in PostgreSQL; browser fixtures do not replace these backend assertions.
+There is no new migration for this slice. [Evidence](APPLICATION_VALIDATION.md)
+records actual results and the separate provider/hosted/human release gates.

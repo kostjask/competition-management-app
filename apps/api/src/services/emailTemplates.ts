@@ -45,7 +45,7 @@ const escapeHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll(
 export function renderEmail(input: EmailContent, origin: string) {
   const data = EmailContentSchema.parse(input);
   const language = copy[data.locale]; const [subject, body] = language[data.kind];
-  const paths = { reviewUpdated: "/auth/profile", verification: "/verify-email", invitation: "/auth/accept-invitation", recovery: "/auth/reset-password", applicationApproved: "/auth/profile", applicationRejected: "/auth/profile" };
+  const paths = { reviewUpdated: "/applications", verification: "/verify-email", invitation: "/auth/accept-invitation", recovery: "/auth/reset-password", applicationApproved: "/applications", applicationRejected: "/applications" };
   const link = new URL(paths[data.kind], origin);
   link.searchParams.set("lang", data.locale);
   if (["verification", "invitation", "recovery"].includes(data.kind)) {

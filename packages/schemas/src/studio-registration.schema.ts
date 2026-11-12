@@ -6,6 +6,7 @@ const TextSchema = z.string().trim().min(1);
 
 export const NewStudioRegistrationBodySchema = z.strictObject({
   operationId: z.uuid().optional(),
+  onboarding: z.strictObject({ draftId: IdSchema, revision: z.int().positive() }).optional(),
   name: TextSchema,
   country: TextSchema.optional(),
   city: TextSchema.optional(),

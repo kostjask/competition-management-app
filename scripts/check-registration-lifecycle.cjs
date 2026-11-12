@@ -19,9 +19,21 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
   const eventPath = '/events/' + event.id;
   assert.equal(event.registrationDeadline, '2099-10-24T20:59:00.000Z');
   const root = eventPath + '/studio-registrations';
-  const application = { name: 'Lifecycle studio', representativeName: owner.name, representativeEmail: owner.email, operationId: randomUUID() };
+  const draft = await client.onboardingDraft.create({ data: { userId: owner.id, operationId: randomUUID(), revision: 1, intendedEventId: event.id,
+    details: { studioName: 'Lifecycle studio', country: '', city: '', directorName: '', directorPhone: '' } } });
+  const application = { name: 'Lifecycle studio', representativeName: owner.name, representativeEmail: owner.email, operationId: randomUUID(), onboarding: { draftId: draft.id, revision: 1 } };
+  assert.equal((await request(root, outsider, 'POST', application)).status, 409, 'Cannot complete another owner draft');
+  assert.equal((await request(root, token, 'POST', { ...application, onboarding: { draftId: draft.id, revision: 2 } })).status, 409);
+  const draftOtherEvent = await client.event.create({ data: { name: 'Draft wrong event', startsAt: new Date('2099-06-01'), endsAt: new Date('2099-06-02') } });
+  assert.equal((await request('/events/' + draftOtherEvent.id + '/studio-registrations', token, 'POST', application)).status, 409, 'A draft cannot move to another event');
+  assert.equal(await client.studio.count({ where: { name: application.name } }), 0, 'Draft conflict creates no studio');
+  await client.studio.create({ data: { eventId: event.id, name: 'Draft collision fixture' } });
+  assert.equal((await request(root, token, 'POST', { ...application, name: 'Draft collision fixture', operationId: randomUUID() })).status, 409);
+  assert.equal((await client.onboardingDraft.findUniqueOrThrow({ where: { id: draft.id } })).status, 'DRAFT', 'Failed creation rolls back draft completion');
   const initial = await request(root, token, 'POST', application);
   assert.equal(initial.status, 201);
+  const completedDraft = await client.onboardingDraft.findUniqueOrThrow({ where: { id: draft.id } });
+  assert.equal(completedDraft.status, 'COMPLETED'); assert.equal(completedDraft.revision, 2);
   const id = initial.body.studioId; const item = root + '/' + id;
   const current = async () => (await request(root)).body.find(r => r.studioId === id);
   const decision = async (status, extra = {}) => request(item, adminToken, 'PATCH', { status, revision: (await current()).revision, ...extra });
@@ -32,9 +44,12 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
   assert.equal((await request(item, outsider, 'DELETE')).status, 400, 'Revision is mandatory');
   assert.equal((await request(item + '?revision=1', outsider, 'DELETE')).status, 403);
   assert.equal((await request(item, token, 'PATCH', { status: 'APPROVED', revision: 1 })).status, 403);
-  assert.equal((await request('/studios/' + id, token, 'PATCH', { directorName: 'Corrected' })).status, 200, 'Roleless pending owner can correct profile');
+  assert.equal((await request('/studios/' + id, token, 'PATCH', { directorName: 'Corrected', revision: initial.body.revision })).status, 200, 'Roleless pending owner can correct profile');
+  assert.equal((await request('/studios/' + id, token, 'PATCH', { directorName: 'Stale overwrite', revision: initial.body.revision })).status, 409);
+  assert.equal((await client.studio.findUniqueOrThrow({ where: { id } })).directorName, 'Corrected');
   assert.equal((await request(item, adminToken, 'PATCH', { status: 'APPROVED', revision: initial.body.revision })).status, 409, 'Profile correction invalidates a stale review');
-  const operation = { ...application, name: 'Concurrent operation studio', operationId: randomUUID() };
+  const { onboarding: usedDraft, ...withoutDraft } = application;
+  const operation = { ...withoutDraft, name: 'Concurrent operation studio', operationId: randomUUID() };
   const operationRace = await Promise.all([request(root, token, 'POST', operation), request(root, token, 'POST', operation)]);
   assert.ok(operationRace.some(r => r.status === 201)); assert.ok(operationRace.every(r => [201,409].includes(r.status)));
   const operationWinner = operationRace.find(r => r.status === 201).body;
@@ -102,22 +117,25 @@ module.exports = async function checkRegistrationLifecycle({ client, baseUrl, ad
     assert.equal((await request(root, token, 'POST', { studioId: id, revision: before.revision })).status, 500);
     assert.deepEqual(await client.studioEventRegistration.findUniqueOrThrow({ where: { id: before.id } }), before);
     const countBefore = await client.studio.count();
-    assert.equal((await request(root, token, 'POST', { ...application, name: 'Audit rollback creation', operationId: randomUUID() })).status, 500);
+    assert.equal((await request(root, token, 'POST', { ...withoutDraft, name: 'Audit rollback creation', operationId: randomUUID() })).status, 500);
     assert.equal(await client.studio.count(), countBefore);
     await client.studioEventRegistration.update({ where: { id: before.id }, data: { status: 'PENDING' } });
     const pendingBefore = await client.studioEventRegistration.findUniqueOrThrow({ where: { id: before.id } });
     const studioBefore = await client.studio.findUniqueOrThrow({ where: { id } });
+    const representativesBefore = await client.studioRepresentative.findMany({ where: { studioId: id }, orderBy: { id: 'asc' } });
     const eventBefore = await client.event.findUniqueOrThrow({ where: { id: event.id } });
     const auditCount = await client.auditLog.count();
     for (const [path, method, body] of [
       [item + '?revision=' + pendingBefore.revision, 'DELETE', undefined],
       [item, 'PATCH', { status: 'APPROVED', revision: pendingBefore.revision }],
       ['/studios/' + id, 'PATCH', { directorName: 'Rollback correction' }],
+      ['/studios/' + id + '/representatives/' + members[0].id, 'PATCH', { name: 'Rollback contact', revision: pendingBefore.revision }],
       [eventPath, 'PATCH', { stage: 'DATA_REVIEW', expectedStage: 'REGISTRATION_OPEN' }],
     ]) {
       assert.equal((await request(path, adminToken, method, body)).status, 500);
       assert.deepEqual(await client.studioEventRegistration.findUniqueOrThrow({ where: { id: before.id } }), pendingBefore);
       assert.deepEqual(await client.studio.findUniqueOrThrow({ where: { id } }), studioBefore);
+      assert.deepEqual(await client.studioRepresentative.findMany({ where: { studioId: id }, orderBy: { id: 'asc' } }), representativesBefore);
       assert.deepEqual(await client.event.findUniqueOrThrow({ where: { id: event.id } }), eventBefore);
       assert.equal(await client.auditLog.count(), auditCount);
       assert.equal(await activeRoles(), 0);

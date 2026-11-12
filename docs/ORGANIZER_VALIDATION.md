@@ -96,32 +96,48 @@ respect the existing email-state constraints and cleaned up within their own
 fixture, and a final full run passed after these corrections. A prior password
 reset browser timeout passed alone; the final full browser run is the evidence above.
 
-## Development database reconciliation blocker
+## Development database reconciliation
 
 The API environment target was resolved without printing credentials:
 PostgreSQL `localhost:5432/dance_comp`, with Compose publishing PostgreSQL on 5432.
 Prisma status found two database-applied migrations absent from this checkout:
 `20261110000000_event_setup` and `20261110010000_application_review`.
-The checked-in migration `20261112000000_organizer_setup_review` is pending there.
+The checked-in migration `20261112000000_organizer_setup_review` was pending there.
 The isolated baseline/database checks above do not have that divergence.
 
 The repository explicitly permits rebuilding this verified disposable local
 database. The attempted root command `pnpm.cmd --filter api exec prisma migrate reset --force --config prisma.config.ts`
 was nevertheless blocked by Prisma's agent guard requiring fresh user consent.
-No reset occurred. A subsequent seed attempt refreshed fixture permissions/roles/
-users, then failed while creating the event against the divergent schema. No
-successful seed or ready local API runtime is claimed.
+That attempt did not reset the database. A subsequent seed attempt refreshed fixture
+permissions/roles/users, then failed while creating the event against the divergent
+schema. At that point the seed and local runtime handoff remained incomplete.
 
-Fresh consent was requested; do not bypass that guard or mark the local database
-ready. Once permitted, reset/reseed only this verified disposable target and verify
-migration status. No migration file was rewritten or removed. Retained/hosted
+The user subsequently supplied fresh explicit consent to reset the development
+data. Reverified the same local target and running `dance-postgres` container,
+then passed the exact consent through Prisma's process-only consent variable.
+The following checks completed successfully on 2026-11-12:
+
+| Operation | Result |
+| --- | --- |
+| `pnpm.cmd --filter api exec prisma migrate reset --force --config prisma.config.ts` | Reset succeeded; all 31 checked-in migrations applied |
+| `pnpm.cmd seed` | Complete: permissions, roles, three fixture users, event/configuration and studio |
+| `pnpm.cmd --filter api exec prisma migrate status --config prisma.config.ts` | 31 migrations; schema up to date |
+| Temporary compiled API against this database | `/health` 200/status ok; admin login/profile and event/review reads 200; one seeded event and one review application; shared event/review schema parsing passed |
+| Runtime authorization | Anonymous event read 401; authenticated judge review read 403; auth bypass disabled |
+
+The smoke process used an ephemeral loopback port and process-only
+`EMAIL_PROVIDER=fake`; no real mail was sent. It was stopped after verification;
+no persistent API process or environment-file change is claimed. The first smoke
+attempt could not resolve the workspace schema package from the root script;
+the complete rerun loaded its build output and passed. The local handoff is ready.
+No migration file was rewritten or removed. Retained/hosted
 targets still require their own provenance/rollout checks. Downgrading after use
 must preserve authored content and notification history; prefer forward repair.
 
 ## Remaining work and next action
 
-Resolve the local database reconciliation above before closing P4-CORE/P4-REVIEW's
-local runtime handoff. Then P5-APPLICATION with P5-UI-APPLICATION owns the actual
+P4-CORE/P4-REVIEW's local runtime handoff is complete; no local blocker remains.
+Next, P5-APPLICATION with P5-UI-APPLICATION owns the actual
 role-independent application/status/correction/cancel/reapply screens and stage-aware
 apply/resume entry actions. P4-UI-CORE stays open for those shared discovery actions
 and release review. Entry/scoring/scheduling work remains behind its own gates.

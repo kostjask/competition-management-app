@@ -51,12 +51,14 @@ translation fallback. M2 review reasons use translated semantic codes. Event
 content storage/editors now implement that contract in P4; future
 rubric/announcement content remains outside this scope.
 
-## Missing journey work
+## Delivered applicant journey and remaining work
 
-- Applicant application/status pages are not mounted; the admin workspace now
-  provides setup/review. Other role dashboards remain placeholders.
-  Applicants need role-independent event applications, both approval states,
-  verified draft continuation and permitted cancellation/correction/reapply paths.
+- Role-independent `/applications`, `/events/:id/register`, `/events/:id/studio`
+  and canonical `/studios/:studioId` now provide verified draft continuation,
+  separate approval rows, next actor/contact, permitted profile/contact edits,
+  retained pending cancellation/reapplication and uncertain-response recovery.
+  `/representative` opens the application home. The admin workspace provides
+  setup/review; judge/moderator, entry/music and live/results work remains gated.
 - Delivered auth pages cover studio signup, owner draft recovery, verification,
   resend/correction/reset and cookie-session recovery. Transactional encrypted
   provider dispatch is implemented; real inbox/hosted release evidence stays open.
@@ -66,9 +68,10 @@ rubric/announcement content remains outside this scope.
   Judge/Score history. Additional studio members remain P5-MEMBERS.
 - Durable entry drafts/receipts, music and scoped corrections remain future work.
 
-Organizer setup/review now has implementation and isolated validation; the
-development database still needs reconciliation as recorded in
-[organizer validation](ORGANIZER_VALIDATION.md). Applicant UI follows this slice.
+Organizer setup/review now has implementation, isolated validation and a completed
+development database/runtime handoff as recorded in
+[organizer validation](ORGANIZER_VALIDATION.md). Applicant evidence is recorded in
+[application validation](APPLICATION_VALIDATION.md).
 If the registration design needs authored content fields, settle their content
 policy before implementing those fields. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and

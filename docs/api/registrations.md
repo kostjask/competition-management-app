@@ -37,6 +37,13 @@ retry-safe: GET owned registrations before retrying. Name matching never merges
 studios. The case-sensitive global active-name index remains authoritative;
 duplicate names return private 409 duplicateName. Archived names can be reused.
 
+Optional `onboarding: { draftId, revision }` continues the verified owner's exact
+DRAFT revision. Its intended event must be null or this event. Creation atomically
+marks that draft COMPLETED and increments its revision; stale, cancelled,
+completed, foreign-owner or other-event drafts return private 409 concurrentChange.
+Failed creation rolls back draft completion. A matching operationId retry resolves
+the retained application before rechecking the already-completed draft.
+
 Reapplication uses the same canonical POST with only:
 
 ```json
@@ -95,7 +102,7 @@ revision/reason but omit nextActor. All errors use the global localized envelope
 Frontend helpers use shared inferred contracts; createStudio also accepts the
 reapplication body, updateStudioRegistration requires revision and cancellation
 requires revision as a separate argument. Organizer setup/review is implemented;
-applicant status/correction journeys remain P5.
+applicant status/correction journeys are mounted under P5-APPLICATION.
 
 ## Organizer review and notifications
 
@@ -117,8 +124,8 @@ recipient key and restrictive registration/dispatch relations. It retains decisi
 kind/status/reason/revision and links to the existing encrypted P2 email queue.
 Matching write retries create no duplicate intent. Queue/intent/audit failures
 roll back the decision and access together. Neutral mail says a decision changed;
-it never claims both independent approvals succeeded. Links currently lead to the
-account; P5 owns the applicant status route. No sensitive evidence appears in mail.
+it never claims both independent approvals succeeded. Links lead to `/applications`
+for the signed-in owner's current status. No sensitive evidence appears in mail.
 
 States are `TEST_ONLY` (fake provider; no mail sent), `PENDING` (automatic retry,
 delivery unconfirmed), `ACCEPTED` (provider accepted, inbox delivery unconfirmed),

@@ -69,7 +69,8 @@ birth-date, contact, billing and unpublished scoring data.
 
 ## Audit of the current experience
 
-Source review: 2026-11-10, without browser/runtime checks. The original mixed-date
+Source review: 2026-11-10, updated for delivered organizer scope 2026-11-12 with
+[browser/runtime evidence](ORGANIZER_VALIDATION.md). The original mixed-date
 [audit table is archived](DEVELOPMENT_HISTORY.md#ui-source-audit-archived-2026-11-10).
 Use the checkpoint/roadmaps for delivery and release status; this specification
 owns target behavior, not a second implementation checklist.
@@ -77,13 +78,14 @@ owns target behavior, not a second implementation checklist.
 - Auth, owner drafts/recovery, shell/session, profile language and scoped staff UI
   are mounted. API identity eligibility, invitation reconciliation and private
   image authorization are enforced. See [contracts](API.md) and [security](SECURITY.md).
-- Event discovery is authenticated; create/edit routes require admin. Event forms
-  remain partial UTC editors; P4-CORE owns timezone/deadline/contact/checklist and
-  authored-content controls. M2 stage/deadline contracts already exist (ADR-003).
-- Role dashboards remain placeholders. Application/review, entry/music and
-  live/scoring/results screens remain their owning roadmap scopes. Event details
-  truthfully show registration unavailable for non-admins; P5-APPLICATION owns
-  the future apply/resume routes and actions.
+- Event discovery is authenticated; create/edit routes require admin. P4-CORE
+  delivers event-zone dates/deadline, contact/checklist, protected images and
+  authored-content controls with DST/revision/recovery checks.
+- The admin workspace, independent organizer review and S07/S08 applicant screens
+  are delivered locally. Roleless applicants can apply, track both approvals and
+  use permitted correction/cancel/reapply actions. S01/S02 offer stage/deadline-aware
+  apply or owned-status links. Judge/moderator, entry/music and live/scoring/results
+  screens remain their owning roadmap scopes. [Applicant evidence](APPLICATION_VALIDATION.md).
 - Automated Chromium coverage exists for delivered slices; real inbox/hosted,
   full-journey human language and assistive review remain release evidence.
 
@@ -122,10 +124,10 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S03 | `/auth/login`, `/auth/register`, `/verify-email`, `/login` | Existing pages; alias redirects to login |
 | S03 | `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/correct-email`, `/auth/onboarding` | Mounted recovery and owner draft pages; ADR-017 |
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
-| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | Organizer workspace, setup/checklist; local database reconciliation recorded in organizer validation |
+| S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | Organizer workspace, setup/checklist; local/browser/runtime checks recorded in organizer validation |
 | S06 | `/admin/events/:eventId/applications` | Independent approval queue/detail/history/notification recovery; P4-REVIEW validation |
-| S07 | `/representative`; P `/applications` | Placeholder; new role-independent application home |
-| S08 | P `/events/:id/register`, `/events/:id/studio`; P `/studios/:studioId` | Unmounted; P5-APPLICATION |
+| S07 | `/representative`, `/applications` | Owned application home; `/applications` requires authentication, no representative role |
+| S08 | `/events/:id/register`, `/events/:id/studio`, `/studios/:studioId` | Apply/verified draft continuation and canonical status/profile/cancel/reapply with revision recovery |
 | S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |
 | S10 | P `/events/:id/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | P5-ENTRIES |
 | S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |
@@ -206,8 +208,8 @@ Organizer-authored content follows I18N-CONTENT, with a visible fallback languag
 
 | Value | Required format and pending dependency |
 | --- | --- |
-| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone after P3-REGISTRATION. Proposed initial organizer choice Europe/Tallinn must be confirmed, never silently inferred from browser locale. Current DTO includes timeZone (default UTC) and nullable registrationDeadline; P4-CORE owns event-zone controls. |
-| Date/time entry | Labeled date/time and timezone; resolve or reject DST gaps/ambiguities explicitly. Current datetime-local is explicitly UTC; event-zone controls remain P4-CORE. Include exact date/time for deadlines, not relative text alone. |
+| Event/deadline instant | ISO offset/UTC at API; Intl display in explicitly shown IANA event timezone. Current DTO includes timeZone (default UTC) and nullable registrationDeadline; P4-CORE delivers explicit event-zone controls without browser-locale inference. |
+| Date/time entry | Labeled date/time and timezone; P4-CORE event-zone inputs reject DST gaps and require an explicit instant for folds. Unchanged edits preserve stored instant precision. Include exact date/time for deadlines, not relative text alone. |
 | Birth date | Calendar `YYYY-MM-DD` API value; locale display without instant conversion/day shift. Age calculation needs configured date/rule. |
 | Names | Preserve Unicode, spaces, hyphens and supplied order; account full name differs from dancer first/last fields. Do not enforce Latin-only names or use initials as the only accessible identity. |
 | Numbers/counts | Intl.NumberFormat and locale plural messages; preserve stable IDs and unformatted machine payloads. No concatenated translated sentences. |

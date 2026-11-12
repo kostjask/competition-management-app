@@ -10,9 +10,10 @@ Local core entry: the applicable Phase 2 technical foundations and
 P3-REGISTRATION/REGISTRATION-REAPPLY contracts pass locally (2026-11-09).
 Consume ADR-003 and ADR-019's completed M2 content policy/contracts before
 organizer-authored content storage/editors. P4-CORE/REVIEW implementation and
-S05/S06 UI now have isolated validation (2026-11-12); their local runtime handoff
-awaits development-database reconciliation under Prisma's fresh-consent guard.
-[Evidence and blocker](../ORGANIZER_VALIDATION.md). Full M1 and
+S05/S06 UI have isolated validation and a completed local runtime handoff
+(2026-11-12): the verified disposable database was reset/reseeded after fresh user
+consent, all 31 migrations are current and authenticated API checks pass.
+[Evidence](../ORGANIZER_VALIDATION.md). Full M1 and
 provider/hosted/human evidence gate external release, not isolated implementation.
 Entry/staff extensions use their own model gates and do not block M2.
 
@@ -23,11 +24,11 @@ cross-cutting UI checkboxes do not make all future screens prerequisites.
 P4-STAFF is already technically delivered; its completed execution subdivisions
 remain evidence, not new work to count against the next-task queue.
 
-- [ ] P4-UI-CORE (S05/S06 implemented with isolated checks 2026-11-12; local database handoff pending): dashboard/event setup/checklist and independent approval queue/detail/history/notification recovery are delivered in source. S01/S02 show event-local metadata and organizer actions; stage-based applicant apply/resume entry actions remain coordinated with P5-APPLICATION, whose destination screens are not yet mounted. Explicit authenticated discovery remains. F02/F03/F05 responsive/accessibility/localization/recovery checks extend with that next slice; human release review remains open. See [validation](../ORGANIZER_VALIDATION.md).
+- [x] P4-UI-CORE (complete locally 2026-11-12): S05/S06 workspace/setup/checklist and independent review/history/notification recovery are delivered. S01/S02 now show stage/deadline-aware apply or exact owned-status actions into the mounted P5 screens, using event-local metadata and explicit authenticated discovery. ET/EN/RU, responsive, keyboard/focus and recovery checks cover this integration; human/provider/hosted release gates remain open. See [organizer validation](../ORGANIZER_VALIDATION.md) and [applicant validation](../APPLICATION_VALIDATION.md).
 - [ ] P4-UI-EXTENSIONS: within P4-ENTRY-CONFIG/STAFF after their gates, implement category/age/format and entry-data review sections (S12), plus S17 event staff status/invite/resend/revoke/distinct remove-access screens (staff technical scope is delivered locally under P4-STAFF; category/entry sections retain their gates). Extend the same UI exit gates to these screens; do not make staff/scoring an M2 prerequisite.
 
-- [ ] P4-CORE (implemented with isolated validation 2026-11-12; local runtime handoff blocked): event details, protected image controls, limits, timezone/deadline, contact, ADR-019 source-language editor/three-locale previews and linked checklist. Event revisions, explicit DST choices, confirmed stages and stale/uncertain-save comparison implemented; no scoring prerequisite. Close after the verified disposable development database is reconciled with migration 31 and reseeded. [Evidence](../ORGANIZER_VALIDATION.md).
-- [ ] P4-REVIEW (implemented with isolated validation 2026-11-12; local runtime handoff blocked): independent queues/detail, reasons/next actor/contact, shared decision revisions, scoped audit history and atomic P2 encrypted notification intents with truthful status/separate retry. Approval isolation, global-admin/event/active-record denials, duplicate intents, races and rollback tested. Pending corrections retain P3 policy. Close with the same local database handoff; real mail/human/hosted evidence remains an external gate. [Evidence](../ORGANIZER_VALIDATION.md).
+- [x] P4-CORE (complete locally 2026-11-12): event details, protected image controls, limits, timezone/deadline, contact, ADR-019 source-language editor/three-locale previews and linked checklist. Event revisions, explicit DST choices, confirmed stages and stale/uncertain-save comparison implemented; no scoring prerequisite. Isolated checks and the migration-31 reset/reseed/authenticated local runtime handoff passed. [Evidence](../ORGANIZER_VALIDATION.md).
+- [x] P4-REVIEW (complete locally 2026-11-12): independent queues/detail, reasons/next actor/contact, shared decision revisions, scoped audit history and atomic P2 encrypted notification intents with truthful status/separate retry. Approval isolation, global-admin/event/active-record denials, duplicate intents, races and rollback tested. Pending corrections retain P3 policy. Isolated checks and local authenticated review/denial checks passed; real mail/human/hosted evidence remains an external gate. [Evidence](../ORGANIZER_VALIDATION.md).
 - [ ] P4-ENTRY-CONFIG: after P3-ENTRIES, build category/age-group/format configuration and entry/music deadlines, validate overlap/count/duration policies, and show incomplete entries/missing music. Scoring templates and schedule generation move to Phase 6.
 - [x] P4-STAFF (local technical scope, 2026-11-06): P4-STAFF-READ/UI and P9-BROWSER-STAFF below implement S17 event invitation/assignment administration, truthful access gaps, status/history and distinct confirmed revoke/remove controls. Shared scoped DTOs, canonical clients, 113 API + 16 web tests, 108 Chromium cases, isolated PostgreSQL/Prisma/migration/workspace checks pass. Human/real-mail/hosted M4 release gates stay open. See [evidence](../STAFF_UI_VALIDATION.md).
 

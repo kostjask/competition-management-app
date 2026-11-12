@@ -6,9 +6,11 @@ Target screen contracts, not an implementation claim. Inherit all shared
 [route inventory](../UI_UX.md#route-inventory); API paths are relative to /api/v1.
 
 Implementation (2026-11-12): S05 event workspace/create/setup and S06 independent
-review are implemented. [Validation](../ORGANIZER_VALIDATION.md) records checks
-and the separate local development-database reconciliation blocker. Applicant
-apply/status/resume actions remain P5; this does not close external M2 gates.
+review are complete locally. [Validation](../ORGANIZER_VALIDATION.md) records checks
+and the completed local development-database/runtime handoff. P5 now delivers
+applicant apply/status/resume actions on authenticated S01/S02 discovery;
+[application validation](../APPLICATION_VALIDATION.md) records that integration.
+This does not close external M2 gates.
 
 ## S05 — Admin dashboard and event setup
 
