@@ -188,12 +188,16 @@ and hosted deployment remains an external gate.
 | `pnpm.cmd db:generate`, `pnpm.cmd db:validate`, `pnpm.cmd exec prisma format --check --schema apps/api/prisma/schema.prisma` | Passed |
 | `pnpm.cmd test:baseline` | Full isolated PostgreSQL/API, 37 migrations, seed/redeploy, retry concurrency/rollback/recipient isolation and image revision checks passed |
 | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.ps1` | Fresh/upgrade/schema parity passed |
-| `pnpm.cmd test:browser` | First local run had 203 passes and one filter-refresh/session-expiry fixture race |
+| `pnpm.cmd test:browser` | Final local run passed all 204 tests after the first run exposed the filter-refresh/session-expiry fixture race |
 | `pnpm.cmd exec playwright test tests/browser/performances.spec.ts --grep 'uncertain draft saves preserve' --repeat-each 5` | 5 passed after explicitly awaiting the filtered table before expiring the fixture session |
+| `pnpm.cmd exec playwright test tests/browser/applications.spec.ts --grep 'organizer dashboard shows independent' --repeat-each 5` | 5 passed with selected-detail navigation awaited before filter changes |
 | Fresh full browser/workspace/PostgreSQL gates | Recorded by the pushed resolution's [PR checks](https://github.com/kostjask/competition-management-app/pull/3/checks) |
 
 The fixture stabilization waits for observable loaded state and retains all
 uncertain-write/session assertions. It changes the test sequencing only.
+The first hosted workspace runs also exposed a review-navigation race in the
+dashboard test. It now waits for the selected application's heading before
+changing the queue filter and explicitly asserts that selection remains in the URL.
 Documentation syntax/link checks and final Git whitespace checks passed.
 
 External release/human-review gates remain open. The next recorded task is

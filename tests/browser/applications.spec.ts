@@ -147,7 +147,9 @@ test("organizer dashboard shows independent pending counts and keeps selected fi
   await page.getByRole("link", { name: label("Application.organization") + ": 1", exact: true }).click();
   await expect(page.locator("#review-axis")).toHaveValue("ORGANIZATION");
   await page.getByRole("link", { name: "Synthetic studio", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Synthetic studio", exact: true })).toBeVisible();
   await page.locator("#review-filter").selectOption("APPROVED");
+  await expect(page).toHaveURL(/studio=s/);
   await expect(page.getByText(label("Application.keepOpen"), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: label("Application.showAll"), exact: true }).click();
   await expect(page.getByRole("link", { name: "Synthetic studio", exact: true })).toBeVisible();
