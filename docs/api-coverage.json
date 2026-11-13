@@ -2,6 +2,23 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/studio-registrations/:studioId/review/:notificationId/retry",
+      "tests": {
+        "success": "scripts/check-application-review.cjs",
+        "invalidInput": "scripts/check-application-review.cjs",
+        "authentication": "all mounted resource groups and invitation administration require authentication",
+        "permission": "scripts/check-application-review.cjs",
+        "crossParent": "scripts/check-application-review.cjs",
+        "inactiveRecord": "scripts/check-application-review.cjs",
+        "conflict": "scripts/check-application-review.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
       "router": "auth",
       "exportName": "authRouter",
       "mount": "/auth",
@@ -210,6 +227,22 @@
         "permission": "registration mutations reject wrong event scope",
         "crossParent": "registration mutations reject wrong event scope",
         "inactiveRecord": "registration lists require active ownership",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studio-registrations/:studioId/review",
+      "tests": {
+        "success": "application review history requires exact active membership and event",
+        "invalidInput": "N/A: no writable body; exact event/studio validated",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests",
+        "permission": "application review history requires exact active membership and event",
+        "crossParent": "application review history requires exact active membership and event",
+        "inactiveRecord": "application review history requires exact active membership and event",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -606,7 +639,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -622,7 +655,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },
@@ -638,7 +671,23 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
+        "conflict": "N/A: read-only operation"
+      }
+    },
+    {
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/performances/:performanceId/history",
+      "tests": {
+        "success": "performance history and revisions",
+        "invalidInput": "N/A: no writable body; event/item scope is checked",
+        "authentication": "performance history and revisions",
+        "permission": "performance history and revisions",
+        "crossParent": "performance history and revisions",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "N/A: read-only operation"
       }
     },
@@ -654,7 +703,7 @@
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },
@@ -666,11 +715,11 @@
       "path": "/:eventId/performances/:performanceId",
       "tests": {
         "success": "performance canonical CRUD",
-        "invalidInput": "N/A: no writable body; missing/parent identifiers are covered in resource tests",
+        "invalidInput": "performance history and revisions",
         "authentication": "performance authentication, event permissions",
         "permission": "performance authentication, event permissions",
         "crossParent": "performance authentication, event permissions",
-        "inactiveRecord": "performance parent substitution and ambiguous legacy participants",
+        "inactiveRecord": "scripts/check-performances.cjs",
         "conflict": "database race fallbacks and malformed JWT identities"
       }
     },
@@ -1129,40 +1178,6 @@
         "inactiveRecord": "scripts/check-staff-access.cjs",
         "conflict": "scripts/check-staff-access.cjs",
         "globalAdmin": "scripts/check-staff-access.cjs"
-      }
-    },
-    {
-      "router": "events",
-      "exportName": "eventsRouter",
-      "mount": "/events",
-      "method": "GET",
-      "path": "/:eventId/review",
-      "tests": {
-        "success": "scripts/check-organizer.cjs",
-        "invalidInput": "scripts/check-organizer.cjs",
-        "authentication": "scripts/check-organizer.cjs",
-        "permission": "scripts/check-organizer.cjs",
-        "crossParent": "scripts/check-organizer.cjs",
-        "inactiveRecord": "scripts/check-organizer.cjs",
-        "conflict": "scripts/check-organizer.cjs",
-        "globalAdmin": "scripts/check-admin-scope.cjs"
-      }
-    },
-    {
-      "router": "events",
-      "exportName": "eventsRouter",
-      "mount": "/events",
-      "method": "POST",
-      "path": "/:eventId/review/:notificationId/retry",
-      "tests": {
-        "success": "scripts/check-organizer.cjs",
-        "invalidInput": "scripts/check-organizer.cjs",
-        "authentication": "scripts/check-organizer.cjs",
-        "permission": "scripts/check-organizer.cjs",
-        "crossParent": "scripts/check-organizer.cjs",
-        "inactiveRecord": "scripts/check-organizer.cjs",
-        "conflict": "scripts/check-organizer.cjs",
-        "globalAdmin": "scripts/check-admin-scope.cjs"
       }
     }
   ]

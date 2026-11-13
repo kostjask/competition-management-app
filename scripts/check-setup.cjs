@@ -32,7 +32,7 @@ module.exports = async function checkSetup({ client, baseUrl, adminToken }) {
     assert.equal((await request(url + '/' + spare.body.id, 'DELETE')).status, 204);
   }
   const category = await client.danceCategory.create({ data: { eventId: event.id, name: 'Setup category' } });
-  const performance = await client.performance.create({ data: { eventId: event.id, categoryId: category.id, formatId: entries[0], ageGroupId: entries[1], title: 'Setup use', durationSec: 60, orderOnStage: 1 } });
+  const performance = await client.performance.create({ data: { ...await require("./performance-fixture.cjs")(client, event.id, "check-setup.cjs owner"), eventId: event.id, categoryId: category.id, formatId: entries[0], ageGroupId: entries[1], title: 'Setup use', durationSec: 60, orderOnStage: 1 } });
   for (const archived of [false, true]) {
     if (archived) await client.performance.update({ where: { id: performance.id }, data: { deletedAt: new Date() } });
     for (const [path, id] of [['formats', entries[0]], ['age-groups', entries[1]]]) {

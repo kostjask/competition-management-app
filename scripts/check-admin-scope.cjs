@@ -21,10 +21,10 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
   };
   const snapshot = async () => Object.fromEntries(await Promise.all([
     'user', 'userRole', 'invitation', 'event', 'studio', 'studioRepresentative',
-    'studioEventRegistration', 'reviewNotification', 'emailDelivery', 'judge', 'danceCategory', 'danceFormat', 'ageGroup', 'auditLog',
+    'studioEventRegistration', 'judge', 'danceCategory', 'danceFormat', 'ageGroup', 'auditLog', 'reviewNotice', 'emailDelivery',
   ].map(async model => [model, await client[model].findMany({ orderBy: { id: 'asc' } })])));
   const operations = require('../docs/api-coverage.json').operations.filter(row => row.tests.globalAdmin);
-  assert.equal(operations.length, 24);
+  assert.equal(operations.length, 23);
 
   const matrices = [
     [], [{ roleId: roles.admin.id, eventId: event.id }],
@@ -56,7 +56,7 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
   assert.equal((await request('/auth/profile')).body.isAdmin, true);
   const created = await request('/events', 'POST', { name: 'Global admin control', startsAt: '2026-11-01T00:00:00Z', endsAt: '2026-11-02T00:00:00Z' });
   assert.equal(created.status, 201);
-  assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Global admin updated another event' })).status, 200);
+  assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Global admin updated another event', expectedRevision: other.revision })).status, 200);
   await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: new Date() } });
   const beforeRemovalDenial = await snapshot();
   assert.equal((await request('/events/' + other.id, 'PATCH', { name: 'Must stay unchanged' })).status, 403);
@@ -99,5 +99,5 @@ module.exports = async function checkAdminScope({ client, baseUrl, adminToken, j
   assert.ok(counts.active_global_staff_assignments >= 1);
   assert.ok(counts.removed_admin_assignments >= 1);
   assert.ok(isDeepStrictEqual(await snapshot(), beforePreflight));
-  console.log('Admin scope: all 24 privileged operations deny scoped/removed/global-staff identities, preserve records, and honor only active global admin; invitation denial and aggregate preflight passed.');
+  console.log('Admin scope: all 23 privileged operations deny scoped/removed/global-staff identities, preserve records, and honor only active global admin; invitation denial and aggregate preflight passed.');
 };

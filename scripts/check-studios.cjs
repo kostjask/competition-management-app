@@ -27,7 +27,10 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
   const item = `/studios/${studio.id}`;
   const repItem = `${item}/representatives/${studio.representatives[0].id}`;
   const request = async (route, token = ownerToken, method = 'GET', body) => {
-    if (route.endsWith("/approval") && body && !body.revision) { const current = await client.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId: studio.id, eventId: event.id } } }); body = { ...body, eventId: event.id, revision: current.revision }; }
+    if (method === 'PATCH' && route.endsWith('/approval') && body.revision === undefined) {
+      const studio = await client.studio.findUniqueOrThrow({ where: { id: route.split('/')[2] } });
+      body = { ...body, revision: (await client.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId: studio.id, eventId: studio.eventId } } })).revision };
+    }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),
@@ -80,11 +83,6 @@ module.exports = async function checkStudios({ client, baseUrl, adminToken, logi
   assert.deepEqual(competing.map((r) => r.status).sort(), [200, 409]);
   assert.equal(await client.studio.count({ where: { name: 'Concurrent profile name', deletedAt: null } }), 1);
   const repResult = await request(repItem, ownerToken, 'PATCH', { name: ' Updated contact ', email: 'contact@example.invalid' });
-  const contactRevision = (await request(item)).body.registrations[0].revision;
-  const versionedContact = await request(repItem, ownerToken, 'PATCH', { name: 'Versioned contact', revision: contactRevision });
-  assert.equal(versionedContact.status, 200);
-  assert.equal((await request(repItem, ownerToken, 'PATCH', { name: 'Stale contact', revision: contactRevision })).status, 409);
-  assert.equal((await client.studioRepresentative.findUniqueOrThrow({ where: { id: studio.representatives[0].id } })).name, 'Versioned contact');
   assert.equal(repResult.status, 200); assert.equal(StudioRepresentativeSchema.parse(repResult.body).name, 'Updated contact');
   const unchangedAccount = await client.user.findUniqueOrThrow({ where: { id: owner.id } });
   assert.equal(unchangedAccount.email, owner.email, 'Changing representative contact never changes login identity');

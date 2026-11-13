@@ -1,41 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import type { Event, Studio } from "@dance/schemas";
+import type { Studio, Event } from "@dance/schemas";
 import { getMyStudios } from "../../api/studios";
 import { getEvents } from "../../api/events";
-import { readOnboarding } from "../../api/onboarding";
 import { toUiError, type UiError } from "../../api/error";
-import { useAuth } from "../../auth/useAuth";
+import { Button, EmptyState, ErrorSummary } from "../../components/ui/Foundation";
 import { useTranslation } from "../../i18n/useTranslation";
-import { Button, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
-import { ApprovalRows } from "./shared";
-import { applyUrl, ownedStudios, studioUrl } from "./applicationModel";
+import { useAuth } from "../../auth/useAuth";
+import { statusKey } from "./policy";
+import "./application.css";
 
 export default function ApplicationsPage() {
-  const { user } = useAuth(); const { t } = useTranslation();
-  const [data, setData] = useState<{ studios: Studio[]; events: Event[]; draftEvent: string | null } | null>(null);
+  const { t } = useTranslation(); const { user } = useAuth();
+  const [value, setValue] = useState<{ studios: Studio[]; events: Event[] } | null>(null);
   const [error, setError] = useState<UiError | null>(null); const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let active = true;
-    void Promise.all([getMyStudios(), getEvents(), readOnboarding({})]).then(([studios, events, context]) => {
-      if (active) { setData({ studios: ownedStudios(studios, user?.id ?? ""), events, draftEvent: context.draft?.status === "DRAFT" ? context.draft.intendedEventId : null }); setError(null); }
-    }).catch((e: unknown) => { if (active) setError(toUiError(e)); });
-    return () => { active = false; };
-  }, [attempt, user?.id]);
-  return <section className="application"><h1>{t("Application.title")}</h1>
-    <p>{t("Application.intro")}</p>
-    <ErrorSummary error={error} title={t("Application.title")} />
-    <div className="ui-actions"><Link to="/events">{t("Shell.events")}</Link><Link to="/auth/onboarding">{t("Flow.onboarding")}</Link><Button variant="secondary" onClick={() => setAttempt(value => value + 1)}>{t("Application.refresh")}</Button></div>
-    {!data && !error && <LoadingState label={t("Access.loading")} />}
-    {data && !error && <>
-      {data.draftEvent && <p><Link to={applyUrl(data.draftEvent)}>{t("Application.draft")}</Link></p>}
-      {data.studios.length === 0 && <p>{t("Application.empty")}</p>}
-      <ul className="application-list">{data.studios.map(studio => <li key={studio.id}>
-        <h2><Link to={studioUrl(studio.id)}>{studio.name}</Link></h2>
-        <p>{data.events.find(event => event.id === studio.eventId)?.name}</p>
-        {studio.registrations.filter(reg => reg.eventId === studio.eventId).map(reg => <ApprovalRows key={reg.id} organization={studio.approvalStatus} status={reg.status} />)}
-        <Link to={studioUrl(studio.id)}>{t("Application.status")}</Link>
-      </li>)}</ul>
-    </>}
-  </section>;
+  useEffect(() => { let active = true; void Promise.all([getMyStudios(), getEvents()]).then(([studios, events]) => { if (active) setValue({ studios: studios.filter(studio => studio.representatives.some(rep => rep.active && rep.userId === user?.id)), events }); }).catch((err: unknown) => { if (active) setError(toUiError(err)); }); return () => { active = false; }; }, [user?.id, attempt]);
+  return <div className="event-workbench"><header className="event-masthead"><h1>{t("Application.title")}</h1><Link to="/events">{t("Shell.events")}</Link></header>
+    <ErrorSummary error={error} title={t("Events.loadError")} />
+    {error ? <Button onClick={() => { setError(null); setAttempt(value => value + 1); }}>{t("Shell.retry")}</Button> : !value ? <div className="application-skeleton" role="status">{t("Access.loading")}</div> : !value.studios.length ? <EmptyState title={t("Application.none")} description={t("Application.emptyHelp")} action={<Link to="/events">{t("Shell.events")}</Link>} /> :
+      <ul className="application-queue">{value.studios.map(studio => <li key={studio.id}><h2>{studio.name}</h2><p>{value.events.find(event => event.id === studio.eventId)?.name}</p>
+        <p>{t("Application.organization")}: {t(statusKey[studio.approvalStatus])}</p>{studio.registrations.filter(row => row.eventId === studio.eventId).map(row => <p key={row.id}>{t("Application.event")}: {t(statusKey[row.status])}</p>)}
+        <Link to={`/events/${encodeURIComponent(studio.eventId)}/studio?studio=${encodeURIComponent(studio.id)}`}>{t("Application.open")}: {studio.name}</Link>
+      </li>)}</ul>}
+  </div>;
 }

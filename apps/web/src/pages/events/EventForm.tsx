@@ -1,377 +1,107 @@
-import { languageNames } from "../../i18n/locale";
-import { useState } from "react";
-import {
-  CreateEventBodySchema,
-  EventStageSchema,
-  eventStageTargets,
-  resolveAuthoredContent,
-  type CreateEventInput,
-  type EventStage,
-  type AuthoredContent,
-} from "@dance/schemas";
+import { useMemo, useState, type ReactNode } from "react";
+import { CreateEventBodySchema, resolveAuthoredContent, type CreateEventInput } from "@dance/schemas";
 import { toUiError, type UiError } from "../../api/error";
-import { useTranslation } from "../../i18n/useTranslation";
 import { formatIssue } from "../../i18n/errors";
-import { Button, Field, Input, ErrorSummary, Alert } from "../../components/ui/Foundation";
-import { matchingInstants, wallTime, minuteInstant, resolveWallTime } from "./eventTime";
-import { OrganizerConfirmation } from "./OrganizerConfirmation";
-import "./Organizer.css";
+import { useTranslation } from "../../i18n/useTranslation";
+import { isLocale, languageNames, type Locale } from "../../i18n/locale";
+import { Button, ErrorSummary, Field, Input } from "../../components/ui/Foundation";
+import { minuteInstant, offsetLabel, resolveWallTime, wallTime, wallTimeCandidates } from "../../features/events/eventTime";
+import { eventFieldIds } from "../../features/events/setup";
+import "./event-setup.css";
 
 type Props = {
-  title: string;
-  initialValues: CreateEventInput;
-  currentStage?: EventStage;
-  submitLabel: string;
-  submitError?: UiError | null;
-  isSubmitting?: boolean;
-  blocked?: boolean;
-  onSubmit: (values: CreateEventInput) => Promise<void>;
-  onCancel: () => void;
+  title: string; initialValues: CreateEventInput; unclassifiedDescription?: string | null;
+  submitLabel: string; submitError?: UiError | null; isSubmitting?: boolean; disabled?: boolean;
+  onSubmit: (values: CreateEventInput) => Promise<void>; onCancel: () => void; onDirty?: () => void;
 };
-const languages = ["et", "en", "ru"] as const;
-export function EventForm({
-  title,
-  initialValues: initial,
-  currentStage,
-  submitLabel,
-  submitError,
-  isSubmitting,
-  blocked,
-  onSubmit,
-  onCancel,
-}: Props) {
+
+function TimeField({ id, label, value, zone, choice, onChange, onChoice, error }: {
+  id: string; label: string; value: string; zone: string; choice: string; onChange: (value: string) => void; onChoice: (value: string) => void; error?: string;
+}) {
+  const { t } = useTranslation();
+  const candidates = useMemo(() => wallTimeCandidates(value, zone), [value, zone]);
+  return <div><Field id={id} label={label} required {...(error && { error })}>{props => <Input {...props} type="datetime-local" value={value} onChange={event => onChange(event.target.value)} />}</Field>
+    {value && zone && candidates.length === 0 && <p className="ui-field-error">{t("Setup.invalidTime")}</p>}
+    {candidates.length > 1 && <Field id={id + "-offset"} label={label + ": " + t("Setup.offset")} hint={t("Setup.ambiguousTime")} required>{props =>
+      <select {...props} className="ui-input" value={candidates.includes(minuteInstant(choice)) ? minuteInstant(choice) : ""} onChange={event => onChoice(event.target.value)}>
+        <option value="">{t("Setup.choose")}</option>{candidates.map(instant => <option key={instant} value={instant}>{offsetLabel(instant, zone)}</option>)}
+      </select>}</Field>}
+  </div>;
+}
+export function EventForm({ title, initialValues, unclassifiedDescription, submitLabel, submitError, isSubmitting, disabled, onSubmit, onCancel, onDirty }: Props) {
   const { t, locale } = useTranslation();
-  const [localError, setError] = useState<UiError | null>(null);
-  const [timeError, setTimeError] = useState(false);
-  const [confirmation, setConfirmation] = useState<CreateEventInput | null>(null);
-  const [values, setValues] = useState(() => ({
-    name: initial.name,
-    venue: initial.venue ?? "",
-    city: initial.city ?? "",
-    country: initial.country ?? "",
-    organizerEmail: initial.organizerEmail ?? "",
-    organizerPhone: initial.organizerPhone ?? "",
-    timeZone: initial.timeZone ?? "UTC",
-    maxStudios: initial.maxStudios?.toString() ?? "",
-    maxPerformances: initial.maxPerformances?.toString() ?? "",
-    stage: initial.stage ?? "PRE_REGISTRATION",
-    startsAt: wallTime(initial.startsAt, initial.timeZone ?? "UTC"),
-    endsAt: wallTime(initial.endsAt, initial.timeZone ?? "UTC"),
-    registrationDeadline: initial.registrationDeadline
-      ? wallTime(initial.registrationDeadline, initial.timeZone ?? "UTC")
-      : "",
-    sourceLocale: initial.authoredDescription?.sourceLocale ?? "",
-    sourceText: initial.authoredDescription?.sourceText ?? initial.description ?? "",
-    et: initial.authoredDescription?.translations.et ?? "",
-    en: initial.authoredDescription?.translations.en ?? "",
-    ru: initial.authoredDescription?.translations.ru ?? "",
-  }));
-  const [chosen, setChosen] = useState<Record<string, string>>(() => ({
-    startsAt: minuteInstant(initial.startsAt),
-    endsAt: minuteInstant(initial.endsAt),
-    registrationDeadline: initial.registrationDeadline ? minuteInstant(initial.registrationDeadline) : "",
-  }));
-  const error = localError ?? submitError ?? null;
-  const issues = Object.fromEntries(
-    (error?.issues ?? []).map((issue) => [issue.path.join("."), issue]),
-  );
-  const labels = {
-    name: t("Events.nameLabel"),
-    venue: t("Events.venue"),
-    city: t("Common.city"),
-    country: t("Common.country"),
-    organizerEmail: t("Organizer.email"),
-    organizerPhone: t("Organizer.phone"),
-    timeZone: t("Organizer.zone"),
-    maxStudios: t("Organizer.maxStudios"),
-    maxPerformances: t("Organizer.maxPerformances"),
-    startsAt: t("Events.startsAtLabel"),
-    endsAt: t("Events.endsAtLabel"),
-    registrationDeadline: t("Organizer.deadline"),
-  };
-  const stageLabel = (stage: EventStage) =>
-    ({
-      PRE_REGISTRATION: t("Events.stagePreRegistration"),
-      REGISTRATION_OPEN: t("Events.stageRegistrationOpen"),
-      DATA_REVIEW: t("Events.stageDataReview"),
-      FINALIZED: t("Events.stageFinalized"),
-      ENDED: t("Events.stageEnded"),
-      CANCELLED: t("Events.stageCancelled"),
-    })[stage];
-  const field = (key: keyof typeof labels, type = "text", required = false) => (
-    <Field
-      key={key}
-      id={`event-${key}`}
-      label={labels[key]}
-      required={required}
-      {...(issues[key] && { error: formatIssue(issues[key], locale) })}
-    >
-      {(attrs) => (
-        <Input
-          {...attrs}
-          type={type}
-          value={values[key]}
-          onChange={(e) => {
-            setValues((v) => ({ ...v, [key]: e.target.value }));
-            if (key === "timeZone") setChosen({});
-          }}
-        />
-      )}
-    </Field>
-  );
-  const dateField = (key: "startsAt" | "endsAt" | "registrationDeadline") => {
-    const candidates = matchingInstants(values[key], values.timeZone);
-    return (
-      <div key={key}>
-        {field(key, "datetime-local", key !== "registrationDeadline")}
-        {candidates.length > 1 && (
-          <Field
-            id={`event-${key}-offset`}
-            label={t("Organizer.offset")}
-            hint={t("Organizer.ambiguous")}
-          >
-            {(attrs) => (
-              <select
-                {...attrs}
-                className="ui-input"
-                value={candidates.includes(chosen[key] ?? "") ? chosen[key] : ""}
-                onChange={(e) => setChosen((v) => ({ ...v, [key]: e.target.value }))}
-              >
-                <option value="">{t("Organizer.offset")}</option>
-                {candidates.map((instant) => (
-                  <option key={instant} value={instant}>
-                    {instant}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-        )}
-      </div>
-    );
-  };
-  const content = (): AuthoredContent | null => {
-    if (!languages.some((language) => language === values.sourceLocale)) return null;
-    const sourceLocale = languages.find((language) => language === values.sourceLocale);
-    if (!sourceLocale) return null;
+  const [error, setError] = useState<UiError | null>(null);
+  const [form, setForm] = useState(() => {
+    const zone = initialValues.timeZone ?? "";
     return {
-      sourceLocale,
-      sourceText: values.sourceText,
-      translations: Object.fromEntries(
-        languages
-          .filter((language) => language !== sourceLocale && values[language].trim())
-          .map((language) => [language, values[language]]),
-      ),
+      name: initialValues.name, venue: initialValues.venue ?? "", country: initialValues.country ?? "", city: initialValues.city ?? "",
+      organizerEmail: initialValues.organizerEmail ?? "", organizerPhone: initialValues.organizerPhone ?? "", timeZone: zone,
+      startsAt: wallTime(initialValues.startsAt, zone || "UTC"), endsAt: wallTime(initialValues.endsAt, zone || "UTC"),
+      registrationDeadline: initialValues.registrationDeadline ? wallTime(initialValues.registrationDeadline, zone || "UTC") : "",
+      cutoff: initialValues.registrationDeadline === undefined ? "" : initialValues.registrationDeadline === null ? "none" : "timed",
+      maxStudios: initialValues.maxStudios?.toString() ?? "", maxPerformances: initialValues.maxPerformances?.toString() ?? "",
+      sourceLocale: initialValues.description?.sourceLocale ?? "", sourceText: initialValues.description?.sourceText ?? unclassifiedDescription ?? "",
+      et: initialValues.description?.translations.et ?? "", en: initialValues.description?.translations.en ?? "", ru: initialValues.description?.translations.ru ?? "",
     };
-  };
-  const commit = async (data: CreateEventInput) => {
-    setConfirmation(null);
-    try {
-      await onSubmit(data);
-    } catch {
-      /* Parent owns server errors and recovery. */
-    }
-  };
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting || blocked) return;
+  });
+  const [offsets, setOffsets] = useState({ startsAt: initialValues.startsAt, endsAt: initialValues.endsAt, registrationDeadline: initialValues.registrationDeadline ?? "" });
+  const visibleError = error ?? submitError ?? null;
+  const issue = (field: string) => { const value = visibleError?.issues.find(item => item.path[0] === field); return value ? formatIssue(value, locale) : undefined; };
+  const change = (key: keyof typeof form, value: string) => { setForm(previous => ({ ...previous, [key]: value })); setError(null); onDirty?.(); };
+  const field = (key: keyof typeof form, label: string, type = "text", required = false) => <Field id={"event-" + key} label={label} required={required} {...(issue(key) && { error: issue(key) })}>{props =>
+    <Input {...props} type={type} value={form[key]} onChange={event => change(key, event.target.value)} {...(type === "number" ? { min: 1, max: 2147483647, step: 1 } : { maxLength: 500 })} />}</Field>;
+  const section = (id: string, label: string, children: ReactNode) => <fieldset className="setup-section" id={id}><legend>{label}</legend>{children}</fieldset>;
+  const content = isLocale(form.sourceLocale) && form.sourceText.trim() ? { sourceLocale: form.sourceLocale, sourceText: form.sourceText.trim(), translations: Object.fromEntries(
+    (["et", "en", "ru"] as const).filter(language => language !== form.sourceLocale && form[language].trim()).map(language => [language, form[language].trim()])) } : null;
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); if (disabled || isSubmitting) return;
     setError(null);
-    setTimeError(false);
-    const instant = (key: "startsAt" | "endsAt" | "registrationDeadline") => {
-      return resolveWallTime(values[key], values.timeZone, chosen[key], initial[key], initial.timeZone ?? "UTC");
+    const issues: UiError["issues"] = [];
+    const instant = (key: keyof typeof offsets) => {
+      const result = resolveWallTime(form[key], form.timeZone, offsets[key]);
+      if (!result) issues.push({ path: [key], rule: "invalid", params: {} });
+      return result ?? "";
     };
-    const startsAt = instant("startsAt"),
-      endsAt = instant("endsAt"),
-      deadline = values.registrationDeadline ? instant("registrationDeadline") : null;
-    if (!startsAt || !endsAt || deadline === undefined) {
-      setTimeError(true);
-      return;
-    }
-    if (values.sourceText.trim() && !values.sourceLocale) {
-      setError({
-        reason: "invalidInput",
-        params: {},
-        issues: [{ path: ["sourceLocale"], rule: "invalid", params: {} }],
-      });
-      return;
-    }
-    const parsed = CreateEventBodySchema.safeParse({
-      name: values.name,
-      stage: values.stage,
-      startsAt,
-      endsAt,
-      timeZone: values.timeZone,
-      registrationDeadline: deadline,
-      venue: values.venue || null,
-      city: values.city || null,
-      country: values.country || null,
-      organizerEmail: values.organizerEmail || null,
-      organizerPhone: values.organizerPhone || null,
-      maxStudios: values.maxStudios ? Number(values.maxStudios) : null,
-      maxPerformances: values.maxPerformances ? Number(values.maxPerformances) : null,
-      authoredDescription: content(),
-      ...(values.sourceLocale && { description: null }),
-    });
-    if (!parsed.success) {
-      setError(toUiError(parsed.error));
-      return;
-    }
-    if (parsed.data.stage !== (currentStage ?? "PRE_REGISTRATION")) setConfirmation(parsed.data);
-    else void commit(parsed.data);
+    if (!form.timeZone) issues.push({ path: ["timeZone"], rule: "invalid", params: {} });
+    if (!form.cutoff) issues.push({ path: ["registrationDeadline"], rule: "invalid", params: {} });
+    if ((form.sourceText.trim() || form.et.trim() || form.en.trim() || form.ru.trim()) && !content) issues.push({ path: ["description"], rule: "invalid", params: {} });
+    const payload = { name: form.name, venue: form.venue.trim() || null, country: form.country.trim() || null, city: form.city.trim() || null,
+      organizerEmail: form.organizerEmail.trim() || null, organizerPhone: form.organizerPhone.trim() || null,
+      timeZone: form.timeZone, startsAt: instant("startsAt"), endsAt: instant("endsAt"),
+      registrationDeadline: form.cutoff === "timed" ? instant("registrationDeadline") : null,
+      maxStudios: form.maxStudios ? Number(form.maxStudios) : null, maxPerformances: form.maxPerformances ? Number(form.maxPerformances) : null,
+      description: content,
+    };
+    const parsed = CreateEventBodySchema.safeParse(payload);
+    if (!parsed.success) issues.push(...toUiError(parsed.error).issues);
+    if (issues.length || !parsed.success) { setError({ reason: "invalidInput", params: {}, issues }); return; }
+    try { await onSubmit(parsed.data); } catch { /* The owner preserves authoritative and uncertain state. */ }
   };
-  const preview = content();
-  return (
-    <section className="organizer">
-      <h1>{title}</h1>
-      <p>{t("Organizer.requiredFields")}</p>
-      <form noValidate onSubmit={submit}>
-        <ErrorSummary
-          error={error}
-          title={t("Organizer.setup")}
-          fields={Object.fromEntries(
-            [...Object.keys(labels), "sourceLocale"].map((key) => [key, `event-${key}`]),
-          )}
-        />
-        {timeError && <Alert tone="danger">{t("Organizer.timeInvalid")}</Alert>}
-        <fieldset disabled={isSubmitting}>
-          <legend>{t("Organizer.details")}</legend>
-          <div className="organizer-fields">
-            {field("name", "text", true)}
-            {field("venue")}
-            {field("city")}
-            {field("country")}
-          </div>
-        </fieldset>
-        <fieldset disabled={isSubmitting}>
-          <legend>{t("Organizer.registration")}</legend>
-          <p>{t("Organizer.dateHelp")}</p>
-          {field("timeZone", "text", true)}
-          <div className="organizer-fields">
-            {dateField("startsAt")}
-            {dateField("endsAt")}
-            {dateField("registrationDeadline")}
-          </div>
-          <p className="ui-help">{t("Organizer.noDeadline")}</p>
-          <Field id="event-stage" label={t("Events.stageLabel")}>
-            {(attrs) => (
-              <select
-                {...attrs}
-                className="ui-input"
-                value={values.stage}
-                onChange={(e) =>
-                  setValues((v) => ({ ...v, stage: EventStageSchema.parse(e.target.value) }))
-                }
-              >
-                {eventStageTargets(currentStage).map((stage) => (
-                  <option key={stage} value={stage}>
-                    {stageLabel(stage)}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <div className="organizer-fields">
-            {field("maxStudios", "number")}
-            {field("maxPerformances", "number")}
-          </div>
-          <p className="ui-help">{t("Organizer.limitsHelp")}</p>
-        </fieldset>
-        <fieldset disabled={isSubmitting}>
-          <legend>{t("Organizer.contact")}</legend>
-          <div className="organizer-fields">
-            {field("organizerEmail", "email")}
-            {field("organizerPhone", "tel")}
-          </div>
-        </fieldset>
-        <fieldset disabled={isSubmitting}>
-          <legend>{t("Organizer.description")}</legend>
-          {initial.description && !initial.authoredDescription && <p>{t("Organizer.legacy")}</p>}
-          <Field
-            id="event-sourceLocale"
-            label={t("Organizer.source")}
-            {...(issues.sourceLocale && { error: t("Organizer.chooseSource") })}
-          >
-            {(attrs) => (
-              <select
-                {...attrs}
-                className="ui-input"
-                value={values.sourceLocale}
-                onChange={(e) => setValues((v) => ({ ...v, sourceLocale: e.target.value }))}
-              >
-                <option value="">{t("Organizer.chooseSource")}</option>
-                {languages.map((language) => (
-                  <option key={language} value={language}>
-                    {languageNames[language]}
-                  </option>
-                ))}
-              </select>
-            )}
-          </Field>
-          <Field id="event-sourceText" label={t("Organizer.sourceText")}>
-            {(attrs) => (
-              <textarea
-                {...attrs}
-                className="ui-input"
-                maxLength={20000}
-                value={values.sourceText}
-                onChange={(e) => setValues((v) => ({ ...v, sourceText: e.target.value }))}
-              />
-            )}
-          </Field>
-          {languages
-            .filter((language) => language !== values.sourceLocale)
-            .map((language) => (
-              <Field
-                key={language}
-                id={`event-translation-${language}`}
-                label={`${t("Organizer.translation")} (${language})`}
-              >
-                {(attrs) => (
-                  <textarea
-                    {...attrs}
-                    className="ui-input"
-                    maxLength={20000}
-                    value={values[language]}
-                    onChange={(e) => setValues((v) => ({ ...v, [language]: e.target.value }))}
-                  />
-                )}
-              </Field>
-            ))}
-          {preview && (
-            <details>
-              <summary>{t("Organizer.preview")}</summary>
-              {languages.map((language) => {
-                const resolved = resolveAuthoredContent(preview, language);
-                return (
-                  <section className="organizer-preview" key={language}>
-                    <h3>{language}</h3>
-                    {resolved.fallback && <p>{t("Registration.contentFallback")}</p>}
-                    <p lang={resolved.lang}>{resolved.text}</p>
-                  </section>
-                );
-              })}
-            </details>
-          )}
-        </fieldset>
-        <div className="ui-actions">
-          <Button type="submit" pending={!!isSubmitting} disabled={blocked}>
-            {submitLabel}
-          </Button>
-          <Button variant="secondary" onClick={onCancel}>
-            {t("Common.cancel")}
-          </Button>
-        </div>
-      </form>
-      {confirmation && (
-        <OrganizerConfirmation
-          title={t("Organizer.confirmStage")}
-          onCancel={() => setConfirmation(null)}
-          onConfirm={() => void commit(confirmation)}
-        >
-          <p>{stageLabel(confirmation.stage ?? "PRE_REGISTRATION")}</p>
-          <p>{t("Organizer.stageEffect")}</p>
-        </OrganizerConfirmation>
-      )}
-    </section>
-  );
+  return <div>
+    {title && <header className="event-masthead"><div><h1>{title}</h1><p>{t("Setup.hint")}</p></div></header>}
+    <ErrorSummary error={visibleError} title={t("Feedback.validation")} fields={eventFieldIds} />
+    <form noValidate onSubmit={submit}>
+      <fieldset disabled={disabled || isSubmitting}>
+        {section("event-details", t("Setup.details"), field("name", t("Events.nameLabel"), "text", true))}
+        {section("event-location", t("Setup.location"), <div className="setup-grid">{field("venue", t("Events.venue"))}{field("city", t("Common.city"))}{field("country", t("Common.country"))}</div>)}
+        {section("event-contact", t("Setup.contact"), <><p>{t("Setup.contactHelp")}</p><div className="setup-grid">{field("organizerEmail", t("Setup.organizerEmail"), "email")}{field("organizerPhone", t("Setup.organizerPhone"), "tel")}</div></>)}
+        {section("event-dates", t("Setup.dates"), <>
+          <Field id="event-timeZone" label={t("Setup.timeZone")} hint={t("Setup.zoneHelp")} required {...(issue("timeZone") && { error: issue("timeZone") })}>{props => <Input {...props} list="event-zones" value={form.timeZone} onChange={event => change("timeZone", event.target.value)} />}</Field>
+          <datalist id="event-zones">{["UTC", ...Intl.supportedValuesOf("timeZone")].map(zone => <option key={zone} value={zone} />)}</datalist>
+          <div className="setup-grid">{(["startsAt", "endsAt"] as const).map(key => <TimeField key={key} id={"event-" + key} label={t(key === "startsAt" ? "Events.startsAtLabel" : "Events.endsAtLabel")} value={form[key]} zone={form.timeZone} choice={offsets[key]} onChange={value => change(key, value)} onChoice={value => { setOffsets(previous => ({ ...previous, [key]: value })); onDirty?.(); }} {...(issue(key) && { error: issue(key) })} />)}</div>
+          <Field id="event-cutoff" label={t("Setup.cutoff")} required hint={t("Setup.cutoffHelp")} {...(issue("registrationDeadline") && { error: issue("registrationDeadline") })}>{props => <select {...props} className="ui-input" value={form.cutoff} onChange={event => change("cutoff", event.target.value)}><option value="">{t("Setup.choose")}</option><option value="none">{t("Setup.noCutoff")}</option><option value="timed">{t("Setup.timedCutoff")}</option></select>}</Field>
+          {form.cutoff === "timed" && <TimeField id="event-registrationDeadline" label={t("Setup.deadline")} value={form.registrationDeadline} zone={form.timeZone} choice={offsets.registrationDeadline} onChange={value => change("registrationDeadline", value)} onChoice={value => { setOffsets(previous => ({ ...previous, registrationDeadline: value })); onDirty?.(); }} {...(issue("registrationDeadline") && { error: issue("registrationDeadline") })} />}
+        </>)}
+        {section("event-description", t("Setup.description"), <>
+          <p>{t("Setup.sourceHelp")}</p>{unclassifiedDescription && <p className="ui-help">{t("Setup.unclassified")}</p>}
+          <Field id="event-description-language" label={t("Setup.sourceLocale")} {...(issue("description") && { error: issue("description") })}>{props => <select {...props} className="ui-input" value={form.sourceLocale} onChange={event => change("sourceLocale", event.target.value)}><option value="">{t("Setup.choose")}</option>{Object.entries(languageNames).map(([key, label]) => <option key={key} value={key} lang={key}>{label}</option>)}</select>}</Field>
+          <Field id="event-description-text" label={t("Setup.sourceText")}>{props => <textarea {...props} className="ui-input" rows={4} maxLength={20000} value={form.sourceText} lang={form.sourceLocale || ""} onChange={event => change("sourceText", event.target.value)} />}</Field>
+          {(["et", "en", "ru"] as const).filter(language => language !== form.sourceLocale).map(language => <Field key={language} id={"event-description-" + language} label={t("Setup.translation") + ": " + languageNames[language]}>{props => <textarea {...props} className="ui-input" rows={3} maxLength={20000} lang={language} value={form[language]} onChange={event => change(language, event.target.value)} />}</Field>)}
+          {content && <details><summary>{t("Setup.preview")}</summary>{(["et", "en", "ru"] as Locale[]).map(language => { const result = resolveAuthoredContent(content, language); return <div key={language}><h3 lang={language}>{languageNames[language]}</h3>{result.fallback && <p>{t("Registration.contentFallback")}</p>}<p className="setup-prose" lang={result.lang}>{result.text}</p></div>; })}</details>}
+        </>)}
+        {section("event-limits", t("Setup.limits"), <><p>{t("Setup.limitsHelp")}</p><div className="setup-grid">{field("maxStudios", t("Setup.maxStudios"), "number")}{field("maxPerformances", t("Setup.maxPerformances"), "number")}</div></>)}
+        <div className="ui-actions"><Button type="submit" pending={!!isSubmitting}>{submitLabel}</Button><Button variant="secondary" onClick={onCancel}>{t("Common.cancel")}</Button></div>
+      </fieldset>
+    </form>
+  </div>;
 }

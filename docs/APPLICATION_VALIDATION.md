@@ -1,5 +1,11 @@
 # Applicant workflow validation
 
+Historical branch evidence. The 2026-11-13 merge combines this branch with main's
+integrated application/review and entry implementations. Current contracts and
+validation are in [application/review validation](APPLICATION_REVIEW_VALIDATION.md)
+and the [checkpoint](../DEVELOPMENT_PLAN.md). File paths and migration counts below
+describe the earlier branch revision.
+
 Date: 2026-11-12. Local technical scope: P5-APPLICATION and owning
 P5-UI-APPLICATION, plus P4-UI-CORE's pending S01/S02 apply/resume integration.
 Prior development-database handoff edits were preserved. No commit, push,

@@ -65,12 +65,13 @@ own exact versions. [Architecture](docs/ARCHITECTURE.md) Â· [API](docs/API.md) Â
 Email defaults to a silent development fake; Resend dispatch/queue is implemented
 locally but real inbox/hosted release evidence remains open. Storage is local with
 private authenticated images. Signup requires studio intent; event reads require
-login. Auth, staff administration and organizer setup/review are implemented with
-local isolated validation and a verified reset/reseed/authenticated development
-runtime handoff; [organizer validation](docs/ORGANIZER_VALIDATION.md) records the
-checks. Role-independent applicant/status/profile and event apply/resume UI are
-delivered locally; [application validation](docs/APPLICATION_VALIDATION.md) records
-their scope. Judge/moderator dashboards, entry/music and live/results remain
+login. Auth, staff administration, organizer setup/review and role-independent
+applicant/status/profile workflows are delivered locally. See
+[setup validation](docs/EVENT_SETUP_VALIDATION.md) and
+[application/review validation](docs/APPLICATION_REVIEW_VALIDATION.md).
+Organizer entry ownership, saved history/calendar dates and incomplete drafts
+are delivered locally under [draft validation](docs/ENTRY_DRAFT_VALIDATION.md).
+Judge/moderator dashboards, representative entry/music/submission and live/results remain
 unfinished. [Security](docs/SECURITY.md) lists current gaps;
 [domain guide](docs/DOMAIN.md) distinguishes runtime from accepted targets.
 

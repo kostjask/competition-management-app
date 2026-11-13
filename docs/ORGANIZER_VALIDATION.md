@@ -1,5 +1,12 @@
 # Organizer setup and independent review validation
 
+Historical branch evidence. The 2026-11-13 merge replaces the duplicate disposable
+migration and parallel screens with main's integrated setup/review implementation,
+while adapting notification retries. Current behavior and checks are recorded in
+[setup validation](EVENT_SETUP_VALIDATION.md),
+[application/review validation](APPLICATION_REVIEW_VALIDATION.md) and the
+[checkpoint](../DEVELOPMENT_PLAN.md). Paths and database state below are historical.
+
 Date: 2026-11-12. Scope: P4-CORE and P4-REVIEW with S05/S06's owning
 P4-UI-CORE scope. Source migration 31 is additive. No commit, push, external
 deployment or real mail was performed. The previously untracked `.hallmark/`
@@ -27,18 +34,18 @@ files were preserved.
   acceptance is explicitly distinct from delivery. Fake mail is labelled test-only.
 
 Contracts: [events](api/events.md), [studios](api/studios.md),
-[review/notifications](api/registrations.md#organizer-review-and-notifications).
+[review/notifications](api/registrations.md#review-history-and-notification-status).
 Runtime/client types are inferred from shared Zod schemas. No new dependency.
 
 Key source owners:
 
 | Scope | Files |
 | --- | --- |
-| Event contracts/storage | [event schema](../packages/schemas/src/event.schema.ts), [Prisma schema](../apps/api/prisma/schema.prisma), [migration 31](../apps/api/prisma/migrations/20261112000000_organizer_setup_review/migration.sql) |
-| Event setup UI | [form](../apps/web/src/pages/events/EventForm.tsx), [setup/recovery](../apps/web/src/pages/events/EventEdit.tsx), [time conversion](../apps/web/src/pages/events/eventTime.ts), [protected images](../apps/web/src/pages/events/EventImage.tsx) |
-| Review contracts/API | [shared review DTO](../packages/schemas/src/review.schema.ts), [review controller](../apps/api/src/controllers/ReviewController.ts), [notification service](../apps/api/src/services/reviewNotifications.ts) |
-| Review UI/localization | [review page](../apps/web/src/pages/admin/ReviewPage.tsx), [organizer catalogue](../apps/web/src/i18n/organizerCopy.ts) |
-| Regression checks | [browser suite](../tests/browser/organizer.spec.ts), [database/API checks](../scripts/check-organizer.cjs), [recipient/encryption unit test](../apps/api/tests/review-notifications.test.cjs) |
+| Event contracts/storage | [event schema](../packages/schemas/src/event.schema.ts), [Prisma schema](../apps/api/prisma/schema.prisma), historical `20261112000000_organizer_setup_review` migration |
+| Event setup UI | [form](../apps/web/src/pages/events/EventForm.tsx), [setup/recovery](../apps/web/src/pages/events/EventEdit.tsx), historical `pages/events/eventTime.ts`, [protected images](../apps/web/src/pages/events/EventImage.tsx) |
+| Review contracts/API | Historical `review.schema.ts` and `ReviewController.ts`, [notification service](../apps/api/src/services/reviewNotifications.ts) |
+| Review UI/localization | Historical `pages/admin/ReviewPage.tsx` and `organizerCopy.ts` |
+| Regression checks | Historical `organizer.spec.ts`, `check-organizer.cjs` and `review-notifications.test.cjs` |
 
 ## Verification
 

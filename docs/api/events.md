@@ -1,69 +1,75 @@
-# Event contract
+﻿# Event contract
 
-[API index](../API.md) · Paths are relative to `/api/v1` unless shown in full.
+[API index](../API.md) · Paths are relative to `/api/v1`.
 
-`GET /api/v1/events` and `GET /api/v1/events/:eventId` require authentication;
-any authenticated account may read, without an event role. Lists are ordered by
-start instant then ID. `POST /api/v1/events` and `PATCH /api/v1/events/:eventId`
-remain admin-only, including when a non-admin has global or event-scoped
-`event.manage`. Creation returns 201; reads and updates return 200. Missing
-items return 404. All errors use the global envelope, including 401/403 denials.
-No event DELETE endpoint is introduced.
+Event list/detail require authentication, including roleless accounts. Lists are
+ordered by start instant then ID. Creation and PATCH require an active global
+admin; scoped admin and event.manage grants cannot bypass this rule. Creation
+returns 201, reads/updates 200, missing records 404, stale writes 409. Errors use
+the global envelope. There is no event DELETE operation.
 
-POST requires trimmed, nonblank `name`, `startsAt`, and `endsAt`; optional
-`stage` retains the database default `PRE_REGISTRATION`. Existing stage values remain unchanged. Creation accepts only
-PRE_REGISTRATION (default) or REGISTRATION_OPEN. Optional `venue`, `country`, `city`, and `description`
-accept trimmed nonblank text or null. `maxStudios` and `maxPerformances` accept
-positive integers up to 2147483647 or null. These stored settings do not add new
-registration-capacity enforcement. Dates must be ISO instants with Z or an
-explicit offset; timezone-free strings and calendar-only dates are rejected.
-The end must be strictly later than the start. PATCH accepts a nonempty subset;
-omitted fields stay unchanged and explicit null clears optional details/limits.
-Optional timeZone accepts a validated IANA identifier (default UTC); optional
-registrationDeadline accepts an explicit-offset instant or null. The deadline must
-be at or before startsAt, including partial date updates. Null explicitly means no
-automatic cutoff. Both fields are included in all event DTOs.
+POST requires trimmed name (1–500 characters), startsAt and endsAt. Optional
+venue/country/city/organizerPhone accept trimmed nonblank text up to 500 characters
+or null; organizerEmail accepts a valid email up to 254 characters or null.
+maxStudios/maxPerformances are positive 32-bit integers or null. They remain
+stored configuration, without new automatic capacity enforcement.
 
-Stage PATCH requires expectedStage matching the stored stage. M2 allows only
-PRE_REGISTRATION -> REGISTRATION_OPEN -> DATA_REVIEW, or CANCELLED from those
-states. An unchanged stage is allowed; backwards/skipped/live/final transitions
-are refused. Stale expectedStage returns 409. All changes append transactional
-audit. See [ADR-003](../adr/003-registration-lifecycle.md).
+Dates are ISO instants with Z or an explicit offset. Calendar-only, timezone-free
+or reversed dates are refused. timeZone is a validated IANA identifier, default
+UTC. registrationDeadline is an instant or null (no automatic cutoff); it must
+be at or before startsAt. PATCH validates the resulting stored date pair/deadline
+inside the transaction, including partial edits.
 
-Unknown fields, IDs, audit timestamps, relations, image URLs and private paths
-are rejected. Image changes remain on the upload route, whose resource-specific
-authorization/content rules are in [the image contract](images.md).
+Description writes use ADR-019 AuthoredContent or null: sourceLocale (et/en/ru),
+nonempty sourceText up to 20000 characters, and translations containing optional
+nonempty text for the other supported locales. Clearing an optional translation
+means omitting it from the replacement object. No HTML interpretation or automatic
+translation occurs. Existing unknown-language text is retained verbatim until an
+organizer assigns a source language or explicitly clears it. Names, titles,
+addresses and contacts remain authored identity/display values.
 
-A partial date update validates the resulting stored pair in a serializable
-transaction. Concurrent edits cannot produce a reversed pair; serialization
-conflicts return 409 with instructions to reload before retrying. Missing records
-and concurrent disappearance return 404. Existing legacy rows are not rewritten;
-invalid stored date pairs must be corrected before a PATCH can succeed.
+POST allows PRE_REGISTRATION (default) or REGISTRATION_OPEN. Opening requires
+venue, city, country and organizerEmail, plus classification of any retained
+description. Missing prerequisites produce field issues. The same rule protects
+the resulting setup while open. Image/description/limits/scoring are optional.
+PRE_REGISTRATION still permits applications under ADR-003; this is not a second
+application-window model. Null cutoff remains a valid explicit policy.
 
-List/detail/create/update use one explicit DTO: `id`, `name`, `startsAt`,
-`endsAt`, `timeZone`, nullable `registrationDeadline`, `stage`, `createdAt`, nullable `venue`, `country`, `city`,
-`description`, `maxStudios`, `maxPerformances`, and `imageUrl`.
-Dates serialize as ISO UTC strings. DTOs omit `imagePath`, relations and the
-nonexistent `updatedAt`; the detail screen no longer renders that timestamp.
-Backend serialization and frontend responses validate shared schemas. Migration 30 adds timezone/deadline and registration history/retry fields without
-rewriting instants. Migration 31 adds `revision` (initially 1), nullable
-`organizerEmail`, `organizerPhone`, and JSON `authoredDescription`. POST/PATCH
-validate contact details and the shared ADR-019 sourceLocale/sourceText/translations
-contract. Existing `description` is retained verbatim with unspecified language;
-the editor requires an explicit source-language choice before converting it.
-Only the source text is required; translations may be cleared. Names and addresses
-are never automatically translated. All event DTOs include these four new fields.
+PATCH requires positive expectedRevision and at least one mutable field. A stage
+write also supplies expectedStage. M2 permits PRE_REGISTRATION → REGISTRATION_OPEN
+→ DATA_REVIEW, or CANCELLED from those stages. Backward/skipped/live/final targets
+are refused. Existing terminal records remain readable. Writes use serializable
+transactions and immutable audit. The immediate matching retry at revision N+1
+returns the saved state without incrementing/auditing again; other stale writes
+conflict. A conditional-write/serialization race returns 409; an initially missing
+record returns 404. Read and compare before rebasing local edits.
 
-PATCH may supply `expectedRevision`; mismatch returns 409. Every configuration or
-image write increments the event revision. The organizer editor always sends it,
-retains input on conflict/uncertain responses, and requires an authoritative read
-and comparison before another write. Creation has no idempotency key: an uncertain
-response blocks another create and directs the organizer to inspect the event list.
+POST may supply UUID operationId. It is privately bound to the normalized request
+and actor; matching retries return the same event, changed requests/actors conflict.
+Concurrent first requests may yield 409; retry the same operation without changing
+its payload. Without operationId, reconcile before retrying an uncertain creation.
+The first-party UI retains the operation/request and never silently replays writes.
 
-The editor uses event-local wall times, rejects DST gaps, and exposes both UTC
-instants for an explicit choice during folds. Changing timezone reinterprets the
-entered wall times; stored instants are not inferred by the API. Event list/detail
-dates display the event timezone. Opening registration confirms the stage change;
-only existing ADR-003 transitions/date prerequisites are enforced. Contact, venue,
-description and image checklist omissions are actionable recommendations, not new
-publication requirements. Scoring is not a registration prerequisite.
+All event responses validate the shared strict EventSchema: id, name, startsAt,
+endsAt, timeZone, registrationDeadline, stage, createdAt, venue, country, city,
+description (AuthoredContent or null), unclassifiedDescription (text or null),
+organizerEmail, organizerPhone, revision, maxStudios, maxPerformances and imageUrl.
+Dates serialize as ISO UTC. Private image paths, source storage columns, creator/
+request digests, operation IDs and relations are omitted. Unknown mutation fields,
+IDs, audit timestamps, image URLs and private paths are rejected. Image changes
+remain on the separate [image route](images.md), accepting JPEG/PNG/WebP up to
+10 MB and returning authenticated canonical WebP retrieval URLs.
+
+Migration 31 and [ADR-020](../adr/020-organizer-event-setup.md) own new persistence,
+readiness, concurrency and rollout/rollback implications. Apply the additive
+migration before coordinating API/client rollout; do not mix old/new writers.
+The organizer workspace is /admin; setup is /admin/events/:eventId/setup, with
+/events/:id/edit retained. Creation and setup expose event-zone input, explicit
+cutoff/no-cutoff choice, DST gap/fold handling, contact/details, optional image and
+source-language editors, three-language fallback previews, linked readiness and
+confirmed M2 transitions. Dashboard prioritizes incomplete setup. Authenticated
+list/detail expose saved event facts and truthful application-window availability;
+apply/resume routes remain P5-APPLICATION and review queues remain P4-REVIEW.
+The minute-based editor retains exact stored seconds/milliseconds on unchanged
+time fields, including an existing DST fold offset. Changing the time or choosing
+another offset resolves a new instant at the editor's minute precision.

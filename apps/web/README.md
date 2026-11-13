@@ -2,9 +2,7 @@
 
 React 19 / Vite 8 / Tailwind 4 / React Router 7. Root
 [setup](../../README.md#local-setup) starts API and web together. API reads remain
-authenticated. The admin workspace owns event setup and application review;
-the representative section opens owned applications. Judge/moderator dashboards
-remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
+authenticated; the organizer setup dashboard is delivered; other role dashboards remain placeholders. [Current checkpoint](../../DEVELOPMENT_PLAN.md).
 
 For frontend-only development from the root: pnpm --filter web dev (port 5173).
 [Test commands and scope](../../docs/TESTING.md) own build/typecheck/lint, Node/static
@@ -31,21 +29,37 @@ every operation. Read only the relevant screen/flow sections before feature work
 their targets do not mean the corresponding route/API already exists.
 Do not add a UI/state library without a concrete need.
 
-Organizer routes: `/admin`, `/events/new`, `/events/:id/edit`,
-`/admin/events/:eventId/setup`, `/admin/events/:eventId/applications`.
-Setup covers event-local dates, explicit DST choices, contact, description source
-language/translations/previews and protected image upload. Review uses URL filters
-and studio selection, independent revisioned decisions, minimal history and
-truthful notification states. Neither screen retries an uncertain decision blindly.
-See [organizer validation](../../docs/ORGANIZER_VALIDATION.md) for automated/browser
-evidence and the completed local database/runtime handoff.
+## P4-CORE event setup
 
-Applicant routes: role-independent `/applications`, `/events/:id/register`,
-`/events/:id/studio` and canonical `/studios/:studioId`. They continue an exact
-verified owner draft, keep the creation operation/payload through uncertain
-responses, and show independent approvals plus permitted revisioned profile/contact,
-cancel/reapply actions. Event discovery remains authenticated. No private form
-data or operation payload is written to browser storage; mounted input survives
-language changes and same-account session recovery. Reload/closing warns about
-unsaved work; saved onboarding and owned application status are the durable recovery
-paths. [Application validation](../../docs/APPLICATION_VALIDATION.md).
+Organizer setup is mounted at /admin/events/:eventId/setup, retaining
+/events/:id/edit. /admin prioritizes incomplete event setup. Creation explicitly
+selects an IANA timezone and cutoff/no-cutoff policy; local times reject DST gaps
+and require offset choice for folds. Editors cover contact/location, authored
+source-language description/translations/fallback preview, optional limits and
+separately saved private images. Readiness links missing fields and M2 lifecycle
+changes require confirmation. Setup PATCH sends expectedRevision; stale/unknown
+outcomes retain input and require an explicit same-request retry or server
+comparison. Creation retains its UUID operationId across uncertain responses.
+See [event contract](../../docs/api/events.md) and
+[design baseline](../../DESIGN.md).
+
+## M2 review and applications
+
+The read-only organizer performance register is at
+`/admin/events/:eventId/performances?studio=:studioId`, linked from event details.
+It shows saved performance titles, explicit studio applications and participant
+counts, including zero. URL filters, error/retry, loading/empty states and session
+recovery use Cobalt and ET/EN/RU. Entry editing/configuration/submission retain
+their M3 gates. [Ownership evidence](../../docs/PERFORMANCE_OWNERSHIP_VALIDATION.md).
+
+Global admins review independent decisions at /admin/events/:eventId/applications;
+dashboard counts link into each pending queue. All verified members can use
+/applications and /events/:id/register or /events/:id/studio?studio=:studioId
+without a representative role. The short form consumes a verified onboarding
+draft atomically when supplied. Status shows both approvals, reason, next actor,
+cutoff/contact, history and truthful mail state. Profile/self-contact edits,
+confirmed pending cancellation and same-studio reapply retain revisions/history.
+Frozen commands survive uncertain responses/session recovery; explicit server
+comparison preserves local input until replacement. Private form data stays in
+mounted state. [Contracts/evidence](../../docs/APPLICATION_REVIEW_VALIDATION.md)
+record limits; entry/billing-editor extensions and external release gates remain.

@@ -48,17 +48,20 @@ from profile corrections. Current admin profile override is retained explicitly.
 
 [ADR-019](adr/019-m2-authored-content.md) governs source language and authored
 translation fallback. M2 review reasons use translated semantic codes. Event
-content storage/editors now implement that contract in P4; future
-rubric/announcement content remains outside this scope.
+event content migration/editors are delivered in P4-CORE under ADR-020; future rubric/announcement content is not
+implemented by these contracts.
 
-## Delivered applicant journey and remaining work
+## Delivered local journey and remaining work
 
-- Role-independent `/applications`, `/events/:id/register`, `/events/:id/studio`
-  and canonical `/studios/:studioId` now provide verified draft continuation,
-  separate approval rows, next actor/contact, permitted profile/contact edits,
-  retained pending cancellation/reapplication and uncertain-response recovery.
-  `/representative` opens the application home. The admin workspace provides
-  setup/review; judge/moderator, entry/music and live/results work remains gated.
+- P4-REVIEW/P5-APPLICATION mount organizer review at
+  `/admin/events/:eventId/applications`, role-independent `/applications`, and
+  `/events/:id/register` / `/events/:id/studio?studio=:studioId`. They show both
+  approval states, semantic reasons, next actor/contact, event-zone cutoff,
+  verified draft continuation and permitted profile/contact/cancel/reapply paths.
+  Pending profile edits and review decisions use revision receipts. Frozen
+  commands, explicit server comparison and session recovery preserve mounted work.
+  [Evidence](APPLICATION_REVIEW_VALIDATION.md) separates synthetic browser/database
+  checks from external release gates. Entry dashboards remain placeholders.
 - Delivered auth pages cover studio signup, owner draft recovery, verification,
   resend/correction/reset and cookie-session recovery. Transactional encrypted
   provider dispatch is implemented; real inbox/hosted release evidence stays open.
@@ -68,12 +71,13 @@ rubric/announcement content remains outside this scope.
   Judge/Score history. Additional studio members remain P5-MEMBERS.
 - Durable entry drafts/receipts, music and scoped corrections remain future work.
 
-Organizer setup/review now has implementation, isolated validation and a completed
-development database/runtime handoff as recorded in
-[organizer validation](ORGANIZER_VALIDATION.md). Applicant evidence is recorded in
-[application validation](APPLICATION_VALIDATION.md).
-If the registration design needs authored content fields, settle their content
-policy before implementing those fields. Use test fakes/isolated databases while
+P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
+intent commits with each changed decision under ADR-021; fake mode never claims
+sent mail and provider acceptance never claims inbox delivery. The next feature
+task is P3-HISTORY, with P3-CALENDAR-DATES before dependent M3 entry editing.
+P3-PERFORMANCE-OWNER/CONSTRAINTS and the read-only organizer register are locally
+implemented under [ADR-022](adr/022-performance-ownership-and-constraints.md).
+ADR-019 content policy is accepted and ADR-020 implements event content storage/editors. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and
 delivered-scope human review remain mandatory before M2/M4 external release.
 Neither requires scoring/scheduling. Dependencies: [checkpoint](../DEVELOPMENT_PLAN.md).

@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { isDeepStrictEqual } from "node:util";
 import { Prisma } from "@prisma/client";
 import {
   UpdateStudioBodySchema, UpdateRepresentativeBodySchema, UpdateStudioApprovalBodySchema,
@@ -8,14 +9,14 @@ import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } fro
 import { isActionAllowed } from "../utils/stageChecks";
 import { BaseController } from "./BaseController";
 import { assertApplicationWindow, reconcileRepresentativeAccess, registrationTransaction } from "../services/registrationPolicy";
-import { notifyReview } from "../services/reviewNotifications";
 import { appendAudit } from "../services/audit";
+import { queueReviewNotice } from "../services/reviewNotifications";
 
 const representativeSelect = {
   id: true, studioId: true, userId: true, name: true, email: true, active: true, createdAt: true,
 } satisfies Prisma.StudioRepresentativeSelect;
 const studioSelect = {
-  id: true, eventId: true, name: true, approvalStatus: true, country: true, city: true,
+  id: true, eventId: true, name: true, approvalStatus: true, approvalReason: true, country: true, city: true,
   directorName: true, directorPhone: true, invoiceDetails: true, logoUrl: true,
   representatives: { where: { active: true }, select: representativeSelect, orderBy: { id: "asc" } },
   registrations: { select: {
@@ -32,7 +33,7 @@ function serializeRepresentative(rep: RepresentativeRecord) {
 }
 function serialize(studio: StudioRecord) {
   const result = StudioSchema.safeParse({
-    id: studio.id, eventId: studio.eventId, name: studio.name, approvalStatus: studio.approvalStatus,
+    id: studio.id, eventId: studio.eventId, name: studio.name, approvalStatus: studio.approvalStatus, approvalReason: studio.approvalReason,
     country: studio.country, city: studio.city, directorName: studio.directorName,
     directorPhone: studio.directorPhone, invoiceDetails: studio.invoiceDetails, logoUrl: studio.logoUrl,
     representatives: studio.representatives.map(serializeRepresentative),
@@ -45,11 +46,6 @@ function serialize(studio: StudioRecord) {
 }
 
 export class StudiosController extends BaseController {
-  static async readForReview(tx: Prisma.TransactionClient, studioId: string, eventId: string) {
-    const studio = await tx.studio.findFirst({ where: { id: studioId, eventId, deletedAt: null }, select: studioSelect });
-    if (!studio) throw new NotFoundError("Studio");
-    return serialize(studio);
-  }
   private async transaction<T>(work: (db: Prisma.TransactionClient) => Promise<T>): Promise<T> {
     try { return await registrationTransaction(this.prisma, work); }
     catch (error) {
@@ -104,8 +100,10 @@ export class StudiosController extends BaseController {
     const body = UpdateStudioBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const studio = await this.requireAccess(req, db, studioId, true, true);
-      const registration = studio.registrations.find(r => r.eventId === studio.eventId);
-      if (body.revision !== undefined && registration?.revision !== body.revision) {
+      const receipt = studio.registrations.find(r => r.eventId === studio.eventId);
+      if (body.expectedRevision !== undefined && receipt?.revision !== body.expectedRevision) {
+        const matches = Object.entries(body).every(([key, value]) => key === "expectedRevision" || value === undefined || isDeepStrictEqual(Reflect.get(studio, key), value));
+        if (receipt?.revision === body.expectedRevision + 1 && matches) return serialize(studio);
         throw new ConflictError("Reload application", undefined, "concurrentChange");
       }
       const name = body.name ?? studio.name;
@@ -116,16 +114,16 @@ export class StudiosController extends BaseController {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
       }
       const pending = studio.registrations.find(r => r.eventId === studio.eventId && r.status === "PENDING");
-      const versioned = pending ?? (body.revision !== undefined ? registration : undefined);
-      if (versioned) {
-        const changed = await db.studioEventRegistration.updateMany({ where: { id: versioned.id, revision: versioned.revision }, data: { revision: { increment: 1 } } });
+      const editingReceipt = pending ?? (body.expectedRevision !== undefined ? receipt : undefined);
+      if (editingReceipt) {
+        const changed = await db.studioEventRegistration.updateMany({ where: { id: editingReceipt.id, revision: editingReceipt.revision }, data: { revision: { increment: 1 } } });
         if (changed.count !== 1) throw new ConflictError("Reload application", undefined, "concurrentChange");
-        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: versioned.id, eventId: studio.eventId, studioId, metadata: { revision: versioned.revision + 1 } });
+        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: editingReceipt.id, eventId: studio.eventId, studioId, metadata: { revision: editingReceipt.revision + 1 } });
       }
       const updated = await db.studio.update({
         where: { id: studioId, deletedAt: null },
         data: {
-          ...(pending && { approvalStatus: "PENDING" }),
+          ...(pending && { approvalStatus: "PENDING", approvalReason: null }),
           ...(body.name !== undefined && { name: body.name }),
           ...(body.country !== undefined && { country: body.country }),
           ...(body.city !== undefined && { city: body.city }),
@@ -156,19 +154,20 @@ export class StudiosController extends BaseController {
     const { studioId, representativeId } = StudioIdRepIdParamsSchema.parse(req.params);
     const body = UpdateRepresentativeBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
-      const studio = await this.requireAccess(req, db, studioId, true);
-      const registration = studio.registrations.find(r => r.eventId === studio.eventId);
-      if (body.revision !== undefined && registration?.revision !== body.revision) {
-        throw new ConflictError("Reload application", undefined, "concurrentChange");
-      }
+      const studio = await this.requireAccess(req, db, studioId, true, true);
       const rep = await db.studioRepresentative.findFirst({
         where: { id: representativeId, studioId, active: true }, select: representativeSelect,
       });
       if (!rep) throw new NotFoundError("Representative", representativeId);
       if (!this.isAdmin(req) && rep.userId !== this.getUserId(req)) throw new ForbiddenError();
-      if (body.revision !== undefined && registration) {
-        await db.studioEventRegistration.update({ where: { id: registration.id, revision: body.revision }, data: { revision: { increment: 1 } } });
-        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: registration.id, eventId: studio.eventId, studioId, metadata: { revision: body.revision + 1 } });
+      const receipt = studio.registrations.find(r => r.eventId === studio.eventId);
+      if (body.expectedRevision !== undefined && receipt?.revision !== body.expectedRevision) {
+        if (receipt?.revision === body.expectedRevision + 1 && (body.name === undefined || body.name === rep.name) && (body.email === undefined || body.email === rep.email)) return serializeRepresentative(rep);
+        throw new ConflictError("Reload application", undefined, "concurrentChange");
+      }
+      if (receipt && body.expectedRevision !== undefined) {
+        await db.studioEventRegistration.update({ where: { id: receipt.id, revision: body.expectedRevision }, data: { revision: { increment: 1 } } });
+        await appendAudit(db, { action: "REGISTRATION_CORRECTED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "REGISTRATION", targetId: receipt.id, eventId: studio.eventId, studioId, metadata: { revision: receipt.revision + 1 } });
       }
       return serializeRepresentative(await db.studioRepresentative.update({
         where: { id: representativeId, studioId, active: true }, data: {
@@ -186,18 +185,20 @@ export class StudiosController extends BaseController {
     const body = UpdateStudioApprovalBodySchema.parse(req.body);
     const result = await this.transaction(async (db) => {
       const current = await this.requireAccess(req, db, studioId);
-      if (current.eventId !== body.eventId) throw new NotFoundError("Studio");
-      const registration = current.registrations.find(r => r.eventId === body.eventId);
+      const registration = current.registrations.find(row => row.eventId === current.eventId);
       if (!registration) throw new NotFoundError("Registration");
-      if (current.approvalStatus === body.status && (body.revision === registration.revision || body.revision === registration.revision - 1)) return serialize(current);
-      if (body.revision !== registration.revision) throw new ConflictError("Reload review", undefined, "concurrentChange");
-      await db.studioEventRegistration.update({ where: { id: registration.id, revision: body.revision }, data: { revision: { increment: 1 } } });
+      const reason = body.status === "REJECTED" ? body.reason ?? "CONTACT_ORGANIZER" : null;
+      if (current.approvalStatus === body.status && current.approvalReason === reason
+        && (body.revision === registration.revision || body.revision === registration.revision - 1)) return serialize(current);
+      if (body.revision !== registration.revision) throw new ConflictError("Reload application", undefined, "concurrentChange");
+      const receipt = await db.studioEventRegistration.update({ where: { id: registration.id, revision: body.revision },
+        data: { revision: { increment: 1 } } });
       const updated = await db.studio.update({
-        where: { id: studioId, deletedAt: null }, data: { approvalStatus: body.status }, select: studioSelect,
+        where: { id: studioId, deletedAt: null }, data: { approvalStatus: body.status, approvalReason: reason }, select: studioSelect,
       });
       await reconcileRepresentativeAccess(db, current.eventId, current.representatives.map(r => r.userId), this.getUserId(req));
-      await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status, revision: registration.revision + 1 } });
-      await notifyReview(db, registration.id, "ORGANIZATION", body.status, registration.revision + 1);
+      await appendAudit(db, { action: "STUDIO_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) }, targetType: "STUDIO", targetId: studioId, eventId: current.eventId, studioId, metadata: { fromStatus: current.approvalStatus, toStatus: body.status, revision: receipt.revision, reasonCode: reason } });
+      await queueReviewNotice(db, receipt, "ORGANIZATION");
       return serialize(updated);
     });
     res.json(result);

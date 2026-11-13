@@ -47,43 +47,65 @@ enum OnboardingStatus {
 }
 
 model EmailDelivery {
-  reviewNotifications ReviewNotification[]
-  id                  String               @id
-  ciphertext          String?
-  bindingDigest       String?
-  purpose             String?
-  state               String               @default("PENDING")
-  attempts            Int                  @default(0)
-  nextAttemptAt       DateTime             @default(now())
-  expiresAt           DateTime
-  createdAt           DateTime             @default(now())
-  acceptedAt          DateTime?
-  providerId          String?
+  id                String        @id
+  ciphertext        String?
+  bindingDigest     String?
+  purpose           String?
+  state             String        @default("PENDING")
+  attempts          Int           @default(0)
+  nextAttemptAt     DateTime      @default(now())
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  acceptedAt        DateTime?
+  providerId        String?
+  reviewNoticeId    String?
+  reviewNotice      ReviewNotice? @relation(fields: [reviewNoticeId], references: [id], onDelete: Restrict)
+  reviewRecipientId String?
+  reviewRecipient   User?         @relation(fields: [reviewRecipientId], references: [id], onDelete: Restrict)
+  supersededAt      DateTime?
 
   @@index([state, nextAttemptAt])
+  @@index([reviewNoticeId])
+  @@index([reviewRecipientId])
+}
+
+model ReviewNotice {
+  id             String                  @id @default(uuid())
+  registrationId String
+  revision       Int
+  axis           String
+  mode           String
+  createdAt      DateTime                @default(now())
+  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
+  deliveries     EmailDelivery[]
+
+  @@unique([registrationId, revision, axis])
 }
 
 model Event {
-  revision             Int        @default(1)
-  organizerEmail       String?
-  organizerPhone       String?
-  authoredDescription  Json?
-  id                   String     @id @default(cuid())
-  name                 String
-  startsAt             DateTime
-  endsAt               DateTime
-  stage                EventStage @default(PRE_REGISTRATION)
-  timeZone             String     @default("UTC")
-  registrationDeadline DateTime?
-  createdAt            DateTime   @default(now())
-  venue                String?
-  country              String?
-  city                 String?
-  description          String?
-  maxStudios           Int?
-  maxPerformances      Int?
-  imageUrl             String?
-  imagePath            String?
+  id                      String     @id @default(cuid())
+  name                    String
+  startsAt                DateTime
+  endsAt                  DateTime
+  stage                   EventStage @default(PRE_REGISTRATION)
+  timeZone                String     @default("UTC")
+  registrationDeadline    DateTime?
+  createdAt               DateTime   @default(now())
+  venue                   String?
+  country                 String?
+  city                    String?
+  description             String?
+  descriptionSourceLocale String?
+  descriptionTranslations Json       @default("{}")
+  organizerEmail          String?
+  organizerPhone          String?
+  revision                Int        @default(1)
+  creationOperationId     String?    @unique
+  creationDigest          String?
+  maxStudios              Int?
+  maxPerformances         Int?
+  imageUrl                String?
+  imagePath               String?
 
   ageGroups           AgeGroup[]
   categories          DanceCategory[]
@@ -106,6 +128,7 @@ model DanceCategory {
   performances Performance[]
 
   @@unique([eventId, name])
+  @@unique([id, eventId])
 }
 
 model AgeGroup {
@@ -116,6 +139,8 @@ model AgeGroup {
   maxAge       Int?
   event        Event         @relation(fields: [eventId], references: [id])
   performances Performance[]
+
+  @@unique([id, eventId])
 }
 
 model DanceFormat {
@@ -127,6 +152,8 @@ model DanceFormat {
   maxDurationSeconds Int
   event              Event         @relation(fields: [eventId], references: [id])
   performances       Performance[]
+
+  @@unique([id, eventId])
 }
 
 model Studio {
@@ -134,6 +161,7 @@ model Studio {
   eventId        String
   name           String
   approvalStatus StudioApprovalStatus @default(PENDING)
+  approvalReason String?
   country        String?
   city           String?
   directorName   String?
@@ -149,6 +177,7 @@ model Studio {
   representatives StudioRepresentative[]
   registrations   StudioEventRegistration[]
   invitations     Invitation[]
+  performances    Performance[]
 
   @@unique([id, eventId])
 }
@@ -170,7 +199,6 @@ model StudioRepresentative {
 }
 
 model StudioEventRegistration {
-  notifications       ReviewNotification[]
   id                  String                  @id @default(cuid())
   studioId            String
   eventId             String
@@ -187,24 +215,11 @@ model StudioEventRegistration {
   studio Studio @relation(fields: [studioId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
 
+  reviewNotices ReviewNotice[]
+  performances  Performance[]
+
   @@unique([studioId, eventId])
-}
-
-model ReviewNotification {
-  id             String                  @id @default(cuid())
-  registrationId String
-  recipientId    String
-  kind           String
-  status         String
-  reason         String?
-  revision       Int
-  deliveryId     String?
-  createdAt      DateTime                @default(now())
-  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict)
-  delivery       EmailDelivery?          @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
-
-  @@unique([registrationId, kind, revision, recipientId])
-  @@index([registrationId, createdAt])
+  @@unique([id, studioId, eventId])
 }
 
 model Dancer {
@@ -212,43 +227,71 @@ model Dancer {
   studioId                String
   firstName               String
   lastName                String
-  birthDate               DateTime
+  birthDate               DateTime                 @db.Date
   photoUrl                String?
   photoPath               String?
   deletedAt               DateTime?
   deletedBy               String?
   studio                  Studio                   @relation(fields: [studioId], references: [id])
   performanceParticipants PerformanceParticipant[]
+
+  @@unique([id, studioId])
 }
 
 model Performance {
-  id           String    @id @default(cuid())
-  eventId      String
-  categoryId   String
-  ageGroupId   String
-  formatId     String
-  title        String
-  durationSec  Int
-  orderOnStage Int
-  deletedAt    DateTime?
-  deletedBy    String?
+  id             String    @id @default(cuid())
+  eventId        String
+  studioId       String
+  registrationId String
+  categoryId     String?
+  ageGroupId     String?
+  formatId       String?
+  title          String?
+  durationSec    Int?
+  orderOnStage   Int?
+  deletedAt      DateTime?
+  deletedBy      String?
+  revision       Int       @default(1)
 
-  ageGroup     AgeGroup                 @relation(fields: [ageGroupId], references: [id])
-  category     DanceCategory            @relation(fields: [categoryId], references: [id])
+  creationOperationId String? @unique @db.Uuid
+  creationDigest      String?
+
+  studio       Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  registration StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  ageGroup     AgeGroup?                @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  category     DanceCategory?           @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   event        Event                    @relation(fields: [eventId], references: [id])
-  format       DanceFormat              @relation(fields: [formatId], references: [id])
+  format       DanceFormat?             @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
   participants PerformanceParticipant[]
   scores       Score[]
+  revisions    PerformanceRevision[]
 
   @@unique([eventId, orderOnStage])
+  @@unique([id, studioId])
+}
+
+model PerformanceRevision {
+  id            String      @id @default(uuid())
+  performanceId String
+  revision      Int
+  origin        String
+  actorId       String?
+  capturedAt    DateTime    @default(now())
+  snapshot      Json
+  performance   Performance @relation(fields: [performanceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor         User?       @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([performanceId, revision])
+  @@index([actorId])
 }
 
 model PerformanceParticipant {
   performanceId String
   dancerId      String
+  studioId      String
 
-  dancer      Dancer      @relation(fields: [dancerId], references: [id])
-  performance Performance @relation(fields: [performanceId], references: [id])
+  dancer      Dancer      @relation(fields: [dancerId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
+  performance Performance @relation(fields: [performanceId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([performanceId, dancerId])
 }
@@ -302,6 +345,8 @@ model User {
   judges                Judge[]
   accountTokens         AccountToken[]
   auditActions          AuditLog[]             @relation("AuditActor")
+  performanceRevisions  PerformanceRevision[]
+  reviewDeliveries      EmailDelivery[]
   preferredLocale       RecipientLocale?
   onboardingDraft       OnboardingDraft?
 }

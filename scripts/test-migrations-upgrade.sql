@@ -1,7 +1,9 @@
 DO $$
 BEGIN
-    IF EXISTS (SELECT FROM "Event" WHERE revision <> 1 OR "organizerEmail" IS NOT NULL OR "organizerPhone" IS NOT NULL OR "authoredDescription" IS NOT NULL) THEN
-        RAISE EXCEPTION 'Organizer migration inferred authored language/contact or changed event revision defaults';
+    IF NOT EXISTS (SELECT FROM "Performance" WHERE id = 'performance' AND "studioId" = 'studio' AND "registrationId" = 'registration' AND "eventId" = 'event' AND title = 'Fixture' AND "durationSec" = 60 AND "orderOnStage" = 1)
+       OR NOT EXISTS (SELECT FROM "PerformanceParticipant" WHERE "performanceId" = 'performance' AND "dancerId" = 'dancer' AND "studioId" = 'studio')
+       OR NOT EXISTS (SELECT FROM "Score" WHERE id = 'ownership-score' AND "performanceId" = 'performance' AND "judgeId" = 'ownership-judge' AND criterion = 'Fixture' AND value = 5) THEN
+        RAISE EXCEPTION 'Ownership migration lost identity, participants or scores';
     END IF;
     IF EXISTS (SELECT FROM "Event" WHERE "timeZone" <> 'UTC' OR "registrationDeadline" IS NOT NULL) THEN
         RAISE EXCEPTION 'Registration migration changed existing event time interpretation';

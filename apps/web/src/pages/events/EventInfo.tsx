@@ -1,39 +1,95 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { resolveAuthoredContent, type Event } from "@dance/schemas";
+import type { Event } from "@dance/schemas";
 import { getEvent } from "../../api/events";
 import { toUiError, type UiError } from "../../api/error";
-import { RoleGate } from "../../auth";
 import { useTranslation } from "../../i18n/useTranslation";
+import { RoleGate } from "../../auth";
 import { Button, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
-import { useStageBadges } from "../../features/events/hooks/useStageBadges";
-import { EventImage } from "./EventImage";
-import { EventContext } from "../applications/shared";
-import { EventApplicationAction } from "../applications/EventApplicationAction";
-import { useOwnedApplications } from "../applications/useOwnedApplications";
+import { EventSnapshot } from "./EventSnapshot";
+import { PrivateEventImage } from "./EventImage";
+import "./event-setup.css";
 
 export default function EventInfo() {
-  const { id = "" } = useParams(); const { t, locale } = useTranslation();
-  const [event, setEvent] = useState<Event | null>(null); const [error, setError] = useState<UiError | null>(null); const [attempt, setAttempt] = useState(0);
-  const applications = useOwnedApplications(); const stages = useStageBadges(locale);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const { t } = useTranslation();
+  const { id } = useParams<{ id: string }>();
+  const [data, setData] = useState<Event | null>(null);
+  const [error, setError] = useState<UiError | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let active = true;
-    void getEvent(id).then(value => { if (active) { setEvent(value); setError(null); } }).catch((e: unknown) => { if (active) setError(toUiError(e)); });
+    if (id) {
+      void getEvent(id)
+        .then(result => { if (active) setData(result); })
+        .catch((err: unknown) => { if (active) setError(toUiError(err)); })
+        .finally(() => { if (active) setLoading(false); });
+    }
     return () => { active = false; };
   }, [id, attempt]);
-  const content = event?.authoredDescription ? resolveAuthoredContent(event.authoredDescription, locale) : null;
-  return <section className="application"><Link to="/events">{t("Events.backToList")}</Link>
-    {error ? <><h1>{t(error.reason === "recordNotFound" ? "Shell.notFound" : error.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable")}</h1><ErrorSummary error={error} title={t("Shell.unavailable")} /><Button onClick={() => setAttempt(value => value + 1)}>{t("Shell.retry")}</Button></> : !event ? <LoadingState label={t("Events.loading")} /> : <>
-      <h1>{event.name}</h1><p>{stages[event.stage].label}</p>
-      <div className="ui-actions"><EventApplicationAction event={event} {...applications} /></div>
-      <div className="application-grid"><div><EventImage id={event.id} url={event.imageUrl} /></div><div>
-        {content ? <>{content.fallback && <p>{t("Registration.contentFallback")}</p>}<p lang={content.lang}>{content.text}</p></> : <p>{event.description}</p>}
-        <EventContext event={event} />
-        <p>{t("Events.endsAt")}: <time dateTime={event.endsAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: event.timeZone }).format(new Date(event.endsAt))}</time></p>
-        <dl><dt>{t("Events.venue")}</dt><dd>{event.venue}</dd><dt>{t("Common.city")}</dt><dd>{event.city}</dd><dt>{t("Common.country")}</dt><dd>{event.country}</dd></dl>
-      </div></div>
-      <details><summary>{t("Events.details")}</summary><dl><dt>{t("Common.eventId")}</dt><dd>{event.id}</dd><dt>{t("Events.createdAt")}</dt><dd><time dateTime={event.createdAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: event.timeZone }).format(new Date(event.createdAt))}</time></dd></dl></details>
-      <RoleGate adminOnly><div className="ui-actions"><Link className="ui-button ui-button-secondary" to={`/events/${encodeURIComponent(event.id)}/edit`}>{t("Events.editButton")}</Link><Link className="ui-button ui-button-secondary" to={`/admin/events/${encodeURIComponent(event.id)}/staff`}>{t("Staff.title")}</Link><Link className="ui-button ui-button-secondary" to={`/admin/events/${encodeURIComponent(event.id)}/applications`}>{t("Organizer.review")}</Link></div></RoleGate>
-    </>}
-  </section>;
+
+  const open = data && ["PRE_REGISTRATION", "REGISTRATION_OPEN"].includes(data.stage) && (!data.registrationDeadline || now < Date.parse(data.registrationDeadline));
+
+  return (
+    <div className="event-workbench">
+      <Link to="/events">{t("Events.backToList")}</Link>
+      {loading ? (
+        <LoadingState label={t("Access.loading")} />
+      ) : error ? (
+        <section className="event-load-error">
+          <h1>{t(error.reason === "recordNotFound" ? "Shell.notFound" : error.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable")}</h1>
+          <ErrorSummary error={error} title={t("Events.loadError")} />
+          <Button onClick={() => {
+            setLoading(true);
+            setError(null);
+            setAttempt(value => value + 1);
+          }}>{t("Shell.retry")}</Button>
+        </section>
+      ) : data && (
+        <>
+          <header className="event-masthead">
+            <div>
+              <h1>{data.name}</h1>
+              <p className="ui-help">{t("Setup.authenticated")}</p>
+              <p className="event-status">{t(open ? "Setup.windowOpen" : "Setup.windowClosed")}</p>
+              <Link to={`/events/${encodeURIComponent(data.id)}/register`}>{t("Application.open")}</Link>
+            </div>
+            <RoleGate adminOnly>
+              <div className="event-heading-actions">
+                <Link className="ui-button ui-button-primary" to={`/admin/events/${encodeURIComponent(data.id)}/setup`}>
+                  {t("Setup.title")}
+                </Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/staff`}>{t("Staff.title")}</Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/applications`}>{t("Application.review")}</Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/performances`}>{t("Performance.title")}</Link>
+              </div>
+            </RoleGate>
+          </header>
+          <div className={`event-detail-layout${data.imageUrl ? " event-detail-layout--with-media" : ""}`}>
+            <div className="event-detail-data">
+              <EventSnapshot event={data} allLanguages={false} />
+            </div>
+            {data.imageUrl && (
+              <section className="event-detail-media">
+                <h2>{t("Common.eventPhoto")}</h2>
+                <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
+              </section>
+            )}
+          </div>
+          {!data.imageUrl && (
+            <section className="event-detail-media event-detail-media--empty">
+              <h2>{t("Common.eventPhoto")}</h2>
+              <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  );
 }

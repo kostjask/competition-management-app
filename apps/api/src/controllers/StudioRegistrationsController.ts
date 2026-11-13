@@ -1,21 +1,22 @@
 ﻿import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { CreateStudioRegistrationBodySchema, UpdateStudioRegistrationBodySchema, StudioRegistrationParamsSchema,
-  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema } from "@dance/schemas";
+  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema, IdSchema } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError, ValidationError } from "../errors";
 import { assertApplicationWindow, assertReviewWindow, registrationTransaction, reconcileRepresentativeAccess } from "../services/registrationPolicy";
-import { notifyReview } from "../services/reviewNotifications";
 import { appendAudit } from "../services/audit";
+import { queueReviewNotice, readApplicationReview, retryReviewNotice } from "../services/reviewNotifications";
 
-export const registrationSelect = {
+const registrationSelect = {
   id: true, studioId: true, eventId: true, status: true, revision: true, decisionReason: true,
   canEditDuringReview: true, createdAt: true, updatedAt: true,
-  studio: { select: { id: true, name: true, approvalStatus: true, country: true, city: true } },
+  studio: { select: { id: true, name: true, approvalStatus: true, approvalReason: true, country: true, city: true } },
 } satisfies Prisma.StudioEventRegistrationSelect;
 type RegistrationRecord = Prisma.StudioEventRegistrationGetPayload<{ select: typeof registrationSelect }>;
-export function serializeRegistration(row: RegistrationRecord) {
+function serialize(row: RegistrationRecord) {
   // Explicit projection also keeps private retry bindings out of DTOs.
   return StudioRegistrationSchema.parse({ id: row.id, studioId: row.studioId, eventId: row.eventId,
     nextActor: row.status === "LOCKED" ? "NONE" : ["CANCELLED", "REJECTED"].includes(row.status) || row.studio.approvalStatus === "REJECTED" ? "APPLICANT" : row.status === "PENDING" || row.studio.approvalStatus === "PENDING" ? "ORGANIZER" : "APPLICANT",
@@ -25,6 +26,14 @@ export function serializeRegistration(row: RegistrationRecord) {
 }
 
 export class StudioRegistrationsController extends BaseController {
+  async retryNotification(req: Request, res: Response): Promise<void> {
+    if (!this.isAdmin(req)) throw new ForbiddenError();
+    const { eventId, studioId, notificationId } = StudioRegistrationParamsSchema.extend({ notificationId: IdSchema }).parse(req.params);
+    z.strictObject({}).parse(req.body ?? {});
+    await registrationTransaction(this.prisma, tx => retryReviewNotice(tx, eventId, studioId, notificationId));
+    res.status(204).send();
+  }
+
   private async owner(req: Request, tx: Prisma.TransactionClient, studioId: string, eventId: string) {
     const studio = await tx.studio.findFirst({ where: { id: studioId, eventId, deletedAt: null },
       select: { representatives: { where: { active: true }, select: { userId: true } } } });
@@ -54,17 +63,15 @@ export class StudioRegistrationsController extends BaseController {
         if (existing) {
           if (existing.createdBy !== userId || existing.requestDigest !== digest) throw new ConflictError("Operation changed", undefined, "concurrentChange");
           await this.owner(req, tx, existing.studioId, eventId);
-          return serializeRegistration(existing);
+          return serialize(existing);
         }
       }
       assertApplicationWindow(event);
-      if (body.onboarding) {
-        // Bind draft completion to this verified owner, exact revision and selected event.
-        const completed = await tx.onboardingDraft.updateMany({ where: {
-          id: body.onboarding.draftId, userId, revision: body.onboarding.revision, status: "DRAFT",
-          OR: [{ intendedEventId: null }, { intendedEventId: eventId }],
-        }, data: { status: "COMPLETED", revision: { increment: 1 } } });
-        if (completed.count !== 1) throw new ConflictError("Reload onboarding draft", undefined, "concurrentChange");
+      if (body.onboardingRevision !== undefined) {
+        const draft = await tx.onboardingDraft.findUnique({ where: { userId } });
+        if (isAdmin || !draft || draft.status !== "DRAFT" || draft.revision !== body.onboardingRevision
+          || (draft.intendedEventId !== null && draft.intendedEventId !== eventId)) throw new ConflictError("Reload onboarding draft", undefined, "concurrentChange");
+        await tx.onboardingDraft.update({ where: { id: draft.id, revision: body.onboardingRevision, status: "DRAFT" }, data: { status: "COMPLETED", revision: { increment: 1 } } });
       }
       const studio = await tx.studio.create({ data: {
         eventId, name: body.name, country: body.country ?? null, city: body.city ?? null, directorName: body.directorName ?? null,
@@ -79,7 +86,7 @@ export class StudioRegistrationsController extends BaseController {
       if (!registration) throw new InternalServerError();
       await appendAudit(tx, { action: "REGISTRATION_CREATED", actor: { kind: "USER", userId },
         targetType: "REGISTRATION", targetId: registration.id, eventId, studioId: registration.studioId, metadata: { revision: registration.revision } });
-      return serializeRegistration(registration);
+      return serialize(registration);
     }).catch((error: unknown) => {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("Studio with this name already exists", undefined, "duplicateName");
@@ -95,7 +102,7 @@ export class StudioRegistrationsController extends BaseController {
     const rows = await this.prisma.studioEventRegistration.findMany({ where: { eventId, studio: { eventId, deletedAt: null,
       ...(!this.isAdmin(req) && { representatives: { some: { userId: this.getUserId(req), active: true } } }),
     } }, select: registrationSelect, orderBy: { studio: { name: "asc" } } });
-    res.json(rows.map(serializeRegistration));
+    res.json(rows.map(serialize));
   }
 
   async update(req: Request, res: Response): Promise<void> {
@@ -109,7 +116,7 @@ export class StudioRegistrationsController extends BaseController {
       const reason = body.status === "REJECTED" ? body.reason ?? "CONTACT_ORGANIZER" : null;
       const canEdit = body.canEditDuringReview ?? current.canEditDuringReview;
       if (current.status === body.status && current.decisionReason === reason && current.canEditDuringReview === canEdit
-        && (body.revision === current.revision || body.revision === current.revision - 1)) return serializeRegistration(current);
+        && (body.revision === current.revision || body.revision === current.revision - 1)) return serialize(current);
       if (body.revision !== current.revision) throw new ConflictError("Reload registration", undefined, "concurrentChange");
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true } });
       if (!event) throw new NotFoundError("Event");
@@ -120,8 +127,19 @@ export class StudioRegistrationsController extends BaseController {
       await reconcileRepresentativeAccess(tx, eventId, studio.representatives.map(r => r.userId), this.getUserId(req));
       await appendAudit(tx, { action: "REGISTRATION_APPROVAL_CHANGED", actor: { kind: "USER", userId: this.getUserId(req) },
         targetType: "REGISTRATION", targetId: current.id, eventId, studioId, metadata: { fromStatus: current.status, toStatus: body.status, revision: updated.revision, reasonCode: reason, reviewAllowed: canEdit } });
-      await notifyReview(tx, current.id, "EVENT", body.status, updated.revision, reason);
-      return serializeRegistration(updated);
+      await queueReviewNotice(tx, updated, "EVENT");
+      return serialize(updated);
+    });
+    res.json(result);
+  }
+
+  async review(req: Request, res: Response): Promise<void> {
+    const { studioId, eventId } = StudioRegistrationParamsSchema.parse(req.params);
+    const result = await registrationTransaction(this.prisma, async tx => {
+      await this.owner(req, tx, studioId, eventId);
+      const registration = await tx.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId, eventId } }, select: { id: true } });
+      if (!registration) throw new NotFoundError("Registration");
+      return readApplicationReview(tx, eventId, studioId, registration.id);
     });
     res.json(result);
   }
@@ -156,7 +174,7 @@ export class StudioRegistrationsController extends BaseController {
       await this.owner(req, tx, studioId, eventId);
       const current = await tx.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId, eventId } }, select: registrationSelect });
       if (!current) throw new NotFoundError("Registration");
-      if (current.status === "PENDING" && current.revision === revision + 1) return serializeRegistration(current);
+      if (current.status === "PENDING" && current.revision === revision + 1) return serialize(current);
       if (current.revision !== revision) throw new ConflictError("Reload registration", undefined, "concurrentChange");
       const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true, registrationDeadline: true } });
       if (!event) throw new NotFoundError("Event");
@@ -166,7 +184,7 @@ export class StudioRegistrationsController extends BaseController {
         data: { status: "PENDING", canEditDuringReview: false, decisionReason: null, revision: { increment: 1 } }, select: registrationSelect });
       await appendAudit(tx, { action: "REGISTRATION_REAPPLIED", actor: { kind: "USER", userId }, targetType: "REGISTRATION",
         targetId: current.id, eventId, studioId, metadata: { fromStatus: current.status, toStatus: "PENDING", revision: updated.revision } });
-      return serializeRegistration(updated);
+      return serialize(updated);
     });
     res.json(result);
   }

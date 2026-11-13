@@ -1,4 +1,45 @@
 {
-  "reason": "P4 native Field refactor retired the previous event-form identifier exceptions. Delivered application text is translated; fluent and assistive-technology review remains open.",
-  "entries": []
+  "reason": "Reviewed internal event form aria identifiers only. Delivered application text is translated; fluent and assistive-technology review remains open.",
+  "entries": [
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-name"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-name-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-stage"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-stage-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-startsAt"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-startsAt-error"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "expression",
+      "text": "event-endsAt"
+    },
+    {
+      "file": "apps/web/src/pages/events/EventForm.tsx",
+      "kind": "conditional",
+      "text": "event-endsAt-error"
+    }
+  ]
 }

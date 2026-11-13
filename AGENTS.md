@@ -55,6 +55,9 @@ existing source/Git edits must always be preserved. Operational details:
 
 ## Frontend
 
+- Current UI is a placeholder rejected by the user. UI design/redesign work must
+  use the hallmark skill and follow [the full-redesign direction](docs/DESIGN_SYSTEM.md#required-full-redesign);
+  existing styling and passed technical checks are not visual approval.
 - Align role keys/event scopes with backend; UI gates provide usability only.
   Use shared contracts and API helpers, no feature-level fetch.
 - Provide loading, empty, validation/server-error, success and disabled states;
@@ -67,6 +70,10 @@ existing source/Git edits must always be preserved. Operational details:
 - Add/update behavior tests where infrastructure exists; add a failing-before-fix
   regression when practical. Include denied/cross-event/cross-studio cases.
 - For prose/link-only edits run [documentation checks](docs/TESTING.md#documentation-only-changes).
+  During implementation, use the [fast development loop](docs/TESTING.md#fast-development-loop)
+  for affected suites while editing, then run the applicable full gates once the
+  change is stable. After fixes, rerun the failing suite first; repeat broader
+  checks when subsequent changes or unresolved concerns justify them.
   For implementation, start narrow, then run applicable tests, typecheck, lint, build and Prisma
   format/validate/generate; database changes also need migration/API integration
   checks. Commands and isolation: [TESTING](docs/TESTING.md).

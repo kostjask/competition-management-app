@@ -11,20 +11,21 @@ export const CreateStudioBodySchema = z.strictObject({
   representativeName: text.optional(), representativeEmail: EmailSchema.optional(),
 });
 export const UpdateStudioBodySchema = z.strictObject({
-  revision: z.int().positive().optional(),
+  expectedRevision: z.int().positive().optional(),
   name: text.optional(), country: text.nullable().optional(), city: text.nullable().optional(),
   directorName: text.nullable().optional(), directorPhone: text.nullable().optional(),
   invoiceDetails: invoice.nullable().optional(),
-}).refine((body) => Object.entries(body).some(([key, value]) => key !== "revision" && value !== undefined), { message: "At least one studio field is required", params: { reason: "nonemptyPatch" } });
+}).refine((body) => Object.entries(body).some(([key, value]) => key !== "expectedRevision" && value !== undefined), { message: "At least one studio field is required", params: { reason: "nonemptyPatch" } });
 export const UpdateRegistrationBodySchema = z.object({
   revision: z.int().positive(),
   reason: z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]).nullable().optional(),
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]), canEditDuringReview: z.boolean().optional(),
 });
 export const StudioApprovalStatusSchema = z.enum(["PENDING", "APPROVED", "REJECTED"]);
-export const UpdateStudioApprovalBodySchema = z.strictObject({ status: StudioApprovalStatusSchema, eventId: IdSchema, revision: z.int().positive() });
-export const UpdateRepresentativeBodySchema = z.strictObject({ revision: z.int().positive().optional(), name: text.optional(), email: EmailSchema.optional() })
-  .refine((body) => Object.entries(body).some(([key, value]) => key !== "revision" && value !== undefined), { message: "At least one representative field is required", params: { reason: "nonemptyPatch" } });
+export const ReviewReasonSchema = z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]);
+export const UpdateStudioApprovalBodySchema = z.strictObject({ status: StudioApprovalStatusSchema, revision: z.int().positive(), reason: ReviewReasonSchema.nullable().optional() });
+export const UpdateRepresentativeBodySchema = z.strictObject({ name: text.optional(), email: EmailSchema.optional(), expectedRevision: z.int().positive().optional() })
+  .refine((body) => Object.entries(body).some(([key, value]) => key !== "expectedRevision" && value !== undefined), { message: "At least one representative field is required", params: { reason: "nonemptyPatch" } });
 export const StudioRepresentativeSchema = z.strictObject({
   id: IdSchema, studioId: IdSchema, userId: IdSchema, name: z.string(), email: z.string(),
   active: z.boolean(), createdAt: z.iso.datetime(),
@@ -37,6 +38,7 @@ export const StudioEventMembershipSchema = z.strictObject({
 });
 export const StudioSchema = z.strictObject({
   id: IdSchema, eventId: IdSchema, name: z.string(), approvalStatus: StudioApprovalStatusSchema,
+  approvalReason: ReviewReasonSchema.nullable().default(null),
   country: z.string().nullable(), city: z.string().nullable(), directorName: z.string().nullable(),
   directorPhone: z.string().nullable(), invoiceDetails: z.json().nullable(), logoUrl: z.string().nullable(),
   registrations: z.array(StudioEventMembershipSchema), representatives: z.array(StudioRepresentativeSchema),

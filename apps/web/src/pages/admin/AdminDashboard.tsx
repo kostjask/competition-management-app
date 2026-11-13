@@ -1,57 +1,83 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getEvents, type Event } from "../../api/events";
+import { eventSetupBlockers, type Event } from "@dance/schemas";
+import { getEvents } from "../../api/events";
 import { toUiError, type UiError } from "../../api/error";
-import { ErrorSummary, LoadingState, Button } from "../../components/ui/Foundation";
 import { useTranslation } from "../../i18n/useTranslation";
-import "../events/Organizer.css";
+import { Button, EmptyState, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
+import { stageKey } from "../../features/events/setup";
+import { EventReviewSummary } from "../applications/EventReviewSummary";
+import "../events/event-setup.css";
+
 export default function AdminDashboard() {
   const { t } = useTranslation();
-  const [data, setData] = useState<Event[] | null>(null);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<UiError | null>(null);
   const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let active = true;
-    getEvents()
-      .then((result) => {
-        if (active) {
-          setData(result);
-          setError(null);
-        }
-      })
-      .catch((e) => {
-        if (active) setError(toUiError(e));
-      });
-    return () => {
-      active = false;
-    };
+    void getEvents()
+      .then(result => { if (active) setEvents(result); })
+      .catch((err: unknown) => { if (active) setError(toUiError(err)); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [attempt]);
+
+  const ordered = [...events].sort((a, b) => Number(eventSetupBlockers(b).length > 0) - Number(eventSetupBlockers(a).length > 0));
+
   return (
-    <section className="organizer">
-      <h1>{t("Organizer.title")}</h1>
-      <Link className="ui-button ui-button-primary" to="/events/new">
-        {t("Events.createSubmit")}
-      </Link>
-      <ErrorSummary error={error} title={t("Organizer.title")} />
-      {error && <Button onClick={() => setAttempt((a) => a + 1)}>{t("Shell.retry")}</Button>}
-      {!data && !error && <LoadingState label={t("Events.loading")} />}
-      {data?.length === 0 && <p>{t("Organizer.empty")}</p>}
-      <ul className="organizer-list">
-        {data?.map((event) => (
-          <li key={event.id}>
-            <h2>{event.name}</h2>
-            <p>{event.timeZone}</p>
-            <div className="ui-actions">
-              <Link to={`/admin/events/${encodeURIComponent(event.id)}/setup`}>
-                {t("Organizer.setup")}
-              </Link>
-              <Link to={`/admin/events/${encodeURIComponent(event.id)}/applications`}>
-                {t("Organizer.review")}
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className="event-workbench">
+      <header className="event-masthead">
+        <div>
+          <h1>{t("Setup.dashboard")}</h1>
+          <p>{t("Setup.hint")}</p>
+        </div>
+        <div className="event-heading-actions">
+          <Link className="ui-button ui-button-primary" to="/events/new">
+            {t("Events.createTitle")}
+          </Link>
+        </div>
+      </header>
+
+      <ErrorSummary error={error} title={t("Events.loadError")} />
+      {loading ? (
+        <LoadingState label={t("Access.loading")} />
+      ) : error ? (
+        <Button variant="secondary" onClick={() => {
+          setLoading(true);
+          setError(null);
+          setAttempt(value => value + 1);
+        }}>
+          {t("Shell.retry")}
+        </Button>
+      ) : !events.length ? (
+        <EmptyState title={t("Events.noEventsYet")} description={t("Setup.noEvents")} />
+      ) : (
+        <ul className="event-collection">
+          {ordered.map(event => (
+            <li className="event-row" key={event.id}>
+              <div className="event-row-main">
+                <h2>{event.name}</h2>
+                <p>{t(stageKey[event.stage])}</p>
+              </div>
+              <div className="event-row-meta">
+                <p className="event-status">
+                  {t(eventSetupBlockers(event).length ? "Setup.incomplete" : "Setup.ready")}
+                </p>
+                <EventReviewSummary eventId={event.id} />
+              </div>
+              <div className="event-row-actions">
+                <Link to={`/admin/events/${encodeURIComponent(event.id)}/applications`}>{t("Application.review")}: {event.name}</Link>
+                <Link to={`/admin/events/${encodeURIComponent(event.id)}/setup`}>
+                  {t("Setup.title")}: {event.name}
+                </Link>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

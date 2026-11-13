@@ -23,19 +23,12 @@ Editors must label the source language, distinguish translations, allow clearing
 optional translations, and preview all three language/fallback outcomes before
 saving/publishing. Existing description text is retained verbatim; migration must
 require an explicit organizer source-language choice, never infer it from names,
-browser locale or account preference. Until that owning P4 migration/editor ships,
-the existing single description remains authored text with language unspecified.
-There is no automatic translation or new content database model in this task.
+browser locale or account preference. Migration 31 and the P4-CORE editor now implement this policy; retained text stays explicitly unclassified until the organizer chooses its source language.
+The original policy task added no database model. P4-CORE now implements event storage/editors under [ADR-020](020-organizer-event-setup.md), retaining unknown-language prose without inference.
 
 The shared AuthoredContentSchema and resolveAuthoredContent function define the
-future payload/resolution contract. Publication/export must carry stable resource
+payload/resolution contract consumed by P4 event storage/editors. Publication/export must carry stable resource
 IDs, source and authored translations and apply the same resolution rule; do not
 include review evidence, billing or private contact data in public content.
 Category/age/format names retain stable IDs; later multilingual labels follow a
 separate reviewed extension before those editors change storage.
-
-Implementation note (2026-11-12): P4 now stores event `authoredDescription` and
-provides source-language selection, optional translations and all-language previews.
-The migration keeps the original `description` column unchanged; conversion happens
-only after an organizer chooses the language. Current validation/runtime limits are
-recorded in [organizer validation](../ORGANIZER_VALIDATION.md).

@@ -9,7 +9,7 @@
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
 | Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Application/review UI remains P4/P5 |
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
-| Performance | Complete fields/order required; owner inferred from one studio's participants | Explicit owner, incomplete unscheduled drafts, revision/submission snapshots before entry UI |
+| Performance | Durable incomplete unscheduled drafts (ADR-024); immutable owner/event keys (ADR-022), optimistic revisions and saved snapshots (ADR-023) | Submit-time eligibility, receipts and correction lifecycle remain P3-ENTRIES |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 
@@ -32,6 +32,13 @@ memberships. Organization/event decisions are independent; both are required for
 derived representative access. See [ADR-003](adr/003-registration-lifecycle.md).
 There is no final-entry-submission API today. [Registration workflow](REGISTRATION_API.md).
 
+Dancer birth dates now use native DATE with calendar-only HTTP strings. Age is
+completed years on the event-local start date; February 29 advances on March 1
+in a non-leap year. Shared calculation and organizer reference-date display are
+implemented; submit-time eligibility remains P3-ENTRIES. Saved revisions freeze
+then-current studio/participant/configuration values. They establish history,
+not proof of submission. [ADR-023](adr/023-entry-history-and-calendar-dates.md).
+
 ## Pending model decisions
 
 **ADR-003 lifecycle:** [M2 application/review policy accepted and implemented](adr/003-registration-lifecycle.md).
@@ -48,7 +55,9 @@ versioned aggregation and independent publication/correction states. Choose
 scaled integer or Decimal precision and explicit legacy conversion; no silent
 Float rounding or historical rewrite. P6-SCORING-MODEL precedes dependent UI.
 
-Other ownership/draft/history/date/index decisions and migration safety:
-[database review](DATABASE_REVIEW.md). Account/token/staff scope decisions:
+History/calendar decisions are accepted in [ADR-023](adr/023-entry-history-and-calendar-dates.md).
+Older domain findings and migration-safety evidence: [database review](DATABASE_REVIEW.md).
+Draft representation is accepted in [ADR-024](adr/024-incomplete-entry-drafts.md);
+submission and reuse retain their roadmap gates. Account/token/staff scope decisions:
 [foundation roadmap](roadmap/foundation.md). Product outcomes:
 [journeys](USER_JOURNEYS.md). No proposed schema or label creates a runtime feature.

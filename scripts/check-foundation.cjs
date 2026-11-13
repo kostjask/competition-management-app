@@ -130,6 +130,8 @@ async function main() {
     await mail.dispatchEmailBatch(client, provider);
     assert.equal(await client.emailDelivery.count({ where: { state: 'ACCEPTED' } }), receiptCount);
     assert.equal(attempts.length, 2, 'Do not retry outside provider idempotency window');
+    stage = 'review notifications';
+    await require('./check-review-email.cjs')(client, mail);
   } finally {
     await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }); await client.$disconnect();
   }

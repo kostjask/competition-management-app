@@ -32,9 +32,9 @@ export function emailDeliveryAvailable(): boolean {
 }
 
 /** Domain mutation and encrypted dispatch intent commit together. Fake stays silent. */
-export async function queueEmail(tx: Prisma.TransactionClient, content: EmailContent): Promise<string | null> {
+export async function queueEmail(tx: Prisma.TransactionClient, content: EmailContent, reviewNoticeId?: string, reviewRecipientId?: string): Promise<void> {
   if (!emailDeliveryAvailable()) throw new Error("Email delivery is unavailable");
-  if (config.email.provider === "fake") return null;
+  if (config.email.provider === "fake") return;
   const key = config.email.queueKey;
   if (!key) throw new Error("Email delivery is unavailable");
   const data = EmailContentSchema.parse(content);
@@ -43,10 +43,10 @@ export async function queueEmail(tx: Prisma.TransactionClient, content: EmailCon
   // Validate/render before committing an intent, never discover a bad template later.
   const envelope = { from: config.email.from, message: renderEmail(data, config.email.webOrigin) };
   const id = randomUUID();
-  await tx.emailDelivery.create({ data: { id, ciphertext: encryptEmail(envelope, id, key), purpose,
+  await tx.emailDelivery.create({ data: { id, ciphertext: encryptEmail(envelope, id, key), purpose, reviewNoticeId: reviewNoticeId ?? null,
+    reviewRecipientId: reviewRecipientId ?? null,
     bindingDigest: purpose && data.token ? tokenDigest(purpose, data.token) : null,
     expiresAt: new Date(Date.now() + 23 * 3600000) } });
-  return id;
 }
 
 async function validBinding(tx: Prisma.TransactionClient, row: { bindingDigest: string | null; purpose: string | null }, content: { to: string }): Promise<boolean> {

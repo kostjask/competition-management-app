@@ -19,7 +19,7 @@ export const defaultRecoveryDelivery: RecoveryDelivery = {
   available: emailDeliveryAvailable,
   verification: data => sendVerificationEmail(data),
   recovery: data => sendPasswordRecoveryEmail(data),
-  enqueue: async (tx, data, kind) => { await queueEmail(tx, { ...data, kind }); },
+  enqueue: (tx, data, kind) => queueEmail(tx, { ...data, kind }),
 };
 type RecoveryRequest =
   | ({ kind: "verification" } & ResendVerificationInput)

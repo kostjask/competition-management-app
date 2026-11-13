@@ -12,7 +12,7 @@ function EventName({ id }: { id: string }) {
   useEffect(() => { let active = true; void getEvent(id).then(event => { if (active) setValue(event); }).catch((err: unknown) => { if (active) setError(toUiError(err)); }); return () => { active = false; }; }, [id, attempt]);
   return <aside className="mx-auto max-w-6xl px-4 pt-4 break-words" aria-label={t("Shell.events")}>
     {value ? <p>{t("Shell.eventContext", { name: value.name })}</p> : error ? <><ErrorFeedback error={error} /><Button onClick={() => { setError(null); setAttempt(value => value + 1); }}>{t("Shell.retry")}</Button></> : <p role="status">{t("Access.loading")}</p>}
-    {value && <p className="text-sm text-slate-600">{t("Organizer.zone")}: {value.timeZone}</p>}
+    {value && <p className="text-sm text-slate-600">{t("Setup.timeZone")}: {value.timeZone}</p>}
   </aside>;
 }
 export function EventContext() {

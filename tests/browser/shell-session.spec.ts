@@ -106,14 +106,14 @@ test("verification strips secrets and continues explicitly with safe cross-tab f
   await expect(other.getByRole("button",{name:"Account",exact:true})).toBeVisible(); await other.close();
 });
 
-test("event context and missing/denied reads remain explicit without unsupported actions", async ({page}) => {
+test("event context links to the delivered application and keeps missing/denied reads explicit", async ({page}) => {
   const user = profile(); let status = 200;
   await page.addInitScript(() => localStorage.setItem("app-language","en"));
-  const event = { revision:1, organizerEmail:null, organizerPhone:null, authoredDescription:null, id:"a",name:"Synthetic selected event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,maxStudios:null,maxPerformances:null,imageUrl:null };
+  const event = { id:"a",name:"Synthetic selected event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,unclassifiedDescription:null,organizerEmail:null,organizerPhone:null,revision:1,maxStudios:null,maxPerformances:null,imageUrl:null };
   await page.route("**/api/v1/**", route => route.fulfill(route.request().url().endsWith("/auth/profile") ? {json:user} : status === 200 ? {json:event} : {status,json:{...denial,reason:status===404?"recordNotFound":"permissionDenied"}}));
   await page.goto("/events/a"); await expect(page.getByRole("heading",{name:event.name,exact:true})).toBeFocused();
   await expect(page.getByText("Selected event: "+event.name,{exact:true})).toBeVisible();
-  await expect(page.locator('a[href$="/register"],a[href$="/studio"]')).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open application", exact: true })).toHaveAttribute("href", "/events/a/register");
   status=404; await page.reload(); await expect(page.getByRole("heading",{name:"Page not found",exact:true})).toBeVisible();
   status=403; await page.reload(); await expect(page.getByRole("heading",{name:"Access denied",exact:true})).toBeVisible();
 });
@@ -159,6 +159,8 @@ test("UTC event editing preserves browser-zone boundaries and posted instants", 
   });
   await page.goto("/events/new"); await expect(page.locator("#event-startsAt")).toHaveValue("2026-11-05T10:00");
   await page.locator("#event-name").fill("Synthetic UTC event");
+  await page.locator("#event-timeZone").fill("UTC");
+  await page.locator("#event-cutoff").selectOption("none");
   await page.locator("form button[type=submit]").click();
   await expect.poll(()=>posted).toMatchObject({startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z"});
   await context.close();

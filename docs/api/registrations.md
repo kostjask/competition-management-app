@@ -37,13 +37,6 @@ retry-safe: GET owned registrations before retrying. Name matching never merges
 studios. The case-sensitive global active-name index remains authoritative;
 duplicate names return private 409 duplicateName. Archived names can be reused.
 
-Optional `onboarding: { draftId, revision }` continues the verified owner's exact
-DRAFT revision. Its intended event must be null or this event. Creation atomically
-marks that draft COMPLETED and increments its revision; stale, cancelled,
-completed, foreign-owner or other-event drafts return private 409 concurrentChange.
-Failed creation rolls back draft completion. A matching operationId retry resolves
-the retained application before rechecking the already-completed draft.
-
 Reapplication uses the same canonical POST with only:
 
 ```json
@@ -96,44 +89,60 @@ revision, nullable decisionReason, canEditDuringReview, ISO UTC createdAt/update
 nextActor (ORGANIZER/APPLICANT/NONE) and studio { id, name, approvalStatus, country,
 city }. nextActor describes who should inspect next; it grants no permission or
 promise that a closed window permits a write. Private contacts/billing/storage,
-creator and retry digests are omitted. Studio profile registration summaries add
+creator and retry digests are omitted. The studio summary also includes nullable
+approvalReason using the same semantic reason vocabulary. Studio profile registration summaries add
 revision/reason but omit nextActor. All errors use the global localized envelope.
 
 Frontend helpers use shared inferred contracts; createStudio also accepts the
 reapplication body, updateStudioRegistration requires revision and cancellation
-requires revision as a separate argument. Organizer setup/review is implemented;
-applicant status/correction journeys are mounted under P5-APPLICATION.
+requires revision as a separate argument. P4/P5 mount review/status/correction
+pages; [current evidence](../APPLICATION_REVIEW_VALIDATION.md) records their scope.
 
-## Organizer review and notifications
+## Verified draft continuation
 
-Global-admin-only `GET /events/:eventId/review` returns a serializable snapshot
-of the event and its active, event-owned applications, authorized studio profiles,
-minimal scoped audit history and notification states. Non-admins (including scoped
-admin assignments) receive 403; missing events receive 404. Private queue ciphertext,
-binding digests, account recipient IDs and retry secrets never enter this DTO.
+New application POST optionally supplies positive onboardingRevision. It requires
+the caller's current DRAFT with that exact revision and intendedEventId equal to
+this event (or null). It atomically marks the draft COMPLETED, incrementing its
+revision, with studio/membership/application/audit creation. Stale, cancelled,
+completed, another-event or admin draft commands conflict without changing rows.
+The private operationId binding reconciles an already-created application before
+checking the draft or application window. The browser retains the frozen command
+through uncertain responses and retries exactly that command.
 
-Organization and event decision writes use the existing canonical PATCH routes.
-Both advance the shared registration revision. A changed decision atomically saves
-the decision, reconciles derived access, appends audit and creates one notification
-per active member whose linked account is active and verified. Contact email does
-not establish recipient identity. The account's language preference selects ET/EN/RU
-with the existing ET default. No active eligible recipient means no notification.
+## Review history and notification status
 
-Migration 31 adds `ReviewNotification`, with a unique registration/kind/revision/
-recipient key and restrictive registration/dispatch relations. It retains decision
-kind/status/reason/revision and links to the existing encrypted P2 email queue.
-Matching write retries create no duplicate intent. Queue/intent/audit failures
-roll back the decision and access together. Neutral mail says a decision changed;
-it never claims both independent approvals succeeded. Links lead to `/applications`
-for the signed-in owner's current status. No sensitive evidence appears in mail.
+GET `/events/:eventId/studio-registrations/:studioId/review` requires the exact
+active event/studio and active owner or global admin. It returns:
 
-States are `TEST_ONLY` (fake provider; no mail sent), `PENDING` (automatic retry,
-delivery unconfirmed), `ACCEPTED` (provider accepted, inbox delivery unconfirmed),
-and `CANCELLED` (expired/cancelled dispatch; decision remains saved). Expired pending
-intent is displayed as cancelled even before the worker processes it.
-`POST /events/:eventId/review/:notificationId/retry` is global-admin-only and returns
-204. It verifies the notification's active studio/event and current eligible owner.
-Pending live intent and provider-accepted intent are no-ops; expired intent is
-cancelled before a replacement is queued. It never repeats the decision. Wrong
-event, missing/archived studio or notification returns 404; an ineligible recipient
-returns 403. Actual provider delivery and human language review remain release gates.
+- history: action, createdAt, nullable revision/fromStatus/toStatus/reason;
+- notifications: id, revision, axis (ORGANIZATION/EVENT), createdAt and state.
+
+No audit actors, recipients, encrypted bodies, provider IDs or credentials appear.
+History is chronological and notification intents newest first. Organization and
+event decisions each increment the same application revision and atomically queue
+one notice per changed decision. Matching retries add neither notice nor audit.
+Notification persistence/audit/access failure rolls back the entire decision.
+
+States are SIMULATED (fake mode, no email), NO_RECIPIENT (no eligible verified
+membership account), QUEUED, RETRYING, ACCEPTED (provider acceptance, never an inbox
+receipt), or EXPIRED. The existing worker retries pending failures automatically
+with the frozen body/idempotency key; refreshing status does not repeat a decision.
+Expired/no-recipient notices remain visible with account/contact recovery. Active
+verified membership accounts receive neutral review-update mail in their saved
+locale (ET default), never the editable representative contact address. The email
+links to `/applications` to read both current approvals. [ADR-021](../adr/021-m2-review-notifications.md).
+
+POST `/events/:eventId/studio-registrations/:studioId/review/:notificationId/retry`
+accepts an empty strict object and requires active global administrator access.
+The exact event/studio/notice relationship is verified. A matching retry returns
+204. Only expired deliveries with retained account bindings are requeued, after
+checking current active verified membership. Accepted and unexpired deliveries
+are preserved. Concurrent transport writes may return 409 and can be retried.
+Inactive membership returns 403, incorrect or archived parents return 404, and
+unknown body fields return 400. Transport retry does not repeat either decision.
+
+Notification DTOs include boolean retryable. Historical unbound deliveries,
+fake mode and notices without supported retry transport report false. Retried
+attempts remain retained but superseded attempts no longer determine current
+state. Account IDs, supersession details and queue bodies stay private. The UI
+refreshes the notification section independently of unsaved decision/profile forms.
