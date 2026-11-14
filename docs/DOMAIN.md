@@ -1,5 +1,36 @@
 # Domain rules and model boundaries
 
+## Current product scope
+
+Confirmed by the user on 2026-11-14: the project currently serves one organizer,
+the director of Tantsuansambel Neposedõ, who runs one or two festivals/competitions
+per year. Prioritize completing those event workflows and keeping operation
+practical for that scale.
+
+The intended product also replaces the existing public Wix festival website at
+fest.neposedo.ee. Public announcements, rules in ET/EN/RU, registration access,
+judges, results archives and contact/social links belong to current product scope.
+Each festival edition needs its own branding and retained content, with organizer
+editing and draft/preview/publish rather than annual developer rebuilds.
+[Website delivery tasks](roadmap/website.md) own implementation and cutover;
+these capabilities are targets, not existing runtime behavior. The user's reported
+Wix cost is EUR 372/year (2026-11-14); net savings depend on replacement operating
+costs and the services actually cancelled.
+
+Onboarding additional organizers or offering the project to other festivals is
+a future possibility, outside the current delivery scope. Do not introduce an
+organizer tenancy model, organizer self-service onboarding, subscriptions or
+cross-organizer administration solely for that possibility. Revisit those
+requirements when expansion is selected; current event scoping is not a claim
+of multi-organizer isolation.
+
+One organizer can run multiple events and involve multiple staff accounts.
+Existing event-scoped authorization, studio/application ownership, retained
+history and ET/EN/RU requirements still apply. In the application workflow,
+"organization approval" refers to a participating studio, not onboarding another
+festival organizer. This clarification changes planning scope, not runtime
+contracts or the database model.
+
 ## Distinct concepts
 
 | Concept | Current behavior | Accepted target / pending work |

@@ -34,6 +34,7 @@ requires that past result or rollout limitation.
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
+| Public festival website / Wix replacement | [Website roadmap](roadmap/website.md), [product scope](DOMAIN.md#current-product-scope) | Event content, judge presentation and authenticated image boundaries; public publishing remains planned |
 | Tests / CI / release evidence | [Testing](TESTING.md) | workspace scripts, tests, .github/workflows/ci.yml |
 | Storage / images | [Storage](STORAGE.md), [image contract](api/images.md) | storage services, ImagesController, upload middleware |
 

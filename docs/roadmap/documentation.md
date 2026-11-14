@@ -8,6 +8,10 @@ commands/results. Feature roadmaps own implementation and release status.
 
 ## Tasks
 
+- [x] DOCS-WIX-REPLACEMENT (2026-11-14): make public festival website replacement an explicit README/checkpoint/domain goal and add the owning cross-phase [website roadmap](website.md). Record edition branding, organizer publishing, multilingual public pages, historical content migration and verified cutover, with unchecked implementation tasks and separate acceptance. Preserve M3 priority, M1–M5 gates and single-organizer scope. Documentation only; P5-ENTRIES remains next.
+
+- [x] DOCS-ORGANIZER-SCOPE (2026-11-14): record the user's current single-organizer scope (director of Tantsuansambel Neposedõ; one or two festivals/competitions yearly) in the root overview, domain guide and checkpoint. Additional-organizer onboarding/tenancy is future scope, not a current prerequisite. Preserve event boundaries and current workflow gates; no runtime/schema change. Next product task remains P5-ENTRIES.
+
 - [x] DOCS-BRANCH-WORKFLOW (2026-11-13): add target freshness, overlapping implementation/PR checks, dependency-base tracking and shared-file/migration coordination to AGENTS after the parallel M2 branches required reconciliation. Authorize fetching existing remote refs for comparison while preserving session authorization for integration and publication. Documentation checks pass. The next implementation task remains the checkpoint's P3-ENTRIES lifecycle.
   Operational follow-up (2026-11-14): PR #4 reused the branch after PR #3 was
   squash-merged. Main's complete tree equals the branch's earlier b3dd683 tree;

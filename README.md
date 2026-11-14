@@ -1,11 +1,24 @@
 # Dance Competition Management System
 
-TypeScript monorepo for event administration, studio registration, judging and
-results. API contracts/localization foundations exist; security hardening and
+TypeScript monorepo intended to replace the Neposedõ festival Wix website and
+support event administration, studio registration, judging and results.
+The public-site replacement is planned, not implemented. API contracts/localization
+foundations exist; security hardening and
 complete user journeys remain unfinished. See [current checkpoint](DEVELOPMENT_PLAN.md).
 
 **Agents:** read [AGENTS.md](AGENTS.md), the checkpoint, then only the selected
 task's documents from the [documentation map](docs/README.md).
+
+Current delivery serves one organizer, the director of Tantsuansambel Neposedõ,
+running one or two festivals/competitions per year. Offering the project to other
+organizers is a future possibility; see [product scope](docs/DOMAIN.md#current-product-scope).
+
+The replacement will cover festival announcements, branding per edition, ET/EN/RU
+rules, registration access/status, judges, historical results and contact/social
+links. Organizer editing, draft/preview/publish and reusable edition setup should
+remove the need to rebuild the site each year. [Website roadmap](docs/roadmap/website.md)
+owns delivery and migration; keep Wix available until replacement and cutover
+checks pass. The next implementation task remains P5-ENTRIES.
 
 ## Local setup
 

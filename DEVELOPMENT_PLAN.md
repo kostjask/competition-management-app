@@ -40,7 +40,42 @@ version confirmation/acceptance and reminders retain P3-MUSIC-MODEL/P8-MEDIA/
 P5-MUSIC gates. Keep application approval, entry review and music acceptance
 separate. No unresolved stakeholder policy question blocks representative data entry.
 
+## Product delivery goal
+
+Serve the single Neposedõ organizer with a public festival website and the
+registration/competition workspace, replacing the existing Wix site at
+fest.neposedo.ee. Annual editions need configurable branding and editable ET/EN/RU
+content, registration access/status, judges, results archives and contact/social
+links. [Website roadmap](docs/roadmap/website.md) owns the additional cross-phase
+tasks, dependencies and replacement acceptance; public publishing is not delivered.
+
+P5-ENTRIES and the remaining M3 participant path retain priority. After that path,
+take P4-PUBLIC-MODEL as the next public-site planning task, then its editor/public
+page consumers and migration/cutover. Public-site dependencies do not require
+finishing live scoring to retain historical result documents. Existing M1–M5
+gates remain; website replacement has its own acceptance below and does not
+silently become a prerequisite for isolated participant-workflow development.
+
 ## Current state
+
+- **Wix replacement goal accepted (2026-11-14):** user screenshots and confirmation
+  establish the useful current scope: festival landing, multilingual rules,
+  registration information/link, judges by edition, results document/link archives
+  and contact/social links. Annual branding and organizer content publishing are
+  planned additions. Reported Wix cost is EUR 372/year, not a verified net saving.
+  [Website tasks](docs/roadmap/website.md) remain unchecked; migration inventory,
+  public/private publication design, storage and hosted transition are outstanding.
+  P5-ENTRIES remains the next implementation task. No Wix cancellation, domain
+  change, public deployment or architecture implementation is authorized by this
+  documentation update.
+
+- **Product scope clarified (2026-11-14):** current delivery serves one organizer,
+  the director of Tantsuansambel Neposedõ, running one or two festivals/competitions
+  per year. Additional organizers and an organizer-based offering are future
+  possibilities, outside current delivery. [Domain scope](docs/DOMAIN.md#current-product-scope)
+  records the planning boundary while retaining event authorization, ownership,
+  history and ET/EN/RU requirements. This documentation clarification adds no
+  tenancy implementation or release gate; P5-ENTRIES remains next.
 
 - **User-selected migration CI correction (2026-11-14):** reproduced the hosted
   AuditLog_action parity failure in an empty disposable database. Migration 39's
@@ -254,6 +289,7 @@ all-phases-before-next-phase dependency.
 | Phase 6–7 scheduling / judging / results | [Competition](docs/roadmap/competition.md) |
 | Phase 8–9 providers / quality / operations; optional backlog | [Operations](docs/roadmap/operations.md) |
 | Cross-phase I18N tasks | [Localization](docs/roadmap/localization.md) |
+| Cross-phase public festival website / Wix replacement | [Website](docs/roadmap/website.md) |
 | Documentation tasks | [Documentation](docs/roadmap/documentation.md) |
 
 Use the ordered implementation queue below when no task is selected. Check the
@@ -353,6 +389,14 @@ M1 requires I18N-CONTRACT/CORE/VALIDATION. M2/M4 also require delivered-scope
 I18N-UI/FORMATTING/PREFERENCES/QA. Decide I18N-CONTENT policy before relevant
 organizer content. M3/M5 extend these gates to entries, scoring, exports and results.
 Future screens do not hold an earlier milestone open.
+
+Website replacement acceptance is separate from M5: all required tasks in the
+[website roadmap](docs/roadmap/website.md) must pass, including content/archive
+migration, organizer publishing, accessible ET/EN/RU public pages, verified
+registration handoff and hosted domain/redirect/rollback checks. Historical
+results can be explicitly published documents/links; new calculated results keep
+their Phase 7 gates. Retire Wix only after replacement verification and explicit
+authorization for the external cutover/cancellation.
 
 ## Completion rules
 
