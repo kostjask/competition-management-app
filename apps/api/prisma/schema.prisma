@@ -149,7 +149,7 @@ model DanceFormat {
   eventId            String
   name               String
   minParticipants    Int
-  maxParticipants    Int
+  maxParticipants    Int?
   maxDurationSeconds Int
   event              Event         @relation(fields: [eventId], references: [id])
   performances       Performance[]
@@ -269,6 +269,7 @@ model Performance {
   participants PerformanceParticipant[]
   scores       Score[]
   revisions    PerformanceRevision[]
+  operations   PerformanceOperation[]
 
   @@unique([eventId, orderOnStage])
   @@unique([id, studioId])
@@ -284,6 +285,22 @@ model PerformanceRevision {
   snapshot      Json
   performance   Performance @relation(fields: [performanceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   actor         User?       @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([performanceId, revision])
+  @@index([actorId])
+}
+
+model PerformanceOperation {
+  operationId   String      @id @db.Uuid
+  performanceId String
+  revision      Int
+  actorId       String
+  digest        String
+  action        String
+  reason        String
+  createdAt     DateTime    @default(now())
+  performance   Performance @relation(fields: [performanceId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor         User        @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([performanceId, revision])
   @@index([actorId])
@@ -390,6 +407,7 @@ model User {
   accountTokens         AccountToken[]
   auditActions          AuditLog[]             @relation("AuditActor")
   performanceRevisions  PerformanceRevision[]
+  performanceOperations PerformanceOperation[]
   entryReceipts         EntryReceipt[]
   reviewDeliveries      EmailDelivery[]
   preferredLocale       RecipientLocale?

@@ -114,6 +114,12 @@ export function decode<T>(schema: z.ZodType<T>, input: unknown): T {
   if (!result.success) throw new ApiError(502, "Invalid response", undefined, "INVALID_RESPONSE", "invalidResponse");
   return result.data;
 }
+function deleteRequest(endpoint: string): Promise<void>;
+function deleteRequest<TBody>(endpoint: string, body: TBody): Promise<unknown>;
+async function deleteRequest<TBody>(endpoint: string, body?: TBody): Promise<unknown> {
+  const result = await request(endpoint, { method: "DELETE", ...(body !== undefined && { body: JSON.stringify(body) }) });
+  return body === undefined ? undefined : result;
+}
 export const apiClient = {
   image: async (url: string): Promise<Blob> => {
     const result = await request(url, { redirect: "error", cache: "no-store" }, true);
@@ -125,5 +131,5 @@ export const apiClient = {
   put: <TBody = unknown>(endpoint: string, body: TBody): Promise<unknown> => request(endpoint, { method: "PUT", body: JSON.stringify(body) }),
   patch: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "PATCH", ...(body !== undefined && { body: JSON.stringify(body) }) }),
   upload: (endpoint: string, body: FormData): Promise<unknown> => request(endpoint, { method: "POST", body }),
-  delete: async (endpoint: string): Promise<void> => { await request(endpoint, { method: "DELETE" }); },
+  delete: deleteRequest,
 };

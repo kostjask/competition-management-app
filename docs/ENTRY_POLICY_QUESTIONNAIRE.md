@@ -252,4 +252,3 @@ Please give the wording or meaning that distinguishes "received" from
 "accepted to participate," if those are different stages.
 
 **Answer:** _When the form has been presented, it should state the status "review pending" and after the organizer checks it is either "checked and accepted" or "requires changes"___________________
-

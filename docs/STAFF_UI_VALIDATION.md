@@ -99,3 +99,56 @@ hosted ingress/deployment/restore/CI and human ET/EN/RU/assistive review stay op
 No M1/M4 or whole phase is closed by mocked browser or isolated database checks.
 Next actionable local task: I18N-CONTENT policy, before organizer-authored content
 models/editors. P3 registration runtime remains gated by M1 and its model decisions.
+
+## CI correction (2026-11-14)
+
+The user-selected CI repair covers two failed Workspace checks on PR #3's
+older revision, b3dd683. The PR is already merged; local development is ahead
+of that snapshot. The database jobs passed in both runs.
+
+- [PR run 43585236565](https://github.com/kostjask/competition-management-app/actions/runs/43585236565/job/132418191768)
+  passed all 229 then-current browser cases, then failed `git diff --check HEAD^ HEAD`
+  because the entry policy questionnaire had an extra blank line at EOF.
+  Only that final blank line is removed; stakeholder answers are unchanged.
+- [Push run 43585234340](https://github.com/kostjask/competition-management-app/actions/runs/43585234340/job/132418184968)
+  failed the Estonian F06 removal focus assertion after invitation acceptance
+  in a second tab. Staff confirmation used `requestAnimationFrame` for focus
+  restoration, which can stop in background tabs and was not tied to React's
+  dialog removal/control update. Focus now restores in an effect after the
+  confirmation closes. The completed invitee tab is closed and the organizer
+  tab explicitly brought forward before the journey continues.
+
+The new regression suspends animation-frame callbacks, acknowledges exactly one
+removal, and requires focus on Refresh status while retaining the invitation
+draft. It failed on the original implementation at that focus assertion and
+passes with the correction. Existing cancel/trigger, pending modal, failure/error
+summary, session recovery, ET/EN/RU and denial assertions remain in place.
+No retries, timeout increases, dependency, workflow, API or database changes are
+needed. The Ubuntu runner migration notice was informational.
+
+Local checks on the newer development checkout:
+
+- The new focused regression: fails before the fix at `toBeFocused`, passes after.
+- `pnpm.cmd exec playwright test tests/browser/staff.spec.ts`: 26 passed.
+- `pnpm.cmd exec playwright test tests/browser/staff.spec.ts -g F06 --repeat-each=10`:
+  30 passed (ten per language), two workers, zero retries.
+- `pnpm.cmd test:browser`: all 259 Chromium cases passed in 12.8 minutes, two
+  workers, zero retries. This includes the newer entry/checkpoint work.
+- `pnpm.cmd build`, `pnpm.cmd typecheck`, `pnpm.cmd lint`: pass.
+- `pnpm.cmd test`: 3 tooling, 121 API and 28 web tests pass; localization check passes.
+- `pnpm.cmd db:generate`, `pnpm.cmd db:validate` and
+  `pnpm.cmd exec prisma format --check --schema apps/api/prisma/schema.prisma`: pass.
+- Documentation syntax/link/UTF-8 checks and working-tree/target whitespace checks
+  pass. Comparing the questionnaire against the failing commit's parent also passes.
+
+At the initial CI-repair snapshot, fresh `origin/main` was the PR #3 squash;
+the affected source/test/questionnaire paths matched the original local HEAD
+before this correction. No open overlapping PR existed then. The existing newer
+entry implementation is preserved. No working-tree integration, commit, push or
+deployment was performed during that validation. These are local Windows/Chromium
+checks; hosted Ubuntu CI cannot validate unpublished working-tree edits.
+No database behavior changed, so its already-passing hosted migration/workflow
+jobs were not rerun for this correction. Remaining external/human gates stay open;
+the next feature task remains P5-ENTRIES with P5-UI-ENTRIES S09/S10.
+The subsequent PR #4 ancestry reconciliation and commit/push authorization are
+recorded in the [current checkpoint](../DEVELOPMENT_PLAN.md#current-state).

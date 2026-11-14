@@ -5,6 +5,7 @@ import {
   CreatePerformanceBodySchema, UpdatePerformanceBodySchema, PerformanceSchema,
   PerformanceCollectionParamsSchema, PerformanceItemParamsSchema, PerformanceQuerySchema,
   PerformanceDeleteQuerySchema, PerformanceHistorySchema,
+  PerformanceWithdrawalBodySchema, PerformanceRestoreBodySchema, PerformanceLifecycleResultSchema,
 } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
@@ -15,6 +16,7 @@ import { guardEntryWrite, markEntryChanged, entrySettings } from "../services/en
 import type { EntryField } from "@dance/schemas";
 
 const performanceSelect = {
+  deletedAt: true,
   teacher: true, author: true,
   revision: true,
   id: true, eventId: true, studioId: true, registrationId: true, title: true, durationSec: true, orderOnStage: true,
@@ -26,8 +28,9 @@ const performanceSelect = {
 type PerformanceRecord = Prisma.PerformanceGetPayload<{ select: typeof performanceSelect }>;
 
 function serialize(performance: PerformanceRecord) {
+  const { deletedAt, ...fields } = performance;
   const result = PerformanceSchema.safeParse({
-    ...performance, participants: performance.participants.map(({ dancerId, dancer }) => ({
+    ...fields, archived: deletedAt != null, participants: performance.participants.map(({ dancerId, dancer }) => ({
       dancerId, dancer: { ...dancer, birthDate: dancer.birthDate.toISOString().slice(0, 10) },
     })),
   });
@@ -36,10 +39,10 @@ function serialize(performance: PerformanceRecord) {
 }
 
 export class PerformancesController extends BaseController {
-  private async capture(req: Request, db: Prisma.TransactionClient, performance: PerformanceRecord, origin: "CREATE" | "EDIT" | "ARCHIVE") {
+  private async capture(req: Request, db: Prisma.TransactionClient, performance: PerformanceRecord, origin: "CREATE" | "EDIT" | "ARCHIVE" | "RESTORE") {
     const actorId = this.getUserId(req);
     await db.$executeRaw`SELECT capture_performance_revision(${performance.id}, ${origin}, ${actorId})`;
-    await appendAudit(db, { action: origin === "CREATE" ? "PERFORMANCE_CREATED" : origin === "EDIT" ? "PERFORMANCE_UPDATED" : "PERFORMANCE_ARCHIVED",
+    await appendAudit(db, { action: origin === "CREATE" ? "PERFORMANCE_CREATED" : origin === "EDIT" ? "PERFORMANCE_UPDATED" : origin === "RESTORE" ? "PERFORMANCE_RESTORED" : "PERFORMANCE_ARCHIVED",
       actor: { kind: "USER", userId: actorId }, targetType: "PERFORMANCE", targetId: performance.id,
       eventId: performance.eventId, studioId: performance.studioId, metadata: { revision: performance.revision } });
   }
@@ -85,7 +88,7 @@ export class PerformancesController extends BaseController {
   private async findItem(req: Request, db: Prisma.TransactionClient, eventId: string, performanceId: string, write = false) {
     this.requirePermission(req, eventId);
     const performance = await db.performance.findFirst({
-      where: { id: performanceId, eventId, deletedAt: null }, select: performanceSelect,
+      where: { id: performanceId, eventId, ...(write && { deletedAt: null }) }, select: performanceSelect,
     });
     if (!performance) throw new NotFoundError("Performance", performanceId);
     const studioId = performance.studioId;
@@ -112,7 +115,7 @@ export class PerformancesController extends BaseController {
     catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         const target = error.meta?.target;
-        if (Array.isArray(target) && (target.includes("creationOperationId") || (target.includes("performanceId") && target.includes("revision")))) {
+        if (Array.isArray(target) && (target.includes("operationId") || target.includes("creationOperationId") || (target.includes("performanceId") && target.includes("revision")))) {
           throw new ConflictError("Performance history changed; reload before retrying", undefined, "concurrentChange");
         }
         throw new ConflictError("Stage order is already reserved for this event", undefined, "orderReserved");
@@ -126,7 +129,7 @@ export class PerformancesController extends BaseController {
 
   async list(req: Request, res: Response): Promise<void> {
     const { eventId } = PerformanceCollectionParamsSchema.parse(req.params);
-    const { studioId } = PerformanceQuerySchema.parse(req.query);
+    const { studioId, state } = PerformanceQuerySchema.parse(req.query);
     this.requirePermission(req, eventId);
     if (!await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true } })) throw new NotFoundError("Event", eventId);
     if (studioId) await this.requireAccess(req, this.prisma, eventId, studioId);
@@ -135,7 +138,7 @@ export class PerformancesController extends BaseController {
     });
     const ids = studios.map(({ id }) => id);
     const performances = await this.prisma.performance.findMany({
-      where: { eventId, deletedAt: null, studioId: { in: ids } }, select: performanceSelect, orderBy: [{ orderOnStage: "asc" }, { id: "asc" }],
+      where: { eventId, deletedAt: state === "withdrawn" ? { not: null } : null, studioId: { in: ids } }, select: performanceSelect, orderBy: [{ orderOnStage: "asc" }, { id: "asc" }],
     });
     res.json(performances.map(serialize));
   }
@@ -239,6 +242,7 @@ export class PerformancesController extends BaseController {
   }
 
   async delete(req: Request, res: Response): Promise<void> {
+    if (req.body !== undefined) { await this.lifecycle(req, res); return; }
     const { eventId, performanceId } = PerformanceItemParamsSchema.parse(req.params);
     this.requirePermission(req, eventId);
     const { expectedRevision } = PerformanceDeleteQuerySchema.parse(req.query);
@@ -260,5 +264,37 @@ export class PerformancesController extends BaseController {
       await markEntryChanged(db, eventId, performance.studioId, ["entries"]);
     });
     res.status(204).send();
+  }
+
+  async lifecycle(req: Request, res: Response): Promise<void> {
+    const { eventId, performanceId } = PerformanceItemParamsSchema.parse(req.params);
+    const body = (req.method === "DELETE" ? PerformanceWithdrawalBodySchema : PerformanceRestoreBodySchema).parse(req.body);
+    const actorId = this.getUserId(req);
+    const digest = createHash("sha256").update(JSON.stringify([actorId, eventId, performanceId, body])).digest("hex");
+    const result = await this.transaction(async db => {
+      const { performance, studioId } = await this.findItem(req, db, eventId, performanceId);
+      const existing = await db.performanceOperation.findUnique({ where: { operationId: body.operationId } });
+      if (existing) {
+        if (existing.digest !== digest || existing.performanceId !== performanceId || existing.actorId !== actorId) throw new ConflictError("Operation changed; compare before retrying", undefined, "concurrentChange");
+        return { id: performanceId, revision: existing.revision, archived: existing.action === "WITHDRAW" };
+      }
+      await this.requireAccess(req, db, eventId, studioId, true);
+      if (performance.revision !== body.expectedRevision || (performance.deletedAt !== null) !== (body.action === "RESTORE")) throw new ConflictError("Entry state changed; reload before retrying", undefined, "concurrentChange");
+      const config = await entrySettings(db, eventId);
+      if (!this.isAdmin(req)) {
+        const event = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
+        if (["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage)) throw new ForbiddenError("Contact the organizer", "stageLocked");
+        if (body.action === "WITHDRAW" && config?.settings.basic.deadline && Date.parse(config.settings.basic.deadline) <= Date.now()) throw new ForbiddenError("Contact the organizer to withdraw after the entry deadline", "stageLocked");
+        if (body.action === "RESTORE") await guardEntryWrite(db, eventId, studioId, ["entries"], false);
+      }
+      if (body.action === "RESTORE") await this.validateSelection(db, eventId, studioId, { ...performance, dancerIds: performance.participants.map(row => row.dancerId) });
+      const updated = await db.performance.update({ where: { id: performanceId, revision: body.expectedRevision },
+        data: { deletedAt: body.action === "WITHDRAW" ? new Date() : null, deletedBy: body.action === "WITHDRAW" ? actorId : null, revision: { increment: 1 } }, select: performanceSelect });
+      await this.capture(req, db, updated, body.action === "WITHDRAW" ? "ARCHIVE" : "RESTORE");
+      await markEntryChanged(db, eventId, studioId, ["entries"]);
+      await db.performanceOperation.create({ data: { operationId: body.operationId, performanceId, actorId, digest, action: body.action, reason: body.reason, revision: updated.revision } });
+      return { id: performanceId, revision: updated.revision, archived: updated.deletedAt !== null };
+    });
+    res.json(PerformanceLifecycleResultSchema.parse(result));
   }
 }

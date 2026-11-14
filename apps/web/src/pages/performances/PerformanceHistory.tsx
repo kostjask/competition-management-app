@@ -30,7 +30,7 @@ export default function PerformanceHistory({ eventId, performanceId, close }: { 
         : rows.length === 0 ? <EmptyState title={t("Performance.noHistory")} description={t("Performance.noHistoryHelp")} />
           : <ol className="performance-revisions">{rows.map(row => <li key={row.revision}>
             <h3>{t("Performance.revision")} {number.format(row.revision)}: {row.snapshot.title ?? t("Performance.untitled")}</h3>
-            <p>{t(row.origin === "LEGACY_BASELINE" ? "Performance.baseline" : row.origin === "CREATE" ? "Performance.created" : row.origin === "ARCHIVE" ? "Performance.archived" : row.origin === "CHECKPOINT" ? "Performance.checkpointCapture" : "Performance.edited")}</p>
+            <p>{t(row.origin === "LEGACY_BASELINE" ? "Performance.baseline" : row.origin === "CREATE" ? "Performance.created" : row.origin === "ARCHIVE" ? "Performance.archived" : row.origin === "RESTORE" ? "Entry.restoredHistory" : row.origin === "CHECKPOINT" ? "Performance.checkpointCapture" : "Performance.edited")}</p>
             <dl><div><dt>{t("Performance.owner")}</dt><dd>{row.snapshot.studioName}</dd></div>
               <div><dt>{t("Performance.configuration")}</dt><dd>
                 <span className="performance-configuration-value">{t("Performance.missing_categoryId")}: {row.snapshot.configuration.category?.name ?? t("Performance.notSelected")}</span>

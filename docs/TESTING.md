@@ -450,8 +450,16 @@ four-width ET/EN/RU layouts, native modal safe focus/Tab/Escape/restore, retaine
 input through language/session changes, invite/resend/revoke/accept/remove in
 separate tabs, removed and missing-assignment history, pending controls, conflict
 refresh, lost removal responses and acknowledged mutations with failed readback.
+Confirmation focus restores after React commits dialog removal and updated controls,
+without waiting for an animation frame. The regression suspends animation frames
+and verifies refresh focus, retained input and exactly one acknowledged removal.
+The F06 test closes the completed invitee tab and explicitly returns to the
+organizer tab. Keep focus assertions and zero retries; do not hide this failure
+with timeout increases. The staff file contains 26 cases.
 All browser data/links are synthetic; PostgreSQL remains the proof for real
-transactional history and authorization. The complete suite has 108 cases.
+transactional history and authorization. Current complete-suite results and the
+two failed hosted checks are recorded in the
+[CI correction evidence](STAFF_UI_VALIDATION.md#ci-correction-2026-11-14).
 
 The baseline's check-staff-access.cjs now additionally verifies the global-admin
 read DTO, missing event, guest/staff/scoped-admin denial, other-event exclusion,
@@ -564,18 +572,31 @@ for actually running the full database baseline.
 ## Studio checkpoints and organizer entry review (ADR-025)
 
 Start with `pnpm test:entry-foundations` and
-`pnpm test:focus browser performances.spec.ts`. The focused database runner and
-full baseline both invoke check-entry-workflow.cjs. It checks event/studio/actor
+`pnpm test:focus browser performances.spec.ts` and
+`pnpm test:focus browser entry-recovery.spec.ts`. The focused database runner and
+full baseline invoke check-entry-workflow.cjs and check-entry-recovery.cjs. They check event/studio/actor
 boundaries, current membership, configured windows and immutable rule freeze,
 basic/final completeness, any-older percentage/count/duration boundaries, invalid
 birth dates, exact immutable snapshot ownership, UUID retries, replaced grants,
 concurrent commands and atomic audit rollback. Basic receipts omit the full roster;
 final receipts retain it. ACCEPT requires a current review-pending submission.
+Recovery checks cover timely withdrawal despite early lock, post-deadline denial,
+same-identity restoration under structural grants, active participants, fresh
+resubmission, original-operation retries after later transitions, changed reuse,
+concurrency and immutable actor/snapshot/audit rollback. Option creation and policy
+save are atomic; foreign IDs, ranges, freeze and audit failures cannot leave options.
+Nullable unbounded format maxima are checked in saved snapshots and SQL parity.
 
 The performance browser suite has 63 cases, including ET/EN/RU and 320–1920px
 checkpoint review, configuration/editor states, keyboard/field focus, exact
 DST-fold deadlines, loading/errors, scoped reopening, acknowledgement/readback
 failure, uncertain-response/session recovery and explicit stale-data comparison.
+The recovery/preset browser file adds 29 cases: ET/EN/RU at 320/768/1440/1920px,
+keyboard confirmation/focus return, retained URL filters, lost responses/session
+recovery, acknowledgement despite readback failure, stale comparisons, complete
+Dance Express copies, custom option creation/range errors, freeze and discarded
+option identities. Preset unit checks prove all 182 source combinations, retained
+deadlines, overlapping age bands and an unbounded big group without fabricated caps.
 Full workspace, database and migration gates remain required. See
 [checkpoint evidence](ENTRY_CHECKPOINT_VALIDATION.md) for completed results and
 the separately authorized and completed application database reset/reseed. Isolated runner success

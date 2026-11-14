@@ -5,6 +5,40 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "retained identity",
+   "withdrawn register",
+   "nomination filters",
+   "atomic options",
+   "source preset",
+   "acknowledged recovery"
+  ],
+  "hero": "none",
+  "nav": "existing shared shell",
+  "footer": "none",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/performance-register.css",
+  "fingerprint": "same-identity recovery ledger and filtered source nominations",
+  "sections": [
+   "register",
+   "withdrawal and restore",
+   "rules",
+   "options",
+   "nominations"
+  ],
+  "signature": "same-identity recovery and nomination ledger",
+  "waived": [],
+  "prompt": "P3-ENTRIES recovery and P4-ENTRY-CONFIG source preset with ET/EN/RU",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; native render unavailable; 258 browser cases, 29 feature confirmations; in-thread 3 findings resolved; no material slots",
+  "date": "2026-11-14",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "studio checkpoints",
    "saved revision ledger",
    "scoped corrections",

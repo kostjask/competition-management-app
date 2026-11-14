@@ -72,6 +72,15 @@ credit requirements and nomination overrides. Frozen policy is distinguished fro
 editable deadlines. Native controls, exact field links, truthful acknowledgements
 and retained same-operation retries carry the workflow; no new imagery is needed.
 
+The withdrawal/preset extension adds an active/withdrawn URL filter, retained inline
+reason/confirmation and an acknowledged restore outcome with focus return. The
+rules view copies the real Dance Express nomination table after confirmation and
+creates ordinary options inline; category/age filters keep the working set small.
+The preset disclosure closes after copying; the withdrawn empty state explains
+how to find active entries. Finite/unbounded limits use native nullable controls.
+No imagery, new palette, remote font, shell replacement or material slots are needed.
+Technical checks and rendered review remain separate from human visual approval.
+
 The review/application finish pass resolved misleading filtered-empty guidance
 and repeated approval copy. The two decisions, contact and actual mail state
 carry the hierarchy; no imagery or material slots are needed. Validation and

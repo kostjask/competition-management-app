@@ -223,11 +223,12 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   const archived = await client.performance.findUniqueOrThrow({ where: { id: performance.id }, include: { participants: true } });
   const archiveVersion = await client.performanceRevision.findUniqueOrThrow({ where: { performanceId_revision: { performanceId: performance.id, revision: archived.revision } } });
   assert.equal(archiveVersion.origin, 'ARCHIVE'); assert.equal(archiveVersion.snapshot.archived, true);
-  assert.equal((await request(item + '/history', adminToken)).status, 404);
+  assert.equal((await request(item + '/history', adminToken)).status, 200);
   assert.equal(archived.deletedBy, owner.id); assert.ok(archived.deletedAt instanceof Date);
   assert.equal(archived.participants.length, 1);
   assert.deepEqual(await client.score.findUniqueOrThrow({ where: { id: score.id } }), score);
-  for (const method of ['GET', 'PATCH', 'DELETE'])
+  assert.equal((await request(item, adminToken)).body.archived, true);
+  for (const method of ['PATCH', 'DELETE'])
     assert.equal((await request(item, adminToken, method, method === 'PATCH' ? { title: 'Restore' } : undefined)).status, 404);
   assert.equal((await request(collection)).body.some((row) => row.id === performance.id), false);
   assert.equal((await request(collection, ownerToken, 'POST', input)).status, 409, 'Archived orders remain reserved by the existing database constraint');

@@ -9,7 +9,7 @@
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
 | Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Application/review UI remains P4/P5 |
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
-| Performance | Durable incomplete drafts, immutable owners and saved revisions (ADR-022/023/024); opt-in studio checkpoints validate eligibility and retain exact receipts/corrections (ADR-025) | Reversible withdrawal/resubmission remains P3-ENTRIES; representative UI remains P5 |
+| Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration is implemented; representative UI remains P5 |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 

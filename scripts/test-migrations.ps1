@@ -72,6 +72,8 @@ try {
     $expectedSql += "`n" + (($retrySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $entrySql = Get-Content -Raw apps/api/prisma/migrations/20261113010000_studio_entry_checkpoints/migration.sql
     $expectedSql += "`n" + (($entrySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $recoverySql = Get-Content -Raw apps/api/prisma/migrations/20261114010000_entry_recovery_options/migration.sql
+    $expectedSql += "`n" + (($recoverySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {

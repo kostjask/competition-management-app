@@ -64,6 +64,7 @@ participant set. Positive supplied values and all relationship checks remain.
 Title is limited to 500 characters. Null stage order is independent of missing
 entry fields and is never required for drafting or future submission.
 Optional strict query `?studioId=...` narrows this scope; it never grants access.
+`state=active` (default) or `state=withdrawn` selects the retained lifecycle state.
 No authorized studio yields an empty array; an explicitly requested inaccessible
 studio fails access checks. Missing event/item/active studio yields 404. A missing
 registration blocks creation with 409, including for admins. Migration 33 backfills
@@ -74,8 +75,8 @@ visible in existing performance reads for history, but cannot be selected or
 retained by PATCH; replace them with active same-studio participants. Performance
 DELETE remains possible and preserves all participants and scores.
 
-Create returns 201; list/detail/update return 200; DELETE returns 204. The shared
-DTO contains positive `revision`, `id`, `eventId`, `studioId`, `registrationId`, `title`, `durationSec`, `orderOnStage`, `categoryId`,
+Create returns 201; list/detail/update return 200; revision-query DELETE returns 204.
+The shared DTO contains `archived`, positive `revision`, `id`, `eventId`, `studioId`, `registrationId`, `title`, `durationSec`, `orderOnStage`, `categoryId`,
 `ageGroupId`, `formatId`, and `participants` (`dancerId` plus the shared dancer
 DTO). It omits nonexistent timestamps, private storage
 paths, and audit fields. Backend serialization and frontend responses are
@@ -94,14 +95,51 @@ and require reloading before retry. Participant replacement uses a nested update
 stage-order conflict rolls back replacement too. The existing unique
 `(eventId, orderOnStage)` constraint returns 409 on conflict, including orders
 held by archived performances. DELETE writes `deletedAt`/`deletedBy` and retains
-relations; archived performances cannot be read, patched, or deleted again.
+relations. Withdrawn performances remain readable with their history by currently
+authorized owners/organizers; ordinary PATCH and repeat archival cannot edit them.
 Row CHECKs enforce positive supplied duration/order, event limits/date ordering and age/format
 bounds. Configuration and participant keys also apply to direct SQL. The owner-change
 trigger and restrictive foreign keys preserve identity, including archived rows.
 Migration fresh/upgrade/refusal and API/database/UI checks are in
 [ownership evidence](../PERFORMANCE_OWNERSHIP_VALIDATION.md).
 Multiple null stage orders are permitted; assigned orders remain reserved.
-Restore, order reuse and cross-event studio reuse remain later work.
+Order reuse and cross-event studio reuse remain later work.
+
+## Withdrawal and restoration
+
+The canonical DELETE item endpoint also accepts a strict JSON command body
+(without query parameters):
+
+```json
+{
+  "expectedRevision": 3,
+  "operationId": "8b0eef37-d79f-40be-8f9e-d1e181d6df59",
+  "action": "WITHDRAW",
+  "reason": "Studio withdrew the performance"
+}
+```
+
+`POST .../performances/:performanceId/restore` accepts the same contract with
+`action: "RESTORE"`. Both return 200 `{ id, revision, archived }` after atomic
+revision capture, checkpoint invalidation, immutable operation and audit. The UUID
+is bound to actor/event/performance/action/body. A matching retry returns its
+original acknowledgement after current access checks, even if a later action has
+changed the entry again; it does not repeat the transition. Reused UUIDs with
+changed payloads/actors/routes, stale revisions or wrong current states return 409.
+Uncertain clients retain the exact command and reconcile; an acknowledgement is
+kept visible if the subsequent current-list refresh fails.
+
+Representatives can withdraw before the configured basic deadline in nonterminal
+stages, including after early submission. Afterwards contact the organizer.
+Restoration is a structural `entries` write and obeys both checkpoint locks and
+studio-wide reopening grants. Organizers can act late but cannot bypass active
+studio/event/participant relationships. A restore retains owner, ID, participants,
+reserved stage order, scores and history; it returns the studio checkpoints to
+DRAFT, never restores acceptance or implicitly resubmits. Submit and review the
+new manifest explicitly. Restoring with inactive participants fails with 409.
+Required reasons stay out of URLs and are retained privately with the real actor.
+The older query-revision archival command remains at this same DELETE endpoint
+with its existing 204 behavior and no UUID deduplication guarantee.
 
 ## Draft creation recovery
 
@@ -137,7 +175,7 @@ never blindly replayed. A failed capture or audit rolls back the entire write.
 `GET /events/:eventId/performances/:performanceId/history` uses the same current
 active-owner/permission/approval checks as item reads, including exact route event.
 It returns newest-first `{ revision, origin, capturedAt, actorKind, snapshot }`.
-`origin` is CREATE/EDIT/ARCHIVE/CHECKPOINT or LEGACY_BASELINE; actorKind is USER or MIGRATION.
+`origin` is CREATE/EDIT/ARCHIVE/RESTORE/CHECKPOINT or LEGACY_BASELINE; actorKind is USER or MIGRATION.
 No raw actor account data is exposed. Snapshot fields include policyVersion (1/2/3),
 eventId/studioId/registrationId, studioName, title, durationSec/orderOnStage,
 timeZone/ageDate, configuration (category id/name; age-group id/name/minAge/maxAge;
@@ -148,8 +186,8 @@ storage path or score fields are retained. This is private authorized history.
 Migration baselines include archived performances, retain source identities and
 scores, and explicitly claim no original author/save time or prior submission.
 capturedAt is capture time. SQL prevents snapshot updates/deletes. Archival retains
-versions but standard endpoints, including history, still return 404 for archived
-entries. The organizer register selects history with `?performance=:performanceId`,
+versions; item/history reads include withdrawn entries under current authorization.
+The organizer register selects history with `?performance=:performanceId`,
 retains the studio filter across reload/session recovery and displays only saved
 title, studio/configuration, participant count, reference date and provenance.
 Its date policy describes the shared rule; these complete-field CRUD endpoints do

@@ -12,6 +12,7 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-14 entry recovery and nomination setup | [Recovery/setup validation](ENTRY_RECOVERY_VALIDATION.md), [checkpoint core](ENTRY_CHECKPOINT_VALIDATION.md) |
 | 2026-11-12 applicant/status and discovery integration | [Application validation](APPLICATION_VALIDATION.md) |
 | 2026-11-12 organizer setup/review | [Organizer validation](ORGANIZER_VALIDATION.md) |
 | 2026-10-23–24 baseline / dependencies / Phase 1 | [Baseline](BASELINE_VALIDATION.md), [change review](BASELINE_CHANGE_REVIEW.md), [migrations](MIGRATION_VALIDATION.md), [dependencies](DEPENDENCY_UPDATES.md); archived entries below |
