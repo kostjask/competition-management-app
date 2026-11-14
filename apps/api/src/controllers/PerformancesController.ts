@@ -11,8 +11,11 @@ import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } fro
 import { isActionAllowed } from "../utils/stageChecks";
 import { appendAudit } from "../services/audit";
 import { serializeDto } from "../utils/dto";
+import { guardEntryWrite, markEntryChanged, entrySettings } from "../services/entryWorkflow";
+import type { EntryField } from "@dance/schemas";
 
 const performanceSelect = {
+  teacher: true, author: true,
   revision: true,
   id: true, eventId: true, studioId: true, registrationId: true, title: true, durationSec: true, orderOnStage: true,
   categoryId: true, ageGroupId: true, formatId: true,
@@ -73,7 +76,7 @@ export class PerformancesController extends BaseController {
     if (!studio.representatives.length || studio.approvalStatus !== "APPROVED" || registration?.status !== "APPROVED") {
       throw new ForbiddenError("Access to studio performances denied", "ownershipRequired");
     }
-    if (write && !isActionAllowed(studio.event.stage, "performance.manage", registration.canEditDuringReview)) {
+    if (write && !isActionAllowed(studio.event.stage, "performance.manage", registration.canEditDuringReview) && !await entrySettings(db, eventId)) {
       throw new ForbiddenError("Performance management not allowed in current event stage", "stageLocked");
     }
     return registration.id;
@@ -160,7 +163,10 @@ export class PerformancesController extends BaseController {
     const body = CreatePerformanceBodySchema.parse(req.body);
     const { studioId, dancerIds, operationId, ...fields } = body;
     // Bind retries to the authenticated actor and route; never return another owner's entry.
-    const digest = createHash("sha256").update(JSON.stringify([this.getUserId(req), eventId, body])).digest("hex");
+    const { teacher, author, ...baseBody } = body;
+    // Nullable new credits do not change a retained pre-credit creation retry's identity.
+    const digestBody = { ...baseBody, ...(teacher !== null && { teacher }), ...(author !== null && { author }) };
+    const digest = createHash("sha256").update(JSON.stringify([this.getUserId(req), eventId, digestBody])).digest("hex");
     const result = await this.transaction(async (db) => {
       const registrationId = await this.requireAccess(req, db, eventId, studioId);
       if (operationId) {
@@ -175,6 +181,7 @@ export class PerformancesController extends BaseController {
         }
       }
       await this.requireAccess(req, db, eventId, studioId, true);
+      await guardEntryWrite(db, eventId, studioId, ["entries"], this.isAdmin(req));
       await this.validateSelection(db, eventId, studioId, { ...fields, dancerIds });
       const created = await db.performance.create({
         data: { eventId, studioId, registrationId, ...fields,
@@ -183,6 +190,7 @@ export class PerformancesController extends BaseController {
         select: performanceSelect,
       });
       await this.capture(req, db, created, "CREATE");
+      await markEntryChanged(db, eventId, studioId, ["entries"]);
       return serialize(created);
     });
     res.status(201).json(result);
@@ -195,6 +203,11 @@ export class PerformancesController extends BaseController {
     const result = await this.transaction(async (db) => {
       const { performance, studioId } = await this.findItem(req, db, eventId, performanceId, true);
       if (performance.revision !== expectedRevision) throw new ConflictError("Performance changed; reload before retrying", undefined, "concurrentChange");
+      const changed: EntryField[] = [];
+      for (const key of ["title", "categoryId", "ageGroupId", "formatId", "durationSec", "teacher", "author"] as const) if (fields[key] !== undefined) changed.push(key);
+      if (dancerIds !== undefined) changed.push("participants");
+      if (fields.orderOnStage !== undefined) changed.push("entries");
+      await guardEntryWrite(db, eventId, studioId, changed, this.isAdmin(req), performanceId);
       await this.validateSelection(db, eventId, studioId, {
         categoryId: fields.categoryId === undefined ? performance.categoryId : fields.categoryId,
         ageGroupId: fields.ageGroupId === undefined ? performance.ageGroupId : fields.ageGroupId,
@@ -206,6 +219,8 @@ export class PerformancesController extends BaseController {
         data: {
           revision: { increment: 1 },
           ...(fields.title !== undefined && { title: fields.title }),
+          ...(fields.teacher !== undefined && { teacher: fields.teacher }),
+          ...(fields.author !== undefined && { author: fields.author }),
           ...(fields.durationSec !== undefined && { durationSec: fields.durationSec }),
           ...(fields.orderOnStage !== undefined && { orderOnStage: fields.orderOnStage }),
           ...(fields.categoryId !== undefined && { categoryId: fields.categoryId }),
@@ -217,6 +232,7 @@ export class PerformancesController extends BaseController {
         }, select: performanceSelect,
       });
       await this.capture(req, db, updated, "EDIT");
+      await markEntryChanged(db, eventId, studioId, changed);
       return serialize(updated);
     });
     res.json(result);
@@ -229,11 +245,19 @@ export class PerformancesController extends BaseController {
     await this.transaction(async (db) => {
       const { performance } = await this.findItem(req, db, eventId, performanceId, true);
       if (performance.revision !== expectedRevision) throw new ConflictError("Performance changed; reload before retrying", undefined, "concurrentChange");
+      // Archiving a submitted dance is a retained withdrawal; other entries stay locked.
+      const config = await entrySettings(db, eventId);
+      if (config && !this.isAdmin(req)) {
+        const deadline = config.settings.basic.deadline;
+        const event = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
+        if (["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage) || (deadline !== null && Date.parse(deadline) <= Date.now())) throw new ForbiddenError("Contact the organizer to withdraw after the entry window", "stageLocked");
+      }
       const archived = await db.performance.update({
         where: { id: performanceId, eventId, deletedAt: null, revision: expectedRevision },
         data: { deletedAt: new Date(), deletedBy: this.getUserId(req), revision: { increment: 1 } }, select: performanceSelect,
       });
       await this.capture(req, db, archived, "ARCHIVE");
+      await markEntryChanged(db, eventId, performance.studioId, ["entries"]);
     });
     res.status(204).send();
   }

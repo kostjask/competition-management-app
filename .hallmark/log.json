@@ -2,6 +2,38 @@
  {
   "scope": "app",
   "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "studio checkpoints",
+   "saved revision ledger",
+   "scoped corrections",
+   "explicit recovery"
+  ],
+  "hero": "none",
+  "nav": "existing shared shell",
+  "footer": "none",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/performance-register.css",
+  "fingerprint": "studio-wide basic/final ledger and field-linked corrections",
+  "sections": [
+   "studio register",
+   "checkpoint review",
+   "rules and deadlines",
+   "entry details",
+   "saved history"
+  ],
+  "signature": "studio checkpoint and saved revision ledger",
+  "waived": [],
+  "prompt": "P3-ENTRIES core and P3-HISTORY consumers with owning Cobalt organizer UI",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN across 8 files; Playwright captures; in-thread review corrected density, labels and recovery; own render unavailable (puppeteer-core)",
+  "date": "2026-11-14",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
   "theme": "project design system",
   "genre": "modern-minimal",
   "axes": [

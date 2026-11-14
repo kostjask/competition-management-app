@@ -8,6 +8,8 @@ commands/results. Feature roadmaps own implementation and release status.
 
 ## Tasks
 
+- [x] DOCS-BRANCH-WORKFLOW (2026-11-13): add target freshness, overlapping implementation/PR checks, dependency-base tracking and shared-file/migration coordination to AGENTS after the parallel M2 branches required reconciliation. Authorize fetching existing remote refs for comparison while preserving session authorization for integration and publication. Documentation checks pass. The next implementation task remains the checkpoint's P3-ENTRIES lifecycle.
+
 - [x] DOCS-UI-DIRECTION (2026-11-10): record the user's rejection of the entire placeholder UI and required full Hallmark redesign; reconcile UX-D01 and provisional typography/adoption guidance, add P9-UI-REDESIGN ownership and agent/checkpoint routing. Documentation only; redesign remains unimplemented, existing technical completion and implementation queue unchanged.
 
 - [x] DOCS-MAINTENANCE (2026-11-10): source-check maintained instructions, clarify canonical owners/selective reading, move repetitive checkpoint evidence to existing history, reconcile stale routing/backlog/behavior claims and label dated reports. Application priorities, task states and release gates preserved. [Scope, checks and remaining work](../DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).

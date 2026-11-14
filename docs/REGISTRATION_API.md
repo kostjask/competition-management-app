@@ -69,12 +69,18 @@ implemented by these contracts.
   /admin/events/:eventId/staff provides invitation/assignment status and distinct
   revoke/remove; Judge/UserRole/consumption reconcile atomically and removal retains
   Judge/Score history. Additional studio members remain P5-MEMBERS.
-- Durable entry drafts/receipts, music and scoped corrections remain future work.
+- Durable nullable unscheduled entry drafts and immutable saved revisions are
+  implemented under ADR-023/024. The opt-in [studio checkpoint API](api/entry-workflow.md)
+  now adds basic/final confirmation/review receipts and scoped reopening under
+  ADR-025. Music and complete representative workflow delivery remain later work.
 
 P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
 intent commits with each changed decision under ADR-021; fake mode never claims
 sent mail and provider acceptance never claims inbox delivery. The next feature
-task is P3-HISTORY, with P3-CALENDAR-DATES before dependent M3 entry editing.
+scope is the remaining P3-ENTRIES workflow plus coordinated P4/P5 configuration,
+withdrawal, initial per-day estimates and representative consumers. The
+[accepted lifecycle](adr/025-entry-submission-lifecycle.md) records the confirmed
+studio-wide checkpoints and any-older percentage policy.
 P3-PERFORMANCE-OWNER/CONSTRAINTS and the read-only organizer register are locally
 implemented under [ADR-022](adr/022-performance-ownership-and-constraints.md).
 ADR-019 content policy is accepted and ADR-020 implements event content storage/editors. Use test fakes/isolated databases while

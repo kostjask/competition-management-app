@@ -75,6 +75,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [022](adr/022-performance-ownership-and-constraints.md) | Immutable performance registration ownership, event/participant keys and row constraints |
 | [023](adr/023-entry-history-and-calendar-dates.md) | Immutable saved revisions, privacy-minimal snapshots and event-local calendar eligibility |
 | [024](adr/024-incomplete-entry-drafts.md) | Nullable unscheduled drafts, retained ownership/history and actor-bound creation retries |
+| [025](adr/025-entry-submission-lifecycle.md) | Accepted studio-wide checkpoints, any-older percentage, staged review/locks/reopening and event-adjustable rules; source questionnaire/images retained |
 
 ADR-003 accepts the M2 application/review subset; live operation remains pending.
 ADR-004 scoring is reserved and unaccepted; its required scope is in

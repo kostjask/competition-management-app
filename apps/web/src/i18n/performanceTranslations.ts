@@ -1,4 +1,5 @@
 export const performanceTranslations = {
+  checkpointCapture: { et: "Stuudio kontrollpunkti jäädvustus", en: "Studio checkpoint capture", ru: "Фиксация этапа студии" },
   newDraft: { et: "Uus mustand", en: "New draft", ru: "Новый черновик" },
   draftUnavailable: { et: "Mustandi vorm on saadaval pärast registri laadimist.", en: "The draft form is available after the register loads.", ru: "Форма черновика доступна после загрузки реестра." },
   draftHelp: { et: "Salvesta esmalt stuudio ja soovi korral pealkiri. Reeglid ja osalejad saab lisada hiljem.", en: "Save the studio and an optional title first. Configuration and participants can follow.", ru: "Сначала сохраните студию и необязательное название. Правила и участников можно добавить позже." },

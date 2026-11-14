@@ -237,11 +237,15 @@ module.exports = async function checkPerformances({ client, baseUrl, adminToken,
   const firstDraft = await request(collection, ownerToken, 'POST', draftBody);
   assert.equal(firstDraft.status, 201);
   const draft = PerformanceSchema.parse(firstDraft.body);
+  const legacyBody = { studioId: studio.id, operationId: draftBody.operationId, title: null, durationSec: null, orderOnStage: null,
+    categoryId: null, ageGroupId: null, formatId: null, dancerIds: [] };
+  const legacyDigest = require('node:crypto').createHash('sha256').update(JSON.stringify([owner.id, event.id, legacyBody])).digest('hex');
+  assert.equal((await client.performance.findUniqueOrThrow({ where: { id: draft.id } })).creationDigest, legacyDigest, 'Nullable artistic credits preserve pre-credit creation retry identity');
   for (const key of ['title', 'durationSec', 'orderOnStage', 'categoryId', 'ageGroupId', 'formatId']) assert.equal(draft[key], null);
   assert.deepEqual(draft.participants, []);
   const draftItem = `${collection}/${draft.id}`;
   const draftHistory = PerformanceHistorySchema.parse((await request(draftItem + '/history')).body);
-  assert.equal(draftHistory[0].snapshot.policyVersion, 2);
+  assert.equal(draftHistory[0].snapshot.policyVersion, 3);
   assert.deepEqual(draftHistory[0].snapshot.configuration, { category: null, ageGroup: null, format: null });
   assert.equal((await request(collection, ownerToken, 'POST', draftBody)).body.id, draft.id);
   assert.equal(await client.performanceRevision.count({ where: { performanceId: draft.id } }), 1);

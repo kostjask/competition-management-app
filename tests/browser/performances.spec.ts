@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { CreatePerformanceBodySchema, EventSchema, PerformanceSchema, PerformanceHistorySchema, PerformanceQuerySchema, StudioRegistrationSchema, type Performance, type UserProfile } from "../../packages/schemas/src/index";
+import { CreatePerformanceBodySchema, EventSchema, PerformanceSchema, PerformanceHistorySchema, PerformanceQuerySchema, StudioRegistrationSchema,
+  EntryReviewSchema, EntryCommandSchema, EntryReceiptSchema, EntryConfigurationBodySchema, EntryKindSchema, UpdatePerformanceBodySchema, type EntrySettings, type Performance, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
 
@@ -272,4 +273,237 @@ test("mixed saved configuration labels every present and unselected value", asyn
   await expect(region).toContainText("age group: Saved age group");
   await expect(region).toContainText("format: Not selected");
   await page.screenshot({ path: info.outputPath("draft-mixed-history.png"), fullPage: true });
+});
+
+async function checkpointFixture(page: Page, locale: Locale = 'en', width = 390) {
+  const base = await fixture(page, locale, width);
+  const settings: EntrySettings = { basic: { enabled: true, deadline: null }, final: { enabled: true, deadline: null }, allowYounger: true, olderPercent: 20, requireTeacher: true, requireAuthor: true, nominations: [] };
+  const state = { loseResponse: false, failRead: false, failConfiguration: false, stale: false, emptyReview: false, readHold: Promise.resolve(), commandHold: Promise.resolve(), commands: [] as unknown[], configuration: { revision: 1, frozen: true, settings }, receipts: new Map<string, ReturnType<typeof EntryReceiptSchema.parse>>() };
+  const review = EntryReviewSchema.parse({ studioId: 's', checkpoints: (['BASIC', 'FINAL'] as const).map(kind => ({ kind, revision: 1, status: 'DRAFT', enabled: true, locked: false, deadline: null, grant: null, issues: [], receipts: [] })) });
+  const snapshot = { policyVersion: 3, eventId: 'e', studioId: 's', registrationId: 'r-s', studioName: 'Synthetic studio', title: 'Synthetic performance', durationSec: 210, orderOnStage: null, teacher: 'Teacher', author: 'Author', timeZone: 'Europe/Tallinn', ageDate: '2026-01-01', archived: false,
+    configuration: { category: { id: 'c', name: 'Kids' }, ageGroup: { id: 'a', name: 'Up to 7', minAge: 0, maxAge: 7 }, format: { id: 'f', name: 'Group', minParticipants: 3, maxParticipants: 1000, maxDurationSeconds: 240 } }, participants: [] };
+  await page.route('**/api/v1/events/e/**', async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (base.expired) return route.fulfill({ status: 401, json: { code: 'UNAUTHORIZED', reason: 'authenticationRequired', params: {}, issues: [] } });
+    if (path.endsWith('/entry-configuration')) {
+      if (route.request().method() === 'PUT') {
+        const body = EntryConfigurationBodySchema.parse(route.request().postDataJSON()); state.configuration = { ...state.configuration, settings: body.settings, revision: body.expectedRevision + 1 };
+        if (state.failConfiguration) return route.abort();
+      }
+      return route.fulfill({ json: state.configuration });
+    }
+    if (path.endsWith('/categories')) return route.fulfill({ json: [{ id: 'c', eventId: 'e', name: 'Kids' }] });
+    if (path.endsWith('/age-groups')) return route.fulfill({ json: [{ id: 'a', eventId: 'e', name: 'Up to 7', minAge: 0, maxAge: 7 }] });
+    if (path.endsWith('/formats')) return route.fulfill({ json: [{ id: 'f', eventId: 'e', name: 'Group', minParticipants: 3, maxParticipants: 1000, maxDurationSeconds: 240 }] });
+    if (path.endsWith('/entry-review')) {
+      await state.readHold;
+      if (state.failRead) return route.abort();
+      return route.fulfill({ json: state.emptyReview ? { studioId: 's', checkpoints: [] } : review });
+    }
+    if (/entry-review\/(BASIC|FINAL)$/.test(path)) {
+      const kind = EntryKindSchema.parse(path.split('/').at(-1));
+      const body = EntryCommandSchema.parse(route.request().postDataJSON()); state.commands.push(body);
+      await state.commandHold;
+      if (state.stale) return route.fulfill({ status: 409, json: { code: 'CONFLICT', reason: 'concurrentChange', params: {}, issues: [] } });
+      let receipt = state.receipts.get(body.operationId);
+      if (!receipt) {
+        const head = review.checkpoints.find(row => row.kind === kind)!;
+        receipt = EntryReceiptSchema.parse({ id: `receipt-${state.receipts.size + 1}`, kind, revision: head.revision + 1, action: body.action,
+          createdAt: instant, actorKind: 'USER', reason: body.reason ?? null, visible: body.visible,
+          manifest: { settings, entries: [{ id: 'p', revision: 2, snapshot }], roster: [] } });
+        state.receipts.set(body.operationId, receipt); head.revision++; head.receipts.unshift(receipt);
+        head.status = body.action === 'ACCEPT' ? 'ACCEPTED' : body.action === 'REOPEN' ? 'REQUIRES_CHANGES' : 'REVIEW_PENDING';
+        head.locked = body.action !== 'REOPEN'; head.grant = body.grant ?? null;
+      }
+      if (state.loseResponse) return route.abort();
+      return route.fulfill({ json: receipt });
+    }
+    return route.fallback();
+  });
+  return { base, state };
+}
+
+for (const locale of ['et', 'en', 'ru'] as const) for (const width of [320, 390, 768, 1440, 1920]) {
+  test(`${locale} studio checkpoint confirmation and review at ${width}px`, async ({ page }, info) => {
+    await checkpointFixture(page, locale, width);
+    await page.goto('/admin/events/e/performances?studio=s&entry=review');
+    const basic = page.getByRole('region', { name: getTranslation('Entry.basic', locale), exact: true });
+    await expect(basic.getByText(getTranslation('Entry.DRAFT', locale), { exact: true })).toBeVisible();
+    const confirm = basic.getByLabel(getTranslation('Entry.confirm', locale), { exact: true });
+    await confirm.focus(); await page.keyboard.press('Space');
+    await basic.getByRole('button', { name: getTranslation('Entry.submit', locale), exact: true }).click();
+    await expect(basic.getByText(getTranslation('Entry.REVIEW_PENDING', locale), { exact: true })).toBeVisible();
+    await confirm.check();
+    await basic.getByRole('button', { name: getTranslation('Entry.accept', locale), exact: true }).click();
+    await expect(basic.getByText(getTranslation('Entry.ACCEPTED', locale), { exact: true })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`checkpoint-${locale}-${width}.png`), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.reload(); await expect(basic.getByText(getTranslation('Entry.ACCEPTED', locale), { exact: true })).toBeVisible();
+  });
+}
+
+test('checkpoint lost responses retain one operation through session recovery', async ({ page }) => {
+  const { state, base } = await checkpointFixture(page);
+  state.loseResponse = true;
+  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  const basic = page.getByRole('region', { name: 'Basic performance details', exact: true });
+  await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
+  await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
+  await expect(basic.locator('.ui-error-summary')).toBeFocused();
+  base.expired = true;
+  await basic.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.getByRole('dialog').locator('input[type="password"]').fill('synthetic password');
+  await page.getByRole('dialog').getByRole('button', { name: getTranslation('Shell.login', 'en'), exact: true }).click();
+  await expect(page.getByRole('dialog')).not.toBeVisible();
+  state.loseResponse = false;
+  await basic.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();
+  expect(state.receipts.size).toBe(1); expect(state.commands.at(-1)).toEqual(state.commands[0]);
+});
+
+test('organizer reopens a named field, retains confirmation if readback fails, and shows stale errors', async ({ page }) => {
+  const { state } = await checkpointFixture(page);
+  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  const basic = page.getByRole('region', { name: 'Basic performance details', exact: true });
+  await basic.getByText('Reopen for correction', { exact: true }).first().click();
+  await basic.getByLabel('Organizer reason', { exact: true }).fill('Correct the title');
+  await basic.getByLabel('Title', { exact: true }).check();
+  await basic.getByLabel('Correction deadline (Europe/Tallinn)', { exact: true }).fill('2027-01-01T10:00');
+  await basic.getByRole('button', { name: 'Reopen for correction', exact: true }).click();
+  await expect(basic.getByText('Requires changes', { exact: true })).toBeVisible();
+  expect(EntryCommandSchema.parse(state.commands[0]).grant?.fields).toEqual(['title']);
+  state.failRead = true;
+  await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
+  await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
+  await expect(basic.getByRole('status').filter({ hasText: 'Saved and acknowledged' })).toBeVisible();
+  state.failRead = false; state.stale = true;
+  await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
+  await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
+  await expect(basic.locator('.ui-error-summary')).toBeFocused();
+  await expect(basic.getByLabel('Organizer reason', { exact: true })).toHaveValue('Correct the title');
+  await basic.getByRole('button', { name: 'Refresh saved checkpoint', exact: true }).click();
+  await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();
+  await expect(basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.')).not.toBeChecked();
+});
+
+for (const locale of ['et', 'en', 'ru'] as const) test(`${locale} rule freeze and deadline save at 320px`, async ({ page }, info) => {
+  await checkpointFixture(page, locale, 320);
+  await page.goto('/admin/events/e/performances?entry=rules');
+  await expect(page.getByText(getTranslation('Entry.frozen', locale), { exact: true })).toBeVisible();
+  await expect(page.getByLabel(getTranslation('Entry.olderPercent', locale), { exact: true })).toBeDisabled();
+  await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
+  await page.getByRole('button', { name: getTranslation('Entry.save', locale), exact: true }).click();
+  await expect(page.getByText(getTranslation('Entry.saved', locale), { exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath(`configuration-${locale}.png`), fullPage: true });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
+test('organizer details editor reconciles a lost save without duplicating the revision', async ({ page }) => {
+  await checkpointFixture(page);
+  const dancer = { id: 'd', studioId: 's', firstName: 'Synthetic', lastName: 'Dancer', birthDate: '2020-01-01', photoUrl: null };
+  let performance = PerformanceSchema.parse({ revision: 1, id: 'p', eventId: 'e', studioId: 's', registrationId: 'r-s', title: 'Synthetic performance', durationSec: 60, orderOnStage: 1, categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [] });
+  let writes = 0; let loseResponse = true;
+  await page.route('**/api/v1/studios/s/dancers', route => route.fulfill({ json: [dancer] }));
+  await page.route('**/api/v1/events/e/performances/p', async route => {
+    if (route.request().method() === 'PATCH') {
+      const { expectedRevision, dancerIds, ...fields } = UpdatePerformanceBodySchema.parse(route.request().postDataJSON());
+      if (expectedRevision !== performance.revision) return route.fulfill({ status: 409, json: { code: 'CONFLICT', reason: 'concurrentChange', params: {}, issues: [] } });
+      writes++;
+      expect(expectedRevision).toBe(performance.revision); expect(dancerIds).toEqual(['d']);
+      performance = PerformanceSchema.parse({ ...performance, ...fields,
+        revision: performance.revision + 1, participants: [{ dancerId: 'd', dancer }] });
+      if (loseResponse) return route.abort();
+    }
+    return route.fulfill({ json: performance });
+  });
+  await page.goto('/admin/events/e/performances?studio=s&edit=p');
+  const editor = page.getByRole('region', { name: /Edit details:/ });
+  await editor.getByLabel('Teacher', { exact: true }).fill('Synthetic teacher');
+  await editor.getByLabel('Author / choreographer', { exact: true }).fill('Synthetic author');
+  await editor.getByLabel('Synthetic Dancer', { exact: true }).check();
+  await editor.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(editor.locator('.ui-error-summary')).toBeFocused();
+  await expect(editor.getByLabel('Teacher', { exact: true })).toBeDisabled();
+  loseResponse = false;
+  await editor.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await expect(editor.getByRole('status')).toContainText('Saved and acknowledged');
+  expect(writes).toBe(1);
+  performance = { ...performance, revision: performance.revision + 1, title: 'Saved by another organizer' };
+  await editor.getByLabel('Teacher', { exact: true }).fill('Kept local correction');
+  await editor.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(editor.getByRole('heading', { name: 'Compare the saved server version', exact: true })).toBeVisible();
+  await expect(editor.getByLabel('Teacher', { exact: true })).toHaveValue('Kept local correction');
+  await editor.getByLabel('I have compared the saved version with my changes.', { exact: true }).check();
+  await editor.getByRole('button', { name: 'Keep my changes for this revision', exact: true }).click();
+  await editor.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(editor.getByRole('status')).toContainText('Saved and acknowledged');
+  expect(writes).toBe(2); expect(performance.teacher).toBe('Kept local correction');
+});
+
+test('stale entry settings require explicit comparison while retaining local deadlines', async ({ page }) => {
+  const { state } = await checkpointFixture(page);
+  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
+  state.configuration = { ...state.configuration, revision: 2, settings: { ...state.configuration.settings, basic: { enabled: true, deadline: '2026-11-30T18:00:00Z' } } };
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Compare the saved server version', exact: true })).toBeVisible();
+  await expect(page.locator('#config-basic-deadline')).toHaveValue('2026-12-01T18:00');
+  await page.getByLabel('I have compared the saved version with my changes.', { exact: true }).check();
+  await page.getByRole('button', { name: 'Keep my changes for this revision', exact: true }).click();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Saved and acknowledged by the server.', { exact: true })).toBeVisible();
+  expect(state.configuration.revision).toBe(3); expect(state.configuration.settings.basic.deadline).toBe('2026-12-01T16:00:00.000Z');
+});
+
+test('uncertain configuration save reconciles its stored values and has no React key errors', async ({ page }) => {
+  const { state } = await checkpointFixture(page);
+  const errors: string[] = [];
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
+  state.failConfiguration = true;
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.locator('.ui-error-summary')).toBeFocused();
+  await expect(page.locator('#config-basic-deadline')).toBeDisabled();
+  await page.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await expect(page.getByText('Saved and acknowledged by the server.', { exact: true })).toBeVisible();
+  expect(errors.some(message => /same key|unique.*key/i.test(message))).toBe(false);
+});
+
+test('checkpoint loading, read failure, pending command and unconfigured state stay distinct', async ({ page }) => {
+  const { state } = await checkpointFixture(page);
+  let releaseRead = () => {};
+  state.readHold = new Promise<void>(resolve => { releaseRead = resolve; });
+  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  await expect(page.locator('.entry-loading')).toBeVisible();
+  state.failRead = true; releaseRead();
+  const review = page.getByRole('region', { name: 'Studio checkpoints', exact: true });
+  await expect(review.locator('.ui-error-summary')).toBeFocused();
+  state.failRead = false;
+  await review.getByRole('button', { name: 'Try again', exact: true }).click();
+  const basic = page.getByRole('region', { name: 'Basic performance details', exact: true });
+  await expect(basic).toBeVisible();
+  let releaseCommand = () => {};
+  state.commandHold = new Promise<void>(resolve => { releaseCommand = resolve; });
+  await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
+  await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
+  await expect(basic.getByRole('button', { name: 'Reconcile and retry the same operation' })).toBeDisabled();
+  await expect(basic.getByText('Saved and acknowledged by the server.', { exact: true })).toHaveCount(0);
+  releaseCommand();
+  await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();
+  state.emptyReview = true; await page.reload();
+  await expect(review.getByText('Checkpoints have not been configured.', { exact: true })).toBeVisible();
+});
+
+test('unchanged ambiguous deadline keeps its UTC offset and exact seconds', async ({ page }) => {
+  const { state } = await checkpointFixture(page);
+  const exact = '2026-10-25T00:30:22.456Z';
+  state.configuration.settings.basic.deadline = exact;
+  await page.goto('/admin/events/e/performances?entry=rules');
+  await expect(page.locator('#config-basic-deadline')).toHaveValue('2026-10-25T03:30');
+  await expect(page.getByLabel('Choose a valid local time and its UTC offset when needed.', { exact: true })).toHaveValue('2026-10-25T00:30:00.000Z');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Saved and acknowledged by the server.', { exact: true })).toBeVisible();
+  expect(state.configuration.settings.basic.deadline).toBe(exact);
 });

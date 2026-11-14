@@ -19,6 +19,7 @@ async function fixture(t) {
     return value;
   };
   const prisma = {
+    entryConfiguration: { findUnique: async () => null },
     $queryRaw: record('health', []),
     auditLog: { create: async ({ data }) => ({ id: 'audit', ...data }) },
     userRole: {
@@ -144,7 +145,7 @@ test('scoped admin cannot use any mounted global-admin operation', async t => {
   const { request, prisma } = await fixture(t);
   const { operations } = require('../../../docs/api-coverage.json');
   const adminOperations = operations.filter(row => row.tests.globalAdmin);
-  assert.equal(adminOperations.length, 23);
+  assert.equal(adminOperations.length, 25);
   let assignments;
   prisma.userRole.findMany = async ({ where }) => {
     assert.deepEqual(where, { userId: 'actor', removedAt: null });
@@ -626,7 +627,7 @@ test('performance canonical CRUD uses explicit DTOs and transactional nested par
   assert.equal((await request(performancePath, { user: 'owner' })).status, 200);
   const created = await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput });
   assert.equal(created.status, 201);
-  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'revision', 'studioId', 'title']);
+  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'author', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'revision', 'studioId', 'teacher', 'title']);
   assert.equal(created.body.participants[0].dancer.birthDate, '2012-02-29');
   const data = calls.find(({ name }) => name === 'performance-create').args.data;
   assert.equal(data.title, 'Title');

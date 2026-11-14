@@ -1179,6 +1179,72 @@
         "conflict": "scripts/check-staff-access.cjs",
         "globalAdmin": "scripts/check-staff-access.cjs"
       }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/entry-configuration",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "PUT",
+      "path": "/:eventId/entry-configuration",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studios/:studioId/entry-review",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/studios/:studioId/entry-review/:kind",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs"
+      }
     }
   ]
 }

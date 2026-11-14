@@ -6,7 +6,8 @@ retry feedback, pending/error states, retained review/profile drafts and
 lost-response/session recovery in ET/EN/RU. `scripts/check-review-email.cjs`,
 invoked by the foundation baseline, checks recipient bindings, partial acceptance,
 rollback, serializable retry races and unchanged decision state. The privileged
-operation inventory now has 23 operations. Image boundary/setup browser checks
+operation inventory now has 25 operations, including checkpoint configuration
+reads/writes. Image boundary/setup browser checks
 also verify event revision increments and authoritative readback before later
 configuration saves. Full workspace, browser, baseline and migration checks retain
 their normal gates. [Merge evidence](APPLICATION_REVIEW_VALIDATION.md#merge-reconciliation-2026-11-13).
@@ -559,3 +560,23 @@ The API coverage inventory parses awaited baseline suite calls, including the
 timed check helper; comments, string mentions and unused imports do not count as
 script execution evidence. The inventory is a registration guard, not a substitute
 for actually running the full database baseline.
+
+## Studio checkpoints and organizer entry review (ADR-025)
+
+Start with `pnpm test:entry-foundations` and
+`pnpm test:focus browser performances.spec.ts`. The focused database runner and
+full baseline both invoke check-entry-workflow.cjs. It checks event/studio/actor
+boundaries, current membership, configured windows and immutable rule freeze,
+basic/final completeness, any-older percentage/count/duration boundaries, invalid
+birth dates, exact immutable snapshot ownership, UUID retries, replaced grants,
+concurrent commands and atomic audit rollback. Basic receipts omit the full roster;
+final receipts retain it. ACCEPT requires a current review-pending submission.
+
+The performance browser suite has 63 cases, including ET/EN/RU and 320–1920px
+checkpoint review, configuration/editor states, keyboard/field focus, exact
+DST-fold deadlines, loading/errors, scoped reopening, acknowledgement/readback
+failure, uncertain-response/session recovery and explicit stale-data comparison.
+Full workspace, database and migration gates remain required. See
+[checkpoint evidence](ENTRY_CHECKPOINT_VALIDATION.md) for completed results and
+the separately authorized and completed application database reset/reseed. Isolated runner success
+does not imply that the ordinary application database has been migrated.

@@ -64,6 +64,14 @@ do not interpret the old visuals as approved or restyle unrelated screens within
 P4-CORE or its P4/P5 review/application extension. Human visual, fluent-language
 and assistive review remain open.
 
+ADR-025 extends the Cobalt register with studio-wide basic/final checkpoint views,
+URL-selected one-at-a-time review, immutable confirmation ledgers, field-scoped
+reopening and organizer entry detail/participant editing. A separate inline rules
+view offers enabled checkpoints, event-zone deadlines, older-dancer percentages,
+credit requirements and nomination overrides. Frozen policy is distinguished from
+editable deadlines. Native controls, exact field links, truthful acknowledgements
+and retained same-operation retries carry the workflow; no new imagery is needed.
+
 The review/application finish pass resolved misleading filtered-empty guidance
 and repeated approval copy. The two decisions, contact and actual mail state
 carry the hierarchy; no imagery or material slots are needed. Validation and

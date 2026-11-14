@@ -7,6 +7,7 @@ import {
 import { BaseController } from "./BaseController";
 import { ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
+import { guardEntryWrite, markEntryChanged, entrySettings, entryTransaction } from "../services/entryWorkflow";
 
 const dancerSelect = {
   id: true, studioId: true, firstName: true, lastName: true, birthDate: true, photoUrl: true,
@@ -33,7 +34,7 @@ export class DancersController extends BaseController {
       },
     });
     if (!studio) throw new NotFoundError("Studio", studioId);
-    if (this.isAdmin(req)) return;
+    if (this.isAdmin(req)) return studio.eventId;
     const permissions = req.auth?.permissionsByEvent;
     const permitted = permissions?.get(studio.eventId)?.has("dancer.manage") ||
       permissions?.get(null)?.has("dancer.manage");
@@ -42,9 +43,10 @@ export class DancersController extends BaseController {
       registration?.status !== "APPROVED") {
       throw new ForbiddenError("Access to studio dancers denied", "ownershipRequired");
     }
-    if (write && !isActionAllowed(studio.event.stage, "dancer.manage", registration.canEditDuringReview)) {
+    if (write && !isActionAllowed(studio.event.stage, "dancer.manage", registration.canEditDuringReview) && !await entrySettings(db, studio.eventId)) {
       throw new ForbiddenError("Dancer management not allowed in current event stage", "stageLocked");
     }
+    return studio.eventId;
   }
 
   async list(req: Request, res: Response): Promise<void> {
@@ -70,13 +72,15 @@ export class DancersController extends BaseController {
   async create(req: Request, res: Response): Promise<void> {
     const { studioId } = DancerCollectionParamsSchema.parse(req.params);
     const body = CreateDancerBodySchema.parse(req.body);
-    const result = await this.prisma.$transaction(async (tx) => {
-      await this.requireAccess(req, tx, studioId, true);
+    const result = await entryTransaction(this.prisma, async (tx) => {
+      const eventId = await this.requireAccess(req, tx, studioId, true);
+      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
       const dancer = await tx.dancer.create({
         data: { studioId, firstName: body.firstName, lastName: body.lastName,
           birthDate: new Date(`${body.birthDate}T00:00:00.000Z`) },
         select: dancerSelect,
       });
+      await markEntryChanged(tx, eventId, studioId, ["roster"]);
       return serialize(dancer);
     });
     res.status(201).json(result);
@@ -85,8 +89,9 @@ export class DancersController extends BaseController {
   async update(req: Request, res: Response): Promise<void> {
     const { studioId, dancerId } = DancerItemParamsSchema.parse(req.params);
     const body = UpdateDancerBodySchema.parse(req.body);
-    const result = await this.prisma.$transaction(async (tx) => {
-      await this.requireAccess(req, tx, studioId, true);
+    const result = await entryTransaction(this.prisma, async (tx) => {
+      const eventId = await this.requireAccess(req, tx, studioId, true);
+      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
       const where = { id: dancerId, studioId, deletedAt: null };
       const dancer = await tx.dancer.findFirst({ where, select: { id: true } });
       if (!dancer) throw new NotFoundError("Dancer", dancerId);
@@ -98,6 +103,7 @@ export class DancersController extends BaseController {
           ...(body.birthDate !== undefined && { birthDate: new Date(`${body.birthDate}T00:00:00.000Z`) }),
         }, select: dancerSelect,
       });
+      await markEntryChanged(tx, eventId, studioId, ["roster"]);
       return serialize(updated);
     });
     res.json(result);
@@ -106,13 +112,15 @@ export class DancersController extends BaseController {
   async delete(req: Request, res: Response): Promise<void> {
     const { studioId, dancerId } = DancerItemParamsSchema.parse(req.params);
     const userId = this.getUserId(req);
-    await this.prisma.$transaction(async (tx) => {
-      await this.requireAccess(req, tx, studioId, true);
+    await entryTransaction(this.prisma, async (tx) => {
+      const eventId = await this.requireAccess(req, tx, studioId, true);
+      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
       const result = await tx.dancer.updateMany({
         where: { id: dancerId, studioId, deletedAt: null },
         data: { deletedAt: new Date(), deletedBy: userId },
       });
       if (result.count !== 1) throw new NotFoundError("Dancer", dancerId);
+      await markEntryChanged(tx, eventId, studioId, ["roster"]);
     });
     res.status(204).send();
   }

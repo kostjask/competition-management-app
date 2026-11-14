@@ -7,6 +7,15 @@ routes are `GET`/`PATCH`/`DELETE` at `.../performances/:performanceId`.
 All require authentication and `performance.manage` for that event or globally,
 with the existing admin bypass. Errors use the global envelope.
 
+[Studio checkpoints](entry-workflow.md) now add optional per-event basic/final
+locks, submission/review receipts, scoped corrections and organizer exceptions.
+Draft PATCH/roster writes enforce those locks, including indirect changes to
+submitted participants. Draft teacher/author credits are nullable, trimmed,
+nonblank when supplied and limited to 500 characters. They follow the final-field
+scope. New snapshots use policyVersion 3; older snapshots stay unchanged.
+CHECKPOINT origin identifies an atomic studio-manifest capture. Null credit fields
+do not change retained pre-credit creation retry digests.
+
 POST accepts:
 
 ```json
@@ -31,8 +40,8 @@ be active and belong to the chosen studio. PATCH revalidates the resulting
 configuration and participant set even when those fields are omitted. Participant
 lists are limited to 1,000 supplied IDs. Null
 configuration is valid for drafts; supplied IDs still require exact relationships. Invalid
-configuration/participants return 409. Format limits and age eligibility remain
-P3-ENTRIES submission work; no submission eligibility is implied by a draft save.
+configuration/participants return 409. Format/age checks run on the configured
+FINAL studio checkpoint; no submission eligibility is implied by a draft save.
 
 The model stores immutable `studioId` and `registrationId` ownership under
 [ADR-022](../adr/022-performance-ownership-and-constraints.md). Compound keys
@@ -117,8 +126,8 @@ immutable, privacy-minimal saved snapshots. POST starts at revision 1; PATCH and
 DELETE increment once and atomically capture the resulting entry, participants,
 studio display name, category/age/format labels and bounds, event timezone and
 age reference date. Durable audit includes actor/IDs/revision only. Later source
-edits never rewrite a saved snapshot. New captures use policyVersion 2 with null
-entry fields/configuration allowed; existing version 1 records remain unchanged.
+edits never rewrite a saved snapshot. New captures use policyVersion 3 with nullable
+entry fields/configuration and teacher/author credits; version 1/2 records remain unchanged.
 DELETE supplies the expected revision in
 `?expectedRevision=3`; omitted, malformed or unknown query keys return 400.
 All actors obey revision checks. Stale/concurrent writes return 409; reload and
@@ -128,8 +137,8 @@ never blindly replayed. A failed capture or audit rolls back the entire write.
 `GET /events/:eventId/performances/:performanceId/history` uses the same current
 active-owner/permission/approval checks as item reads, including exact route event.
 It returns newest-first `{ revision, origin, capturedAt, actorKind, snapshot }`.
-`origin` is CREATE/EDIT/ARCHIVE or LEGACY_BASELINE; actorKind is USER or MIGRATION.
-No raw actor account data is exposed. Snapshot fields are policyVersion (1),
+`origin` is CREATE/EDIT/ARCHIVE/CHECKPOINT or LEGACY_BASELINE; actorKind is USER or MIGRATION.
+No raw actor account data is exposed. Snapshot fields include policyVersion (1/2/3),
 eventId/studioId/registrationId, studioName, title, durationSec/orderOnStage,
 timeZone/ageDate, configuration (category id/name; age-group id/name/minAge/maxAge;
 format id/name/minParticipants/maxParticipants/maxDurationSeconds), participants
@@ -144,5 +153,6 @@ entries. The organizer register selects history with `?performance=:performanceI
 retains the studio filter across reload/session recovery and displays only saved
 title, studio/configuration, participant count, reference date and provenance.
 Its date policy describes the shared rule; these complete-field CRUD endpoints do
-not newly enforce eligibility. No submission receipt/correction action is exposed;
-P3-ENTRIES consumes these foundations and owns their lifecycle/consumer tests.
+not enforce eligibility on draft saves. The separate studio-checkpoint commands
+consume these foundations for validated submission/review receipts and corrections;
+see the [checkpoint contract](entry-workflow.md) for their exact scope and remaining work.
