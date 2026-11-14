@@ -59,10 +59,16 @@ required operational prerequisite takes priority over the feature queue.
 
 - [ ] P9-UI-REGRESSION: start with P2-UI-FOUNDATION/SHELL and expand per feature: minimal interactive component/user-flow tests and reviewed screenshots for delivered S/F IDs at phone/portrait tablet/desktop in ET/EN/RU. Cover focus/error/empty/denied/locked/reconnect states with deterministic synthetic data; record manual screen-reader/keyboard/contrast/touch and fluent-language evidence. No blanket baseline acceptance. UI exit evidence is milestone-scoped and must exist before release, not after all phases finish. See [TESTING](../TESTING.md).
 
-- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. Delivered auth/shell/preferences and event staff have 108 Chromium cases; event setup adds 27, and review/applications add 21 (156 total; [latest evidence](../APPLICATION_REVIEW_VALIDATION.md));
+- [ ] P9-BROWSER (initial foundation slice implemented, 2026-10-25): Playwright/Chromium and CI cover synthetic ET/EN/RU foundation states at four widths, keyboard/focus, language preservation, overflow and palette checks. The historical auth/shell/preferences, staff, event setup and review/application snapshot had 156 cases ([evidence](../APPLICATION_REVIEW_VALIDATION.md)); later entry extensions and current full-suite results are tracked in the [checkpoint](../../DEVELOPMENT_PLAN.md#current-state).
   [staff UI evidence](../STAFF_UI_VALIDATION.md) records the S17/F06 extension.
   The completed P9-BROWSER-STAFF execution slice is tracked under P4-STAFF in
   [organizer tasks](organizer.md). Full domain journeys and human review remain open; gate M2 on signup/verify/apply/approve/status, M3 on entries/corrections, M4 on staff acceptance/removal, and M5 on judging/results. Expand CI alongside each journey.
+  The user-selected 2026-11-14 CI correction removes the questionnaire EOF blank
+  line and restores staff confirmation focus after React commits, independent of
+  animation frames. The staff file now has 26 cases; existing assertions and zero
+  retries remain. [CI correction evidence](../STAFF_UI_VALIDATION.md#ci-correction-2026-11-14)
+  records the failing-before-fix regression, repeated F06 checks and publication
+  limits. This bounded correction does not close P9-BROWSER or change P5-ENTRIES priority.
 - [ ] P9-OBSERVABILITY: structured safe logging/correlation IDs, error monitoring, metrics, and health/readiness for database/storage/email as applicable. Redact tokens/contact/birth/billing data under P2-PRIVACY before external operation.
 - [ ] P9-DEPLOY (user-requested local staging preparation added, 2026-10-25): [STAGING](../STAGING.md), container builds and isolated loopback-only Compose rehearsal are implemented; no hosted account/domain exists. Hosted protected ingress, production configuration, deployment architecture, staging release/migration checklist, and rollback rehearsal before the first external deployment; do not wait for scoring/results.
 - [ ] P9-RECOVERY: backups, restore rehearsal, retention and incident/runbook procedures before production data use; expand manual competition fallback before M5. Review privacy/accessibility/localization against actual implemented journeys at each release.

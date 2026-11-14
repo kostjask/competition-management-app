@@ -23,6 +23,7 @@ function EventStaff({ eventId }: { eventId: string }) {
   const [email, setEmail] = useState(""); const [roleKey, setRoleKey] = useState<"judge" | "moderator">("judge"); const [mailLocale, setMailLocale] = useState("");
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
   const trigger = useRef<HTMLElement | null>(null); const refresh = useRef<HTMLButtonElement>(null);
+  const focusAfterClose = useRef<"error" | "trigger" | null>(null);
   const section = useRef<HTMLElement>(null); const mutationPending = useRef(false);
   const readRevision = useRef(0);
   const load = useCallback(async () => {
@@ -40,12 +41,16 @@ function EventStaff({ eventId }: { eventId: string }) {
     return () => { active = false; };
   }, [eventId]);
   const disabled = busy || loading || !fresh || sessionExpired;
-  const close = (focusError = false) => { setConfirmation(null); requestAnimationFrame(() => {
-    if (focusError) { section.current?.querySelector<HTMLElement>(".ui-error-summary")?.focus(); return; }
+  useEffect(() => {
+    if (confirmation || !focusAfterClose.current) return;
+    const destination = focusAfterClose.current; focusAfterClose.current = null;
+    // Restore after the dialog unmounts and controls update, even in a background tab.
+    if (destination === "error") { section.current?.querySelector<HTMLElement>(".ui-error-summary")?.focus(); return; }
     const previous = trigger.current;
     if (previous?.isConnected && !(previous instanceof HTMLButtonElement && previous.disabled)) previous.focus();
     else refresh.current?.focus();
-  }); };
+  }, [confirmation]);
+  const close = (focusError = false) => { focusAfterClose.current = focusError ? "error" : "trigger"; setConfirmation(null); };
   const run = async (operation: () => Promise<unknown>, result: Notice) => {
     if (disabled || mutationPending.current) return;
     mutationPending.current = true; let failed = false;

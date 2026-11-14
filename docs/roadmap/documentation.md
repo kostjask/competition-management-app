@@ -9,6 +9,14 @@ commands/results. Feature roadmaps own implementation and release status.
 ## Tasks
 
 - [x] DOCS-BRANCH-WORKFLOW (2026-11-13): add target freshness, overlapping implementation/PR checks, dependency-base tracking and shared-file/migration coordination to AGENTS after the parallel M2 branches required reconciliation. Authorize fetching existing remote refs for comparison while preserving session authorization for integration and publication. Documentation checks pass. The next implementation task remains the checkpoint's P3-ENTRIES lifecycle.
+  Operational follow-up (2026-11-14): PR #4 reused the branch after PR #3 was
+  squash-merged. Main's complete tree equals the branch's earlier b3dd683 tree;
+  the old merge base produces conflicts against newer entry work. The local
+  noncommitting ancestry reconciliation preserves the complete newer tree and
+  existing edits. [Current handoff](../../DEVELOPMENT_PLAN.md#current-state)
+  records the subsequent commit/push authorization and validation limits. Hosted
+  mergeability/CI must confirm the published head; this outside-feature-queue
+  repair leaves P5-ENTRIES next.
 
 - [x] DOCS-UI-DIRECTION (2026-11-10): record the user's rejection of the entire placeholder UI and required full Hallmark redesign; reconcile UX-D01 and provisional typography/adoption guidance, add P9-UI-REDESIGN ownership and agent/checkpoint routing. Documentation only; redesign remains unimplemented, existing technical completion and implementation queue unchanged.
 

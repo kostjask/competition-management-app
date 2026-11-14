@@ -87,6 +87,7 @@ for (const locale of ["et", "en", "ru"] as const) {
     await invitee.goto("/auth/accept-invitation?token=synthetic-staff-link");
     await invitee.getByRole("button", { name: label("Flow.invitation", locale), exact: true }).click();
     await expect(invitee.getByText(label("Flow.accepted", locale), { exact: true })).toBeVisible(); expect(accepts).toBe(1);
+    await invitee.close(); await page.bringToFront();
     await page.getByRole("button", { name: label("Staff.refresh", locale), exact: true }).click();
     await expect(page.getByText(label("Flow.acceptedStatus", locale), { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: getTranslation("Staff.revokeNamed", locale, { email: "judge@example.invalid" }) })).toHaveCount(0);
@@ -136,6 +137,27 @@ test("pending removal keeps confirmation modal and controls disabled until ackno
   await expect(dialog.getByRole("button", { name: "Remove access", exact: true })).toBeDisabled();
   await page.keyboard.press("Escape"); await expect(dialog).toBeVisible(); expect(removes).toBe(1);
   release(); await expect(dialog).toHaveCount(0); await expect(page.getByText(label("Staff.removed", "en"))).toBeVisible(); expect(removes).toBe(1);
+});
+
+test("acknowledged removal restores focus without waiting for an animation frame", async ({ page }) => {
+  await localeSetup(page, "en"); const data = overview(); let removes = 0;
+  await page.route("**/api/v1/**", route => {
+    if (route.request().url().endsWith("/auth/profile")) return route.fulfill({ json: user() });
+    if (route.request().url().endsWith("/remove")) {
+      removes++; data.assignments[0] = { ...data.assignments[0], status: "REMOVED", removedAt: "2026-11-06T00:00:00.000Z" };
+      return route.fulfill({ status: 204 });
+    }
+    return route.fulfill({ json: data });
+  });
+  await page.goto("/admin/events/e/staff");
+  await page.getByLabel("Email", { exact: true }).fill("retained@example.invalid");
+  await page.getByRole("button", { name: "Remove access for Synthetic staff 0", exact: true }).click();
+  // Background tabs can suspend animation frames while a completed request still commits.
+  await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+  await page.getByRole("dialog").getByRole("button", { name: "Remove access", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Refresh status", exact: true })).toBeFocused();
+  await expect(page.getByLabel("Email", { exact: true })).toHaveValue("retained@example.invalid"); expect(removes).toBe(1);
 });
 
 test("failed initial read is not empty success and accepted missing assignment needs review", async ({ page }) => {

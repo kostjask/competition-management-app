@@ -42,6 +42,32 @@ separate. No unresolved stakeholder policy question blocks representative data e
 
 ## Current state
 
+- **PR #4 ancestry reconciliation (2026-11-14):** main's ea29cd1 squash has the
+  exact same complete Git tree as b3dd683, already an ancestor of this branch.
+  The reported conflicts come from the old merge base, not new target behavior.
+  A noncommitting ancestry merge was verified with no unresolved index entries;
+  its tree exactly matched the pre-merge HEAD. All seven existing edited files
+  were verified byte-for-byte unchanged before this documentation update. Runtime,
+  contracts and migrations are unchanged, so the preceding 259-browser/workspace
+  checks still apply; documentation and Git integrity checks cover this operation.
+  The user subsequently authorized committing and pushing this resolution with
+  the validated CI fixes. Publication must retain main as a merge parent; hosted
+  mergeability and CI are checked against the resulting PR #4 head. Deployment
+  remains unauthorized. This operational repair does not change P5-ENTRIES priority.
+
+- **User-selected CI correction (2026-11-14):** PR #3 is already merged; its two
+  failed Workspace checks tested the older b3dd683 revision. The questionnaire
+  EOF blank line is removed, and staff confirmation restores focus after React
+  commits dialog removal/control updates instead of waiting for animation frames.
+  The regression fails on the original behavior and passes with the fix; all 26
+  staff cases and 30 repeated ET/EN/RU F06 journeys pass without retries. Workspace
+  tests/build/typecheck/lint and Prisma checks pass; the full 259-case browser
+  suite passes without retries. [Evidence](docs/STAFF_UI_VALIDATION.md#ci-correction-2026-11-14)
+  records exact results and limits. Fresh target/overlap checks find no additional
+  changes affecting this correction. Commit/push was subsequently authorized for
+  PR #4; hosted CI must confirm the published head. Deployment remains
+  unauthorized. P5-ENTRIES remains next.
+
 - **Entry recovery and setup (2026-11-14):** P3-ENTRIES, P4-ENTRY-CONFIG and their
   organizer UI extensions are complete locally. Migration 39 retains identity,
   immutable actor-bound lifecycle operations and unbounded format maxima. The

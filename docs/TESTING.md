@@ -450,8 +450,16 @@ four-width ET/EN/RU layouts, native modal safe focus/Tab/Escape/restore, retaine
 input through language/session changes, invite/resend/revoke/accept/remove in
 separate tabs, removed and missing-assignment history, pending controls, conflict
 refresh, lost removal responses and acknowledged mutations with failed readback.
+Confirmation focus restores after React commits dialog removal and updated controls,
+without waiting for an animation frame. The regression suspends animation frames
+and verifies refresh focus, retained input and exactly one acknowledged removal.
+The F06 test closes the completed invitee tab and explicitly returns to the
+organizer tab. Keep focus assertions and zero retries; do not hide this failure
+with timeout increases. The staff file contains 26 cases.
 All browser data/links are synthetic; PostgreSQL remains the proof for real
-transactional history and authorization. The complete suite has 108 cases.
+transactional history and authorization. Current complete-suite results and the
+two failed hosted checks are recorded in the
+[CI correction evidence](STAFF_UI_VALIDATION.md#ci-correction-2026-11-14).
 
 The baseline's check-staff-access.cjs now additionally verifies the global-admin
 read DTO, missing event, guest/staff/scoped-admin denial, other-event exclusion,
