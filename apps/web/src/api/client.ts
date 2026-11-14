@@ -122,6 +122,7 @@ export const apiClient = {
   },
   get: (endpoint: string, options?: Omit<RequestInit, "method" | "body">): Promise<unknown> => request(endpoint, { ...options, method: "GET" }),
   post: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "POST", ...(body !== undefined && { body: JSON.stringify(body) }) }),
+  put: <TBody = unknown>(endpoint: string, body: TBody): Promise<unknown> => request(endpoint, { method: "PUT", body: JSON.stringify(body) }),
   patch: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "PATCH", ...(body !== undefined && { body: JSON.stringify(body) }) }),
   upload: (endpoint: string, body: FormData): Promise<unknown> => request(endpoint, { method: "POST", body }),
   delete: async (endpoint: string): Promise<void> => { await request(endpoint, { method: "DELETE" }); },

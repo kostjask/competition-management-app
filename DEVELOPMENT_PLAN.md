@@ -1,25 +1,89 @@
 # Development checkpoint
 
-Updated: 2026-11-12. This file owns current priority, state summary and milestone
+Updated: 2026-11-14. This file owns current priority, state summary and milestone
 gates. Roadmap files own task checkboxes; [the map](docs/README.md) routes selected
 tasks to contracts/specifications. Read history only to investigate past evidence.
 
 ## Next action
 
-**Next: P3-ENTRIES submission/receipt/correction lifecycle.** Its bounded
-P3-ENTRIES-DRAFT prerequisite implements nullable unscheduled saves on the same
-entry identity, revision/history preservation, actor-bound creation retries and
-the translated Cobalt organizer creation/completeness view under ADR-024/migration
-36. [Draft evidence](docs/ENTRY_DRAFT_VALIDATION.md) records validation and limits.
-ADR-023/migrations 34-35 already establish native dates, event-local ages, frozen
-source values and atomic audit. Before the next lifecycle implementation, record
-the submission unit, eligibility aggregation, entry/music deadlines and correction
-scope/lock/withdrawal matrix, coordinating later P4-ENTRY-CONFIG and music gates.
-Then implement pinned receipt/retry and scoped correction consumers with their
-organizer UI. P3-ENTRIES and P3-HISTORY remain open. Representative editing,
-music/submission UI, external milestones and whole-UI approval remain open.
+**Next: the remaining P3-ENTRIES withdrawal/resubmission slice.**
+The user confirmed **studio-wide** basic/final checkpoints and **any older age**
+within the configured older-dancer percentage. [ADR-025](docs/adr/025-entry-submission-lifecycle.md)
+records the accepted policy; the completed [questionnaire](docs/ENTRY_POLICY_QUESTIONNAIRE.md)
+and [image rules](docs/DANCE_EXPRESS_RULES.md) remain source evidence.
+
+The core checkpoint implementation now spans shared contracts, migration 38,
+studio-wide manifests/receipts, optimistic/retry-safe commands, field/roster locks,
+scoped reopening, independent acceptance, any-older percentage eligibility,
+category-specific limits, rule freeze and the translated Cobalt organizer rules,
+review and details editors. [Validation](docs/ENTRY_CHECKPOINT_VALIDATION.md)
+records exact checks and limits. Neither
+whole M3 delivery nor all of P3-ENTRIES is claimed complete.
+
+The verified disposable application database localhost:5432/dance_comp, public
+schema, was reset and reseeded on 2026-11-14 after fresh explicit user consent
+satisfied Prisma's CLI guard. All 38 canonical migrations are applied; the obsolete
+parallel-branch migration is absent. Seed counts and temporary API health,
+administrator login/profile and entry-configuration reads pass. The database
+handoff blocker is resolved; no external deployment or mail delivery is implied.
+
+Complete same-identity reversible withdrawal/resubmission and its
+organizer recovery UI within P3-ENTRIES. Then extend P4-ENTRY-CONFIG's full option
+creation/presets and P5 representative consumers; initial per-event-day estimates
+are recorded under P5-APPLICATION-ESTIMATES. Music deadlines, private files,
+version confirmation/acceptance and reminders retain P3-MUSIC-MODEL/P8-MEDIA/
+P5-MUSIC gates. Keep application approval, entry review and music acceptance
+separate. No unresolved stakeholder policy question blocks this core slice.
 
 ## Current state
+
+- **Studio checkpoint delivery (2026-11-14):** P3-ENTRIES core and remaining
+  P3-HISTORY consumers now span contracts, migration 38, API, secure studio-wide
+  locks/receipts/reopening and Cobalt organizer configuration/review/editor UI.
+  [Evidence](docs/ENTRY_CHECKPOINT_VALIDATION.md) records final checks and limits.
+  P3-HISTORY is complete locally; P3-ENTRIES stays open for reversible withdrawal/
+  resubmission. Fresh user consent subsequently authorized the verified local
+  database reset/reseed; all 38 migrations and seeded API smoke checks now pass.
+  Other phase/release gates stay open.
+
+- **Stakeholder answers received (2026-11-13, clarified 2026-11-14):** the user completed all numbered
+  questionnaire answers and supplied six Dance Express rule images. ADR-025 now
+  records the resulting staged workflow; the earlier per-entry/all-ages-in-range
+  proposal is superseded. Younger dancers are unrestricted; the 20% older-dancer
+  allowance and atomic form unit were subsequently confirmed as any older age and studio-wide checkpoints. Published
+  nominations include category-specific limits (kids groups 210 seconds versus
+  standard groups 240), so current independent option lists are insufficient.
+  Rule edits freeze once registration starts, while organizer entry corrections
+  and exceptions can occur later with retained history. Source scoring/fee/award
+  rules are recorded for their owning later work, not added to this slice. No
+  additional scoring/fee/award runtime work is claimed by this reconciliation.
+
+- **Lifecycle preflight (2026-11-13):** source inspection confirms the existing
+  draft/history/calendar prerequisites. Fresh origin/main is contained in this
+  branch; GitHub lists only this branch's existing PR #3, targeting main. The
+  then-unaccepted ADR-025 proposal made the competition-policy gate
+  reviewable before dependent code. Focused checks pass: 77 API route tests,
+  isolated PostgreSQL entry foundations and 38 Chromium performance/history/draft
+  cases. The initial sandboxed database command failed; its authorized fixture
+  retry passed. These validate current foundations, not future lifecycle behavior.
+  No application database, runtime code or UI was changed; full implementation
+  gates remain required after policy resolution. Existing user edits are retained.
+
+- **Branch workflow guidance (2026-11-13):** AGENTS now requires fresh target and
+  overlapping-PR/task checks before implementation and final integration
+  validation, with explicit dependency bases and coordination of shared contracts
+  and migrations. This follows the parallel M2 implementations reconciled below.
+  [Documentation task](docs/roadmap/documentation.md#tasks) records the scope.
+
+- **PR reconciliation (2026-11-13):** combined the parallel organizer/application
+  branch with main's integrated M2 and newer M3 ownership/history/draft work.
+  Main's contracts and 36 migrations remain canonical. The unpublished duplicate
+  disposable-only branch migration is replaced by additive migration 37 for
+  per-recipient transport retry tracking. Explicit administrator notification
+  retries, verified onboarding continuation, representative application home and
+  revisioned image replacement are retained. Historical branch evidence is labelled
+  separately. [Merge validation](docs/APPLICATION_REVIEW_VALIDATION.md#merge-reconciliation-2026-11-13)
+  records checks and database handoff limits. The next queued task above stays current.
 
 - **M3 incomplete drafts (2026-11-11):** P3-ENTRIES-DRAFT adds nullable fields and
   stage order without replacing entry IDs, immutable owners or snapshots. Canonical
@@ -32,7 +96,7 @@ music/submission UI, external milestones and whole-UI approval remain open.
   saved snapshots, revisioned writes/audit and the translated Cobalt history
   ledger pass local workspace, database, migration and browser checks. Calendar
   policy/calculation is implemented; submission eligibility/receipt/correction
-  consumers remain P3-ENTRIES and keep the P3-HISTORY parent open.
+  consumers are now delivered by the checkpoint slice above, closing P3-HISTORY locally.
 
 - **M3 ownership/integrity foundations (2026-11-11):** P3-PERFORMANCE-OWNER and
   P3-CONSTRAINTS pass locally under ADR-022. Explicit owners replace participant
@@ -83,11 +147,13 @@ music/submission UI, external milestones and whole-UI approval remain open.
   ET/EN/RU and assistive review. Local fixtures/fake mail do not close these gates.
   [STAGING](docs/STAGING.md) owns rehearsal/rollout instructions. The recorded
   rehearsal used 26 migrations; later hosted/staging rollout remains unverified.
-- Repository schema has 36 migrations, including P4-CORE's additive event setup,
+- Repository schema has 38 migrations, including P4-CORE's additive event setup,
   P4-REVIEW's reasons/notification relations, ADR-022's ownership/constraints,
-  ADR-023's calendar/history foundations and ADR-024's incomplete drafts.
-  The application database
-  was not migrated in this slice; all new database checks use isolated fixtures.
+  ADR-023's calendar/history foundations, ADR-024's incomplete drafts and the
+  additive per-recipient notification delivery retry migration 37 and studio checkpoint migration 38.
+  Isolated fixtures cover migration/API behavior. The verified disposable
+  application database was subsequently reset/reseeded on 2026-11-14 with fresh
+  user consent, and all 38 canonical migrations are now applied.
   [Setup evidence](docs/EVENT_SETUP_VALIDATION.md) records the prior migration's local
   application and current isolated fresh/upgrade/API/browser checks. The user's **2026-11-09 startup record**
   verified localhost:5432/dance_comp in repository Compose and applied 12 pending
@@ -99,8 +165,9 @@ music/submission UI, external milestones and whole-UI approval remain open.
 - Current development rows are disposable under the scoped
   [database policy](AGENTS.md#development-database-policy); verify the resolved
   target before reset/reseed or migration-history changes. Domain integrity/history
-  requirements still apply. This completion pass used isolated test databases/
-  schemas; it did not reset/reseed or migrate the application database.
+  requirements still apply. Implementation checks used isolated databases/schemas;
+  the separately authorized application database reset/reseed and smoke checks
+  subsequently passed on 2026-11-14.
 
 Latest recorded runtime evidence: [entry drafts, 2026-11-11](docs/ENTRY_DRAFT_VALIDATION.md).
 Earlier reports and the former detailed checkpoint are in
@@ -176,7 +243,7 @@ music and live/results work retain their own gates.
 | 6 - complete locally | P5-APPLICATION with P5-UI-APPLICATION | Role-independent apply/status/profile/contact, atomic verified draft completion, pending cancellation/reapply, form-specific validation and uncertain-response/session recovery pass full local gates (2026-11-11). |
 | 7 - complete locally | P3-PERFORMANCE-OWNER with read-only organizer ownership register | ADR-022/migration 33, canonical owner DTOs, active access validation, unambiguous backfill/refusal, retained history and translated organizer reads pass local gates (2026-11-11). |
 | 8 - complete locally | P3-CONSTRAINTS | Event/owner/configuration/participant compound keys, row bounds, direct SQL/API/rollback/concurrency and fresh/upgrade parity pass local gates (2026-11-11). Score/judge consistency remains P6-SCORING-MODEL. |
-| 9 - foundations delivered; parent open | P3-HISTORY | ADR-023/migration 35 implement frozen snapshots, revisions/audit and organizer history. Concurrent submit/receipt/correction consumer tests remain P3-ENTRIES; pre-entry design gates are ready. |
+| 9 - complete locally | P3-HISTORY | ADR-023 foundations and ADR-025 checkpoint consumers preserve exact immutable source snapshots, concurrent receipts, scoped corrections, retry/audit atomicity and organizer history/acknowledgements. |
 | 10 - complete locally | P3-CALENDAR-DATES | Migration 34 safely converts audited calendar dates; event-local completed-age/leap policy, shared calculation and organizer reference display pass local gates. Submit-time enforcement remains P3-ENTRIES. |
 | 11 - complete locally | P3-ENTRIES-DRAFT within P3-ENTRIES | ADR-024/migration 36, nullable unscheduled drafts, revisioned clearing/completion, actor-bound create retries and organizer creation/completeness UI pass local gates (2026-11-12). Submission/receipt/correction consumers keep the parent open. |
 
@@ -193,7 +260,8 @@ remain release blockers without becoming blanket development blockers.
 
 Local M2 and the M3 ownership/constraint/calendar/history design foundations now
 pass. The bounded P3-ENTRIES-DRAFT slice delivers incomplete unscheduled saves.
-Next finish P3-ENTRIES lifecycle and P3-HISTORY consumer tests there, then
+The core checkpoint/history consumers are delivered locally. Next finish
+P3-ENTRIES reversible withdrawal/resubmission, then
 P4-ENTRY-CONFIG/P5-ENTRIES and the
 P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION path. Develop the
 history/constraint contracts before dependent drafts/submission. Keep calendar

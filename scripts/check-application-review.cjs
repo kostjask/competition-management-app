@@ -23,6 +23,23 @@ module.exports = async function checkApplicationReview({ client, baseUrl, adminT
   assert.equal((await request(root, token, 'POST', body)).body.id, created.body.id);
   const current = () => client.studioEventRegistration.findUniqueOrThrow({ where: { id: created.body.id } });
   const org = { status: 'APPROVED', revision: 1 };
+  const notice = await client.reviewNotice.create({ data: { registrationId: created.body.id, revision: 1, axis: 'EVENT', mode: 'SIMULATED' } });
+  const retryPath = item + '/review/' + notice.id + '/retry';
+  const noticesBefore = await client.reviewNotice.findMany();
+  assert.equal((await request(retryPath, token, 'POST', {})).status, 403);
+  assert.equal((await request(retryPath, outsider, 'POST', {})).status, 403);
+  assert.equal((await request(retryPath, adminToken, 'POST', { recipientId: owner.id })).status, 400);
+  assert.equal((await request(retryPath.replace(event.id, other.id), adminToken, 'POST', {})).status, 404);
+  assert.equal((await request(retryPath.replace(studioId, 'foreign-studio'), adminToken, 'POST', {})).status, 404);
+  assert.equal((await request(retryPath.replace(notice.id, 'missing-notice'), adminToken, 'POST', {})).status, 404);
+  await client.studio.update({ where: { id: studioId }, data: { deletedAt: new Date() } });
+  assert.equal((await request(retryPath, adminToken, 'POST', {})).status, 404);
+  await client.studio.update({ where: { id: studioId }, data: { deletedAt: null } });
+  assert.equal((await request(retryPath, adminToken, 'POST', {})).status, 204);
+  assert.equal((await current()).revision, 1);
+  assert.deepEqual(await client.reviewNotice.findMany(), noticesBefore);
+  // Keep later decision-count assertions isolated from this retained retry fixture.
+  await client.reviewNotice.delete({ where: { id: notice.id } });
   assert.equal((await request(profile + '/approval', adminToken, 'PATCH', { status: 'APPROVED' })).status, 400);
   assert.equal((await request(profile + '/approval', token, 'PATCH', org)).status, 403);
   assert.equal((await request(profile + '/approval', adminToken, 'PATCH', org)).status, 200);
@@ -48,7 +65,7 @@ module.exports = async function checkApplicationReview({ client, baseUrl, adminT
   const review = await request(item + '/review'); assert.equal(review.status, 200);
   assert.ok(review.body.history.some(value => value.action === 'STUDIO_APPROVAL_CHANGED' && value.reason === 'INCOMPLETE_DETAILS'));
   assert.ok(review.body.notifications.every(value => value.state === 'SIMULATED'));
-  for (const row of review.body.notifications) assert.deepEqual(Object.keys(row).sort(), ['axis','createdAt','id','revision','state']);
+  for (const row of review.body.notifications) assert.deepEqual(Object.keys(row).sort(), ['axis','createdAt','id','retryable','revision','state']);
   for (const row of review.body.history) assert.deepEqual(Object.keys(row).sort(), ['action','createdAt','fromStatus','reason','revision','toStatus']);
   assert.equal((await request(item + '/review', outsider)).status, 403);
   assert.equal((await request('/events/' + other.id + '/studio-registrations/' + studioId + '/review', adminToken)).status, 404);

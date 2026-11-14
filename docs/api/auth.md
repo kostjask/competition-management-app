@@ -208,7 +208,10 @@ retries return stored state, conflicting/stale operations return 409. Cancellati
 increments revision and retains account/history; it never deletes or reopens a
 terminal draft. Verified reads preserve prior progress. Read/write identity checks,
 revision changes and ONBOARDING_SAVED/CANCELLED audit commit serializably.
-Application submission/approval remains P5-APPLICATION.
+P5-APPLICATION now consumes exact verified owner drafts through the registration
+POST and marks them COMPLETED atomically; [the application contract](registrations.md)
+owns this separate domain operation. The onboarding editor's Continue opens the
+draft's exact event application or `/applications` for saved status/event selection.
 
 ## Account language preference
 

@@ -83,7 +83,12 @@ function EventSetup({ id }: { id: string }) {
       </aside><div className="setup-editor"><EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
         submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}
         onSubmit={values => run({ ...values, expectedRevision: data.revision })} onCancel={() => navigate(`/events/${encodeURIComponent(id)}`)} />
-      <EventImageEditor eventId={id} imageUrl={data.imageUrl} disabled={disabled} onSaved={imageUrl => setData(previous => previous ? { ...previous, imageUrl } : previous)} />
+      <EventImageEditor eventId={id} imageUrl={data.imageUrl} disabled={disabled} onSaved={latest => {
+        const previousFields = { ...data, imageUrl: null, revision: 0 };
+        const latestFields = { ...latest, imageUrl: null, revision: 0 };
+        if (JSON.stringify(previousFields) === JSON.stringify(latestFields)) setData(latest);
+        else setServer(latest);
+      }} />
       <div className="ui-actions"><Link to={`/events/${encodeURIComponent(id)}`}>{t("Events.moreInfo")}</Link><Link to={`/admin/events/${encodeURIComponent(id)}/staff`}>{t("Staff.title")}</Link></div>
       </div></div>{target && <StageConfirmation event={data} target={target} busy={busy} onCancel={() => { restoreFocus.current = trigger.current; setTarget(null); }} onConfirm={() => { void run({ stage: target, expectedStage: data.stage, expectedRevision: data.revision }); }} />}
     </>}

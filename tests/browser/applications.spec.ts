@@ -52,6 +52,69 @@ async function fixture(page: Page, options: { admin?: boolean; empty?: boolean; 
   return state;
 }
 
+for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 1440]) {
+  test(`${locale} expired notification retry preserves review drafts at ${width}px`, async ({ page }) => {
+    const state = await fixture(page, { admin: true, locale, width });
+    const before = structuredClone(state.row);
+    let retried = false; let fail = true; let release = () => {};
+    const hold = new Promise<void>(resolve => { release = resolve; });
+    await page.route("**/studio-registrations/s/review", route => route.fulfill({ json: { history: [], notifications: [
+      { id: "notice", revision: 1, axis: "EVENT", state: retried ? "QUEUED" : "EXPIRED", retryable: !retried, createdAt: instant },
+    ] } }));
+    await page.route("**/review/notice/retry", async route => {
+      expect(route.request().postDataJSON()).toEqual({});
+      if (fail) return route.fulfill({ status: 409, json: failure() });
+      await hold; retried = true;
+      return route.fulfill({ status: 204 });
+    });
+    await page.goto("/admin/events/e/applications?studio=s");
+    await page.locator("#organization-status").selectOption("REJECTED");
+    await page.locator("#profile-city").fill("Unsaved city");
+    const retry = page.getByRole("button", { name: label("Application.retryNotification", locale), exact: true });
+    await retry.focus(); await page.keyboard.press("Enter");
+    await expect(page.locator(".ui-error-summary")).toBeFocused();
+    await expect(page.locator("#profile-city")).toHaveValue("Unsaved city");
+    fail = false; await retry.click();
+    await expect(retry).toBeDisabled(); release();
+    await expect(page.getByText(label("Application.retrySaved", locale), { exact: true })).toBeVisible();
+    await expect(retry).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: label("Application.notifications", locale), exact: true })).toBeFocused();
+    await expect(page.locator("#organization-status")).toHaveValue("REJECTED");
+    await expect(page.locator("#profile-city")).toHaveValue("Unsaved city");
+    expect(state.row).toEqual(before); expect(state.writes).toEqual([]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    state.admin = false; await page.goto("/events/e/studio?studio=s");
+    await expect(page.locator("#profile-city")).toBeVisible();
+    await expect(retry).toHaveCount(0);
+  });
+}
+
+test("uncertain notification retry survives session recovery independently of review edits", async ({ page }) => {
+  const state = await fixture(page, { admin: true });
+  let queued = false; let attempts = 0;
+  await page.route("**/studio-registrations/s/review", route => route.fulfill({ json: { history: [], notifications: [
+    { id: "notice", revision: 1, axis: "EVENT", state: queued ? "QUEUED" : "EXPIRED", retryable: !queued, createdAt: instant },
+  ] } }));
+  await page.route("**/review/notice/retry", route => {
+    attempts++;
+    if (!state.valid) return route.fulfill({ status: 401, json: failure("authenticationRequired") });
+    if (!queued) { queued = true; return route.abort(); }
+    return route.fulfill({ status: 204 });
+  });
+  await page.goto("/admin/events/e/applications?studio=s");
+  await page.locator("#profile-city").fill("Retained retry draft");
+  const retry = page.getByRole("button", { name: label("Application.retryNotification"), exact: true });
+  await retry.click(); await expect(page.locator(".ui-error-summary")).toBeVisible();
+  state.valid = false; await retry.click(); await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("dialog").locator('input[type="password"]').fill("synthetic password");
+  await page.getByRole("dialog").getByRole("button", { name: label("Shell.login"), exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(attempts).toBe(2);
+  await retry.click(); await expect(retry).toHaveCount(0);
+  await expect(page.locator("#profile-city")).toHaveValue("Retained retry draft");
+  expect(attempts).toBe(3); expect(state.writes).toEqual([]); expect(state.row?.revision).toBe(1);
+});
+
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440]) {
   test(`${locale} S06 independent decision ledger and S08 profile at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, { admin: true, locale, width });
@@ -84,7 +147,9 @@ test("organizer dashboard shows independent pending counts and keeps selected fi
   await page.getByRole("link", { name: label("Application.organization") + ": 1", exact: true }).click();
   await expect(page.locator("#review-axis")).toHaveValue("ORGANIZATION");
   await page.getByRole("link", { name: "Synthetic studio", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Synthetic studio", exact: true })).toBeVisible();
   await page.locator("#review-filter").selectOption("APPROVED");
+  await expect(page).toHaveURL(/studio=s/);
   await expect(page.getByText(label("Application.keepOpen"), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: label("Application.showAll"), exact: true }).click();
   await expect(page.getByRole("link", { name: "Synthetic studio", exact: true })).toBeVisible();

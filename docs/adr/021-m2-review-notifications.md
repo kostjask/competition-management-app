@@ -38,3 +38,24 @@ The additive migration retains existing records. Rollback requires restoring an
 application version that understands these contracts or a coordinated export of
 notice/history data; do not drop notice tables after use. Disposable development
 fixtures may be replaced only under the repository's verified-target policy.
+
+## Combined branch delivery recovery, 2026-11-13
+
+The merge keeps main's ReviewNotice model and adapts the parallel branch's
+explicit administrator retry. Migration 37 retains each new review delivery's
+account recipient and supersession time. A retry checks the exact active
+event/studio/notice and current verified membership, then atomically supersedes
+only expired deliveries and queues new encrypted mail using current account
+contact/language. Accepted and unexpired deliveries stay attached. Serializable
+transactions reconcile concurrent dispatch/retry through the existing 409 flow.
+Retries change transport state independently of decisions, revisions and audit
+history. Old transport attempts remain retained, with superseded attempts excluded
+from current status. The UI refreshes notification data independently of editor
+drafts. Historical deliveries lacking recipient bindings retain visible status
+and cannot be retargeted. No recipient binding or supersession detail enters DTOs.
+
+The duplicate branch migration 20261112000000_organizer_setup_review was removed
+after the user confirmed it was unpublished and used only by disposable dev/test
+databases. Main's existing migrations are retained. Such disposable branch
+databases need a verified-target reset/reseed to adopt this consolidated history.
+This merge's database checks use isolated fixtures.

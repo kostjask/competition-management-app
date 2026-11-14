@@ -12,6 +12,8 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-12 applicant/status and discovery integration | [Application validation](APPLICATION_VALIDATION.md) |
+| 2026-11-12 organizer setup/review | [Organizer validation](ORGANIZER_VALIDATION.md) |
 | 2026-10-23–24 baseline / dependencies / Phase 1 | [Baseline](BASELINE_VALIDATION.md), [change review](BASELINE_CHANGE_REVIEW.md), [migrations](MIGRATION_VALIDATION.md), [dependencies](DEPENDENCY_UPDATES.md); archived entries below |
 | 2026-10-24–25 model / repository review | [Database](DATABASE_REVIEW.md), [schema suitability](SCHEMA_SUITABILITY_AUDIT.md), [repository audit](REPOSITORY_AUDIT.md) |
 | 2026-10-25 scope / identity / recovery | [Scope](SCOPE_INTEGRITY_VALIDATION.md), [email](EMAIL_IDENTITY_VALIDATION.md), [tokens](IDENTITY_TOKEN_VALIDATION.md), [eligibility](AUTH_ELIGIBILITY_VALIDATION.md), [recovery](AUTH_RECOVERY_VALIDATION.md), [Phase 2A](PHASE_2A_VALIDATION.md) |

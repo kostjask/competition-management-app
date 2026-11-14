@@ -27,7 +27,7 @@ export class ImagesController extends BaseController {
         const current = await imageAccess(tx, session, target, true);
         if (current.path !== before.path) throw new ConflictError("Image changed concurrently", undefined, "concurrentChange");
         switch (target.resource) {
-          case "events": await tx.event.update({ where: { id: target.id }, data: { imagePath: filePath, imageUrl: url } }); break;
+          case "events": await tx.event.update({ where: { id: target.id }, data: { imagePath: filePath, imageUrl: url, revision: { increment: 1 } } }); break;
           case "users": await tx.user.update({ where: { id: target.id }, data: { photoPath: filePath, photoUrl: url } }); break;
           case "dancers": await tx.dancer.update({ where: { id: target.id }, data: { photoPath: filePath, photoUrl: url } }); break;
           case "studios": await tx.studio.update({ where: { id: target.id }, data: { logoPath: filePath, logoUrl: url } }); break;

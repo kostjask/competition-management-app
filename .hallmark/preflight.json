@@ -1,0 +1,23 @@
+{
+  "scanned": "2026-11-14",
+  "task": "P3-ENTRIES core checkpoints and P3-HISTORY consumers",
+  "findings": {
+    "design": "DESIGN.md Cobalt app scope; docs/DESIGN_SYSTEM.md retained",
+    "framework": "React/Vite with shared Zod API contracts",
+    "shell": "Existing semantic tokens and accessible shared shell"
+  },
+  "preserve": [
+    "Cobalt tokens",
+    "ET/EN/RU",
+    "keyboard and responsive states",
+    "backend authorization",
+    "user edits"
+  ],
+  "introduce": [
+    "studio-wide checkpoint review",
+    "bounded rules/deadlines",
+    "entry details and participants",
+    "explicit stale/uncertain recovery"
+  ],
+  "inferences": "Operational app screen; no hero or material slots. Complete presets and representative screens remain follow-up."
+}

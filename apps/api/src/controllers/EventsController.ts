@@ -6,6 +6,7 @@ import { AuthoredContentSchema, CreateEventBodySchema, UpdateEventBodySchema, Ev
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { appendAudit } from "../services/audit";
 import { assertStageTransition } from "../services/registrationPolicy";
+import { requireMutableEntryRules } from "../services/entryWorkflow";
 import { BaseController } from "./BaseController";
 
 const eventSelect = {
@@ -125,6 +126,9 @@ export class EventsController extends BaseController {
       const event = await this.prisma.$transaction(async tx => {
         const current = await tx.event.findUnique({ where: { id: eventId }, select: eventSelect });
         if (!current) throw new NotFoundError("Event", eventId);
+        if ((body.startsAt !== undefined && Date.parse(body.startsAt) !== current.startsAt.getTime()) || (body.timeZone !== undefined && body.timeZone !== current.timeZone)) {
+          await requireMutableEntryRules(tx, eventId);
+        }
         if (body.expectedRevision !== current.revision) {
           if (matchesRetry(current, body)) return current;
           throw new ConflictError("Event changed; compare and reload before saving", undefined, "concurrentChange");

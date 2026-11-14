@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 module.exports = async function checkReviewEmail(client, mail) {
-  const { queueReviewNotice, readApplicationReview } = require('../apps/api/dist/services/reviewNotifications.js');
+  const { queueReviewNotice, readApplicationReview, retryReviewNotice } = require('../apps/api/dist/services/reviewNotifications.js');
+  const { registrationTransaction } = require('../apps/api/dist/services/registrationPolicy.js');
   const event = await client.event.create({ data: { name: 'Review mail fixture', startsAt: new Date('2099-01-01'), endsAt: new Date('2099-01-02') } });
   const studio = await client.studio.create({ data: { name: 'Review mail studio', eventId: event.id, registrations: { create: { eventId: event.id } } }, include: { registrations: true } });
   const registration = studio.registrations[0];
@@ -39,4 +40,33 @@ module.exports = async function checkReviewEmail(client, mail) {
   await client.emailDelivery.updateMany({ where: { reviewNoticeId: expired.id }, data: { expiresAt: new Date(Date.now() - 1000), createdAt: new Date(Date.now() - 24 * 3600000) } });
   await mail.dispatchEmailBatch(client, { send: async () => { throw new Error('Expired review mail must never dispatch'); } });
   review = await readApplicationReview(client, event.id, studio.id, registration.id); assert.equal(review.notifications[0].state, 'EXPIRED');
+  assert.equal(review.notifications[0].retryable, true);
+  const retry = () => registrationTransaction(client, tx => retryReviewNotice(tx, event.id, studio.id, expired.id));
+  const retained = await client.studioEventRegistration.findUniqueOrThrow({ where: { id: registration.id } });
+  const snapshot = () => client.emailDelivery.findMany({ where: { reviewNoticeId: expired.id }, orderBy: { id: 'asc' } });
+  const beforeRetry = await snapshot();
+  await assert.rejects(client.$transaction(async tx => { await retryReviewNotice(tx, event.id, studio.id, expired.id); throw new Error('Synthetic retry rollback'); }));
+  assert.deepEqual(await snapshot(), beforeRetry);
+  const member = await client.studioRepresentative.findFirstOrThrow({ where: { studioId: studio.id, user: { email: 'review-mail-ru@example.invalid' } } });
+  await client.studioRepresentative.update({ where: { id: member.id }, data: { active: false } });
+  await assert.rejects(retry(), error => error.statusCode === 403);
+  assert.deepEqual(await snapshot(), beforeRetry);
+  await client.studioRepresentative.update({ where: { id: member.id }, data: { active: true } });
+  // One accepted recipient must never be resent when the others expire.
+  const accepted = beforeRetry[0];
+  await client.emailDelivery.update({ where: { id: accepted.id }, data: { state: 'ACCEPTED', acceptedAt: new Date(), providerId: 'synthetic-accepted' } });
+  const acceptedRow = await client.emailDelivery.findUniqueOrThrow({ where: { id: accepted.id } });
+  const outcomes = await Promise.allSettled([retry(), retry()]);
+  assert.ok(outcomes.some(result => result.status === 'fulfilled'));
+  for (const result of outcomes) if (result.status === 'rejected') assert.equal(result.reason.statusCode, 409);
+  assert.equal(await client.emailDelivery.count({ where: { reviewNoticeId: expired.id, supersededAt: null } }), 3);
+  assert.equal(await client.emailDelivery.count({ where: { reviewNoticeId: expired.id, supersededAt: { not: null } } }), 2);
+  assert.deepEqual(await client.emailDelivery.findUniqueOrThrow({ where: { id: accepted.id } }), acceptedRow);
+  const afterRetry = await snapshot();
+  await retry(); assert.deepEqual(await snapshot(), afterRetry);
+  assert.deepEqual(await client.studioEventRegistration.findUniqueOrThrow({ where: { id: registration.id } }), retained);
+  review = await readApplicationReview(client, event.id, studio.id, registration.id);
+  assert.equal(review.notifications[0].state, 'QUEUED'); assert.equal(review.notifications[0].retryable, false);
+  await mail.dispatchEmailBatch(client, { send: async () => 'synthetic-retried' });
+  review = await readApplicationReview(client, event.id, studio.id, registration.id); assert.equal(review.notifications[0].state, 'ACCEPTED');
 };

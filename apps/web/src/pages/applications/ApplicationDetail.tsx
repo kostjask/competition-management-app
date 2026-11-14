@@ -89,7 +89,8 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
       </>}
       <StudioEditor key={`${snapshot.row.revision}-${editorVersion}`} studio={snapshot.studio} revision={snapshot.row.revision} disabled={disabled} editable={admin || (open && (current.status === "PENDING" || !!user?.permissions.some(value => value.keys.includes("studio.manage") && (value.eventId === event.id || value.eventId === null))))}
         save={value => { void execute({ target: t("Flow.save"), effect: "", execute: value }); }} />
-      <ApplicationHistory value={snapshot.review} />
+      <ApplicationHistory value={snapshot.review} admin={admin} eventId={event.id} studioId={current.studioId}
+        onChanged={review => setSnapshot(value => value ? { ...value, review } : value)} />
     </>}
     {confirmation && <Confirmation target={confirmation.target} effect={confirmation.effect} busy={busy} fallbackFocus={heading} onCancel={() => setConfirmation(null)} onConfirm={() => { void execute(confirmation); }} />}
   </article>;

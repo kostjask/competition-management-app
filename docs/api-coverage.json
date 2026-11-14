@@ -2,6 +2,23 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/studio-registrations/:studioId/review/:notificationId/retry",
+      "tests": {
+        "success": "scripts/check-application-review.cjs",
+        "invalidInput": "scripts/check-application-review.cjs",
+        "authentication": "all mounted resource groups and invitation administration require authentication",
+        "permission": "scripts/check-application-review.cjs",
+        "crossParent": "scripts/check-application-review.cjs",
+        "inactiveRecord": "scripts/check-application-review.cjs",
+        "conflict": "scripts/check-application-review.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
       "router": "auth",
       "exportName": "authRouter",
       "mount": "/auth",
@@ -1161,6 +1178,72 @@
         "inactiveRecord": "scripts/check-staff-access.cjs",
         "conflict": "scripts/check-staff-access.cjs",
         "globalAdmin": "scripts/check-staff-access.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/entry-configuration",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "PUT",
+      "path": "/:eventId/entry-configuration",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs",
+        "globalAdmin": "scripts/check-admin-scope.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studios/:studioId/entry-review",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs"
+      }
+    },
+    {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/studios/:studioId/entry-review/:kind",
+      "tests": {
+        "success": "scripts/check-entry-workflow.cjs",
+        "invalidInput": "scripts/check-entry-workflow.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-workflow.cjs",
+        "crossParent": "scripts/check-entry-workflow.cjs",
+        "inactiveRecord": "scripts/check-entry-workflow.cjs",
+        "conflict": "scripts/check-entry-workflow.cjs"
       }
     }
   ]

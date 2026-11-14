@@ -35,6 +35,11 @@ invalidation or expiry on the next worker pass; stop dispatch attempts at the
 23-hour deadline and retain only safe receipt metadata after finalization.
 Worker downtime and backup retention can extend encrypted payload residence;
 operators must review those periods before real data use.
+Review-delivery receipts retain an internal account recipient reference and retry
+supersession time to enforce active membership and preserve accepted deliveries.
+These fields follow the private transport/history retention policy and are omitted
+from application DTOs. Superseding an expired attempt clears its encrypted body
+atomically with the replacement intent under ADR-021.
 Back up that key through secret management, restrict operational queue access and
 disable provider link/open tracking for identity mail. This explicit transport
 secret lifecycle does not authorize general account/draft/audit cleanup.

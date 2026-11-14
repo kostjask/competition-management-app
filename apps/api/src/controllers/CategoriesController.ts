@@ -6,6 +6,7 @@ import {
 } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
+import { requireMutableEntryRules } from "../services/entryWorkflow";
 
 const categorySelect = {
   id: true, eventId: true, name: true,
@@ -28,6 +29,7 @@ export class CategoriesController extends BaseController {
     if (!await this.prisma.event.findUnique({ where: { id: eventId }, select: { id: true } })) {
       throw new NotFoundError("Event", eventId);
     }
+    if (write) await requireMutableEntryRules(this.prisma, eventId);
   }
 
   private async mutation<T>(operation: () => Promise<T>): Promise<T> {

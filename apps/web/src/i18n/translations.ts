@@ -3,12 +3,14 @@ import { formatNumber } from "./format";
 import { eventSetupTranslations } from "./eventSetupTranslations";
 import { applicationTranslations } from "./applicationTranslations";
 import { performanceTranslations } from "./performanceTranslations";
+import { entryTranslations } from "./entryTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 export const translations = {
   Setup: eventSetupTranslations,
   Application: applicationTranslations,
   Performance: performanceTranslations,
+  Entry: entryTranslations,
   Registration: {
     pending: { et: "Ootel", en: "Pending", ru: "На рассмотрении" },
     approved: { et: "Heaks kiidetud", en: "Approved", ru: "Одобрено" },

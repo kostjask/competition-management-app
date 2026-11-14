@@ -46,6 +46,6 @@ export type StudioRegistration = z.infer<typeof StudioRegistrationSchema>;
 
 export const ApplicationReviewSchema = z.strictObject({
   history: z.array(z.strictObject({ action: z.enum(["STUDIO_APPROVAL_CHANGED", "REGISTRATION_APPROVAL_CHANGED", "REGISTRATION_CORRECTED", "REGISTRATION_CANCELLED", "REGISTRATION_REAPPLIED", "REGISTRATION_CREATED"]), createdAt: z.iso.datetime(), revision: z.int().positive().nullable(), fromStatus: StudioEventMembershipSchema.shape.status.nullable(), toStatus: StudioEventMembershipSchema.shape.status.nullable(), reason: ReviewReasonSchema.nullable() })),
-  notifications: z.array(z.strictObject({ id: IdSchema, revision: z.int().positive(), axis: z.enum(["ORGANIZATION", "EVENT"]), state: z.enum(["SIMULATED", "NO_RECIPIENT", "QUEUED", "RETRYING", "ACCEPTED", "EXPIRED"]), createdAt: z.iso.datetime() })),
+  notifications: z.array(z.strictObject({ id: IdSchema, revision: z.int().positive(), axis: z.enum(["ORGANIZATION", "EVENT"]), state: z.enum(["SIMULATED", "NO_RECIPIENT", "QUEUED", "RETRYING", "ACCEPTED", "EXPIRED"]), retryable: z.boolean().default(false), createdAt: z.iso.datetime() })),
 });
 export type ApplicationReview = z.infer<typeof ApplicationReviewSchema>;

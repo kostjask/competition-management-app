@@ -59,9 +59,10 @@ verification/invitation links retain the session choice or use the same account/
 fallback. Mail resolves its recipient locale independently and invitations keep
 their frozen locale. No browser inference writes account preferences. Document lang/titles, semantic loading names, profile and event
 dates and numeric feedback now use the Phase 2 shared formatting foundation.
-Current event screens and datetime editors explicitly use UTC. The M2 event-zone
-model is implemented in contracts/storage under ADR-003; event-zone setup/display
-controls remain P4-CORE. Calendar date helpers do not
+Event list/detail and organizer editors now use the stored IANA event timezone
+under ADR-003; UTC remains the default and account/history formatting remains
+explicitly scoped. Organizer time entry rejects DST gaps and requires an explicit
+instant for folds, preserving stored precision on unrelated edits. Calendar date helpers do not
 shift days across browser zones. Future feature durations/currency retain their
 own delivered-scope formatting gates. Never infer a
 recipient's language from an administrator's session or translate authored names.
@@ -71,7 +72,7 @@ recipient's language from an administrator's session or translate authored names
 pnpm test runs the source guard, API tests and frontend localization/transport
 component tests. pnpm typecheck checks interpolation contracts. The source guard
 uses the TypeScript parser, ignores authored expressions, and allows only the
-reviewed internal event-form aria identifier exceptions in
+reviewed source inventory in
 [i18n-hardcoded-baseline.json](i18n-hardcoded-baseline.json). New literals fail CI;
 remove exceptions as I18N-UI migrates existing screens. This baseline is not a claim
 that the application is fully translated.

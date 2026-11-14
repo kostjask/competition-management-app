@@ -1,0 +1,192 @@
+[
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "studio checkpoints",
+   "saved revision ledger",
+   "scoped corrections",
+   "explicit recovery"
+  ],
+  "hero": "none",
+  "nav": "existing shared shell",
+  "footer": "none",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/performance-register.css",
+  "fingerprint": "studio-wide basic/final ledger and field-linked corrections",
+  "sections": [
+   "studio register",
+   "checkpoint review",
+   "rules and deadlines",
+   "entry details",
+   "saved history"
+  ],
+  "signature": "studio checkpoint and saved revision ledger",
+  "waived": [],
+  "prompt": "P3-ENTRIES core and P3-HISTORY consumers with owning Cobalt organizer UI",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN across 8 files; Playwright captures; in-thread review corrected density, labels and recovery; own render unavailable (puppeteer-core)",
+  "date": "2026-11-14",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "project design system",
+  "genre": "modern-minimal",
+  "axes": [
+   "independent approval rows",
+   "short exact-event application",
+   "canonical studio identity",
+   "immutable operation retry",
+   "explicit saved/local comparison",
+   "stacked phone facts"
+  ],
+  "hero": "none: app scope",
+  "nav": "existing project shell with role-independent applications",
+  "footer": "none: app scope",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/applications/StudioPage.tsx",
+  "fingerprint": "owner-bound applicant workflow with independent approval rows and immutable retry identity",
+  "sections": [
+   "owned application list",
+   "apply",
+   "approval status",
+   "permitted profile/contact",
+   "cancel and retained reapply"
+  ],
+  "signature": "independent organization and event approval rows",
+  "waived": [],
+  "prompt": "P5-APPLICATION with owning UI and P4-UI-CORE discovery integration; preserve project design system, accessibility and ET/EN/RU",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; render unavailable without puppeteer-core; Playwright screenshots; in-thread review moved approval rows and repaired disabled contrast",
+  "material": "No image slots or invented proof; fluent applicant feedback remains external review",
+  "date": "2026-11-12",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "ruled ledger",
+   "inline draft creation",
+   "URL studio filter",
+   "retained retry identity",
+   "labelled saved configuration",
+   "stacked phone facts"
+  ],
+  "hero": "none: app scope",
+  "nav": "existing project shell",
+  "footer": "none: app scope",
+  "imagery": "actual operational records",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/PerformanceRegister.tsx",
+  "fingerprint": "Cobalt incomplete entry ledger with inline owner/title draft and frozen create retry",
+  "sections": [
+   "register",
+   "draft creation",
+   "saved history"
+  ],
+  "signature": "incomplete entry and saved ownership ledger",
+  "waived": [],
+  "prompt": "P3-ENTRIES-DRAFT organizer UI, ET/EN/RU and accessibility",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; render unavailable (no puppeteer-core); Playwright captures; subagent Finish 1 resolved by labelled null/mixed configuration and inspected recapture",
+  "material": "No image or material slots; real organizer workflow feedback remains the next design input",
+  "date": "2026-11-11",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "axes": [
+   "ruled ledger",
+   "inline history",
+   "URL selection",
+   "saved identity",
+   "current event reference",
+   "stacked phone facts"
+  ],
+  "hero": "none: app scope",
+  "nav": "existing project shell",
+  "footer": "none: app scope",
+  "imagery": "none",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/PerformanceRegister.tsx",
+  "fingerprint": "Cobalt saved-revision ledger / inline source facts / event-local reference",
+  "sections": [
+   "register",
+   "saved history"
+  ],
+  "signature": "captured studio/configuration with immutable revision provenance",
+  "waived": [],
+  "prompt": "P3-HISTORY and P3-CALENDAR-DATES organizer foundations; preserve DESIGN.md and ET/EN/RU",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; optional render dependency unavailable; authenticated Playwright captures and fresh-context review, 2 findings resolved",
+  "date": "2026-11-11",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "axes": [
+   "ruled register",
+   "URL studio filter",
+   "owning application links"
+  ],
+  "hero": "none (app)",
+  "nav": "existing shared shell",
+  "footer": "none (app)",
+  "imagery": "none",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/PerformanceRegister.tsx",
+  "fingerprint": "immutable ownership register",
+  "sections": [
+   "filter",
+   "ownership ledger"
+  ],
+  "signature": "performance to studio application",
+  "waived": [],
+  "prompt": "P3-PERFORMANCE-OWNER and P3-CONSTRAINTS owning organizer read-only register",
+  "date": "2026-11-11",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "decision ledger",
+   "queue/detail",
+   "short application",
+   "ruled facts",
+   "account-bound mail",
+   "explicit recovery"
+  ],
+  "hero": "none",
+  "nav": "existing shared shell",
+  "footer": "none",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/applications/application.css",
+  "fingerprint": "independent organization/event ledger with retained filtered selection",
+  "sections": [
+   "review queue",
+   "decision ledger",
+   "profile/contact",
+   "notification state",
+   "history"
+  ],
+  "signature": "independent organization/event decision ledger",
+  "waived": [],
+  "prompt": "P4-REVIEW and P5-APPLICATION owning UI with ET/EN/RU and accessibility",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; Playwright captures; subagent 2 findings 2 resolved",
+  "date": "2026-11-10",
+  "mode": "build"
+ }
+]

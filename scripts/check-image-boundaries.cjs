@@ -112,7 +112,9 @@ async function main() {
     stage = 'successful storage, audit and private retrieval';
     const urls = [];
     for (const [resource, id, token, type] of [['events', event.id, tokens.admin, 'EVENT'], ['users', owner.id, tokens.owner, 'USER'], ['studios', studio.id, tokens.owner, 'STUDIO'], ['dancers', dancer.id, tokens.owner, 'DANCER']]) {
+      const beforeRevision = (await client.event.findUniqueOrThrow({ where: { id: event.id } })).revision;
       const result = await post(resource, id, token); assert.equal(result.status, 200);
+      assert.equal((await client.event.findUniqueOrThrow({ where: { id: event.id } })).revision, beforeRevision + (resource === 'events' ? 1 : 0));
       const url = result.body.imageUrl ?? result.body.photoUrl ?? result.body.logoUrl; urls.push(url);
       assert.match(url, /^\/uploads\/[a-z]+\/[0-9a-f-]{36}\.webp$/);
       const response = await get(url, token); assert.equal(response.status, 200);

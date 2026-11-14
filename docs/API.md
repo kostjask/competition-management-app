@@ -37,6 +37,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Studios | /studios; /:studioId; approval/representatives actions | [Studios](api/studios.md) |
 | Dancers | /studios/:studioId/dancers; /:dancerId | [Dancers](api/dancers.md) |
 | Performances | /events/:eventId/performances; /:performanceId | [Performances](api/performances.md) |
+| Studio checkpoints | /events/:eventId/entry-configuration; /events/:eventId/studios/:studioId/entry-review | [Entry checkpoints](api/entry-workflow.md) |
 | Event staff | GET /events/:eventId/staff; POST /events/:eventId/staff/:assignmentId/remove | [Staff access](api/invitations.md#accepted-staff-removal) |
 | Judges | /events/:eventId/judges; /:judgeId | [Judges](api/judges.md) |
 | Categories | /events/:eventId/categories; /:categoryId | [Categories](api/categories.md) |
@@ -48,8 +49,9 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 Frontend helpers decode unknown transport output through shared response schemas,
 including session metadata. DTOs omit private persistence fields; explicit
 native auth/token operations remain exceptions by contract. Owner onboarding drafts
-exist under auth; no entry draft, music, final-submit,
-score-sheet, live or results API is implied by UI specifications.
+exist under auth; entry drafts and opt-in studio data checkpoints are implemented
+through the contracts below. Music, score-sheet, live and results APIs are not
+implied by UI specifications.
 
 ## Resource contracts
 

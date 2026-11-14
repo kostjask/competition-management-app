@@ -1,4 +1,6 @@
 export const applicationTranslations = {
+  retryNotification: { et: "Proovi teavitust uuesti saata", en: "Retry notification", ru: "Повторить отправку уведомления" },
+  retrySaved: { et: "Teavituse kordus on salvestatud.", en: "Notification retry acknowledged.", ru: "Повторная отправка уведомления подтверждена." },
   title: { et: "Minu taotlused", en: "My applications", ru: "Мои заявки" },
   review: { et: "Taotluste ülevaatus", en: "Application review", ru: "Рассмотрение заявок" },
   apply: { et: "Esita taotlus", en: "Apply", ru: "Подать заявку" },

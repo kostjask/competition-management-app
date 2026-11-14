@@ -47,22 +47,26 @@ enum OnboardingStatus {
 }
 
 model EmailDelivery {
-  id             String        @id
-  ciphertext     String?
-  bindingDigest  String?
-  purpose        String?
-  state          String        @default("PENDING")
-  attempts       Int           @default(0)
-  nextAttemptAt  DateTime      @default(now())
-  expiresAt      DateTime
-  createdAt      DateTime      @default(now())
-  acceptedAt     DateTime?
-  providerId     String?
-  reviewNoticeId String?
-  reviewNotice   ReviewNotice? @relation(fields: [reviewNoticeId], references: [id], onDelete: Restrict)
+  id                String        @id
+  ciphertext        String?
+  bindingDigest     String?
+  purpose           String?
+  state             String        @default("PENDING")
+  attempts          Int           @default(0)
+  nextAttemptAt     DateTime      @default(now())
+  expiresAt         DateTime
+  createdAt         DateTime      @default(now())
+  acceptedAt        DateTime?
+  providerId        String?
+  reviewNoticeId    String?
+  reviewNotice      ReviewNotice? @relation(fields: [reviewNoticeId], references: [id], onDelete: Restrict)
+  reviewRecipientId String?
+  reviewRecipient   User?         @relation(fields: [reviewRecipientId], references: [id], onDelete: Restrict)
+  supersededAt      DateTime?
 
   @@index([state, nextAttemptAt])
   @@index([reviewNoticeId])
+  @@index([reviewRecipientId])
 }
 
 model ReviewNotice {
@@ -113,6 +117,7 @@ model Event {
   studioRegistrations StudioEventRegistration[]
   invitations         Invitation[]
   onboardingDrafts    OnboardingDraft[]
+  entryConfiguration  EntryConfiguration?
 }
 
 model DanceCategory {
@@ -211,8 +216,9 @@ model StudioEventRegistration {
   studio Studio @relation(fields: [studioId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
 
-  reviewNotices ReviewNotice[]
-  performances  Performance[]
+  reviewNotices    ReviewNotice[]
+  performances     Performance[]
+  entryCheckpoints EntryCheckpoint[]
 
   @@unique([studioId, eventId])
   @@unique([id, studioId, eventId])
@@ -248,6 +254,8 @@ model Performance {
   deletedAt      DateTime?
   deletedBy      String?
   revision       Int       @default(1)
+  teacher        String?
+  author         String?
 
   creationOperationId String? @unique @db.Uuid
   creationDigest      String?
@@ -290,6 +298,46 @@ model PerformanceParticipant {
   performance Performance @relation(fields: [performanceId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
 
   @@id([performanceId, dancerId])
+}
+
+model EntryConfiguration {
+  eventId  String @id
+  revision Int    @default(1)
+  settings Json
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+}
+
+model EntryCheckpoint {
+  id             String                  @id @default(uuid())
+  registrationId String
+  kind           String
+  revision       Int                     @default(1)
+  status         String                  @default("DRAFT")
+  earlyLocked    Boolean                 @default(false)
+  grant          Json?
+  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  receipts       EntryReceipt[]
+
+  @@unique([registrationId, kind])
+}
+
+model EntryReceipt {
+  id           String          @id @default(uuid())
+  checkpointId String
+  revision     Int
+  action       String
+  actorId      String
+  createdAt    DateTime        @default(now())
+  operationId  String          @unique @db.Uuid
+  digest       String
+  reason       String?
+  visible      Boolean         @default(false)
+  manifest     Json
+  checkpoint   EntryCheckpoint @relation(fields: [checkpointId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor        User            @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([checkpointId, revision])
+  @@index([actorId])
 }
 
 model Judge {
@@ -342,6 +390,8 @@ model User {
   accountTokens         AccountToken[]
   auditActions          AuditLog[]             @relation("AuditActor")
   performanceRevisions  PerformanceRevision[]
+  entryReceipts         EntryReceipt[]
+  reviewDeliveries      EmailDelivery[]
   preferredLocale       RecipientLocale?
   onboardingDraft       OnboardingDraft?
 }

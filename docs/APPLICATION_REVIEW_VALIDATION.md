@@ -148,3 +148,57 @@ To use these changes against the application database, apply the additive migrat
 through the normal verified local setup process, regenerate Prisma and restart the
 API. This task validated deployment into disposable fixtures and did not change
 that application target or its environment files.
+
+## Merge reconciliation, 2026-11-13
+
+Resolved PR #3 against main 8c622cc. Main's integrated organizer/application
+contracts, authored-content storage and M3 ownership/calendar/history/draft work
+are retained. Compatible branch improvements include verified onboarding
+continuation, representative application home, revisioned event images and
+explicit transport retries. A Windows case collision between Application.css and
+application.css is resolved to the lowercase file used by the integrated screens.
+Historical branch reports remain labelled in the evidence index.
+
+Migration 37 extends main's ReviewNotice/EmailDelivery model with private recipient
+bindings and retained superseded transport attempts. Global-admin-only retry checks
+the exact event/studio/notice and current active verified membership. Only expired
+attempts are replaced. Accepted/unexpired attempts, review decisions/revisions and
+unsaved UI forms are preserved. Browser checks include ET/EN/RU at 320/1440px,
+keyboard pending/error recovery, lost response and expired-session continuation.
+Image readback updates the setup revision while preserving mounted input, or
+shows the normal comparison if other configuration changed concurrently.
+
+The user confirmed the removed duplicate branch migration was unpublished and
+used only by disposable development/test targets. Existing main migrations were
+preserved. Database validation used isolated fixtures during this reconciliation.
+A database previously reset to the parallel branch history
+needs a verified-target disposable reset/reseed before running this source.
+Historical queue rows without recipient bindings retain status and cannot be
+retargeted by the new retry operation. Provider checks used synthetic mail,
+and hosted deployment remains an external gate.
+
+| Command | Result |
+| --- | --- |
+| `pnpm.cmd test:focus api routes.test.cjs` | 77 passed |
+| `pnpm.cmd test:focus browser applications.spec.ts` | 30 passed before the additional lost-response/session case |
+| `pnpm.cmd exec playwright test tests/browser/applications.spec.ts --grep 'uncertain notification'` | 1 passed |
+| `pnpm.cmd test:focus browser event-setup.spec.ts` | 27 passed |
+| `pnpm.cmd test` | 3 tooling, 121 API and 26 web tests passed, localization source check passed |
+| `pnpm.cmd build`, `pnpm.cmd typecheck`, `pnpm.cmd lint` | Passed after resolving the updated privileged-operation count and unused destructuring lint errors |
+| `pnpm.cmd db:generate`, `pnpm.cmd db:validate`, `pnpm.cmd exec prisma format --check --schema apps/api/prisma/schema.prisma` | Passed |
+| `pnpm.cmd test:baseline` | Full isolated PostgreSQL/API, 37 migrations, seed/redeploy, retry concurrency/rollback/recipient isolation and image revision checks passed |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-migrations.ps1` | Fresh/upgrade/schema parity passed |
+| `pnpm.cmd test:browser` | Final local run passed all 204 tests after the first run exposed the filter-refresh/session-expiry fixture race |
+| `pnpm.cmd exec playwright test tests/browser/performances.spec.ts --grep 'uncertain draft saves preserve' --repeat-each 5` | 5 passed after explicitly awaiting the filtered table before expiring the fixture session |
+| `pnpm.cmd exec playwright test tests/browser/applications.spec.ts --grep 'organizer dashboard shows independent' --repeat-each 5` | 5 passed with selected-detail navigation awaited before filter changes |
+| Fresh full browser/workspace/PostgreSQL gates | Recorded by the pushed resolution's [PR checks](https://github.com/kostjask/competition-management-app/pull/3/checks) |
+
+The fixture stabilization waits for observable loaded state and retains all
+uncertain-write/session assertions. It changes the test sequencing only.
+The first hosted workspace runs also exposed a review-navigation race in the
+dashboard test. It now waits for the selected application's heading before
+changing the queue filter and explicitly asserts that selection remains in the URL.
+Documentation syntax/link checks and final Git whitespace checks passed.
+
+External release/human-review gates remain open. The next recorded task is
+P3-ENTRIES submission/receipt/correction lifecycle in the checkpoint.

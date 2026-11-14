@@ -9,7 +9,7 @@
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
 | Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Application/review UI remains P4/P5 |
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
-| Performance | Durable incomplete unscheduled drafts (ADR-024); immutable owner/event keys (ADR-022), optimistic revisions and saved snapshots (ADR-023) | Submit-time eligibility, receipts and correction lifecycle remain P3-ENTRIES |
+| Performance | Durable incomplete drafts, immutable owners and saved revisions (ADR-022/023/024); opt-in studio checkpoints validate eligibility and retain exact receipts/corrections (ADR-025) | Reversible withdrawal/resubmission remains P3-ENTRIES; representative UI remains P5 |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 
@@ -19,8 +19,10 @@ FINALIZED is not score-sheet lock, entry submission or public result publication
 
 All new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
 A configured deadline closes new applications and pending-owner corrections.
-Studio profile writes use those stages; dancer/performance writes use
-REGISTRATION_OPEN or DATA_REVIEW with explicit review allowance. Individual
+Studio profile writes use those stages; legacy unconfigured dancer/performance
+writes use REGISTRATION_OPEN or DATA_REVIEW with explicit review allowance.
+Configured entry/roster writes use ADR-025 checkpoint windows, locks and scoped
+grants. Individual
 operations retain distinct permission/approval rules; read [resource contracts](API.md).
 
 Application creation atomically saves studio, pending registration and applicable
@@ -30,14 +32,18 @@ Cancellation retains the registration as CANCELLED with revision/audit history.
 Same-studio reapplication resets the event decision without replacing identity or
 memberships. Organization/event decisions are independent; both are required for
 derived representative access. See [ADR-003](adr/003-registration-lifecycle.md).
-There is no final-entry-submission API today. [Registration workflow](REGISTRATION_API.md).
+The opt-in [studio checkpoint API](api/entry-workflow.md) implements BASIC/FINAL
+studio-wide data confirmation, review receipts and scoped reopening under ADR-025.
+Representative submission/music UI and the complete M3 journey remain unfinished.
+[Registration workflow](REGISTRATION_API.md).
 
 Dancer birth dates now use native DATE with calendar-only HTTP strings. Age is
 completed years on the event-local start date; February 29 advances on March 1
 in a non-leap year. Shared calculation and organizer reference-date display are
-implemented; submit-time eligibility remains P3-ENTRIES. Saved revisions freeze
-then-current studio/participant/configuration values. They establish history,
-not proof of submission. [ADR-023](adr/023-entry-history-and-calendar-dates.md).
+implemented and used by checkpoint eligibility. Saved revisions freeze then-current
+studio/participant/configuration values; ordinary saves establish history, while
+ADR-025 checkpoint receipts identify exact submitted snapshots.
+[ADR-023](adr/023-entry-history-and-calendar-dates.md).
 
 ## Pending model decisions
 

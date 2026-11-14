@@ -32,7 +32,7 @@ export function emailDeliveryAvailable(): boolean {
 }
 
 /** Domain mutation and encrypted dispatch intent commit together. Fake stays silent. */
-export async function queueEmail(tx: Prisma.TransactionClient, content: EmailContent, reviewNoticeId?: string): Promise<void> {
+export async function queueEmail(tx: Prisma.TransactionClient, content: EmailContent, reviewNoticeId?: string, reviewRecipientId?: string): Promise<void> {
   if (!emailDeliveryAvailable()) throw new Error("Email delivery is unavailable");
   if (config.email.provider === "fake") return;
   const key = config.email.queueKey;
@@ -44,6 +44,7 @@ export async function queueEmail(tx: Prisma.TransactionClient, content: EmailCon
   const envelope = { from: config.email.from, message: renderEmail(data, config.email.webOrigin) };
   const id = randomUUID();
   await tx.emailDelivery.create({ data: { id, ciphertext: encryptEmail(envelope, id, key), purpose, reviewNoticeId: reviewNoticeId ?? null,
+    reviewRecipientId: reviewRecipientId ?? null,
     bindingDigest: purpose && data.token ? tokenDigest(purpose, data.token) : null,
     expiresAt: new Date(Date.now() + 23 * 3600000) } });
 }

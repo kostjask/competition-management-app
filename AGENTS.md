@@ -22,6 +22,28 @@ No dependency downgrade/new library without concrete need. Record broad or hard
 to reverse architecture choices in docs/adr before dependent work. If ambiguity
 materially changes domain behavior/architecture, explain options and recommendation first.
 
+## Branch freshness and overlapping work
+
+- Before implementation, identify the current branch, upstream and intended PR
+  target. Fetch the relevant remote refs, compare ancestry/divergence and inspect
+  target changes affecting the selected task. If remote access is unavailable,
+  disclose the freshness limit and use available local evidence.
+- Check existing implementation and open PRs for the same roadmap task, shared
+  contracts and migrations before building it. Continue or extend existing work
+  where appropriate. Use one implementation branch per task by default; intentional
+  overlap needs a clear integration owner and agreed shared contracts.
+- Start independent tasks from the current intended target. For work depending
+  on an unmerged PR, record that prerequisite and use its implementation as the
+  base through the session-authorized Git workflow. Reconcile the dependency when
+  it lands before continuing dependent changes against the target.
+- Recheck target freshness before final integration validation and handoff.
+  Review semantic overlap even when Git merges cleanly, especially competing
+  migrations, schema/DTO changes, routes and task completion claims. Integrate
+  relevant target changes through the authorized workflow and validate the
+  resulting combination. Report outstanding integration or freshness limits.
+- Use separate worktrees for concurrent working-copy isolation when authorized.
+  Coordinate overlapping task/file ownership across those worktrees as well.
+
 ## Development database policy
 
 The user confirmed on 2026-10-25 that the current development database contains
@@ -107,6 +129,9 @@ any material limitation.
 ## Git safety and handoff
 
 No commits, push, branch/history/remote changes without explicit authorization.
+Fetching existing remote refs for the freshness checks above is authorized;
+working-tree integration, branch/history changes and publication follow the
+session's authorization.
 No destructive Git commands or removal of apparently obsolete files without
 confirming they are not active work. Keep generated files/secrets ignored; never
 expose env values, credentials, tokens, personal data or private uploads.

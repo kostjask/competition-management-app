@@ -178,13 +178,20 @@ test("S05 image unknown outcome reloads the authoritative image before another u
   const state = await install(page); let uploads = 0; let fail = true;
   const imageUrl = "/uploads/events/00000000-0000-4000-8000-000000000001.webp";
   await page.route("**/uploads/events/**", route => route.fulfill({ contentType: "image/webp", body: Buffer.from("UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoCAAIAAUAmJaQAA3AA/vv2AAA=", "base64") }));
-  await page.route("**/api/v1/images/events/e", route => { uploads++; state.current.imageUrl = imageUrl; return fail ? route.abort() : route.fulfill({ json: { success: true, messageId: "saved", imageUrl } }); });
+  await page.route("**/api/v1/images/events/e", route => { uploads++; state.current.imageUrl = imageUrl; state.current.revision++; return fail ? route.abort() : route.fulfill({ json: { success: true, messageId: "saved", imageUrl } }); });
   await page.goto("/admin/events/e/setup"); await page.locator("#event-image-file").setInputFiles({ name: "synthetic.png", mimeType: "image/png", buffer: Buffer.from("synthetic image fixture") });
+  await page.locator("#event-name").fill("Unsaved image setup");
   await page.getByRole("button", { name: label("Setup.upload"), exact: true }).click(); await expect(page.getByText(label("Setup.imageUncertain"), { exact: true })).toBeVisible();
   await expect(page.locator("#event-image-file")).toBeDisabled(); expect(uploads).toBe(1);
   await page.getByRole("button", { name: label("Setup.refresh"), exact: true }).click(); await expect(page.getByRole("img", { name: label("Common.eventPhoto"), exact: true })).toBeVisible();
   await expect(page.locator("#event-image-file")).toBeEnabled(); fail = false;
   await page.getByRole("button", { name: label("Setup.upload"), exact: true }).click(); await expect(page.getByText(label("Setup.imageSaved"), { exact: true })).toBeVisible(); expect(uploads).toBe(2);
+  await expect(page.locator("#event-name")).toHaveValue("Unsaved image setup");
+  await expect(page.locator("#event-image-file")).toBeEnabled();
+  const revision = state.current.revision;
+  await save(page);
+  await expect(page.getByText(label("Setup.saved"), { exact: true })).toBeVisible();
+  expect(state.writes.at(-1)?.expectedRevision).toBe(revision);
 });
 test("S05 event-bound direct links and guest recovery cannot display another setup", async ({ page }) => {
   const state = await install(page); await page.goto("/admin/events/e/setup"); await expect(page.locator("#event-name")).toHaveValue(state.current.name);

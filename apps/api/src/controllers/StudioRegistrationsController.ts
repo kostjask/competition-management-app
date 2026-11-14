@@ -1,13 +1,14 @@
 ﻿import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
+import { z } from "zod";
 import { CreateStudioRegistrationBodySchema, UpdateStudioRegistrationBodySchema, StudioRegistrationParamsSchema,
-  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema } from "@dance/schemas";
+  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema, IdSchema } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError, ValidationError } from "../errors";
 import { assertApplicationWindow, assertReviewWindow, registrationTransaction, reconcileRepresentativeAccess } from "../services/registrationPolicy";
 import { appendAudit } from "../services/audit";
-import { queueReviewNotice, readApplicationReview } from "../services/reviewNotifications";
+import { queueReviewNotice, readApplicationReview, retryReviewNotice } from "../services/reviewNotifications";
 
 const registrationSelect = {
   id: true, studioId: true, eventId: true, status: true, revision: true, decisionReason: true,
@@ -25,6 +26,14 @@ function serialize(row: RegistrationRecord) {
 }
 
 export class StudioRegistrationsController extends BaseController {
+  async retryNotification(req: Request, res: Response): Promise<void> {
+    if (!this.isAdmin(req)) throw new ForbiddenError();
+    const { eventId, studioId, notificationId } = StudioRegistrationParamsSchema.extend({ notificationId: IdSchema }).parse(req.params);
+    z.strictObject({}).parse(req.body ?? {});
+    await registrationTransaction(this.prisma, tx => retryReviewNotice(tx, eventId, studioId, notificationId));
+    res.status(204).send();
+  }
+
   private async owner(req: Request, tx: Prisma.TransactionClient, studioId: string, eventId: string) {
     const studio = await tx.studio.findFirst({ where: { id: studioId, eventId, deletedAt: null },
       select: { representatives: { where: { active: true }, select: { userId: true } } } });

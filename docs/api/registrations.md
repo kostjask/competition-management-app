@@ -131,3 +131,18 @@ Expired/no-recipient notices remain visible with account/contact recovery. Activ
 verified membership accounts receive neutral review-update mail in their saved
 locale (ET default), never the editable representative contact address. The email
 links to `/applications` to read both current approvals. [ADR-021](../adr/021-m2-review-notifications.md).
+
+POST `/events/:eventId/studio-registrations/:studioId/review/:notificationId/retry`
+accepts an empty strict object and requires active global administrator access.
+The exact event/studio/notice relationship is verified. A matching retry returns
+204. Only expired deliveries with retained account bindings are requeued, after
+checking current active verified membership. Accepted and unexpired deliveries
+are preserved. Concurrent transport writes may return 409 and can be retried.
+Inactive membership returns 403, incorrect or archived parents return 404, and
+unknown body fields return 400. Transport retry does not repeat either decision.
+
+Notification DTOs include boolean retryable. Historical unbound deliveries,
+fake mode and notices without supported retry transport report false. Retried
+attempts remain retained but superseded attempts no longer determine current
+state. Account IDs, supersession details and queue bodies stay private. The UI
+refreshes the notification section independently of unsaved decision/profile forms.

@@ -1,7 +1,27 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: incomplete entry and saved ownership ledger · v2.0.0 */
-/* Hallmark · pre-emit critique: missing fields and unscheduled state remain distinct from submission; retries preserve identity and captured configuration is labelled. */
-/* Hallmark · finish-review: subagent · 1 Finish finding resolved: labelled null/mixed configuration. Playwright recapture; no material slots. */
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: studio checkpoint and saved revision ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: basic/final locks and receipts remain distinct; field reopening preserves unrelated studio locks and truthful acknowledgement. */
+/* Hallmark · finish-review: in-thread; Playwright phone/desktop captures inspected; density, labels and recovery corrected; no material slots. */
 @import "../events/event-setup.css";
+.entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block: var(--space-md); }
+.entry-actions [aria-pressed="true"] { background: var(--color-accent-wash); border-color: var(--color-accent); color: var(--color-accent-deep); }
+.entry-review, .entry-configuration, .entry-editor { border-block: 2px solid var(--color-ink); margin-block: var(--space-lg); padding-block: var(--space-lg); }
+.entry-checkpoint { padding-block: var(--space-lg); border-bottom: 1px solid var(--color-rule-2); overflow-wrap: anywhere; }
+.entry-check { display: flex; align-items: center; gap: var(--space-sm); min-height: 2.75rem; }
+.entry-check input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: var(--color-accent); }
+.entry-checkpoint form, .entry-configuration form, .entry-editor form { display: grid; gap: var(--space-md); }
+.entry-checkpoint details { padding-block: var(--space-md); }
+.entry-checkpoint summary { cursor: pointer; min-height: 2.75rem; }
+.entry-checkpoint summary:focus-visible, .entry-check input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.entry-receipts { padding-inline-start: var(--space-lg); }
+.entry-receipts li { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+.entry-comparison { border-block: 1px solid var(--color-rule-2); padding-block: var(--space-lg); margin-block: var(--space-lg); }
+.entry-comparison dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); }
+.entry-comparison dd { margin: 0; overflow-wrap: anywhere; }
+.entry-loading > div { display: grid; gap: var(--space-lg); }
+.entry-loading span { display: block; min-height: var(--space-md); background: var(--color-paper-3); margin-block: var(--space-sm); }
+.entry-loading span + span { min-height: var(--space-xl); }
+.entry-nomination { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); margin-block: var(--space-md); }
+@media (max-width: 48rem) { .entry-nomination { grid-template-columns: minmax(0, 1fr); } }
 .performance-filter { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); margin-block: var(--space-lg); }
 .performance-filter .ui-field { flex: 1 1 16rem; max-width: 28rem; }
 .performance-register { border-collapse: collapse; width: 100%; table-layout: fixed; }
