@@ -42,6 +42,17 @@ separate. No unresolved stakeholder policy question blocks representative data e
 
 ## Current state
 
+- **User-selected migration CI correction (2026-11-14):** reproduced the hosted
+  AuditLog_action parity failure in an empty disposable database. Migration 39's
+  unscoped catalog lookup can reuse another schema's already-expanded allowlist;
+  local public tables masked the mismatch. Forward migration 40 installs the
+  explicit canonical constraint without rewriting published history. The migration
+  suite now owns a random empty database and reports actual/expected differences.
+  [Testing evidence](docs/TESTING.md#migration-ci-correction-2026-11-14) records
+  validation and limits. The application database remains at migration 39;
+  migration 40 is pending there. Publication/hosted confirmation remain outstanding.
+  This bounded repair does not change the next product task, P5-ENTRIES.
+
 - **PR #4 ancestry reconciliation (2026-11-14):** main's ea29cd1 squash has the
   exact same complete Git tree as b3dd683, already an ancestor of this branch.
   The reported conflicts come from the old merge base, not new target behavior.

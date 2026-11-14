@@ -7,6 +7,8 @@ $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Push-Location $repoRoot
 $suffix = [Guid]::NewGuid().ToString('N')
+$testDatabase = "dance_migrations_$suffix"
+$databaseCreated = $false
 $expectedSchema = "migration_expected_$suffix"
 $freshSchema = "migration_fresh_$suffix"
 $upgradeSchema = "migration_upgrade_$suffix"
@@ -14,8 +16,8 @@ $expectedSqlPath = Join-Path ([IO.Path]::GetTempPath()) "migration_expected_$suf
 $previousDatabaseUrl = $env:DATABASE_URL
 $pnpmCommand = if ($env:OS -eq 'Windows_NT') { 'pnpm.cmd' } else { 'pnpm' }
 
-function Invoke-TestSql([string]$Sql) {
-    $Sql | docker compose -f docker/docker-compose.yml exec -T postgres psql -X -q -v ON_ERROR_STOP=1 -U $DatabaseUser -d $Database
+function Invoke-TestSql([string]$Sql, [string]$TargetDatabase = $testDatabase) {
+    $Sql | docker compose -f docker/docker-compose.yml exec -T postgres psql -X -q -v ON_ERROR_STOP=1 -U $DatabaseUser -d $TargetDatabase
     if ($LASTEXITCODE -ne 0) { throw 'PostgreSQL migration regression check failed.' }
 }
 
@@ -74,6 +76,8 @@ try {
     $expectedSql += "`n" + (($entrySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $recoverySql = Get-Content -Raw apps/api/prisma/migrations/20261114010000_entry_recovery_options/migration.sql
     $expectedSql += "`n" + (($recoverySql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $auditConstraintSql = Get-Content -Raw apps/api/prisma/migrations/20261114020000_audit_action_constraint/migration.sql
+    $expectedSql += "`n" + (($auditConstraintSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
@@ -225,25 +229,37 @@ FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 WHERE n.nspname IN ('$expectedSchema', '$freshSchema', '$upgradeSchema');
 DO `$`$
 DECLARE actual_schema text;
+        differences text;
 BEGIN
     FOREACH actual_schema IN ARRAY ARRAY['$freshSchema', '$upgradeSchema'] LOOP
-        IF EXISTS (
-            (SELECT kind, name, definition FROM migration_signatures WHERE schema_name = actual_schema
-             EXCEPT SELECT kind, name, definition FROM migration_signatures WHERE schema_name = '$expectedSchema')
+        SELECT string_agg(format('%s %s %s: %s', side, kind, name, definition), E'\n' ORDER BY kind, name, side)
+        INTO differences
+        FROM (
+            (SELECT 'actual' AS side, kind, name, definition FROM migration_signatures WHERE schema_name = actual_schema
+             EXCEPT SELECT 'actual', kind, name, definition FROM migration_signatures WHERE schema_name = '$expectedSchema')
             UNION ALL
-            (SELECT kind, name, definition FROM migration_signatures WHERE schema_name = '$expectedSchema'
-             EXCEPT SELECT kind, name, definition FROM migration_signatures WHERE schema_name = actual_schema)
-        ) THEN RAISE EXCEPTION 'Migration/schema mismatch in %', actual_schema; END IF;
+            (SELECT 'expected', kind, name, definition FROM migration_signatures WHERE schema_name = '$expectedSchema'
+             EXCEPT SELECT 'expected', kind, name, definition FROM migration_signatures WHERE schema_name = actual_schema)
+        ) AS mismatch;
+        IF differences IS NOT NULL THEN
+            RAISE EXCEPTION 'Migration/schema mismatch in %', actual_schema USING DETAIL = differences;
+        END IF;
     END LOOP;
 END `$`$;
 "@
+    # An existing public schema can mask cross-schema catalog lookups in migrations.
+    # Match CI's empty database regardless of the local application fixture state.
+    Invoke-TestSql "CREATE DATABASE $testDatabase;" -TargetDatabase $Database
+    $databaseCreated = $true
     Invoke-TestSql $sql
     Write-Output 'PASS: fresh migration history, existing-data upgrade, status/default preservation, partial uniqueness and schema parity.'
 } finally {
     $env:DATABASE_URL = $previousDatabaseUrl
     try {
-        # Only drop the randomly named schemas owned by this run; never reset the database.
-        Invoke-TestSql "SET client_min_messages TO warning; DROP SCHEMA IF EXISTS $expectedSchema CASCADE; DROP SCHEMA IF EXISTS $freshSchema CASCADE; DROP SCHEMA IF EXISTS $upgradeSchema CASCADE;"
+        # Only drop this run's randomly named fixture database; never reset the application database.
+        if ($databaseCreated) {
+            Invoke-TestSql "DROP DATABASE $testDatabase;" -TargetDatabase $Database
+        }
     } finally {
         if (Test-Path -LiteralPath $expectedSqlPath) { Remove-Item -LiteralPath $expectedSqlPath }
         Pop-Location

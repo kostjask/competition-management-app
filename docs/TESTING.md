@@ -215,11 +215,49 @@ drops its own schema. It never reads application environment files or applicatio
 rows. This one-off audit is separate from normal CI baseline checks; it does not
 establish production latency or deployment parity. Dated findings/results:
 [schema audit](SCHEMA_SUITABILITY_AUDIT.md).
-The migration suite creates random schemas in dance_comp, checks
+The migration suite creates a random dance_migrations_* database through the
+checked-in Compose fixture and uses three random schemas within it. Starting
+empty prevents an existing public schema from masking cross-schema catalog
+lookups. The optional Database/DatabaseUser parameters select the maintenance
+connection used to create/drop the fixture, not a database to reset. The suite checks
 fresh and existing-data upgrades, status/default/data preservation, the partial
-active-studio-name index and schema parity, and removes its schemas/temp SQL.
+active-studio-name index and exact schema parity, reports actual/expected catalog
+differences on failure, and removes its database/temp SQL even after failure.
 These commands fail if Docker/PostgreSQL is unavailable; there is no skip-success
 path. They do not reset the application database or use its credentials.
+
+### Migration CI correction (2026-11-14)
+
+The hosted migration check failed because migration 39 selected AuditLog_action
+from pg_constraint by name without restricting its table/schema. In the empty
+CI fixture, the fresh/upgrade runs could read the already-updated expected schema
+and duplicate PERFORMANCE_RESTORED in the constraint definition. An existing local
+public schema masked the mismatch. An empty disposable database reproduced the
+failure with actual/expected constraint details before the fix.
+
+Forward migration 40 replaces the constraint with the explicit canonical action
+allowlist, preserving published migration checksums and all audit rows. The
+regression suite now always starts in an empty database and retains strict parity.
+The application database is not migrated by these checks; apply pending migrations
+through the normal deployment workflow. Hosted confirmation requires publication.
+
+Validation on current main (0575ac7), with no open PR overlap and refreshed
+origin/main matching HEAD before handoff:
+
+- Before fix: the migration suite failed in a new empty disposable database with
+  duplicate PERFORMANCE_RESTORED in the actual AuditLog_action definition.
+- After fix: `pwsh -NoProfile -File scripts/test-migrations.ps1` and the documented
+  Windows PowerShell invocation pass fresh/upgrade preservation and exact parity.
+- `pnpm test:baseline` passes all PostgreSQL/API workflows, deployment/redeployment
+  and seed preservation in 150.70s; all 40 migrations are exercised only in fixtures.
+- `pnpm db:generate`, `pnpm db:validate`, `pnpm build`, `pnpm typecheck`,
+  `pnpm lint` and `pnpm test` pass (3 tooling, 28 web and 121 API tests; unchanged
+  Turbo tasks can use local cache).
+- Direct `prisma format --check` flags the existing CRLF working copy. A temporary
+  LF-only copy of the identical schema passes that check; formatting a separate
+  copy produces no Git content diff. The source schema is unchanged.
+- Documentation checks and `git diff --check` pass. Browser tests were not rerun
+  for this SQL/test-runner change. No workflow YAML or dependencies were changed.
 
 ## GitHub Actions
 
