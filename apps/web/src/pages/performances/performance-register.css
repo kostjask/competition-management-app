@@ -1,6 +1,6 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: studio checkpoint and saved revision ledger · v2.0.0 */
-/* Hallmark · pre-emit critique: basic/final locks and receipts remain distinct; field reopening preserves unrelated studio locks and truthful acknowledgement. */
-/* Hallmark · finish-review: in-thread; Playwright phone/desktop captures inspected; density, labels and recovery corrected; no material slots. */
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: same-identity recovery and nomination ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V; extends locked Cobalt, with category/age filters reducing repeated nomination controls. */
+/* Hallmark · finish-review: in-thread; 3 findings resolved in Playwright captures; withdrawn-empty and draft guidance, preset disclosure; no material slots. */
 @import "../events/event-setup.css";
 .entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block: var(--space-md); }
 .entry-actions [aria-pressed="true"] { background: var(--color-accent-wash); border-color: var(--color-accent); color: var(--color-accent-deep); }
@@ -61,3 +61,8 @@
 .performance-draft-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-column); margin-block: var(--space-lg); }
 @media (max-width: 48rem) { .performance-draft-fields { grid-template-columns: minmax(0, 1fr); } }
 .performance-configuration-value { display: block; }
+.entry-option-creator { border-block: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+.entry-option-creator summary { cursor: pointer; min-height: 2.75rem; display: flex; align-items: center; }
+.entry-option-creator summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.entry-option-creator p { max-width: 65ch; }
+.entry-editor h2:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }

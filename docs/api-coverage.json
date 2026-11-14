@@ -2,6 +2,15 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "performances", "exportName": "performancesRouter", "mount": "/events", "method": "POST", "path": "/:eventId/performances/:performanceId/restore",
+      "tests": {
+        "success": "scripts/check-entry-recovery.cjs", "invalidInput": "scripts/check-entry-recovery.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-entry-recovery.cjs", "crossParent": "scripts/check-entry-recovery.cjs",
+        "inactiveRecord": "scripts/check-entry-recovery.cjs", "conflict": "scripts/check-entry-recovery.cjs"
+      }
+    },
+    {
       "router": "studio-registrations",
       "exportName": "studioRegistrationsRouter",
       "mount": "/events",

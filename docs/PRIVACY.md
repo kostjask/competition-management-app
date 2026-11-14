@@ -73,6 +73,13 @@ authorization; removal of access does not erase historical evidence. No automati
 retention or erasure period is introduced; organizational review remains required
 before real data use. Legacy baselines never claim unknown original authors/times.
 
+Withdrawal/restoration retains immutable actor-bound operation records with the
+performance ID/revision, action, UUID, request digest, server time and a private
+reason (at most 1,000 characters). Reasons stay out of URLs and public DTOs; avoid
+entering unnecessary personal information. Withdrawn history remains private and
+requires current event/studio authorization. Restoration never erases prior
+withdrawal, receipts or score evidence, and introduces no retention/erasure policy.
+
 Revoking a pending invitation, removing accepted access, archiving a studio/entry,
 disabling an account and erasing personal data are separate operations. Retain
 judge/score and approval history during access removal. Soft deletion is not

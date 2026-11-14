@@ -9,6 +9,7 @@ export function performancesRouter(prisma: PrismaClient) {
   router.get("/:eventId/performances", asyncHandler((req, res) => controller.list(req, res)));
   router.post("/:eventId/performances", asyncHandler((req, res) => controller.create(req, res)));
   router.get("/:eventId/performances/:performanceId/history", asyncHandler((req, res) => controller.history(req, res)));
+  router.post("/:eventId/performances/:performanceId/restore", asyncHandler((req, res) => controller.lifecycle(req, res)));
   router.get("/:eventId/performances/:performanceId", asyncHandler((req, res) => controller.getById(req, res)));
   router.patch("/:eventId/performances/:performanceId", asyncHandler((req, res) => controller.update(req, res)));
   router.delete("/:eventId/performances/:performanceId", asyncHandler((req, res) => controller.delete(req, res)));

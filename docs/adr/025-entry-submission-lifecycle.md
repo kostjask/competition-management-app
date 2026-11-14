@@ -169,6 +169,38 @@ before-start-only policy. Ordinary deadline comparisons should close at the
 configured instant unless an explicit extension applies, with event timezone
 shown. Unknown actual dates/times remain unset until the organizer supplies them.
 
+## Withdrawal recovery and reusable setup (2026-11-14)
+
+P3-ENTRIES withdrawal uses the retained performance identity and its archive flag.
+The organizer can restore it to the active draft manifest; restoration never
+restores acceptance or submits a checkpoint automatically. Representatives may
+withdraw before the basic deadline even after early confirmation. Restoration
+is a structural entry write: normal basic/final locks or an explicit studio-wide
+`entries` reopening apply. Terminal stages require organizer action. Both actions
+retain immutable revisions, an actor-bound UUID operation, reason and audit in
+one transaction. Retries return the original acknowledgement after current access
+checks, without repeating a transition. Existing stage order stays reserved;
+withdrawal does not implicitly reschedule a dance. Active same-studio dancers and
+event configuration are revalidated before restoration. Withdrawn history remains
+available to currently authorized owners and organizers.
+
+P4-ENTRY-CONFIG copies a shipped Dance Express nomination preset into ordinary
+editable event options and settings. It preserves explicitly configured deadlines,
+does not delete existing options, and requires confirmation before replacing the
+draft nomination table. The same preset can be reused across events; a user-managed
+preset library is outside this bounded task. New category/age/format options and
+their nominations save atomically through the configuration operation. Existing
+option identities cannot be reassigned or silently overwritten by that operation.
+Unbounded format counts use nullable maxima, including immutable snapshots of new
+revisions. Retained finite snapshots are untouched. Publication freeze applies to
+option creation as well as policy changes.
+
+Withdrawal extends the canonical performance DELETE with a strict command body;
+restoration has one POST `/restore` endpoint. Existing revision-query DELETE
+callers retain their established 204 archival behavior. New organizer commands
+use actor-bound UUIDs and return a validated acknowledgement, keeping reasons out
+of URLs and avoiding a second withdrawal endpoint.
+
 ## Music boundary
 
 A representative confirms an acknowledged uploaded version, which locks their
@@ -225,7 +257,9 @@ from [TESTING](../TESTING.md), plus Hallmark review, target freshness and diff r
 The source images also describe fees/refunds, awards, scoring and terms. Preserve
 those in the source record and route them to their owning later tasks; do not
 implement billing, Grand Prix, penalties or publication in this entry slice.
-P3-HISTORY consumers are delivered locally; P3-ENTRIES remains open for reversible
-withdrawal/resubmission. [Validation](../ENTRY_CHECKPOINT_VALIDATION.md) records
-implementation checks and the completed local database reset/reseed. No real-mail,
+P3-HISTORY, P3-ENTRIES and P4-ENTRY-CONFIG's data-configuration scope are delivered
+locally. [Recovery validation](../ENTRY_RECOVERY_VALIDATION.md) records migration 39,
+retained restoration/resubmission, full presets/options and final local checks;
+[checkpoint validation](../ENTRY_CHECKPOINT_VALIDATION.md) records the earlier
+core checks and local database reset/reseed. No real-mail,
 human language/assistive or hosted release gate is closed by this design record.

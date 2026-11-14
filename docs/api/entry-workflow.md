@@ -126,11 +126,40 @@ explicit retry; acknowledged receipts remain shown if readback fails. Settings
 and details saves reconcile their authoritative values before replaying uncertain
 writes. No client-only gate substitutes for backend checks.
 
-Current DELETE remains retained archival/withdrawal: before the basic deadline
+DELETE provides retained archival/withdrawal: before the basic deadline
 for representatives in nonterminal stages, or authorized administrator correction.
 It preserves snapshots/receipts, invalidates acceptance and does not unlock other
-entries. A dedicated reversible withdrawal/resubmission editor is still required;
-there is no restore endpoint. Representative entry/roster screens, per-day initial
-application estimates, complete nomination presets and media/music deadlines,
+entries. The organizer register's `state=withdrawn` view offers same-identity
+restoration, with reason, confirmation, revision comparison, same-operation retry
+and acknowledged readback recovery. See the [performance contract](performances.md#withdrawal-and-restoration).
+Representative entry/roster screens, per-day initial
+application estimates and media/music deadlines,
 confirmation/acceptance/reminders retain their own tasks. No ready/accepted music
 state is fabricated by this data-checkpoint implementation.
+
+## Atomic options and reusable preset
+
+Configuration PUT optionally accepts `options: { categories, ages, formats }`.
+Each list contains up to 100 new options with `id` and its normal create fields;
+the UI allocates UUIDs. Names are trimmed, nonblank and at most 500 characters.
+IDs must be unique within each list. Ages use minAge/maxAge (null means unbounded);
+formats use minParticipants/maxParticipants/maxDurationSeconds with a nullable
+unbounded maximum. Invalid ranges and PostgreSQL integer overflow fail validation.
+Nominations refer to these IDs just like existing event options. Configuration,
+new options and audit commit atomically, with expectedRevision conflict protection.
+An existing option must match the same event and exact supplied fields; this
+operation cannot transfer, rename or overwrite it. New options and policy remain
+frozen after the first application; deadline-only saves can still proceed.
+
+The organizer editor creates all three option kinds inline, filters nominations
+by category/age, and offers a confirmed Dance Express preset copy. It contains
+10 categories, six age bands, four formats and 182 allowed combinations. Kids
+dance has two group nominations capped at 210 seconds; standard groups use 240,
+solo/duet 150. Big groups start at seven without an invented upper count. Age 7
+remains in both the kids and 7–10 bands. The copy preserves configured checkpoint
+windows and existing options, replacing only draft nominations/age/credit policy.
+Exact named/bounded options are reused; incompatible existing options are never
+silently overwritten. Values stay editable before publication. The shipped preset
+is reusable across events; a personal preset library is outside this scope.
+Uncertain saves compare both persisted settings and option identities before
+acknowledgement. Discarding a conflicted draft discards its unsaved option IDs too.

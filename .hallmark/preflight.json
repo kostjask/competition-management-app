@@ -1,6 +1,6 @@
 {
   "scanned": "2026-11-14",
-  "task": "P3-ENTRIES core checkpoints and P3-HISTORY consumers",
+  "task": "P3-ENTRIES recovery and P4-ENTRY-CONFIG option creation/preset",
   "findings": {
     "design": "DESIGN.md Cobalt app scope; docs/DESIGN_SYSTEM.md retained",
     "framework": "React/Vite with shared Zod API contracts",
@@ -14,10 +14,10 @@
     "user edits"
   ],
   "introduce": [
-    "studio-wide checkpoint review",
-    "bounded rules/deadlines",
-    "entry details and participants",
-    "explicit stale/uncertain recovery"
+    "same-identity withdrawal and restore",
+    "active/withdrawn URL filter and retained acknowledgement",
+    "atomic option creation and complete source nomination preset",
+    "filtered nominations and explicit stale/uncertain recovery"
   ],
-  "inferences": "Operational app screen; no hero or material slots. Complete presets and representative screens remain follow-up."
+  "inferences": "Operational app screen for organizers; utilitarian Cobalt ledger, no hero or imagery/material slots. Preserve DESIGN.md and the existing shell. Representative screens remain P5."
 }

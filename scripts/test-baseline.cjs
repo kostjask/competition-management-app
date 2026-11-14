@@ -163,6 +163,7 @@ async function main() {
     await check('check-dancers', { client, baseUrl, adminToken: token, login });
     await check('check-performances', { client, baseUrl, adminToken: token, login });
     await check('check-entry-workflow', { client, baseUrl, adminToken: token, login });
+    await check('check-entry-recovery', { client, baseUrl, adminToken: token, login });
     if (entryFoundationsOnly) { console.log('PASS: isolated entry foundations baseline (focused; full gate still required).'); return; }
     await check('check-studios', { client, baseUrl, adminToken: token, login });
     await check('check-setup', { client, baseUrl, adminToken: token });

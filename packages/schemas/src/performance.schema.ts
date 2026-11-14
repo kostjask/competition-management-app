@@ -4,7 +4,13 @@ import { DancerSchema } from "./dancer.schema.js";
 
 export const PerformanceCollectionParamsSchema = z.object({ eventId: IdSchema });
 export const PerformanceItemParamsSchema = PerformanceCollectionParamsSchema.extend({ performanceId: IdSchema });
-export const PerformanceQuerySchema = z.strictObject({ studioId: IdSchema.optional() });
+export const PerformanceQuerySchema = z.strictObject({ studioId: IdSchema.optional(), state: z.enum(["active", "withdrawn"]).default("active") });
+export const PerformanceLifecycleBodySchema = z.strictObject({ expectedRevision: z.int().positive(), operationId: z.uuid(),
+  action: z.enum(["WITHDRAW", "RESTORE"]), reason: z.string().trim().min(1).max(1000) });
+export const PerformanceWithdrawalBodySchema = PerformanceLifecycleBodySchema.extend({ action: z.literal("WITHDRAW") });
+export const PerformanceRestoreBodySchema = PerformanceLifecycleBodySchema.extend({ action: z.literal("RESTORE") });
+export const PerformanceLifecycleResultSchema = z.strictObject({ id: IdSchema, revision: z.int().positive(), archived: z.boolean() });
+export type PerformanceLifecycleInput = z.infer<typeof PerformanceLifecycleBodySchema>;
 const fields = {
   teacher: z.string().trim().min(1).max(500).nullable(), author: z.string().trim().min(1).max(500).nullable(),
   title: z.string().trim().min(1).max(500).nullable(),
@@ -24,6 +30,7 @@ export const UpdatePerformanceBodySchema = z.strictObject({ ...z.object(fields).
   { message: "At least one performance field is required", params: { reason: "nonemptyPatch" } },
 );
 export const PerformanceSchema = z.strictObject({
+  archived: z.boolean().default(false),
   teacher: z.string().nullable().default(null), author: z.string().nullable().default(null),
   revision: z.int().positive(),
   id: IdSchema, eventId: IdSchema, studioId: IdSchema, registrationId: IdSchema, title: z.string().nullable(), durationSec: z.number().int().nullable(),
@@ -35,7 +42,7 @@ export const PerformanceDeleteQuerySchema = z.strictObject({ expectedRevision: z
 const snapshotConfiguration = z.strictObject({
   category: z.strictObject({ id: IdSchema, name: z.string() }).nullable(),
   ageGroup: z.strictObject({ id: IdSchema, name: z.string(), minAge: z.int(), maxAge: z.int().nullable() }).nullable(),
-  format: z.strictObject({ id: IdSchema, name: z.string(), minParticipants: z.int(), maxParticipants: z.int(), maxDurationSeconds: z.int() }).nullable(),
+  format: z.strictObject({ id: IdSchema, name: z.string(), minParticipants: z.int(), maxParticipants: z.int().nullable(), maxDurationSeconds: z.int() }).nullable(),
 });
 export const PerformanceSnapshotSchema = z.strictObject({
   teacher: z.string().nullable().optional(), author: z.string().nullable().optional(),
@@ -46,7 +53,7 @@ export const PerformanceSnapshotSchema = z.strictObject({
   archived: z.boolean(),
 });
 export const PerformanceRevisionSchema = z.strictObject({
-  revision: z.int().positive(), origin: z.enum(["LEGACY_BASELINE", "CREATE", "EDIT", "ARCHIVE", "CHECKPOINT"]),
+  revision: z.int().positive(), origin: z.enum(["LEGACY_BASELINE", "CREATE", "EDIT", "ARCHIVE", "RESTORE", "CHECKPOINT"]),
   capturedAt: z.iso.datetime(), actorKind: z.enum(["USER", "MIGRATION"]), snapshot: PerformanceSnapshotSchema,
 });
 export const PerformanceHistorySchema = z.array(PerformanceRevisionSchema);

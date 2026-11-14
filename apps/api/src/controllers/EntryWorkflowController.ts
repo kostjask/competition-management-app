@@ -40,16 +40,37 @@ export class EntryWorkflowController extends BaseController {
       const current = await entrySettings(db, eventId);
       if ((current?.revision ?? 0) !== body.expectedRevision) throw new ConflictError("Entry setup changed", undefined, "concurrentChange");
       const frozen = await db.studioEventRegistration.count({ where: { eventId } }) > 0;
+      // New options and their nomination references commit with the policy, never as partial setup.
+      for (const row of body.options?.categories ?? []) {
+        const existing = await db.danceCategory.findUnique({ where: { id: row.id } });
+        if (existing ? existing.eventId !== eventId || existing.name !== row.name : frozen) throw new ConflictError("Option changed or rules are frozen", undefined, "invalidConfiguration");
+        if (!existing) await db.danceCategory.create({ data: { ...row, eventId } });
+      }
+      for (const row of body.options?.ages ?? []) {
+        const existing = await db.ageGroup.findUnique({ where: { id: row.id } });
+        if (existing ? existing.eventId !== eventId || existing.name !== row.name || existing.minAge !== row.minAge || existing.maxAge !== (row.maxAge ?? null) : frozen) throw new ConflictError("Option changed or rules are frozen", undefined, "invalidConfiguration");
+        if (!existing) await db.ageGroup.create({ data: { ...row, eventId, maxAge: row.maxAge ?? null } });
+      }
+      for (const row of body.options?.formats ?? []) {
+        const existing = await db.danceFormat.findUnique({ where: { id: row.id } });
+        if (existing ? existing.eventId !== eventId || existing.name !== row.name || existing.minParticipants !== row.minParticipants || existing.maxParticipants !== row.maxParticipants || existing.maxDurationSeconds !== row.maxDurationSeconds : frozen) throw new ConflictError("Option changed or rules are frozen", undefined, "invalidConfiguration");
+        if (!existing) await db.danceFormat.create({ data: { ...row, eventId } });
+      }
       const policy = (value: typeof body.settings) => JSON.stringify({ ...value,
         basic: { enabled: value.basic.enabled }, final: { enabled: value.final.enabled } });
       if (frozen && (!current || policy(current.settings) !== policy(body.settings))) throw new ConflictError("Configure competition rules before registration starts", undefined, "stageLocked");
-      for (const row of body.settings.nominations) {
-        const [category, ageGroup, format] = await Promise.all([
-          db.danceCategory.findFirst({ where: { id: row.categoryId, eventId } }),
-          db.ageGroup.findFirst({ where: { id: row.ageGroupId, eventId } }),
-          db.danceFormat.findFirst({ where: { id: row.formatId, eventId } }),
-        ]);
-        if (!category || !ageGroup || !format || (row.maxParticipants !== null && row.maxParticipants < format.minParticipants)) throw new ConflictError("Invalid nomination relationship", undefined, "invalidConfiguration");
+      const categoryIds = [...new Set(body.settings.nominations.map(row => row.categoryId))];
+      const ageIds = [...new Set(body.settings.nominations.map(row => row.ageGroupId))];
+      const formatIds = [...new Set(body.settings.nominations.map(row => row.formatId))];
+      const [categories, ages, formats] = await Promise.all([
+        db.danceCategory.findMany({ where: { eventId, id: { in: categoryIds } }, select: { id: true } }),
+        db.ageGroup.findMany({ where: { eventId, id: { in: ageIds } }, select: { id: true } }),
+        db.danceFormat.findMany({ where: { eventId, id: { in: formatIds } }, select: { id: true, minParticipants: true } }),
+      ]);
+      const formatById = new Map(formats.map(row => [row.id, row]));
+      if (categories.length !== categoryIds.length || ages.length !== ageIds.length || formats.length !== formatIds.length ||
+        body.settings.nominations.some(row => row.maxParticipants !== null && row.maxParticipants < (formatById.get(row.formatId)?.minParticipants ?? Infinity))) {
+        throw new ConflictError("Invalid nomination relationship", undefined, "invalidConfiguration");
       }
       const saved = current ? await db.entryConfiguration.update({ where: { eventId, revision: body.expectedRevision },
         data: { settings: body.settings, revision: { increment: 1 } } }) : await db.entryConfiguration.create({ data: { eventId, settings: body.settings } });

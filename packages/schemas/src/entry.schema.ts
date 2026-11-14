@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 import { PerformanceSnapshotSchema } from "./performance.schema.js";
+import { CreateCategoryBodySchema } from "./category.schema.js";
+import { CreateAgeGroupBodySchema } from "./age-group.schema.js";
+import { CreateFormatBodySchema } from "./format.schema.js";
 
 export const EntryKindSchema = z.enum(["BASIC", "FINAL"]);
 export const EntryFieldSchema = z.enum(["title", "categoryId", "ageGroupId", "formatId", "durationSec", "teacher", "author", "participants", "roster", "entries"]);
@@ -15,7 +18,14 @@ export const EntrySettingsSchema = z.strictObject({
 }).refine(value => new Set(value.nominations.map(row => JSON.stringify([row.categoryId, row.ageGroupId, row.formatId]))).size === value.nominations.length,
 { message: "Nomination combinations must be unique" });
 export const EntryConfigurationSchema = z.strictObject({ revision: z.int().nonnegative(), frozen: z.boolean(), settings: EntrySettingsSchema.nullable() });
-export const EntryConfigurationBodySchema = z.strictObject({ expectedRevision: z.int().nonnegative(), settings: EntrySettingsSchema });
+export const EntryOptionsSchema = z.strictObject({
+  categories: z.array(CreateCategoryBodySchema.extend({ id: IdSchema, name: z.string().trim().min(1).max(500) })).max(100),
+  ages: z.array(CreateAgeGroupBodySchema.safeExtend({ id: IdSchema, name: z.string().trim().min(1).max(500) })).max(100),
+  formats: z.array(CreateFormatBodySchema.safeExtend({ id: IdSchema })).max(100),
+}).refine(value => [value.categories, value.ages, value.formats].every(rows => new Set(rows.map(row => row.id)).size === rows.length), { message: "Option IDs must be unique" });
+export const EntryConfigurationBodySchema = z.strictObject({ expectedRevision: z.int().nonnegative(), settings: EntrySettingsSchema, options: EntryOptionsSchema.optional() });
+export type EntryOptions = z.infer<typeof EntryOptionsSchema>;
+export type EntryConfigurationInput = z.infer<typeof EntryConfigurationBodySchema>;
 export const EntryParamsSchema = z.object({ eventId: IdSchema, studioId: IdSchema });
 export const EntryCheckpointParamsSchema = EntryParamsSchema.extend({ kind: EntryKindSchema });
 export const EntryGrantSchema = z.strictObject({ fields: z.array(EntryFieldSchema).min(1).max(11).refine(values => new Set(values).size === values.length),

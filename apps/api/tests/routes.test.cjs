@@ -627,7 +627,7 @@ test('performance canonical CRUD uses explicit DTOs and transactional nested par
   assert.equal((await request(performancePath, { user: 'owner' })).status, 200);
   const created = await request(performancePath, { user: 'owner', method: 'POST', body: performanceInput });
   assert.equal(created.status, 201);
-  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'author', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'revision', 'studioId', 'teacher', 'title']);
+  assert.deepEqual(Object.keys(created.body).sort(), ['ageGroupId', 'archived', 'author', 'categoryId', 'durationSec', 'eventId', 'formatId', 'id', 'orderOnStage', 'participants', 'registrationId', 'revision', 'studioId', 'teacher', 'title']);
   assert.equal(created.body.participants[0].dancer.birthDate, '2012-02-29');
   const data = calls.find(({ name }) => name === 'performance-create').args.data;
   assert.equal(data.title, 'Title');

@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 const IntSchema = z.number().int().max(2147483647);
-const fields = { name: z.string().trim().min(1), minParticipants: IntSchema.min(1), maxParticipants: IntSchema.min(1), maxDurationSeconds: IntSchema.min(1) };
-export const CreateFormatBodySchema = z.strictObject(fields).refine(data => data.minParticipants <= data.maxParticipants, { path: ["maxParticipants"], params: { reason: "participantRange" }, message: "Invalid range" });
+const fields = { name: z.string().trim().min(1).max(500), minParticipants: IntSchema.min(1), maxParticipants: IntSchema.min(1).nullable(), maxDurationSeconds: IntSchema.min(1) };
+export const CreateFormatBodySchema = z.strictObject(fields).refine(data => data.maxParticipants === null || data.minParticipants <= data.maxParticipants, { path: ["maxParticipants"], params: { reason: "participantRange" }, message: "Invalid range" });
 export const UpdateFormatBodySchema = z.strictObject(fields).partial().refine(data => Object.keys(data).length > 0, { params: { reason: "nonemptyPatch" }, message: "At least one field is required" });
 export const FormatEventParamsSchema = z.object({ eventId: IdSchema });
 export const FormatItemParamsSchema = FormatEventParamsSchema.extend({ formatId: IdSchema });
-export const FormatSchema = z.strictObject({ id: IdSchema, eventId: IdSchema, name: z.string(), minParticipants: z.number().int(), maxParticipants: z.number().int(), maxDurationSeconds: z.number().int() });
+export const FormatSchema = z.strictObject({ id: IdSchema, eventId: IdSchema, name: z.string(), minParticipants: z.number().int(), maxParticipants: z.number().int().nullable(), maxDurationSeconds: z.number().int() });
 export const FormatsSchema = z.array(FormatSchema);
 export type Format = z.infer<typeof FormatSchema>;
 export type CreateFormatInput = z.infer<typeof CreateFormatBodySchema>;

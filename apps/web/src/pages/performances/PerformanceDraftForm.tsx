@@ -5,8 +5,8 @@ import { ApiError, toUiError, type UiError } from "../../api/error";
 import { Button, ErrorSummary, Field, Input } from "../../components/ui/Foundation";
 import { useTranslation } from "../../i18n/useTranslation";
 
-export default function PerformanceDraftForm({ eventId, studios, ready, saved }: {
-  eventId: string; studios: StudioRegistration[]; ready: boolean; saved: (performance: Performance) => void;
+export default function PerformanceDraftForm({ eventId, studios, ready, saved, withdrawnView = false }: {
+  eventId: string; studios: StudioRegistration[]; ready: boolean; saved: (performance: Performance) => void; withdrawnView?: boolean;
 }) {
   const { t } = useTranslation();
   const [studioId, setStudioId] = useState("");
@@ -37,7 +37,7 @@ export default function PerformanceDraftForm({ eventId, studios, ready, saved }:
   return <section className="performance-draft" aria-labelledby="performance-draft-title">
     <h2 id="performance-draft-title">{t("Performance.newDraft")}</h2>
     <p>{t("Performance.draftHelp")}</p>
-    {!ready ? <p>{t("Performance.draftUnavailable")}</p> : !eligible.length ? <p>{t("Performance.noDraftOwner")}</p> : <form onSubmit={event => { void submit(event); }}>
+    {!ready ? <p>{t(withdrawnView ? "Entry.draftActiveOnly" : "Performance.draftUnavailable")}</p> : !eligible.length ? <p>{t("Performance.noDraftOwner")}</p> : <form onSubmit={event => { void submit(event); }}>
       <ErrorSummary error={error} title={t("Performance.saveError")} fields={{ studioId: "draft-owner", title: "draft-title" }} />
       <div className="performance-draft-fields">
         <Field id="draft-owner" label={t("Performance.draftOwner")} required>{attrs => <select {...attrs} className="ui-input" value={studioId}
