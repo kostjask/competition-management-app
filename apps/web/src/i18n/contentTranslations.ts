@@ -24,6 +24,8 @@ export const contentTranslations = {
   preview: { et: "Privaatne eelvaade", en: "Private preview", ru: "Закрытый просмотр" },
   previewNotice: { et: "Salvestatud versiooni eelvaade. Ainult administraatorile; ei indekseerita.", en: "Saved revision preview. Administrators only; excluded from indexing.", ru: "Просмотр сохранённой версии. Только для администратора; без индексации." },
   saveFirst: { et: "Salvesta enne eelvaadet või avaldamist.", en: "Save before previewing or publishing.", ru: "Сохраните перед просмотром или публикацией." },
+  previewFirst: { et: "Vaata salvestatud versiooni enne avaldamise kinnitamist.", en: "Preview the saved revision before confirming publication.", ru: "Просмотрите сохранённую версию перед подтверждением публикации." },
+  backToEditor: { et: "Tagasi redaktorisse", en: "Return to editor", ru: "Вернуться к редактору" },
   publish: { et: "Avalda versioon", en: "Publish revision", ru: "Опубликовать версию" },
   unpublish: { et: "Eemalda avalikust vaatest", en: "Unpublish", ru: "Снять с публикации" },
   publishConfirm: { et: "Kinnitan selle versiooni teksti, reeglite, õiguste ja kontaktide kontrolli.", en: "I reviewed this revision’s text, rules, rights and contacts.", ru: "Я проверил текст, правила, права и контакты этой версии." },

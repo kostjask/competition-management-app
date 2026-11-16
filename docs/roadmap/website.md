@@ -48,7 +48,7 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   This prerequisite was design-only; the editor task below supplies implementation.
   Original exports/rights, archive attribution and domain/provider verification
   remain P9-WIX-TRANSITION/release gates; no speculative content was approved.
-- [x] P4-PUBLIC-EDITOR (2026-11-16, local): delivered one controlled CMS workspace
+- [x] P4-PUBLIC-EDITOR (2026-11-16, revalidated 2026-11-17, local): delivered one controlled CMS workspace
   with Studio website and Festivals sections; retain Competition operations and
   authorized task-specific navigation as delivered. Edit ET/EN/RU text, teacher
   profiles/classes/public timetable/joining/contact, selected media, festival
@@ -65,6 +65,10 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   browser/Hallmark evidence. Selective copy includes text/color; images are explicitly
   excluded and re-uploaded. Current paths are `/content/...`; `/app` and public HTML
   remain consumer work. No public launch, production migration or human approval.
+  The authorized PR #6 continuation binds publishing to reviewed canonical facts,
+  clears confirmation/preview state across documents, focuses private previews and
+  reduces phone ledger density. Publication-audit rollback, policy changes and
+  festival-copy UI are covered by the fresh validation evidence.
 - [ ] P4-STUDIO-PAGES: after model/editor, create public home/about, teachers,
   classes/groups/styles/ages, timetable, joining information, location/contact,
   selected media and social links. Content comes from the director; no student
@@ -98,10 +102,11 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
 
 ## Exit criteria and next action
 
-PR #6 integration (2026-11-16) retains the completed local model/editor work and
-the target's equivalent prerequisite design after resolving squash-ancestry
-documentation conflicts. The local merge awaits commit/publication; task and
-release gates below are unchanged.
+PR #6 is merged into main at 213b37a. On 2026-11-17 the user authorized a
+separate PR and merge for its validated local follow-up fixes, based on that
+merged main. Shared contracts and migration 41 are retained rather than
+duplicating the CMS implementation. Deployment and release gates below are
+unchanged.
 
 WEB-STUDIO and WEB-FESTIVAL are distinct outcomes in the checkpoint. Both need
 usable director content editing, explicit safe publishing and released-scope

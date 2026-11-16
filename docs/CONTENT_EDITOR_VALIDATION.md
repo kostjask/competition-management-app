@@ -1,9 +1,74 @@
-# Shared CMS local validation — 2026-11-16
+# Shared CMS local validation
 
 Scope: P4-PUBLIC-EDITOR with S20/F12, following the delivered P4-PUBLIC-MODEL
 design. This is local technical evidence, not a public-site launch, content-rights
 approval, staging deployment or human visual/language/assistive acceptance.
 [Implemented contract](api/content.md) · [Roadmap](roadmap/website.md).
+
+## Continuation and revalidation (2026-11-17)
+
+The clean checkout was main/upstream origin/main at `04f3ccd`. Authorized fetch
+and overlap inspection found the existing P4-PUBLIC-EDITOR implementation in
+[PR #6](https://github.com/kostjask/competition-management-app/pull/6), head
+`3a5777d`. The user explicitly authorized applying that implementation as
+uncommitted changes. No branch/history mutation, commit, push or deployment was
+performed. Final fetch confirmed the same target and PR head, no divergence and
+no additional overlapping PR. The original PR's hosted checks passed; those
+checks do not validate the subsequent uncommitted fixes.
+
+The continuation fixes two reproduced publication defects. Switching documents
+previously retained an old publication confirmation. A linked Event could also
+change after preview without changing the CMS document version; the previous
+publish request acknowledged the unseen facts. The browser regression observed
+the retained confirmation, and the PostgreSQL regression observed HTTP 200 where
+409 was required, before the fixes.
+
+Private preview now returns the current admin-only canonical facts and a policy
+fingerprint. Publication requires that exact fingerprint and rejects changed
+facts atomically. Document switches discard stale review/confirmation state;
+late preview responses cannot populate a different document. Known conflicts
+require reconciliation and new review. Committed retries retain their original
+receipt without renewing policy review. A contact phone must contain usable
+digits. No public DTO exposes the fingerprint or private entry settings.
+
+| Fresh check | Observed result |
+| --- | --- |
+| Focused contracts | 4 passed, including required/invalid policy fingerprints and invalid phone-only contacts |
+| Full workspace | Build, typecheck including API seed/browser tests, lint without warnings, and tests passed: 125 API, 28 web, 3 tooling plus i18n source checks |
+| Full PostgreSQL baseline | Passed in 230.70s, including all migrations, seed preservation/refusal, auth/scope/entry workflows and CMS/cleanup |
+| Final focused CMS/cleanup | Passed in 24.45s after final API refinements; includes cross-document publish denial, explicit publication-audit rollback, stale policy rejection without receipt/audit/pointer changes, fresh review and superseded committed retry |
+| Migration regression | Passed fresh history, existing-data upgrade, SQL-only guards and exact schema parity |
+| Prisma | Validate and generate passed; inherited format failure corrected, then format check and generation passed |
+| Final CMS browser | 23 passed in 59.0s; ET/EN/RU at 320/390/768/1440, capped 1920, recovery/conflicts, document switching, delayed preview, selected edition copy, read-only/current canonical facts and preview focus/return |
+| Hallmark | Static sweep: 0 FAIL, 0 REFLEX, 0 WARN. Fresh-context finish review: two Finish findings; phone ledger spacing/receipt grouping and preview discovery/focus both resolved and recaptured |
+| Documentation/diff | UTF-8/local links/anchors/fences/whitespace checks and final diff check passed |
+
+The final CMS browser checks were rerun, rather than the original 276-test full
+browser suite below. Playwright captures the real React app with synthetic HTTP
+fixtures; database tests separately exercise actual API/PostgreSQL behavior.
+The Hallmark `--render` invocation again completed the static tier only (no HTML
+target and no separate Puppeteer installation); its render-lint tier is not
+claimed. Fresh Playwright captures and the independent finish review provide the
+rendered evidence. No imagery/material slots were introduced; the director still
+supplies approved prose/media/rights. Human fluent-language, assistive/visual and
+hosted release gates remain open.
+
+All database work used the checked-in PostgreSQL 16 Compose service and random
+disposable fixture databases. No application database, application environment
+file, credentials, DNS, cookies, public host mapping or Wix service was changed.
+The checkpoint and owning roadmap now record P4-STUDIO-PAGES/S18 as next; public
+HTML, `/app` routing and identity-link migration remain consumer tasks.
+
+### Git publication follow-up
+
+After this validation, the user authorized merging PR #6, then explicitly
+requested creating and merging a PR for the remaining local fixes. PR #6 merged
+at `213b37a`. Branch `fix/cms-reviewed-publication` is based on that merged main;
+the exact staged tree was preserved, so the follow-up contains only the review,
+recovery, UI/test and documentation changes above. Its parent has the same file
+contents as the original CMS PR head, avoiding a duplicate implementation or
+schema/migration change. No source edits or tests were discarded. Git publication
+does not authorize a deployment or application-database migration.
 
 ## Delivered behavior and decisions
 
@@ -33,7 +98,7 @@ approval, staging deployment or human visual/language/assistive acceptance.
 - Current routes remain `/content/...`; `/app`, public HTML/SEO composition,
   DNS/cookie/hosting changes and Wix migration are later scoped work.
 
-## Evidence
+## Original implementation evidence (2026-11-16)
 
 The working tree started clean at `9ab5fec`. Intended target is `origin/main`.
 Initial authorized fetch found target `04f3ccd`: one unique commit on each side,

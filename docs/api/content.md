@@ -29,8 +29,8 @@ update endpoint and cannot be reassigned. Event deletion is restrictive.
 | POST /content/editions/:editionId/link | Nullable `eventId`, `migrationReviewed`, operation/version of edition document; versioned link receipt |
 | POST /content/documents/:documentId/revisions | Strict `payload`, `operationId`, `expectedVersion`; immutable saved revision receipt |
 | GET /content/documents/:documentId/revisions | Descending history, 20 records; optional positive `before` revision number |
-| GET /content/documents/:documentId/preview | Required saved `revisionId`, `locale=et/en/ru`; private projected content and readiness issues |
-| POST /content/documents/:documentId/publish | Exact saved `revisionId`, `reviewed: true`, operation/version; publication receipt |
+| GET /content/documents/:documentId/preview | Required saved `revisionId`, `locale=et/en/ru`; private projected content, readiness issues, current canonical `facts` and `policyDigest` |
+| POST /content/documents/:documentId/publish | Exact saved `revisionId`, `reviewed: true`, preview's `policyDigest`, operation/version; publication receipt |
 | POST /content/documents/:documentId/unpublish | Operation/version; clears publication while retaining history |
 | POST /content/documents/:documentId/archive | Operation/version; unpublished edition only, permanently stops editing |
 | GET /content/documents/:documentId/operations/:operationId | Current authorized actor's committed receipt, or 404 |
@@ -44,6 +44,15 @@ replayed. Domain changes, revision references, receipt and audit commit together
 Revision, asset-reference and receipt history are database immutable.
 
 Publication rechecks readiness, current media rights and the exact revision.
+The required `policyDigest` is a 64-character lowercase SHA-256 fingerprint from
+the authorized preview. A new publication compares it with canonical facts inside
+the transaction. Schedule/rule changes after preview return 409 even when the
+document version is unchanged, without a pointer, receipt or audit change. Preview
+returns the corresponding admin-only facts; neither these entry settings nor the
+digest enter public DTOs. Identical committed retries still return the original
+receipt, including after later policy changes; they never re-acknowledge policy.
+Known conflicts require reconciliation and a fresh review rather than same-body
+replay. Document switches clear outstanding confirmation/private-preview state.
 Republishing an older saved revision is rollback with the same current checks.
 Draft saves do not change publication. Minimal technical publication requires
 source-language title/introduction/metadata and a contact action; it does not

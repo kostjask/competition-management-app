@@ -81,6 +81,13 @@ how to find active entries. Finite/unbounded limits use native nullable controls
 No imagery, new palette, remote font, shell replacement or material slots are needed.
 Technical checks and rendered review remain separate from human visual approval.
 
+The 2026-11-17 CMS continuation keeps the revision ledger and native section
+editor. Phone ledger facts use compact paired rows and secondary receipt details
+stay disclosed. Private preview receives focus when ready and offers a return
+to its trigger. The reviewed canonical facts travel with that preview; document
+switches and conflicts require a fresh review before publication. The fresh
+Hallmark finish review's two usability findings were resolved and recaptured.
+
 P4-PUBLIC-EDITOR extends Cobalt to the shared CMS at the current `/content` paths.
 One URL-selected structured section sits beside a draft/published revision ledger.
 Exact IDs and publication impact use native disclosures to keep phone editing

@@ -49,6 +49,9 @@ export class ContentController extends BaseController {
       const issues = await validateContentReferences(db, id, CmsPayloadSchema.parse(revision.payload), true);
       if (issues.length) throw new ConflictError("Resolve publication readiness", { issues }, "invalidConfiguration");
       const { digest } = await canonicalFacts(db, document);
+      // The document version does not change when operational policy changes.
+      // Bind this acknowledgement to the facts returned by the private preview.
+      if (body.policyDigest !== digest) throw new ConflictError("Canonical facts changed; preview and review again", undefined, "concurrentChange");
       await db.contentDocument.update({ where: { id }, data: { publishedRevisionId: revision.id, publishedAt: new Date(), policyDigest: digest } });
       if (document.editionId) await db.festivalEdition.update({ where: { id: document.editionId }, data: { everPublished: true } });
       return revision.id;
@@ -71,7 +74,8 @@ export class ContentController extends BaseController {
     res.json(await contentTransaction(this.prisma, async db => {
       await contentAdmin(db, auth); const document = await documentRow(db, id);
       const revision = await db.contentRevision.findFirst({ where: { id: query.revisionId, documentId: id } }); if (!revision) throw new NotFoundError("Revision");
-      return CmsPreviewSchema.parse({ content: await projectContent(db, document, revision.id, query.locale, true), issues: await validateContentReferences(db, id, CmsPayloadSchema.parse(revision.payload), true) });
+      const { facts, digest } = await canonicalFacts(db, document);
+      return CmsPreviewSchema.parse({ content: await projectContent(db, document, revision.id, query.locale, true), issues: await validateContentReferences(db, id, CmsPayloadSchema.parse(revision.payload), true), policyDigest: digest, facts });
     }));
   }
   async operation(req: Request, res: Response) {

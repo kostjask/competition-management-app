@@ -20,7 +20,7 @@ export const CmsImageSchema = z.strictObject({ assetId: CmsIdSchema, alt: Option
   .refine(value => value.decorative ? value.alt === null : value.alt !== null, { path: ["alt"], message: "Provide alternative text or mark decorative" });
 const Profile = z.strictObject({ id: CmsIdSchema, name: Name, biography: OptionalText, portrait: CmsImageSchema.nullable() });
 const Link = z.strictObject({ id: CmsIdSchema, title: Text, url: CmsHttpsSchema });
-const Contact = z.strictObject({ email: z.email().max(254).nullable(), phone: z.string().regex(/^\+?[\d ()-]{5,30}$/).nullable(), address: OptionalText, links: z.array(Link).max(12) });
+const Contact = z.strictObject({ email: z.email().max(254).nullable(), phone: z.string().regex(/^\+?[\d ()-]{5,30}$/).refine(value => value.replace(/\D/g, "").length >= 5, "Provide a usable phone number").nullable(), address: OptionalText, links: z.array(Link).max(12) });
 // Semantic pairs only: no author-controlled CSS. Consumers use this same palette.
 export const CMS_BRAND_PALETTE = {
   cobalt: { background: "#2359b8", foreground: "#ffffff" },
@@ -83,7 +83,8 @@ export function emptyCmsPayload(kind: CmsPayload["kind"]): CmsPayload {
 export const CmsCommandSchema = z.strictObject({ operationId: CmsIdSchema, expectedVersion: z.int().min(0).max(2147483646) });
 export const CmsSaveSchema = CmsCommandSchema.extend({ payload: CmsPayloadSchema });
 export const CmsInitializeSchema = CmsCommandSchema.extend({ kind: z.enum(["STUDIO_SITE", "FESTIVAL_PORTAL"]) });
-export const CmsPublishSchema = CmsCommandSchema.extend({ revisionId: CmsIdSchema, reviewed: z.literal(true) });
+export const CmsPolicyDigestSchema = z.string().regex(/^[0-9a-f]{64}$/);
+export const CmsPublishSchema = CmsCommandSchema.extend({ revisionId: CmsIdSchema, reviewed: z.literal(true), policyDigest: CmsPolicyDigestSchema });
 export const CmsFestivalCreateSchema = CmsCommandSchema.extend({ slug: CmsSlugSchema, name: Name });
 export const CmsEditionCreateSchema = CmsCommandSchema.extend({ festivalId: CmsIdSchema, slug: CmsSlugSchema, copyDocumentId: CmsIdSchema.nullable(), sections: z.array(z.enum(["title", "introduction", "brand", "rules", "judges", "contact"])).max(6) });
 export const CmsLinkSchema = CmsCommandSchema.extend({ eventId: z.string().min(1).max(128).nullable(), migrationReviewed: z.boolean() });
@@ -128,5 +129,5 @@ export const CmsPublicSchema = z.strictObject({ kind: CmsKindSchema, revisionId:
 });
 export type CmsPublic = z.infer<typeof CmsPublicSchema>;
 export const CmsPublicPortalSchema = z.strictObject({ content: CmsPublicSchema, editions: z.array(z.strictObject({ festivalSlug: CmsSlugSchema, editionSlug: CmsSlugSchema, title: Resolved.nullable(), revisionId: CmsIdSchema })) });
-export const CmsPreviewSchema = z.strictObject({ content: CmsPublicSchema, issues: z.array(CmsIssueSchema) });
+export const CmsPreviewSchema = z.strictObject({ content: CmsPublicSchema, issues: z.array(CmsIssueSchema), policyDigest: CmsPolicyDigestSchema, facts: CmsFactsSchema.nullable() });
 export function cmsText(content: z.infer<typeof AuthoredContentSchema>, locale: CmsLocale) { return resolveAuthoredContent(content, locale); }

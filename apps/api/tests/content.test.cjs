@@ -16,6 +16,8 @@ test('CMS contracts reject unknown data, duplicate local identities, broken refe
   assert.equal(CmsPayloadSchema.safeParse({...draft,contact:{...draft.contact,links:[{id:randomUUID(),title:text,url:'https://secret@example.invalid'}]}}).success,false);
   assert.equal(CmsPayloadSchema.safeParse({...draft,primaryLocale:'ru',title:text}).success,false);
   assert.equal(CmsPayloadSchema.safeParse({...draft,users:[]}).success,false);
+  assert.equal(CmsPayloadSchema.safeParse({...draft,contact:{...draft.contact,phone:'-----'}}).success,false);
+  assert.equal(CmsPayloadSchema.safeParse({...draft,contact:{...draft.contact,phone:'+372 555 1234'}}).success,true);
   assert.equal(CmsPublishSchema.safeParse({operationId:randomUUID(),expectedVersion:1,revisionId:randomUUID(),reviewed:false}).success,false);
 });
 test('CMS timetable validates local classes, calendar dates, IANA zones and increasing time ranges', () => {
@@ -24,4 +26,13 @@ test('CMS timetable validates local classes, calendar dates, IANA zones and incr
   const slot={id:randomUUID(),classId,weekday:1,start:'09:00',end:'10:00',timeZone:'Europe/Tallinn',location:'Hall',validFrom:'2026-01-01',validUntil:'2026-12-31'};
   assert.equal(CmsPayloadSchema.safeParse({...draft,timetable:[slot]}).success,true);
   for(const invalid of [{classId:randomUUID()},{end:'08:00'},{timeZone:'Mars/Unknown'},{validUntil:'2025-12-31'},{validFrom:'2026-02-30'}]) assert.equal(CmsPayloadSchema.safeParse({...draft,timetable:[{...slot,...invalid}]}).success,false);
+});
+
+test('CMS publication requires the exact policy fingerprint reviewed in preview', () => {
+  const command = { operationId: randomUUID(), expectedVersion: 1, revisionId: randomUUID(), reviewed: true };
+  assert.equal(CmsPublishSchema.safeParse(command).success, false);
+  for (const policyDigest of ['', 'a'.repeat(63), 'g'.repeat(64)]) {
+    assert.equal(CmsPublishSchema.safeParse({ ...command, policyDigest }).success, false);
+  }
+  assert.equal(CmsPublishSchema.safeParse({ ...command, policyDigest: 'a'.repeat(64) }).success, true);
 });

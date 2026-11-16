@@ -1,7 +1,7 @@
 /* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (locked DESIGN.md) · signature: draft and publication ledger · v2.0.0 */
 /* Hallmark · pre-emit critique: hierarchy resolved through a ruled revision ledger and one selected editor section. */
 /* Hallmark · answered: operational forms need no photography, marketing hero, display typography or invented proof. */
-/* Hallmark · finish-review: in-thread · 2 findings · 2 resolved; static sweep 0 FAIL, 0 REFLEX, 0 WARN; rendered evidence uses Playwright. */
+/* Hallmark · finish-review: subagent · 2 findings · 2 resolved · 2026-11-17; static sweep 0 FAIL, 0 REFLEX, 0 WARN; rendered evidence uses Playwright. */
 @import "../../features/events/design/tokens.css";
 @import "../../features/events/design/base.css";
 html, body { overflow-x: clip; }
@@ -52,3 +52,12 @@ html, body { overflow-x: clip; }
 @media (hover: hover) { .cms-workbench button:hover:not(:disabled), .cms-workbench input:hover:not(:disabled), .cms-workbench select:hover:not(:disabled) { border-color: var(--color-ink); } }
 @media (max-width: 52rem) { .cms-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); } .cms-workbench { padding: var(--space-md); } }
 @media (prefers-reduced-motion: reduce) { .cms-workbench * { animation: none !important; transition: none !important; } }
+.cms-preview-result:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+@media (max-width: 52rem) {
+  .cms-ledger { padding: var(--space-md); }
+  .cms-ledger dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--space-sm) var(--space-md); }
+  .cms-ledger dd { margin: 0; font-size: var(--text-md); }
+  .cms-ledger details { margin-block: var(--space-xs); padding-block: var(--space-xs); }
+  .cms-ledger .cms-actions { gap: var(--space-xs) var(--space-sm); }
+  .cms-ledger button { margin-block: var(--space-xs); white-space: nowrap; }
+}

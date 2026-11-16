@@ -38,6 +38,13 @@
       "private preview",
       "explicit receipts and rights"
     ],
-    "material": "authored product content; no stock/proof slots"
+    "material": "authored product content; no stock/proof slots",
+    "scanned": "2026-11-17",
+    "continuation": [
+      "review-bound canonical policy",
+      "document-bound confirmation and private preview",
+      "phone ledger density",
+      "preview focus and return"
+    ]
   }
 }
