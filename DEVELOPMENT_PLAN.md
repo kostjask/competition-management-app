@@ -42,12 +42,15 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 Source and the CMS slice revalidated locally on 2026-11-16. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- Branch/upstream are agents/dance-competition-app-development-f57ef95d and its
-  origin counterpart at 9ab5fec; intended target is origin/main at 04f3ccd.
-  Initial/final authorized fetches found one unique commit on each side but
-  identical tracked contents and no open PRs. The working tree started clean;
-  this slice remains uncommitted. No branch/history, commit, push or deployment
-  mutation was performed.
+- PR #6 conflict resolution (2026-11-16): branch/upstream are
+  agents/dance-competition-app-development-f57ef95d and its origin counterpart
+  at d3c324a; intended target is origin/main at 04f3ccd. Authorized fetch confirmed
+  those refs and the working tree started clean. The target has identical tracked
+  contents to prerequisite commit 9ab5fec; its squash ancestry caused documentation
+  conflicts with the newer CMS slice. Retained that slice's documentation and
+  integrated the target locally. The merge remains uncommitted and unpublished;
+  no deployment or database change was performed. Earlier CMS validation below
+  remains dated evidence, not a new execution claim.
 - Auth/session/locale, controlled staff invitations/offboarding, organizer event
   setup and independent application/review workflows are delivered locally.
   [Review evidence](docs/APPLICATION_REVIEW_VALIDATION.md) and owning roadmaps

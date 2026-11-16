@@ -98,6 +98,11 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
 
 ## Exit criteria and next action
 
+PR #6 integration (2026-11-16) retains the completed local model/editor work and
+the target's equivalent prerequisite design after resolving squash-ancestry
+documentation conflicts. The local merge awaits commit/publication; task and
+release gates below are unchanged.
+
 WEB-STUDIO and WEB-FESTIVAL are distinct outcomes in the checkpoint. Both need
 usable director content editing, explicit safe publishing and released-scope
 privacy/locale/accessibility/hosting evidence. Festival replacement additionally
