@@ -19,11 +19,10 @@ Other resource routers require auth at their mount; private images also authenti
 **Event reads remain authenticated.** Unknown routes use global 404 errors.
 Exact permissions/ownership/stages are in each resource contract.
 
-[ADR-026](adr/026-studio-and-festival-platform.md) targets anonymous studio/festival
-pages and a shared CMS. No public-content endpoint is implemented by that decision;
-ADR-026 now defines planned published DTO/assets, authorized editing/preview and
-atomic publication contracts. P4-PUBLIC-EDITOR must implement/test them; do not
-remove auth from current event/judge/image routes.
+[ADR-026](adr/026-studio-and-festival-platform.md) governs the implemented shared
+CMS and published-content JSON/raster APIs. [Content](api/content.md) owns the
+controlled drafts, private preview, receipts and explicit publication boundaries.
+Public page composition is still separate; current event/judge/image routes stay authenticated.
 Target /app browser routing does not change the /api/v1 namespace or current auth
 links. Website publication is distinct from P7 calculated-result publication.
 
@@ -52,6 +51,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Formats / age groups | /events/:eventId/formats or /age-groups; /:formatId or /:ageGroupId | [Setup](api/setup.md) |
 | Invitations | /invitations; /:token; /accept | [Invitations](api/invitations.md) |
 | Images | /images/events/:eventId, /users/:userId, /dancers/:dancerId, /studios/:studioId (all under /images) | [Images](api/images.md) |
+| Website content | /content; /public/studio, /public/festivals, /public/assets | [Shared CMS and publication](api/content.md) |
 | Users / scores | No mounted implementation | Reserved in ADR-002 |
 
 Frontend helpers decode unknown transport output through shared response schemas,

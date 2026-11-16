@@ -6,13 +6,14 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next: P4-PUBLIC-EDITOR — controlled shared CMS with S20/F12.**
-P4-PUBLIC-MODEL's [design](docs/adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
-and [source inventory](docs/PUBLIC_CONTENT_INVENTORY.md) are complete as a design
-prerequisite. Implement its structured storage/shared contracts, draft/authorized
-preview/explicit publication, public-read boundary and the owning organizer UI.
-Include audit, conflict/same-operation recovery, ET/EN/RU and Hallmark/browser
-acceptance. No speculative CRM or production service changes.
+**Next: P4-STUDIO-PAGES — new studio public site with S18.**
+P4-PUBLIC-EDITOR is delivered locally with S20/F12: structured contracts/storage,
+controlled draft/preview/publication, public-read/raster boundaries, transactional
+audit/receipts and the ET/EN/RU Cobalt editor. [Validation and limits](docs/CONTENT_EDITOR_VALIDATION.md).
+Build the studio public consumer with request-rendered readable HTML, actual-language
+fallback/metadata, all agreed studio sections and independent release acceptance.
+Coordinate the ADR-026 route/link transition only when its full gates are implemented;
+no target hostname, DNS, cookie, deployment or Wix cancellation change is authorized.
 
 This deliberately supersedes the earlier M3-first/public-after-M3 ordering.
 P5-ENTRIES remains the next participant-workflow task with prerequisites delivered;
@@ -38,12 +39,18 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source reviewed on 2026-11-16; runtime evidence below remains dated, not rerun.
+Source and the CMS slice revalidated locally on 2026-11-16. Older reports retain
+their dates; no hosted or application-database state is inferred.
 
-- Current branch/upstream/intended target are main/origin/main/main at c12df16.
-  Authorized fetch and open-PR inspection succeeded on 2026-11-16: no divergence
-  or open PR overlap. The working tree was initially clean. No branch, merge,
-  commit, push or deployment is part of this design task.
+- PR #6 conflict resolution (2026-11-16): branch/upstream are
+  agents/dance-competition-app-development-f57ef95d and its origin counterpart
+  at d3c324a; intended target is origin/main at 04f3ccd. Authorized fetch confirmed
+  those refs and the working tree started clean. The target has identical tracked
+  contents to prerequisite commit 9ab5fec; its squash ancestry caused documentation
+  conflicts with the newer CMS slice. Retained that slice's documentation and
+  integrated the target locally. The merge remains uncommitted and unpublished;
+  no deployment or database change was performed. Earlier CMS validation below
+  remains dated evidence, not a new execution claim.
 - Auth/session/locale, controlled staff invitations/offboarding, organizer event
   setup and independent application/review workflows are delivered locally.
   [Review evidence](docs/APPLICATION_REVIEW_VALIDATION.md) and owning roadmaps
@@ -59,19 +66,19 @@ Source reviewed on 2026-11-16; runtime evidence below remains dated, not rerun.
   event-day estimates are P5-APPLICATION-ESTIMATES. Music follows
   P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC; approval, entry review and music acceptance
   remain separate. Live scoring/calculated results remain Phase 6–7 work.
-- P4-PUBLIC-MODEL is complete as design only: ADR-026 defines identities,
-  publication/recovery/asset boundaries, locale/host/rendering/route transition,
-  with S20/F12 editor scope. Live Wix inventory found disputed archive attribution
-  and a placeholder mail target; owner/export/rights verification remains a
-  migration/release gate. No CMS/public APIs, public pages, schema or /app base
-  are implemented. Existing event/judge/image authentication remains required;
-  public raster cleanup is independent of private-music prerequisites.
-- The repository contains **40 migrations**. Migration 40 corrects migration 39's
-  cross-schema AuditLog constraint lookup without rewriting published history.
-  [Migration CI evidence](docs/TESTING.md#migration-ci-correction-2026-11-14)
-  owns validation; no current hosted success is inferred. Last application-database
-  evidence (2026-11-14) has migrations 1–39 applied, migration 40 pending. No fresh
-  database inspection or migration was performed for this audit.
+- P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
+  locally complete. The [CMS contract](docs/api/content.md) owns `/content` editing,
+  immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
+  published JSON. Public HTML pages and the `/app` base remain unimplemented.
+  Existing event/judge/image authentication remains required. Wix archive
+  attribution, placeholder contact and owner/export/rights verification remain
+  migration/release gates. Public raster cleanup is independent of private music.
+- The repository contains **41 migrations**. Migration 41 adds CMS records,
+  restrictive/composite ownership and immutable history/audit guards; migration 40
+  retains its published correction. All migrations passed disposable fresh/upgrade/
+  parity and full API baseline checks. Last application-database evidence remains
+  2026-11-14 (1–39 applied, 40 pending); that database was not inspected or migrated
+  here. No current hosted success is inferred.
 - The full Hallmark redesign direction remains active. Bounded Cobalt organizer
   work is recorded in [DESIGN](DESIGN.md); technical test completion is not human
   visual approval of either public site or the complete workspace.
@@ -129,8 +136,8 @@ complete by the replan. Select the first actionable unchecked task by default.
 
 | Order | Task | Dependencies / outcome |
 | --- | --- | --- |
-| 1 | P4-PUBLIC-EDITOR | Shared developer/director CMS, controlled access, drafts/preview/publish and reusable edition setup; P4-PUBLIC-MODEL design prerequisite delivered |
-| 2 | P4-STUDIO-PAGES | New studio public site consuming CMS; no student-management data; WEB-STUDIO can release after its own gates |
+| 1 | P4-PUBLIC-EDITOR — complete locally | Shared CMS and S20/F12 delivered; validation/release limits above |
+| 2 | P4-STUDIO-PAGES — next | New studio public site consuming CMS; no student-management data; WEB-STUDIO can release after its own gates |
 | 3 | P4-PUBLIC-PAGES | Festival public portal, published edition rules/judges/archives and truthful registration handoff |
 | 4 | P9-WIX-TRANSITION | Content/archive/URL migration and rehearsed replacement; retain Wix until verification and authorized cutover |
 | 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 | Next participant slice; ownership/checkpoint/config prerequisites already delivered locally |

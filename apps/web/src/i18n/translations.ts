@@ -4,9 +4,11 @@ import { eventSetupTranslations } from "./eventSetupTranslations";
 import { applicationTranslations } from "./applicationTranslations";
 import { performanceTranslations } from "./performanceTranslations";
 import { entryTranslations } from "./entryTranslations";
+import { contentTranslations } from "./contentTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 export const translations = {
+  Content: contentTranslations,
   Setup: eventSetupTranslations,
   Application: applicationTranslations,
   Performance: performanceTranslations,

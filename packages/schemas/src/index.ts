@@ -20,3 +20,4 @@ export * from "./staff.schema.js";
 export * from "./content.schema.js";
 export * from "./calendar.js";
 export * from "./entry.schema.js";
+export * from "./cms.schema.js";

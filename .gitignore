@@ -29,6 +29,7 @@ yarn-error.log*
 
 # prisma generated
 **/generated/prisma/
+/apps/api/uploads/
 
 # OS / IDE
 .DS_Store

@@ -17,6 +17,7 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-16 shared CMS and publication | [Content editor validation](CONTENT_EDITOR_VALIDATION.md) |
 | 2026-11-14 entry recovery and nomination setup | [Recovery/setup validation](ENTRY_RECOVERY_VALIDATION.md), [checkpoint core](ENTRY_CHECKPOINT_VALIDATION.md) |
 | 2026-11-12 applicant/status and discovery integration | [Application validation](APPLICATION_VALIDATION.md) |
 | 2026-11-12 organizer setup/review | [Organizer validation](ORGANIZER_VALIDATION.md) |

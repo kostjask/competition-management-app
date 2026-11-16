@@ -22,6 +22,7 @@ import { FullPageLoading } from "../components/LoadingSpinner.tsx";
 
 // Lazy load role-specific sections
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard.tsx"));
+const ContentPage = lazy(() => import("../pages/content/ContentPage.tsx"));
 const InvitationsPage = lazy(() => import("../pages/admin/InvitationsPage.tsx"));
 const StaffPage = lazy(() => import("../pages/admin/StaffPage.tsx"));
 const ReviewPage = lazy(() => import("../pages/applications/ReviewPage.tsx"));
@@ -97,6 +98,9 @@ export function AppRoutes() {
               <Route path="/events/:id" element={<RequireAuth><EventInfo /></RequireAuth>} />
               <Route path="/events/:id/edit" element={<RequireRole role="admin"><EventEdit /></RequireRole>} />
               <Route path="/applications" element={<RequireAuth><LazyWrapper><ApplicationsPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/content/studio" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />
+              <Route path="/content/festivals" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />
+              <Route path="/content/editions/:editionId" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />
               <Route path="/events/:id/register" element={<RequireAuth><LazyWrapper><EventApplicationPage /></LazyWrapper></RequireAuth>} />
               <Route path="/events/:id/studio" element={<RequireAuth><LazyWrapper><EventApplicationPage /></LazyWrapper></RequireAuth>} />
 

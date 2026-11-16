@@ -2,12 +2,19 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
-      "router": "performances", "exportName": "performancesRouter", "mount": "/events", "method": "POST", "path": "/:eventId/performances/:performanceId/restore",
+      "router": "performances",
+      "exportName": "performancesRouter",
+      "mount": "/events",
+      "method": "POST",
+      "path": "/:eventId/performances/:performanceId/restore",
       "tests": {
-        "success": "scripts/check-entry-recovery.cjs", "invalidInput": "scripts/check-entry-recovery.cjs",
+        "success": "scripts/check-entry-recovery.cjs",
+        "invalidInput": "scripts/check-entry-recovery.cjs",
         "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
-        "permission": "scripts/check-entry-recovery.cjs", "crossParent": "scripts/check-entry-recovery.cjs",
-        "inactiveRecord": "scripts/check-entry-recovery.cjs", "conflict": "scripts/check-entry-recovery.cjs"
+        "permission": "scripts/check-entry-recovery.cjs",
+        "crossParent": "scripts/check-entry-recovery.cjs",
+        "inactiveRecord": "scripts/check-entry-recovery.cjs",
+        "conflict": "scripts/check-entry-recovery.cjs"
       }
     },
     {
@@ -1253,6 +1260,342 @@
         "crossParent": "scripts/check-entry-workflow.cjs",
         "inactiveRecord": "scripts/check-entry-workflow.cjs",
         "conflict": "scripts/check-entry-workflow.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/festivals",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/editions",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/editions/:editionId/link",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents/:documentId",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/revisions",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents/:documentId/revisions",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents/:documentId/preview",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents/:documentId/operations/:operationId",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/publish",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/unpublish",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/archive",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/assets",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/assets/:assetId/review",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "POST",
+      "path": "/documents/:documentId/assets/:assetId/retire",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "scripts/check-content.cjs"
+      }
+    },
+    {
+      "router": "content",
+      "exportName": "contentRouter",
+      "mount": "/content",
+      "method": "GET",
+      "path": "/documents/:documentId/assets/:assetId",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-content.cjs",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "public-content",
+      "exportName": "publicContentRouter",
+      "mount": "/public",
+      "method": "GET",
+      "path": "/studio",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "N/A: published anonymous reads",
+        "permission": "N/A: publication and rights gate anonymous reads",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "public-content",
+      "exportName": "publicContentRouter",
+      "mount": "/public",
+      "method": "GET",
+      "path": "/festivals",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "N/A: published anonymous reads",
+        "permission": "N/A: publication and rights gate anonymous reads",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "public-content",
+      "exportName": "publicContentRouter",
+      "mount": "/public",
+      "method": "GET",
+      "path": "/festivals/:festivalSlug/editions/:editionSlug",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "N/A: published anonymous reads",
+        "permission": "N/A: publication and rights gate anonymous reads",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
+      }
+    },
+    {
+      "router": "public-content",
+      "exportName": "publicContentRouter",
+      "mount": "/public",
+      "method": "GET",
+      "path": "/assets/:assetId",
+      "tests": {
+        "success": "scripts/check-content.cjs",
+        "invalidInput": "scripts/check-content.cjs",
+        "authentication": "N/A: published anonymous reads",
+        "permission": "N/A: publication and rights gate anonymous reads",
+        "crossParent": "scripts/check-content.cjs",
+        "inactiveRecord": "scripts/check-content.cjs",
+        "conflict": "N/A: read operation"
       }
     }
   ]

@@ -32,7 +32,9 @@ public. Operational contact/account/participant records remain private by defaul
 review archive documents and media rights/consent before migration/publication.
 No student registry, CRM or enquiry-form storage is included. Draft/private preview
 and public-cache/unpublish/asset-retention rules are defined by ADR-026's model
-design; P4-PUBLIC-EDITOR must enforce them before public consumers.
+design and enforced by [the shared CMS](api/content.md). Source revisions/audit
+remain retained; ordinary unpublish does not promise physical deletion. Revocation
+retires bytes through durable cleanup and does not auto-restore publication.
 
 ## Storage, logs and delivery
 

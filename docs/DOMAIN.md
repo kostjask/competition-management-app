@@ -29,8 +29,8 @@ Event scoping is not a claim of multi-organizer isolation.
 | Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration is implemented; representative UI remains P5 |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
-| Public studio content | No CMS/publication model implemented | Studio/teacher/class/timetable presentation; no enrolment or student registry |
-| Festival edition publication | Current event API remains authenticated; no CMS tables/APIs | ADR-026 defines optional unique Event linkage and immutable published revisions; P4-PUBLIC-EDITOR implements them; public profiles grant no assignments |
+| Public studio content | Structured singleton revisions, profiles/classes/timetable, explicit publication and document-owned assets | Public-page composition/release remains open; no enrolment or student registry |
+| Festival edition publication | Stable Festival/Edition identities, optional unique Event linkage, immutable revisions/receipts, private preview and published-only APIs | Public pages/Wix transition remain open; public profiles grant no assignments |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
 ENDED, CANCELLED. M2 transitions are enforced by ADR-003; live/final transitions remain P6-LIVE-MODEL.

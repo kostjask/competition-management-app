@@ -7,6 +7,14 @@ delivered by this ADR.
 [Product scope](../PRODUCT_SCOPE.md) owns the feature/audience boundaries;
 [website roadmap](../roadmap/website.md) owns implementation gates.
 
+Implementation note (2026-11-16): P4-PUBLIC-EDITOR now implements the structured
+model, controlled CMS and published JSON/raster boundary. [Current contracts](../api/content.md)
+record explicit singleton initialization, existing `/content` workspace paths,
+server-generated identities and selective text/color copy (images are excluded
+and re-uploaded into the new document). The design text below remains the decision
+record; public HTML/SEO, `/app` identity-link transition, hosts and Wix migration
+are consumer/release work, not implied implementation. [Validation](../CONTENT_EDITOR_VALIDATION.md).
+
 ## Context
 
 The existing monorepo primarily implements festival application and entry

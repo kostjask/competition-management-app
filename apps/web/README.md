@@ -73,3 +73,14 @@ Frozen commands survive uncertain responses/session recovery; explicit server
 comparison preserves local input until replacement. Private form data stays in
 mounted state. [Contracts/evidence](../../docs/APPLICATION_REVIEW_VALIDATION.md)
 record limits; entry/billing-editor extensions and external release gates remain.
+
+## Shared content administration
+
+Global administrators use `/content/studio`, `/content/festivals` and
+`/content/editions/:editionId` for structured ET/EN/RU content, saved private
+preview, exact-revision publication/unpublication and reviewed document media.
+Initialize missing singletons explicitly. Unsaved/conflicting/uncertain writes
+remain mounted; reconcile receipts/current state before explicit retry. Selective
+edition copy excludes images and operational data. Linked Event facts are read-only.
+The `/app` transition and public HTML pages remain separate tasks. [Contracts](../../docs/api/content.md)
+and [local validation](../../docs/CONTENT_EDITOR_VALIDATION.md) own exact boundaries.
