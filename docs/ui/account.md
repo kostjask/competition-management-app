@@ -7,6 +7,10 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 ## S01 — Home and event list
 
+S01/S02 below describe existing application discovery. Anonymous public studio
+and festival discovery have separate [S18/S19 contracts](public.md); do not expose
+private event endpoints or silently move existing auth/application URLs.
+
 - **Purpose / roles / route:** orient visitors and authenticated users; `/`, `/events`.
 - **Primary action:** browse an available event or explicitly sign in for protected event data today.
 - **Data:** session, authorized event summaries, stage, dates, venue, image URL.
@@ -35,7 +39,7 @@ Target screen contracts, not an implementation claim. Inherit all shared
 - **Sections / components:** context/title, semantic form, instructions, show-password button, linked errors, progress/success, recovery/contact links; verification has a deliberate Continue action.
 - **States:** submitting, check-email, missing/expired/used token, wrong account, unverified/inactive account, throttled request, delivery failure and safe resend/address-correction path after contracts exist.
 - **Responsive / accessibility:** single readable form column on every device; optional secondary introduction on desktop; password manager/autocomplete/paste, keyboard submit, focus error summary.
-- **API:** auth register/login/verify-email; resend/reset and onboarding context are pending P2 contracts. Logout now atomically revokes all account sessions under ADR-016 and clears the browser cookie.
+- **API:** auth register/login/verify-email, resend/correct-email/reset and owner onboarding context are implemented under ADR-011/017. Logout atomically revokes all account sessions under ADR-016 and clears the browser cookie.
 - **Acceptance:** no staff self-selection, no false sent/session claim, selected task/language survives defined recovery, wrong-account links cannot grant access. F01/F06.
 
 ## S04 — Profile

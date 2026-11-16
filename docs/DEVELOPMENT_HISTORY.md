@@ -6,6 +6,11 @@
 
 ## Evidence index
 
+The [2026-11-16 product/plan audit](DOCUMENTATION_AUDIT.md#product-replan-2026-11-16)
+supersedes earlier product/priority statements. The full preceding
+[2026-11-14 checkpoint snapshot](history/checkpoint-2026-11-14.md) retains its
+branch/PR narrative, operational evidence and prior public-after-M3 queue.
+
 Read a report only for its recorded scope/date; it does not establish current
 behavior, fresh checks or current priorities. Source and task owners take precedence
 for present delivery. In particular, old “next task” statements are historical.

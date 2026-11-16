@@ -2,34 +2,19 @@
 
 ## Current product scope
 
-Confirmed by the user on 2026-11-14: the project currently serves one organizer,
-the director of Tantsuansambel Neposedõ, who runs one or two festivals/competitions
-per year. Prioritize completing those event workflows and keeping operation
-practical for that scale.
+[Product scope](PRODUCT_SCOPE.md) is canonical: one Neposedõ organization, a new
+public studio site, a replacement festival portal and shared developer/director
+administration. Public studio pages are not a student-management or CRM system.
+The studio currently has social accounts only; useful festival Wix material and
+archives need migration. [ADR-026](adr/026-studio-and-festival-platform.md) records
+the broad architecture; [website tasks](roadmap/website.md) remain unimplemented.
 
-The intended product also replaces the existing public Wix festival website at
-fest.neposedo.ee. Public announcements, rules in ET/EN/RU, registration access,
-judges, results archives and contact/social links belong to current product scope.
-Each festival edition needs its own branding and retained content, with organizer
-editing and draft/preview/publish rather than annual developer rebuilds.
-[Website delivery tasks](roadmap/website.md) own implementation and cutover;
-these capabilities are targets, not existing runtime behavior. The user's reported
-Wix cost is EUR 372/year (2026-11-14); net savings depend on replacement operating
-costs and the services actually cancelled.
-
-Onboarding additional organizers or offering the project to other festivals is
-a future possibility, outside the current delivery scope. Do not introduce an
-organizer tenancy model, organizer self-service onboarding, subscriptions or
-cross-organizer administration solely for that possibility. Revisit those
-requirements when expansion is selected; current event scoping is not a claim
-of multi-organizer isolation.
-
-One organizer can run multiple events and involve multiple staff accounts.
-Existing event-scoped authorization, studio/application ownership, retained
-history and ET/EN/RU requirements still apply. In the application workflow,
-"organization approval" refers to a participating studio, not onboarding another
-festival organizer. This clarification changes planning scope, not runtime
-contracts or the database model.
+The `Studio`/`Dancer` entities below represent participating festival organizations
+and rosters, not internal Neposedõ student records. "Organization approval" is
+approval of a participating studio; studio-wide checkpoints concern that studio's
+event submission. Website publication, event lifecycle, application approval,
+entry submission and calculated result publication remain distinct operations.
+Event scoping is not a claim of multi-organizer isolation.
 
 ## Distinct concepts
 
@@ -38,11 +23,13 @@ contracts or the database model.
 | Account | Studio-intent signup retains an owner-proven draft and creates a roleless unverified user; active/verified login required | Application completion/approval remains separate; no spectator signup (ADR-006/017) |
 | Studio | Event-owned organization; active names globally case-sensitive unique | Reusable identity (ADR-001); name policy decision before index changes |
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
-| Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED | Application/review UI remains P4/P5 |
+| Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED; application/review UI delivered locally | External M2 release evidence remains open |
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
 | Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration is implemented; representative UI remains P5 |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
+| Public studio content | No CMS/publication model implemented | Studio/teacher/class/timetable presentation; no enrolment or student registry |
+| Festival edition publication | Current event API remains authenticated | Edition/event mapping, branding and draft/preview/published content under P4-PUBLIC-MODEL; public judge profiles grant no assignments |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
 ENDED, CANCELLED. M2 transitions are enforced by ADR-003; live/final transitions remain P6-LIVE-MODEL.

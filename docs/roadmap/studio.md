@@ -6,6 +6,12 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Phase 5 — Studio application and competition entries
 
+"Studio" here means a participating festival organization. Neposedõ's public
+studio website is [P4-STUDIO-PAGES](website.md), not this entrant-management UI.
+Student administration, CRM, attendance and tuition billing are outside scope.
+P5-ENTRIES is the next participant slice; public-content work currently precedes
+it in the checkpoint queue without changing these technical prerequisites.
+
 Local development follows the checkpoint's workflow queue. P5-APPLICATION uses
 the registration/reapplication and organizer setup/review implementations;
 P5-UI-APPLICATION is its UI acceptance scope, not a second independently counted

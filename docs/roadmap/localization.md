@@ -6,6 +6,13 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Localization workstream — cross-cutting ET/EN/RU delivery
 
+WEB-STUDIO/WEB-FESTIVAL extend the existing I18N-UI/CONTENT/QA owners to public
+pages and the shared CMS. Reuse ADR-019 authored-language/fallback contracts;
+P4-PUBLIC-MODEL must define indexable locale URLs, actual page language/metadata
+and safe language continuity into the private application. Current mounted app
+locale precedence is unchanged. Public-site release needs its own fluent/assistive
+review, not completion of future scoring translations.
+
 The Phase 1 foundation tasks below are complete; the cross-phase tasks retain
 their own release gates. Phase labels below
 assign ownership without delaying foundational work until Phase 9. Keep logs and

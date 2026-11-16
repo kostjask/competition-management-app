@@ -15,6 +15,14 @@ build it and restart the API after contract changes.
 
 ## Where to work
 
+The target includes public studio/festival sites and shared content administration;
+[product scope](../../docs/PRODUCT_SCOPE.md) and
+[ADR-026](../../docs/adr/026-studio-and-festival-platform.md) distinguish these
+from the current app. No /app base or anonymous content API is mounted. Model,
+host/locale/route/rendering and auth-link mapping precede new frontend structure;
+do not rename routes or add dependencies based on target addresses alone.
+Public screens are S18–S20/F11–F12; existing application contracts stay valid.
+
 | Concern | Source / guide |
 | --- | --- |
 | Mounted pages | src/routes/index.tsx; proposed routes are in [UI_UX](../../docs/UI_UX.md) |
@@ -45,12 +53,14 @@ See [event contract](../../docs/api/events.md) and
 
 ## M2 review and applications
 
-The read-only organizer performance register is at
+The organizer performance register/editor is at
 `/admin/events/:eventId/performances?studio=:studioId`, linked from event details.
 It shows saved performance titles, explicit studio applications and participant
-counts, including zero. URL filters, error/retry, loading/empty states and session
-recovery use Cobalt and ET/EN/RU. Entry editing/configuration/submission retain
-their M3 gates. [Ownership evidence](../../docs/PERFORMANCE_OWNERSHIP_VALIDATION.md).
+counts, including zero, plus draft creation, details/history, configuration,
+checkpoint review and retained withdrawal/restore. URL filters, error/retry,
+loading/empty states and session recovery use Cobalt and ET/EN/RU. Representative
+entry/music/submission UI retains its M3 gates.
+[Current recovery evidence](../../docs/ENTRY_RECOVERY_VALIDATION.md).
 
 Global admins review independent decisions at /admin/events/:eventId/applications;
 dashboard counts link into each pending queue. All verified members can use

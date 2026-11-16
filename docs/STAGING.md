@@ -1,8 +1,10 @@
 # Staging preparation and rollout
 
-2026-10-25: no hosting/provider account or confirmed custom domain exists. The
-user currently has a Wix site. Keep that site separate; determine whether it uses
-an owned custom domain before choosing a staging subdomain and email sender.
+Current product targets (2026-11-16) are a new studio site at neposedo.ee, a Wix
+festival replacement at fest.neposedo.ee and a shared workspace initially under
+/app. These are not verified ownership/DNS or deployed application routes. Confirm
+domain control and provider configuration before choosing staging/email hosts;
+keep the existing festival Wix site live until verified, authorized cutover.
 No cloud resource, DNS record, provider account or real email has been created.
 The 2026-10-25 local rehearsal recorded http://127.0.0.1:8080 with production
 fake mail, 26 applied migrations and healthy API/PostgreSQL; SPA/guest/mail-unavailable

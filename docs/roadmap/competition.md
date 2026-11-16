@@ -11,6 +11,10 @@ technical workflows and model decisions pass. Full M3/M4 release evidence gates
 external competition operation, not isolated model/tests development. Follow the
 checkpoint's delivery priority: finish the local M2/M3 path before promoting this
 track, unless a concrete prerequisite or explicit user request requires it.
+The current queue additionally prioritizes public studio/festival delivery, whose
+anonymous content/archives do not require M3/M5. Preserve competition tasks and
+their own prerequisites; no old score reconstruction is required to migrate Wix
+result documents. Public CMS publication never substitutes for P7-PUBLISH.
 Complete model/specification tasks before their own dependent screens. Do not
 require these models for M2 registration.
 

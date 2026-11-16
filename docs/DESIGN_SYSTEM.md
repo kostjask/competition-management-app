@@ -38,6 +38,13 @@ stay valid for their tested scope; redesign acceptance remains separate and open
 
 ### Existing foundation and constraints
 
+Product surfaces (2026-11-16): [scope](PRODUCT_SCOPE.md) distinguishes stable
+studio branding, configurable festival-edition art/colors and a consistent private
+workspace. Shared administration does not mean identical public navigation or
+rebranding working forms each year. Public content and CMS S18–S20 must follow
+Hallmark, ET/EN/RU and accessible media/contrast/focus requirements; no new brand
+assets, visual design or public theme are approved by this documentation replan.
+
 Foundation implementation (2026-10-25): semantic tokens in web/src/index.css and
 native controls in components/ui/Foundation.tsx are implemented and checked in
 the development-only /__fixtures/foundation route. ET/EN/RU fixtures, measured

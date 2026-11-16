@@ -76,13 +76,16 @@ implemented by these contracts.
 
 P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
 intent commits with each changed decision under ADR-021; fake mode never claims
-sent mail and provider acceptance never claims inbox delivery. The next feature
-scope is the remaining P3-ENTRIES workflow plus coordinated P4/P5 configuration,
-withdrawal, initial per-day estimates and representative consumers. The
+sent mail and provider acceptance never claims inbox delivery. P3-ENTRIES and
+P4-ENTRY-CONFIG, including withdrawal/restore and organizer consumers, are complete
+locally. Initial per-day estimates and representative entry/media/submission
+consumers remain open. Overall priority now follows the public-site replan in
+the checkpoint; these registration contracts are unchanged. The
 [accepted lifecycle](adr/025-entry-submission-lifecycle.md) records the confirmed
 studio-wide checkpoints and any-older percentage policy.
-P3-PERFORMANCE-OWNER/CONSTRAINTS and the read-only organizer register are locally
-implemented under [ADR-022](adr/022-performance-ownership-and-constraints.md).
+P3-PERFORMANCE-OWNER/CONSTRAINTS are locally implemented under
+[ADR-022](adr/022-performance-ownership-and-constraints.md); organizer editors/
+checkpoints/recovery are extended under ADR-023/024/025.
 ADR-019 content policy is accepted and ADR-020 implements event content storage/editors. Use test fakes/isolated databases while
 external accounts are unavailable. Full M1, real email, hosted operations and
 delivered-scope human review remain mandatory before M2/M4 external release.

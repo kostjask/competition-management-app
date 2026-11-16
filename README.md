@@ -1,24 +1,30 @@
-# Dance Competition Management System
+# Neposedõ studio and festival platform
 
-TypeScript monorepo intended to replace the Neposedõ festival Wix website and
-support event administration, studio registration, judging and results.
-The public-site replacement is planned, not implemented. API contracts/localization
-foundations exist; security hardening and
-complete user journeys remain unfinished. See [current checkpoint](DEVELOPMENT_PLAN.md).
+One system for a new dance studio website, a replacement festival portal and
+competition operations. The public sites/CMS are planned; festival application,
+organizer/staff and entry foundations are delivered locally, while participant
+UI, music, live judging/results and external release gates remain unfinished.
+See [current checkpoint](DEVELOPMENT_PLAN.md).
 
 **Agents:** read [AGENTS.md](AGENTS.md), the checkpoint, then only the selected
 task's documents from the [documentation map](docs/README.md).
 
-Current delivery serves one organizer, the director of Tantsuansambel Neposedõ,
-running one or two festivals/competitions per year. Offering the project to other
-organizers is a future possibility; see [product scope](docs/DOMAIN.md#current-product-scope).
+Current scope serves Neposedõ's two-teacher studio and one or two yearly festivals.
+The developer and director administer both through one private workspace.
 
-The replacement will cover festival announcements, branding per edition, ET/EN/RU
-rules, registration access/status, judges, historical results and contact/social
-links. Organizer editing, draft/preview/publish and reusable edition setup should
-remove the need to rebuild the site each year. [Website roadmap](docs/roadmap/website.md)
-owns delivery and migration; keep Wix available until replacement and cutover
-checks pass. The next implementation task remains P5-ENTRIES.
+| Target experience | Purpose |
+| --- | --- |
+| neposedo.ee | New public studio website: about/teachers, groups/classes, timetable, joining, media and contact/social links |
+| fest.neposedo.ee | Replace Wix: annual festival branding, ET/EN/RU rules, registration access, judges, results and archives |
+| fest.neposedo.ee/app initially | Shared content administration and authorized competition workflows |
+
+These are target addresses, not verified hosted routes. Studio content is created
+from scratch; Instagram/Facebook remain social channels. A bounded CMS provides
+draft/preview/publish and reusable edition setup. CRM, student records, attendance,
+tuition billing and multiple organizers are outside current scope.
+[Product scope](docs/PRODUCT_SCOPE.md) and [website roadmap](docs/roadmap/website.md)
+own detail. Next: P4-PUBLIC-MODEL; public launches need not wait for M3/M5.
+Keep Wix live until replacement verification and authorized cutover.
 
 ## Local setup
 

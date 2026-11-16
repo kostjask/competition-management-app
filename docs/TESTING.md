@@ -378,6 +378,29 @@ Close an owning task/finding only after required implementation, tests, migratio
 and docs are complete. Record containment separately from a full fix; keep
 deployed-data provenance, hosted CI and unperformed human/browser checks open.
 
+## Public websites and shared CMS acceptance
+
+WEB-STUDIO/WEB-FESTIVAL are planned outcomes, not existing test coverage. Extend
+the current behavior/API/PostgreSQL/browser infrastructure with their own slices
+rather than claiming existing auth/event tests prove public publishing. Cover:
+
+- Anonymous published-only DTO/assets, private drafts/preview, ordinary-user/staff
+  write denials, cross-site/edition substitution and no participant/private-file
+  leaks. Exercise replaced/unpublished media and cache behavior.
+- Draft versus published revisions, two-administrator conflicts, uncertain writes,
+  explicit retry/session recovery and atomic publication/audit. Edition copies
+  must exclude participants, approvals, scores and published results.
+- ET/EN/RU fallback/metadata, stable public links, correct registration edition/
+  language return, legacy auth/mail links and host/path/origin session boundaries.
+- Hallmark rendered review, keyboard/assistive and responsive human review;
+  migrated documents/links, media rights review and truthful registration state.
+- Release-specific hosted TLS/domain/redirect, storage persistence, backup/restore,
+  observability and rollback evidence. Studio launch and Wix replacement have
+  independent acceptance; historical documents need no reconstructed score data.
+
+Owning tasks: [website roadmap](roadmap/website.md). No new suite or coverage claim
+is introduced by this documentation task. Runtime gates apply when code changes.
+
 ## Documentation-only changes
 
 Run from the repository root:

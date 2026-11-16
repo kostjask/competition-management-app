@@ -5,6 +5,14 @@ approval, event scope and active-record checks. [Security status](docs/SECURITY.
 owns current gaps; [ADR-006](docs/adr/006-account-eligibility-and-staff-onboarding.md)
 owns target account policy.
 
+[Product scope](docs/PRODUCT_SCOPE.md) and [ADR-026](docs/adr/026-studio-and-festival-platform.md)
+add public studio/festival content and shared administration. Intended content
+administrators are the developer and director via controlled accounts. Publishing
+teacher/judge profiles grants no account or permission. Visitors/parents need no
+account; student/guardian roles and CRM are outside scope. Public CMS authority
+must be enforced server-side under P4-PUBLIC-MODEL; this target adds no role key,
+permission or automatic grant to the existing database.
+
 | Actor | Target entry and authority |
 | --- | --- |
 | Studio applicant | Recoverable studio onboarding; own pending work without representative privileges |

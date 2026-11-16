@@ -17,6 +17,13 @@ cannot be inferred). [Documentation map](docs/README.md).
    in the checkpoint queue. Respect documented dependencies/exit criteria; later work
    needs its plan gates or an explicit user request. Do not add unrelated roadmap work.
 
+[Product scope](docs/PRODUCT_SCOPE.md) owns the agreed single-organization target:
+new public studio site, replacement festival portal and shared administration for
+the developer/director. CMS is in scope; CRM/student administration and additional
+organizers are not. Existing Studio/Dancer models describe festival entrants.
+Public sites and operational workflows have separate release gates; target
+addresses do not authorize route, DNS or cookie changes.
+
 Fix root causes with simple, focused changes following existing conventions.
 No dependency downgrade/new library without concrete need. Record broad or hard
 to reverse architecture choices in docs/adr before dependent work. If ambiguity

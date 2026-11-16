@@ -26,6 +26,15 @@ the basic verification/invitation/recovery email required by M2/M4.
 
 ## Phase 9 — Expanded quality and production operations
 
+WEB-STUDIO and WEB-FESTIVAL are independent public release scopes under the
+checkpoint; extend the existing deployment/observability/recovery/browser tasks
+to those releases. Verify both target hosts, TLS/redirects/locale metadata, private
+workspace/auth-link mapping, public versus preview cache rules and persistent
+media. Studio content is new; P9-WIX-TRANSITION owns festival archive migration
+and authorized Wix cutover. Do not require live judging completion for either
+public launch or weaken account-flow release gates. No provider/domain change
+is implemented or authorized merely by adding target addresses to the docs.
+
 Baseline CI is P1-CI. Tests, localization/accessibility and privacy apply when each
 feature is built, not first in Phase 9. Existing Node/API/PostgreSQL tests remain;
 introduce new test libraries only for a concrete need.

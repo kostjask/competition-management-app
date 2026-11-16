@@ -1,5 +1,11 @@
 # Environment configuration
 
+[ADR-026](adr/026-studio-and-festival-platform.md) target hosts and /app paths are
+not configuration defaults. P4-PUBLIC-MODEL must settle host/router/auth-link
+mapping; later P9-DEPLOY changes require tested exact-origin CORS/CSRF, cookie,
+proxy/TLS and safe-return settings. Do not update env files or broaden cookies/
+origins merely to match planned addresses. Current names/defaults below remain.
+
 Setup: [root README](../README.md#local-setup). Sources:
 [EnvSchema/config](../apps/api/src/config/env.ts),
 [API example](../apps/api/.env.example), [web example](../apps/web/.env.example).

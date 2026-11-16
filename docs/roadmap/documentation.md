@@ -8,6 +8,11 @@ commands/results. Feature roadmaps own implementation and release status.
 
 ## Tasks
 
+- [x] DOCS-PRODUCT-REPLAN (2026-11-16): audit the complete Markdown inventory and reconcile maintained docs with the agreed new studio site, festival portal and shared developer/director CMS. Add canonical product scope/ADR-026, independent public outcomes, S18–S20/F11–F12 and the P4-STUDIO-PAGES owner; supersede public-after-M3 ordering without discarding technical completion or M1–M5 gates. Correct source-supported stale claims and archive the preceding checkpoint. [Findings, validation and limits](../DOCUMENTATION_AUDIT.md#product-replan-2026-11-16). Next: P4-PUBLIC-MODEL; no runtime changes or release completion.
+
+The dated entries below retain their original decisions and next-task statements;
+DOCS-PRODUCT-REPLAN and the active checkpoint supersede their former queue order.
+
 - [x] DOCS-WIX-REPLACEMENT (2026-11-14): make public festival website replacement an explicit README/checkpoint/domain goal and add the owning cross-phase [website roadmap](website.md). Record edition branding, organizer publishing, multilingual public pages, historical content migration and verified cutover, with unchecked implementation tasks and separate acceptance. Preserve M3 priority, M1–M5 gates and single-organizer scope. Documentation only; P5-ENTRIES remains next.
 
 - [x] DOCS-ORGANIZER-SCOPE (2026-11-14): record the user's current single-organizer scope (director of Tantsuansambel Neposedõ; one or two festivals/competitions yearly) in the root overview, domain guide and checkpoint. Additional-organizer onboarding/tenancy is future scope, not a current prerequisite. Preserve event boundaries and current workflow gates; no runtime/schema change. Next product task remains P5-ENTRIES.
@@ -17,7 +22,7 @@ commands/results. Feature roadmaps own implementation and release status.
   squash-merged. Main's complete tree equals the branch's earlier b3dd683 tree;
   the old merge base produces conflicts against newer entry work. The local
   noncommitting ancestry reconciliation preserves the complete newer tree and
-  existing edits. [Current handoff](../../DEVELOPMENT_PLAN.md#current-state)
+  existing edits. [Archived handoff](../history/checkpoint-2026-11-14.md#current-state)
   records the subsequent commit/push authorization and validation limits. Hosted
   mergeability/CI must confirm the published head; this outside-feature-queue
   repair leaves P5-ENTRIES next.

@@ -39,10 +39,28 @@ business prefix, with no public static fallback. See [image contracts](api/image
 
 ## Model and delivery boundaries
 
-Current studios remain event-owned; reusable identities are the accepted ADR-001
-target. Performance ownership is inferred from participants; explicit owners,
-incomplete drafts, historical snapshots and native calendar-date storage remain
-Phase 3 work. No score-sheet/live/results architecture is implemented.
+Current participating studios remain event-owned; reusable identity is the
+accepted ADR-001 target. Performances have explicit immutable studio/registration
+owners, nullable unscheduled drafts and saved revisions under ADR-022/023/024.
+Native DATE birth dates and ADR-025 studio checkpoints/review/recovery are
+implemented. Representative entry/music UI and live/scoring/calculated-result
+models remain open; see [domain](DOMAIN.md) and the checkpoint for task status.
+
+## Studio and festival target architecture
+
+[ADR-026](adr/026-studio-and-festival-platform.md) keeps one repository/backend
+with public content/publishing, festival registration/entries and competition
+operations as clear modules. Target two public addresses and shared private
+administration; [product scope](PRODUCT_SCOPE.md) owns audiences/exclusions.
+There is no CMS, public-content API or /app router base implemented yet.
+
+P4-PUBLIC-MODEL must choose concrete edition/event relations, content revisions,
+public assets/DTOs, preview/cache rules, host/path/locale mapping, rendering and
+deployment/session configuration before consumers. Reuse existing infrastructure
+where justified; no framework switch, new service or database split is implied.
+Current auth URLs, safe returns, mail links and origin checks remain canonical
+until a tested route transition. Anonymous studio pages do not need shared-domain
+login cookies. Never expose current private images/event DTOs as public content.
 
 Backend security gaps are tracked in [SECURITY](SECURITY.md), not excused by UI
 gates or shared DTO completion. [DOMAIN](DOMAIN.md) distinguishes current rules

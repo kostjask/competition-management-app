@@ -25,6 +25,14 @@ Public output must use approved minimal publication DTOs. Birth dates, contact,
 billing data, private upload paths, account details and audit records are never
 implicitly public. Do not repurpose operational data for marketing or analytics.
 
+Studio/festival CMS content is a separately reviewed publication purpose under
+[product scope](PRODUCT_SCOPE.md): explicitly approved business contacts,
+teacher/judge biographies, selected artwork/media and archive documents may be
+public. Operational contact/account/participant records remain private by default;
+review archive documents and media rights/consent before migration/publication.
+No student registry, CRM or enquiry-form storage is included. Draft/private preview
+and public-cache/unpublish/asset-retention rules require P4-PUBLIC-MODEL decisions.
+
 ## Storage, logs and delivery
 
 Store password hashes and purpose-bound link digests only. Raw link secrets may

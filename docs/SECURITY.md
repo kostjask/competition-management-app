@@ -68,6 +68,14 @@ See [boundary and role evidence](BOUNDARIES_ROLES_VALIDATION.md).
 
 ## Known gaps and owning tasks
 
+Public-site/CMS targets are in [ADR-026](adr/026-studio-and-festival-platform.md).
+P4-PUBLIC-MODEL owns concrete public DTO/assets, draft/preview exclusion, cache/
+unpublish rules and controlled developer/director writes. Public biographies never
+grant accounts/assignments. Host/path migration must preserve exact Origin/CSRF,
+safe returns and identity-link behavior; no shared parent-domain cookie is implied.
+Existing event/image endpoints stay authenticated until new explicit contracts
+are implemented and tested. Public-site readiness is not current API readiness.
+
 The [audit correction map](AUDIT_FOLLOWUP.md) tracks all 15 findings to roadmap
 owners and acceptance evidence. C1/C2/C3/C4/H2 are technically corrected locally
 under P2-INVITE-IDENTITY, P2-AUTH-ELIGIBILITY, P2-BOUNDARIES-UPLOADS and

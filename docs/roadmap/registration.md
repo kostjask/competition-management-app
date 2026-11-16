@@ -6,6 +6,11 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Phase 3 — Registration and entry data foundations
 
+The current overall queue is public-content design/CMS/sites under the checkpoint.
+P5-ENTRIES remains the next participant consumer of these completed foundations;
+dated delivery notes below do not override that queue. Participating studios and
+rosters are unrelated to the new public studio site's classes/teacher content.
+
 Local implementation entry: the relevant Phase 2 security, onboarding, audit and
 contract foundations pass; their local technical scope is recorded as complete.
 An actual security regression still takes priority. P2-SCOPE-DEPLOY, real inbox

@@ -8,8 +8,10 @@ are in [DESIGN_SYSTEM](DESIGN_SYSTEM.md). Implemented contracts belong to
 
 ## Shared flow contract and state vocabulary
 
-All flows below require backend identity, scope, ownership, active-record and
-stage checks for each operation; frontend gates only explain availability.
+Protected operations require backend identity, scope, ownership, active-record
+and stage checks as applicable; frontend gates only explain availability. Anonymous
+public reads in F02/F11 expose only explicitly published content. F12 editing/
+preview requires controlled administration and never relies on an obscure URL.
 Each inherits UI_UX's loading/empty/error/offline/reconnect/success/locked/denied
 patterns, ET/EN/RU and accessibility rules. Failed requests retain permitted
 visible work. No navigation or translated label grants permission. Confirmation
@@ -22,9 +24,11 @@ Current event enum is PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZE
 ENDED, CANCELLED. It has no SCHEDULED or LIVE stage. Those proposed names require
 ADR-003 and migration. Existing organization approval is PENDING/APPROVED/REJECTED;
 event registration additionally has LOCKED. Neither registration LOCKED nor event
-FINALIZED is a score lock, entry submission or public publication state. Draft,
-submitted, score-sheet lock, queue and publication vocabulary below is a target
-model awaiting its owning decisions; do not persist it as arbitrary strings.
+FINALIZED is a score lock, entry submission or public publication state. Entry
+drafts and studio-wide BASIC/FINAL receipts are implemented under ADR-024/025;
+representative consumers remain open. Score-sheet locks/queue and public CMS
+publication still require their owning decisions. Do not persist proposed states
+as arbitrary strings or use CMS publication to change competition lifecycle.
 
 ## Flow index
 
@@ -69,6 +73,9 @@ Read the selected flow only; all inherit the shared contract above.
 <a id="f10--final-entry-submission-and-results-finalizationpublication"></a>
 
 - [F10: Final entry submission and results finalization/publication](flows/F10.md)
+
+- [F11: Discover the studio and find joining information](flows/F11.md)
+- [F12: Edit, preview and publish studio/festival content](flows/F12.md)
 
 ## Evidence matrix for each delivered flow
 

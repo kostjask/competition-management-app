@@ -10,6 +10,7 @@ For a large specification, locate the task/heading with `rg -n` and read that se
 | Information | Canonical owner |
 | --- | --- |
 | Repository rules / task selection | [AGENTS](../AGENTS.md); [checkpoint queue and gates](../DEVELOPMENT_PLAN.md#implementation-order) |
+| Product scope / audiences / exclusions | [Product scope](PRODUCT_SCOPE.md); [ADR-026](adr/026-studio-and-festival-platform.md) for the shared architecture direction |
 | Task checkboxes / prerequisites / exit criteria | Selected [roadmap](../DEVELOPMENT_PLAN.md#task-map); no parallel status list |
 | Implemented behavior / exact payloads | Source + shared Zod schemas + Prisma/migration SQL; [API resources](API.md#resource-integration) explain them |
 | Accepted architecture | ADRs below; acceptance does not prove implementation |
@@ -33,8 +34,8 @@ requires that past result or rollout limitation.
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001/003/019 | registration/studio controllers, schema.prisma |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
-| Product overview | [Journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
-| Public festival website / Wix replacement | [Website roadmap](roadmap/website.md), [product scope](DOMAIN.md#current-product-scope) | Event content, judge presentation and authenticated image boundaries; public publishing remains planned |
+| Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
+| Studio/festival websites / CMS / Wix replacement | [Website roadmap](roadmap/website.md), [public screens](ui/public.md), [publishing flow](flows/F12.md), ADR-026 | Existing protected event/judge/image boundaries; public publishing remains planned |
 | Tests / CI / release evidence | [Testing](TESTING.md) | workspace scripts, tests, .github/workflows/ci.yml |
 | Storage / images | [Storage](STORAGE.md), [image contract](api/images.md) | storage services, ImagesController, upload middleware |
 
@@ -77,6 +78,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [023](adr/023-entry-history-and-calendar-dates.md) | Immutable saved revisions, privacy-minimal snapshots and event-local calendar eligibility |
 | [024](adr/024-incomplete-entry-drafts.md) | Nullable unscheduled drafts, retained ownership/history and actor-bound creation retries |
 | [025](adr/025-entry-submission-lifecycle.md) | Accepted studio-wide checkpoints, any-older percentage, staged review/locks/reopening and event-adjustable rules; source questionnaire/images retained |
+| [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites, shared administration/CMS, no CRM/student system; concrete publication/URL/storage design remains P4-PUBLIC-MODEL |
 
 ADR-003 accepts the M2 application/review subset; live operation remains pending.
 ADR-004 scoring is reserved and unaccepted; its required scope is in
@@ -96,4 +98,5 @@ The ignored local specialist profiles in .github/agents supplement AGENTS, defer
 to the active environment's delegation policy and are not a portable policy source.
 No repository .agents or .codex directory was present during this inventory.
 
-Maintenance scope and measurements: [documentation audit](DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).
+Latest product/plan audit: [2026-11-16](DOCUMENTATION_AUDIT.md#product-replan-2026-11-16).
+Earlier maintenance measurements: [2026-11-10](DOCUMENTATION_AUDIT.md#maintenance-2026-11-10).

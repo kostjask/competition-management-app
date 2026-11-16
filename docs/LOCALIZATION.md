@@ -93,6 +93,12 @@ or account/ET fallback, never inferred from inviter UI; preference/link reconcil
 M2 authored-content policy/contracts: [ADR-019](adr/019-m2-authored-content.md).
 AuthoredContentSchema/resolveAuthoredContent return actual lang and explicit
 source fallback; Registration catalogue keys cover ET/EN/RU statuses, reasons,
-next actors and fallback notice. Existing description storage remains single-text
-until P4 assigns its source language explicitly. I18N-CONTENT remains open for
-workflow implementations and later content; the M2 policy/contracts slice is complete.
+next actors and fallback notice. ADR-020/P4-CORE implement event description
+source-language/translation storage, editors and explicit legacy classification.
+I18N-CONTENT remains open for later content; the M2 policy/contracts slice is complete.
+
+Studio/festival public content and shared CMS extend this policy through
+P4-PUBLIC-MODEL/EDITOR/STUDIO-PAGES/PUBLIC-PAGES. Public locale URLs, search/social
+metadata, actual-language fallback and continuity into private application links
+must be decided and tested; they are not current mounted-app behavior. Do not
+reinterpret locale URL parameters as implemented account preference changes.

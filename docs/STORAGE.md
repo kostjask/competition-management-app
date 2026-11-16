@@ -7,6 +7,13 @@ Current implementation is local only. Sources:
 
 ## Current behavior
 
+The planned studio/festival CMS needs reviewed public images and archive documents
+under [P4-PUBLIC-MODEL](roadmap/website.md). That public asset lifecycle is not
+implemented, does not inherit private-music prerequisites and must not turn current
+authenticated uploads into public files. Define allowlisted types, content/size
+validation, draft/published references, cache/unpublish and replacement/cleanup
+before consumers. Current raster limits below remain unchanged.
+
 - STORAGE_TYPE accepts only local; startup installs LocalStorageService.
 - Files live under configured STORAGE_PATH, resolved against the API working
   directory (default ./uploads, normally apps/api/uploads). Strict canonical keys

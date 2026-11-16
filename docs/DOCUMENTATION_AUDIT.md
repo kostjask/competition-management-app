@@ -1,5 +1,83 @@
 # Documentation audits
 
+## Product replan 2026-11-16
+
+Documentation-only audit/refactor requested after the studio/festival scope
+discussion. This section owns findings/evidence, not a second task checklist.
+Current scope is [PRODUCT_SCOPE](PRODUCT_SCOPE.md), architecture direction is
+[ADR-026](adr/026-studio-and-festival-platform.md), priority is the
+[checkpoint](../DEVELOPMENT_PLAN.md) and tasks live in the existing roadmaps.
+
+### Coverage and method
+
+Inventoried and decoded all **133 pre-change Markdown files**, including local
+ignored profiles, while excluding dependency/generated/private directories.
+Baseline structural checks passed: 133 files, 920 local links. The inventory
+includes 24 ADRs, 10 roadmap files, 10 flow files, five screen-contract files and
+84 entry points/guides/evidence/other files. All documents were structurally
+checked and searched for scope, priority, public-access and stale-delivery claims.
+Maintained plans, product/journey/UI, architecture/role/API, storage/privacy/
+localization, setup/operations and roadmap guidance were reviewed against the
+confirmed decisions; dated reports and accepted earlier ADR rationale were
+retained rather than rewritten as present instructions.
+
+Targeted source reconciliation used Prisma schema and its 40 migration
+directories, API mount authentication, web route mounting and the organizer
+performance editor/configuration/recovery consumers. This is a full documentation
+inventory and product-plan consistency audit, not a fresh runtime, security,
+database, provider, hosted PR/CI or external website audit. Existing test results
+remain evidence only for their recorded dates/revisions.
+
+### Findings and disposition
+
+| Finding | Resolution / owner |
+| --- | --- |
+| Product describes only festival operations/Wix replacement; the new studio site and actual administrators are absent | Canonical PRODUCT_SCOPE: studio site from scratch, festival migration, shared developer/director CMS; studio has two teachers, social presence only |
+| Terminology risks conflating entrant Studio/Dancer with an internal student registry | Domain/roles/journeys distinguish public studio content from festival entrants; CRM, student/guardian records, enrolment, attendance and tuition billing explicitly excluded |
+| Prior queue postpones every public page until M3 despite independent public value | Checkpoint starts P4-PUBLIC-MODEL, then CMS, studio/festival pages and Wix transition; next actionable participant work continues if external cutover is blocked |
+| Two public identities are confused with separate products/deployments or automatic route changes | ADR-026 preserves one repository/backend; target domains/workspace remain unverified mapping, with session/auth-link/locale/rendering choices owned by model task |
+| Public CMS is missing from journeys/screens/flows and seems tied to P7 result publication | Add S18–S20/F11–F12, update F02 and UX-D02; CMS, event lifecycle, entry checkpoints and calculated-result publication stay distinct |
+| Current image endpoints are private/raster-only, yet new sites need public media/documents | Storage/API/privacy/security guides require separate published DTO/assets, authorized previews, cache/unpublish/rights and replacement/cleanup decisions; no existing auth middleware or MIME restrictions are relaxed |
+| Editor/media/publication/translations/rollout acceptance is not assigned | Extend existing website, localization and operations task ownership; WEB-STUDIO and WEB-FESTIVAL consume their own hosted/human checks |
+| Architecture still claims participant-inferred owners and pending history/calendar work | Reconcile with explicit owners, native DATE, nullable drafts, immutable revisions and delivered ADR-025 backend |
+| Checkpoint says repository has 39 migrations while migration 40 exists | Record 40 source migrations; keep the last application-database evidence at 39 applied/40 pending, without asserting fresh DB state |
+| UI/registration/web/localization guides retain obsolete account/entry/editor delivery claims | Correct source-supported facts; keep remaining representative/music/live/results work open and route priority to checkpoint |
+| Long checkpoint mixes current instruction with old branch/PR/test narratives | Preserve its complete preceding text in docs/history/checkpoint-2026-11-14.md, with relocated links and a historical banner; active checkpoint summarizes source and dated limits |
+
+### Preservation and validation
+
+Existing roadmap IDs/checkbox states and operational M1–M5 prerequisites are
+preserved; P4-STUDIO-PAGES is the new implementation task. DOCS-PRODUCT-REPLAN
+records this completed documentation work. Existing public task IDs remain with
+expanded studio/CMS scope. No phase, public outcome or external milestone is
+closed. Historical reports and original 24 ADR bodies are retained unchanged;
+the old checkpoint's content is retained with only link relocation/banner changes.
+
+Validation uses the repository's documentation-only commands: checker syntax,
+all Markdown UTF-8/local links/anchors/fences/whitespace and git diff --check.
+Additional inventory comparison confirms all 127 existing named roadmap IDs/states,
+24 prior ADRs, 33 historical report bodies and the preceding checkpoint are
+preserved. Only Markdown changed. Checker syntax and the final structural pass
+cover 139 files and 1,005 local links; git diff --check passes. No application
+tests/build/Prisma/database operations are warranted or claimed for prose changes.
+
+Freshness limit: main equals cached origin/main at 70ff865; git fetch origin main
+cannot write .git/FETCH_HEAD under the filesystem permissions. A subsequent
+read-only git ls-remote also cannot connect to GitHub. Live target/PR overlap and
+hosted CI remain unverified. No integration, commit/push, deployment,
+domain action or Wix cancellation was performed. Do not reuse dated session Git
+authorization recorded in the archive as authorization for a new action.
+
+### Remaining decisions and next task
+
+Next is **P4-PUBLIC-MODEL**: actual new-content/Wix URL/asset inventory, edition/
+event relationship, concrete publication/storage contracts and URL/locale/
+session/deployment design. Director-supplied studio content, domain ownership,
+media rights, host/budget and public language/visual approval are still needed
+for release. These are explicit implementation/release tasks, not audit failures
+or a reason to invent CRM/tenant infrastructure. Prior M3-first priorities below
+are historical and superseded by the active checkpoint.
+
 ## Maintenance 2026-11-10
 
 DOCS-MAINTENANCE is documentation-only. Application priority remains P4-CORE
