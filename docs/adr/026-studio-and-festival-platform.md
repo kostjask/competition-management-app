@@ -221,7 +221,11 @@ overrides them or invokes stage, approval, entry or result mutations. Unlinked
 editions author presentation dates/location but cannot offer internal application.
 
 At publish record a server-computed fingerprint of relevant schedule/entry-rule
-fields and the admin's prose-review acknowledgement. Public reads always resolve
+fields and the admin's prose-review acknowledgement. Private preview returns
+that fingerprint and its canonical facts; the publish request carries the reviewed
+fingerprint and the transaction rejects changed facts before recording a new
+acknowledgement. An identical already-committed operation returns its original
+receipt without refreshing the acknowledgement. Public reads always resolve
 current minimal operational facts/availability through existing policy helpers.
 Stage/window changes affect availability immediately; stage is not a publication
 lifecycle. If schedule/rules change after review, suppress affected rule prose

@@ -1,6 +1,6 @@
 # Development checkpoint
 
-Updated: 2026-11-16. This file owns current priority, state summary and release
+Updated: 2026-11-17. This file owns current priority, state summary and release
 gates. [Product scope](docs/PRODUCT_SCOPE.md) owns audiences/features; roadmaps own
 task checkboxes. [The map](docs/README.md) routes selected work to its docs/source.
 
@@ -39,18 +39,18 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source and the CMS slice revalidated locally on 2026-11-16. Older reports retain
+Source and the CMS slice revalidated locally on 2026-11-17. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- PR #6 conflict resolution (2026-11-16): branch/upstream are
-  agents/dance-competition-app-development-f57ef95d and its origin counterpart
-  at d3c324a; intended target is origin/main at 04f3ccd. Authorized fetch confirmed
-  those refs and the working tree started clean. The target has identical tracked
-  contents to prerequisite commit 9ab5fec; its squash ancestry caused documentation
-  conflicts with the newer CMS slice. Retained that slice's documentation and
-  integrated the target locally. The merge remains uncommitted and unpublished;
-  no deployment or database change was performed. Earlier CMS validation below
-  remains dated evidence, not a new execution claim.
+- CMS follow-up (2026-11-17): PR #6 is merged into main at 213b37a. The user
+  authorized a separate PR and merge for the validated local fixes. Branch
+  fix/cms-reviewed-publication starts from that merged main; no original CMS work
+  is duplicated. Publication requires the canonical-policy fingerprint from
+  private preview; document changes invalidate review/confirmation state. The
+  validated working-tree contents were preserved when changing the branch base.
+  [Evidence](docs/CONTENT_EDITOR_VALIDATION.md#continuation-and-revalidation-2026-11-17)
+  separates fresh local checks from the original PR's dated evidence. No deployment
+  or application-database mutation is part of the Git publication workflow.
 - Auth/session/locale, controlled staff invitations/offboarding, organizer event
   setup and independent application/review workflows are delivered locally.
   [Review evidence](docs/APPLICATION_REVIEW_VALIDATION.md) and owning roadmaps
@@ -67,7 +67,7 @@ their dates; no hosted or application-database state is inferred.
   P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC; approval, entry review and music acceptance
   remain separate. Live scoring/calculated results remain Phase 6–7 work.
 - P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
-  locally complete. The [CMS contract](docs/api/content.md) owns `/content` editing,
+  locally complete and revalidated on 2026-11-17. The [CMS contract](docs/api/content.md) owns `/content` editing,
   immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
   published JSON. Public HTML pages and the `/app` base remain unimplemented.
   Existing event/judge/image authentication remains required. Wix archive

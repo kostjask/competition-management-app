@@ -15,7 +15,7 @@ import { ContentFacts } from "./ContentFacts";
 import "./content.css";
 
 type Index = z.infer<typeof CmsIndexSchema>;
-type Pending = { documentId: string; version: number; operationId: string; path: string; body: Record<string, unknown>; file?: File };
+type Pending = { documentId: string; version: number; operationId: string; path: string; body: Record<string, unknown>; file?: File; conflict?: boolean };
 export default function ContentPage() {
   const { locale } = useTranslation(); const t = (key: ContentKey) => contentTranslations[key][locale]; const location = useLocation(); const { editionId } = useParams(); const [query, setQuery] = useSearchParams();
   const [index, setIndex] = useState<Index>(); const [base, setBase] = useState<CmsDocument>(); const [local, setLocal] = useState<unknown>();
@@ -27,8 +27,14 @@ export default function ContentPage() {
   const [eventId, setEventId] = useState(""); const [migrationReviewed, setMigrationReviewed] = useState(false);
   const [events, setEvents] = useState<Awaited<ReturnType<typeof getEvents>>>();
   const errorRef = useRef<HTMLDivElement>(null); const confirmationRef = useRef<HTMLDivElement>(null); const trigger = useRef<HTMLElement | null>(null);
+  const previewRef = useRef<HTMLElement>(null); const previewTrigger = useRef<HTMLElement | null>(null);
   const selected = index?.documents.find(row => editionId ? row.editionId === editionId : row.kind === (location.pathname.endsWith("/studio") ? "STUDIO_SITE" : "FESTIVAL_PORTAL"));
   const activeId = selected?.id; const dirty = base !== undefined && JSON.stringify(local) !== JSON.stringify(base.draft.payload);
+  const previewScope = useRef({ active: true });
+  useEffect(() => {
+    const scope = { active: true }; previewScope.current = scope;
+    return () => { scope.active = false; };
+  }, [activeId]);
   const previewLocale: CmsLocale = query.get("previewLocale") === "en" ? "en" : query.get("previewLocale") === "ru" ? "ru" : "et";
   const fail = (failure: unknown) => setError(toUiError(failure).reason);
   const load = async () => { try { setError(undefined); setIndex(await contentApi.index()); } catch (failure) { fail(failure); } };
@@ -36,10 +42,13 @@ export default function ContentPage() {
   // Reset only when the selected identity changes. Locale and readbacks retain work.
   if (selected && base?.id !== selected.id) {
     setBase(selected); setLocal(selected.draft.payload); setEventId(selected.facts?.eventId ?? ""); setHistory([]); setPreview(undefined); setReviewRevision(undefined); setErrors([]); setAck(undefined); setCompared(undefined); setPending(undefined);
+    setConfirmation(undefined); setReviewed(false); setRetryAllowed(false); setMigrationReviewed(false); setFile(undefined);
+    setBusy(false);
   }
   if (index && !selected && base) { setBase(undefined); setLocal(undefined); }
   useEffect(() => { if (error || errors.length) errorRef.current?.focus(); }, [error, errors]);
   useEffect(() => { if (confirmation) confirmationRef.current?.focus(); }, [confirmation]);
+  useEffect(() => { if (preview) previewRef.current?.focus(); }, [preview]);
   useEffect(() => { if (!dirty && !pending) return; const before = (event: BeforeUnloadEvent) => { event.preventDefault(); }; window.addEventListener("beforeunload", before); return () => window.removeEventListener("beforeunload", before); }, [dirty, pending]);
   const execute = async (operation: Pending) => {
     setBusy(true); setError(undefined); setAck(undefined);
@@ -51,8 +60,9 @@ export default function ContentPage() {
       trigger.current?.focus();
     } catch (failure) {
       fail(failure);
+      setPreview(undefined); setReviewRevision(undefined); setConfirmation(undefined); setReviewed(false);
       if (failure instanceof ApiError && failure.issues.length) setErrors(failure.issues.map(issue => issue.path.filter((part, index) => !(index === 0 && part === "payload")).join(".")));
-      if (failure instanceof ApiError && [0, 401, 409, 500, 502, 503].includes(failure.statusCode)) setPending(operation); else setPending(undefined);
+      if (failure instanceof ApiError && [0, 401, 409, 500, 502, 503].includes(failure.statusCode)) setPending({ ...operation, conflict: failure.statusCode === 409 }); else setPending(undefined);
     } finally { setBusy(false); }
   };
   const command = (path: string, extras: Record<string, unknown> = {}, document = base, upload?: File) => {
@@ -73,15 +83,25 @@ export default function ContentPage() {
       let current: CmsDocument;
       try { current = await contentApi.detail(targetId); }
       catch (failure) { if (!result && pending.version === 0 && failure instanceof ApiError && failure.statusCode === 404) { setRetryAllowed(true); return; } throw failure; }
-      setCompared(current); setRetryAllowed(!result && current.version === pending.version); if (result) setAck(result);
+      setCompared(current); setRetryAllowed(!result && !pending.conflict && current.version === pending.version); if (result) setAck(result);
     } catch (failure) { fail(failure); } finally { setBusy(false); }
   };
   const save = () => { const parsed = CmsPayloadSchema.safeParse(local); if (!parsed.success) { setErrors(parsed.error.issues.map(issue => issue.path.join("."))); return; } setErrors([]); command(`documents/${base!.id}/revisions`, { payload: parsed.data }); };
-  const showPreview = async (revision = base?.draft.id) => { if (!base || !revision) return; setBusy(true); setError(undefined); try { setPreview(await contentApi.preview(base.id, revision, previewLocale)); setReviewRevision(revision); } catch (failure) { fail(failure); } finally { setBusy(false); } };
+  const showPreview = async (revision = base?.draft.id) => {
+    if (!base || !revision) return;
+    const scope = previewScope.current;
+    previewTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setBusy(true); setError(undefined); setPreview(undefined); setConfirmation(undefined); setReviewed(false);
+    try {
+      const result = await contentApi.preview(base.id, revision, previewLocale);
+      if (scope.active) { setPreview(result); setReviewRevision(revision); }
+    } catch (failure) { if (scope.active) fail(failure); }
+    finally { if (scope.active) setBusy(false); }
+  };
   const confirm = (path: string, body: Record<string, unknown>, text: string) => { trigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; setConfirmation({ path, body, text }); setReviewed(false); };
   const keys = base ? Object.keys(record(local)).filter(key => key !== "kind" && (key in contentFields || key === "handoff")) : [];
   const section = keys.includes(query.get("section") ?? "") ? query.get("section")! : "title";
-  const update = (key: string, value: unknown) => { setLocal((previous: unknown) => setField(previous, [key], value)); setPreview(undefined); setAck(undefined); setErrors([]); };
+  const update = (key: string, value: unknown) => { setLocal((previous: unknown) => setField(previous, [key], value)); setPreview(undefined); setConfirmation(undefined); setReviewed(false); setAck(undefined); setErrors([]); };
   const parsed = CmsPayloadSchema.safeParse(local); const issues = preview?.issues ?? (parsed.success ? cmsReadiness(parsed.data) : []); const locked = busy || !!pending || !!base?.archived;
   const chooseSection = (key: string) => setQuery(previous => { previous.set("section", key); return previous; });
   const focusField = (path: string) => {
@@ -98,7 +118,7 @@ export default function ContentPage() {
     const operationId = crypto.randomUUID(); const operation: Pending = { operationId, documentId: operationId, version: 0, path: "documents", body: { operationId, expectedVersion: 0, kind: location.pathname.endsWith("/studio") ? "STUDIO_SITE" : "FESTIVAL_PORTAL" } };
     setPending(operation); void execute(operation);
   };
-  const leave = (event: React.MouseEvent) => { if (pending || (dirty && !window.confirm(t("leave")))) event.preventDefault(); };
+  const leave = (event: React.MouseEvent) => { if (pending || busy || (dirty && !window.confirm(t("leave")))) event.preventDefault(); };
   return <div className="event-workbench cms-workbench">
     <header className="cms-mast"><h1>{t("title")}</h1><nav aria-label={t("title")}><Link to="/content/studio" onClick={leave}>{t("studio")}</Link><Link to="/content/festivals" onClick={leave}>{t("festivals")}</Link><Link to="/admin" onClick={leave}>{t("operations")}</Link></nav></header>
     {(error || errors.length > 0) && <div className="cms-error-summary" ref={errorRef} tabIndex={-1} role="alert"><p>{error ? errorMessages[error][locale] : t("fieldInvalid")}</p>{errors.map((path, i) => <p key={i}><a href={`#cms-${path}`} onClick={event => { event.preventDefault(); focusField(path); }}>{fieldLabel(path.split(".")[0] ?? "title", locale)}: {t("fieldInvalid")}</a></p>)}<button onClick={() => void load()} disabled={busy}>{t("retry")}</button></div>}
@@ -114,19 +134,19 @@ export default function ContentPage() {
       </section>}
       {base && <><h2>{base.kind === "STUDIO_SITE" ? t("studio") : base.kind === "FESTIVAL_PORTAL" ? t("festivals") : base.label}</h2><div className="cms-layout"><aside className="cms-ledger" aria-label={t("version")}>
         <dl><dt>{t("version")}</dt><dd>{base.version}</dd><dt>{t("draft")}</dt><dd>{base.draft.number}<details><summary>{t("currentRevision")}</summary><small>{base.draft.id}</small></details></dd><dt>{t("published")}</dt><dd>{base.publishedRevisionId === base.draft.id ? t("publishedCurrent") : base.publishedRevisionId ? <small>{base.publishedRevisionId}</small> : t("unpublished")}</dd></dl>
-        {dirty && <p role="status">{t("unsaved")}</p>}{busy && <p role="status">{t("pending")}</p>}{ack && <div role="status"><p>{t("saved")}</p><details><summary>{t("receiptIdentity")}</summary><small>{ack.operationId}</small></details><p>{t("version")}: {ack.version}</p>{ack.version !== base.version && <p>{t("receiptOld")}</p>}</div>}
-        <div className="cms-actions"><button className="cms-primary" disabled={locked || !dirty} onClick={save}>{t("save")}</button><button disabled={locked || dirty} onClick={() => void showPreview()}>{t("preview")}</button></div>{dirty && <p>{t("saveFirst")}</p>}
+        {dirty && <p role="status">{t("unsaved")}</p>}{busy && <p role="status">{t("pending")}</p>}{ack && <div role="status"><p>{t("saved")}</p><details><summary>{t("receiptIdentity")}</summary><small>{ack.operationId}</small><p>{t("version")}: {ack.version}</p></details>{ack.version !== base.version && <p>{t("receiptOld")}</p>}</div>}
+        <div className="cms-actions"><button className="cms-primary" disabled={locked || !dirty} onClick={save}>{t("save")}</button><button disabled={locked || dirty} onClick={() => void showPreview()}>{t("preview")}</button></div>{dirty ? <p>{t("saveFirst")}</p> : !preview && !pending && <p>{t("previewFirst")}</p>}
         {issues.length > 0 && <ul>{issues.map((issue, i) => <li key={i}><a href={`#cms-${issue.path}`} onClick={event => { event.preventDefault(); focusField(issue.path); }}>{fieldLabel(issue.path.split(".")[0]!, locale)}: {t(issue.reason === "asset" ? "assetIssue" : issue.reason === "review" ? "reviewIssue" : issue.reason === "internalDisabled" ? "internalDisabled" : "required")}</a></li>)}</ul>}
         <label htmlFor="cms-preview-locale">{t("locale")}</label><select id="cms-preview-locale" value={previewLocale} disabled={busy} onChange={e => { setQuery(previous => { previous.set("previewLocale", e.target.value); return previous; }); setPreview(undefined); }}>{["et","en","ru"].map(lang => <option key={lang}>{lang}</option>)}</select>
-        <div className="cms-actions"><button disabled={locked || dirty || !preview || preview.issues.length > 0} onClick={() => confirm(`documents/${base.id}/publish`, { revisionId: reviewRevision ?? base.draft.id, reviewed: true }, t("publishConfirm"))}>{t("publish")}</button><button disabled={locked || !base.publishedRevisionId} onClick={() => confirm(`documents/${base.id}/unpublish`, {}, t("impact"))}>{t("unpublish")}</button></div><details><summary>{t("impactTitle")}</summary><p className="cms-help">{t("impact")}</p></details>
+        <div className="cms-actions"><button disabled={locked || dirty || !preview || preview.issues.length > 0} onClick={() => confirm(`documents/${base.id}/publish`, { revisionId: reviewRevision ?? base.draft.id, reviewed: true, policyDigest: preview?.policyDigest }, t("publishConfirm"))}>{t("publish")}</button><button disabled={locked || !base.publishedRevisionId} onClick={() => confirm(`documents/${base.id}/unpublish`, {}, t("impact"))}>{t("unpublish")}</button></div><details><summary>{t("impactTitle")}</summary><p className="cms-help">{t("impact")}</p></details>
         <button disabled={busy || !!pending} onClick={() => { setBusy(true); void contentApi.history(base.id).then(setHistory).catch(fail).finally(() => setBusy(false)); }}>{t("history")}</button>{history.map(row => <div className="cms-history-row" key={row.id}><span>{row.number}</span><time dateTime={row.createdAt}>{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(row.createdAt))}</time><button disabled={locked || dirty} onClick={() => void showPreview(row.id)}>{t("rollback")}</button></div>)}{history.length >= 20 && <button disabled={busy} onClick={() => { setBusy(true); void contentApi.history(base.id, history.at(-1)?.number).then(rows => setHistory(previous => [...previous,...rows])).catch(fail).finally(() => setBusy(false)); }}>{t("older")}</button>}
       </aside><div className="cms-editor">
         {pending && <section className="cms-recovery" aria-label={t("uncertain")}><h3>{t("uncertain")}</h3><button disabled={busy} onClick={() => void reconcile()}>{t("reconcile")}</button><button disabled={busy || !retryAllowed} onClick={() => void execute(pending)}>{t("retrySame")}</button>{compared && <><h3>{t("server")}</h3><p>{t("version")}: {compared.version}</p><fieldset disabled><ContentField field={contentFields[section] ?? contentFields.title!} value={record(compared.draft.payload)[section]} path={`comparison.${section}`} locale={locale} root={compared.draft.payload} document={compared} festivals={index.festivals} onChange={() => {}} /></fieldset><button disabled={busy} onClick={() => { setBase(compared); setLocal(compared.draft.payload); setPending(undefined); setCompared(undefined); setRetryAllowed(false); }}>{t("useServer")}</button><button disabled={busy || pending.path !== `documents/${base.id}/revisions`} onClick={() => { setBase(compared); setPending(undefined); setCompared(undefined); setRetryAllowed(false); }}>{t("keepLocal")}</button></>}</section>}
         {confirmation && <div ref={confirmationRef} tabIndex={-1} className="cms-confirm" role="region" aria-label={t("confirm")}><p>{confirmation.text}</p><label><input type="checkbox" checked={reviewed} onChange={e => setReviewed(e.target.checked)} />{t("confirm")}</label><button disabled={!reviewed || busy || !!pending} onClick={() => command(confirmation.path, confirmation.body)}>{t("confirm")}</button><button onClick={() => { setConfirmation(undefined); trigger.current?.focus(); }} disabled={busy}>{t("cancel")}</button></div>}
-        {base.facts && <ContentFacts facts={base.facts} locale={locale} />}
+        {(preview ? preview.facts : base.facts) && <ContentFacts facts={(preview ? preview.facts : base.facts)!} locale={locale} />}
         <label htmlFor="cms-section">{t("section")}</label><select id="cms-section" value={section} onChange={e => chooseSection(e.target.value)}>{keys.map(key => <option key={key} value={key}>{fieldLabel(key, locale)}</option>)}</select>
         <fieldset disabled={locked || (!!base.facts && ["startsOn","endsOn","location"].includes(section))} className="cms-form">{section === "handoff" ? <HandoffField value={record(local).handoff} locale={locale} onChange={value => update("handoff", value)} /> : <ContentField field={contentFields[section]!} value={record(local)[section]} path={section} locale={locale} root={local} document={base} festivals={index.festivals} errors={errors} onChange={value => update(section, value)} />}</fieldset>
-        {preview && <><p>{t("currentRevision")}: {reviewRevision}</p><ContentPreview content={preview.content} locale={locale} /></>}
+        {preview && <section className="cms-preview-result" ref={previewRef} tabIndex={-1} aria-label={t("preview")}><p>{t("currentRevision")}: {reviewRevision}</p><button onClick={() => previewTrigger.current?.focus()}>{t("backToEditor")}</button><ContentPreview content={preview.content} locale={locale} /></section>}
         <details><summary>{t("assets")}</summary><fieldset disabled={locked}><p>{t("uploadHelp")}</p><label htmlFor="cms-upload">{t("upload")}</label><input id="cms-upload" type="file" accept="image/jpeg,image/png,image/webp" onChange={e => setFile(e.target.files?.[0])} /><button disabled={!file} onClick={() => command(`documents/${base.id}/assets`, {}, base, file)}>{t("upload")}</button>{base.assets.map(asset => <div className="cms-asset-row" key={asset.id}><small>{asset.id}</small><p>{asset.width} × {asset.height} / {t(asset.retired || asset.rights === "REVOKED" ? "rightsRevoked" : asset.rights === "APPROVED" ? "rightsApproved" : "rightsPending")}</p><div className="cms-actions"><button disabled={asset.retired || asset.rights !== "PENDING"} onClick={() => confirm(`documents/${base.id}/assets/${asset.id}/review`, { approved: true }, t("rightsConfirm"))}>{t("approve")}</button><button disabled={asset.retired || asset.rights === "REVOKED"} onClick={() => confirm(`documents/${base.id}/assets/${asset.id}/review`, { approved: false }, t("rightsConfirm"))}>{t("revoke")}</button><button disabled={asset.retired || asset.rights === "REVOKED"} onClick={() => confirm(`documents/${base.id}/assets/${asset.id}/retire`, {}, t("rightsConfirm"))}>{t("retire")}</button></div></div>)}</fieldset></details>
         {base.editionId && <details onToggle={event => { if (event.currentTarget.open && !events) void getEvents().then(setEvents).catch(fail); }}><summary>{t("link")}</summary><fieldset disabled={locked || !!base.publishedRevisionId}><label htmlFor="cms-event">{t("competition")}</label><select id="cms-event" value={eventId} onChange={e => setEventId(e.target.value)}><option value="">{t("none")}</option>{events?.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select><label><input type="checkbox" checked={migrationReviewed} onChange={e => setMigrationReviewed(e.target.checked)} />{t("migrationReviewed")}</label><button disabled={!events} onClick={() => confirm(`editions/${base.editionId}/link`, { eventId: eventId || null, migrationReviewed }, t("migrationReviewed"))}>{t("link")}</button><button onClick={() => confirm(`documents/${base.id}/archive`, {}, t("archiveConfirm"))}>{t("archive")}</button></fieldset></details>}
       </div></div></>}

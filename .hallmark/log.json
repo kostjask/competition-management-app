@@ -15,6 +15,36 @@
   "imagery": "actual document rasters only",
   "photos": [],
   "entry": "apps/web/src/pages/content/ContentPage.tsx",
+  "fingerprint": "cms-policy-reviewed-revision-ledger",
+  "sections": [
+   "ledger",
+   "structured editor",
+   "private preview",
+   "rights"
+  ],
+  "signature": "exact saved revision and reviewed canonical facts",
+  "waived": [],
+  "prompt": "Authorized PR #6 continuation of P4-PUBLIC-EDITOR S20/F12; retain locked Cobalt and ET/EN/RU",
+  "date": "2026-11-17",
+  "mode": "build",
+  "review": "fresh-context subagent; two Finish findings resolved and recaptured; static 0 FAIL/REFLEX/WARN; Playwright rendered review"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "ledger",
+   "native selected section",
+   "ruled edition index"
+  ],
+  "hero": "none (app)",
+  "nav": "existing shell and content tabs",
+  "footer": "none (app)",
+  "imagery": "actual document rasters only",
+  "photos": [],
+  "entry": "apps/web/src/pages/content/ContentPage.tsx",
   "fingerprint": "cms-revision-ledger-native-section",
   "sections": [
    "ledger",

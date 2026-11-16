@@ -387,6 +387,10 @@ for the focused disposable database loop; the full baseline also runs both conte
 fixtures. `pnpm test:focus api content.test.cjs` and
 `pnpm test:focus browser content.spec.ts` cover contracts and S20 recovery/rendering.
 [CMS evidence](CONTENT_EDITOR_VALIDATION.md) owns exact results and limitations.
+The continuation adds reviewed-policy fingerprint/conflict/receipt checks and
+explicit publication-audit rollback to the CMS fixture. Browser coverage also
+checks document switching, late preview responses, selected edition copy, current
+canonical facts and keyboard focus/return after private preview.
 The 17 CMS admin operations are covered separately from the 25 competition
 admin operations; public JSON/media have four anonymous read paths. Continue to cover:
 
