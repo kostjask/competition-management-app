@@ -15,11 +15,15 @@ import { dancersRouter } from "./dancers";
 import { imagesRouter } from "./images";
 import { performancesRouter } from "./performances";
 import { entryWorkflowRouter } from "./entry-workflow";
+import { contentRouter } from "./content";
+import { publicContentRouter } from "./public-content";
 import type { RecoveryDelivery } from "../services/authRecovery";
 
 export function apiRouter(prisma: PrismaClient, recoveryDelivery?: RecoveryDelivery) {
   const router = Router();
   const authenticate = createAuthMiddleware(prisma);
+  router.use("/public", publicContentRouter(prisma));
+  router.use("/content", authenticate, contentRouter(prisma));
 
   // These routers attach authentication to their protected operations explicitly.
   router.use("/auth", authRouter(prisma, authenticate, recoveryDelivery));

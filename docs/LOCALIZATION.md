@@ -98,7 +98,9 @@ source-language/translation storage, editors and explicit legacy classification.
 I18N-CONTENT remains open for later content; the M2 policy/contracts slice is complete.
 
 Studio/festival public content and shared CMS extend this policy through
-P4-PUBLIC-EDITOR/STUDIO-PAGES/PUBLIC-PAGES. ADR-026 defines /et, /en, /ru public
+P4-PUBLIC-EDITOR now implements authored fields, ET/EN/RU interface and private
+saved-revision preview with explicit actual-language fallback. Public-page consumers
+remain P4-STUDIO-PAGES/PUBLIC-PAGES. ADR-026 defines /et, /en, /ru public
 routes, authored-language canonical/hreflang/fallback and private-link continuity;
 implementation must test them. They are not current mounted-app behavior. Do not
 reinterpret locale URL parameters as implemented account preference changes.

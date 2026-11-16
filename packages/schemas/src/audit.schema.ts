@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 
 export const AuditActionSchema = z.enum([
+  "CONTENT_SAVED", "CONTENT_PUBLISHED", "CONTENT_UNPUBLISHED", "CONTENT_CREATED", "CONTENT_LINKED", "CONTENT_ASSET_UPLOADED", "CONTENT_ASSET_REVIEWED", "CONTENT_ASSET_RETIRED", "CONTENT_ARCHIVED",
   "ENTRY_CONFIGURED", "ENTRY_SUBMITTED", "ENTRY_ACCEPTED", "ENTRY_REOPENED",
   "PERFORMANCE_CREATED", "PERFORMANCE_UPDATED", "PERFORMANCE_ARCHIVED", "PERFORMANCE_RESTORED",
   "EVENT_UPDATED", "REGISTRATION_CREATED", "REGISTRATION_CORRECTED", "REGISTRATION_CANCELLED", "REGISTRATION_REAPPLIED",
@@ -14,6 +15,7 @@ export const AuditActorSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("SYSTEM") }), z.strictObject({ kind: z.literal("ANONYMOUS") }),
 ]);
 export const AuditMetadataSchema = z.strictObject({
+  operationId: z.uuid().optional(), documentId: z.uuid().optional(), revisionId: z.uuid().nullable().optional(), assetId: z.uuid().optional(),
   revision: z.int().positive().optional(),
   reasonCode: z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]).nullable().optional(),
   reviewAllowed: z.boolean().optional(),
@@ -26,7 +28,7 @@ export const AuditMetadataSchema = z.strictObject({
 });
 export const AuditRecordSchema = z.strictObject({
   action: AuditActionSchema, actor: AuditActorSchema,
-  targetType: z.enum(["EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
+  targetType: z.enum(["CONTENT_DOCUMENT", "EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
   targetId: IdSchema, eventId: IdSchema.nullable().optional(), studioId: IdSchema.nullable().optional(),
   metadata: AuditMetadataSchema.default({}),
 });

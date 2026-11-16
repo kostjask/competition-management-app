@@ -33,9 +33,10 @@ async function request(
   endpoint: string,
   options: RequestInit = {},
   image = false,
+  contentImage = false,
 ): Promise<unknown> {
   let url = `${API_BASE_URL}${endpoint}`;
-  if (image) url = privateImageUrl(endpoint);
+  if (image && !contentImage) url = privateImageUrl(endpoint);
 
 
   // Prepare headers
@@ -121,6 +122,11 @@ async function deleteRequest<TBody>(endpoint: string, body?: TBody): Promise<unk
   return body === undefined ? undefined : result;
 }
 export const apiClient = {
+  contentImage: async (endpoint: string): Promise<Blob> => {
+    if (!/^\/content\/documents\/[0-9a-f-]{36}\/assets\/[0-9a-f-]{36}$/.test(endpoint)) throw new ApiError(502, "Invalid image target");
+    const result = await request(endpoint, { redirect: "error", cache: "no-store" }, true, true);
+    if (!(result instanceof Blob)) throw new ApiError(502, "Invalid image response"); return result;
+  },
   image: async (url: string): Promise<Blob> => {
     const result = await request(url, { redirect: "error", cache: "no-store" }, true);
     if (!(result instanceof Blob)) throw new ApiError(502, "Invalid image response", undefined, "INVALID_RESPONSE", "invalidResponse");
@@ -130,6 +136,6 @@ export const apiClient = {
   post: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "POST", ...(body !== undefined && { body: JSON.stringify(body) }) }),
   put: <TBody = unknown>(endpoint: string, body: TBody): Promise<unknown> => request(endpoint, { method: "PUT", body: JSON.stringify(body) }),
   patch: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "PATCH", ...(body !== undefined && { body: JSON.stringify(body) }) }),
-  upload: (endpoint: string, body: FormData): Promise<unknown> => request(endpoint, { method: "POST", body }),
+  upload: (endpoint: string, body: FormData, headers?: Record<string, string>): Promise<unknown> => request(endpoint, { method: "POST", body, ...(headers && { headers }) }),
   delete: deleteRequest,
 };

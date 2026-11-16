@@ -13,7 +13,7 @@ export function SiteChrome({ children, auth = false }: { children: ReactNode; au
     const path = location.pathname;
     const title = /^\/admin\/events\/[^/]+\/setup$/.test(path) ? t("Setup.title") : /^\/admin\/events\/[^/]+\/staff$/.test(path) ? t("Staff.title") : path === "/auth/onboarding" ? t("Flow.onboarding") : path === "/auth/forgot-password" ? t("Flow.forgot") : path === "/auth/resend-verification" ? t("Flow.resend") : path === "/auth/correct-email" ? t("Flow.correct") : path === "/auth/reset-password" ? t("Flow.reset") : path === "/auth/accept-invitation" ? t("Flow.invitation") : path === "/admin/invitations" ? t("Flow.manage") : path === "/auth/profile" ? t("Shell.profile") : path === "/auth/register" ? t("Auth.registerButton") : path.startsWith("/auth/") ? t("Shell.login") : path === "/verify-email" ? t("Shell.verify") : path.startsWith("/events") ? t("Shell.events") : path.startsWith("/admin") ? t("Shell.administrator") : path.startsWith("/judge") ? t("Shell.judge") : path.startsWith("/moderator") ? t("Shell.moderator") : path.startsWith("/representative") ? t("Shell.representative") : path === "/" ? t("Shell.home") : t("Shell.notFound");
     const applicationTitle = path === "/applications" || /^\/events\/[^/]+\/(register|studio)$/.test(path) ? t("Application.title") : /^\/admin\/events\/[^/]+\/applications$/.test(path) ? t("Application.review") : title;
-    document.title = applicationTitle + " | " + t("Shell.brand");
+    document.title = (path.startsWith("/content/") ? t("Content.title") : applicationTitle) + " | " + t("Shell.brand");
   }, [location.pathname, t]);
   useEffect(() => {
     let done = false;
@@ -31,6 +31,8 @@ export function SiteChrome({ children, auth = false }: { children: ReactNode; au
       <nav aria-label={t("Shell.navigation")} className="mx-auto flex max-w-6xl flex-wrap items-center gap-4">
         <Link className="font-semibold" to="/">{t("Shell.home")}</Link><Link to="/events">{t("Shell.events")}</Link>
         {!auth && hasRole("admin") && <Link to="/admin/invitations">{t("Flow.manage")}</Link>}
+        {!auth && hasRole("admin") && <Link to="/content/studio">{t("Content.studio")}</Link>}
+        {!auth && hasRole("admin") && <Link to="/content/festivals">{t("Content.festivals")}</Link>}
         {!auth && destinations.filter(item => hasRole(item.key)).map(item => <Link key={item.key} to={item.path}>{getTranslation(item.label, locale)}</Link>)}
         <div className="ml-auto flex flex-wrap items-center gap-3"><LanguageSelector /><AuthNav /></div>
       </nav>

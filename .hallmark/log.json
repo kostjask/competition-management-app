@@ -5,6 +5,35 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "ledger",
+   "native selected section",
+   "ruled edition index"
+  ],
+  "hero": "none (app)",
+  "nav": "existing shell and content tabs",
+  "footer": "none (app)",
+  "imagery": "actual document rasters only",
+  "photos": [],
+  "entry": "apps/web/src/pages/content/ContentPage.tsx",
+  "fingerprint": "cms-revision-ledger-native-section",
+  "sections": [
+   "ledger",
+   "structured editor",
+   "private preview",
+   "rights"
+  ],
+  "signature": "exact draft and published revision ledger",
+  "waived": [],
+  "prompt": "P4-PUBLIC-EDITOR S20/F12 in locked Cobalt system; ET/EN/RU; controlled publication",
+  "date": "2026-11-16",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "retained identity",
    "withdrawn register",
    "nomination filters",

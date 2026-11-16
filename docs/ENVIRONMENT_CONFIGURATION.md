@@ -86,7 +86,9 @@ and [staging setup](STAGING.md) for queue key backup/rotation, retries and rollo
   use, review ingress limits and a topology-specific trusted-proxy/shared-store policy;
   never enable arbitrary proxy trust. OPTIONS preflight does not consume a bucket.
 - Images: /uploads requires a current eligible cookie/bearer identity, a live reference
-  and resource read permission. No static fallback or public publication is enabled.
+  and resource read permission. No static fallback is enabled. CMS public rasters
+  use separate live-reference/rights-gated `/api/v1/public/assets` reads and private
+  `STORAGE_PATH/content-private` keys. The content cleanup worker runs at startup.
   Check [storage behavior](STORAGE.md) before introducing any cloud/public provider.
 
 The API disables X-Powered-By and sends no-store, nosniff, frame denial, a restrictive

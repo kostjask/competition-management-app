@@ -1,0 +1,54 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (locked DESIGN.md) · signature: draft and publication ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: hierarchy resolved through a ruled revision ledger and one selected editor section. */
+/* Hallmark · answered: operational forms need no photography, marketing hero, display typography or invented proof. */
+/* Hallmark · finish-review: in-thread · 2 findings · 2 resolved; static sweep 0 FAIL, 0 REFLEX, 0 WARN; rendered evidence uses Playwright. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+html, body { overflow-x: clip; }
+.cms-workbench { max-width: 80rem; margin-inline: auto; padding: var(--space-lg); }
+.cms-workbench h1, .cms-workbench h2, .cms-workbench h3 { margin-block: var(--space-lg) var(--space-md); }
+.cms-workbench p { margin-block: var(--space-sm); }
+.cms-workbench a { color: var(--color-accent); overflow-wrap: break-word; }
+.cms-workbench button, .cms-workbench select, .cms-workbench input:not([type=checkbox]), .cms-workbench textarea { min-height: 44px; border: 1px solid var(--color-muted); border-radius: var(--radius-input); padding: var(--space-xs) var(--space-sm); background: var(--color-key-face); color: var(--color-ink); max-width: 100%; }
+.cms-workbench input:not([type=checkbox]), .cms-workbench textarea, .cms-workbench select { width: 100%; }
+.cms-workbench textarea { min-height: 8rem; resize: vertical; }
+.cms-workbench label, .cms-workbench legend { display: block; margin-block: var(--space-sm) var(--space-xs); }
+.cms-workbench label, .cms-mast nav { font-size: var(--text-sm); }
+.cms-workbench label:has(input[type=checkbox]) { display: flex; align-items: center; gap: var(--space-sm); min-height: 44px; }
+.cms-workbench input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--color-accent); flex-shrink: 0; }
+.cms-workbench button { cursor: pointer; margin-block: var(--space-xs); }
+.cms-workbench .cms-primary { background: var(--color-accent); color: var(--color-accent-ink); border-color: var(--color-accent-edge); }
+.cms-workbench button:active { transform: translateY(1px); }
+.cms-workbench :is(button, input, select, textarea):disabled { opacity: .55; cursor: not-allowed; }
+.cms-workbench [aria-invalid=true] { border-color: var(--color-error); }
+.cms-workbench :focus-visible, .cms-confirm:focus, .cms-error-summary:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.cms-mast { border-bottom: 2px solid var(--color-ink); padding-bottom: var(--space-lg); }
+.cms-mast nav, .cms-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); align-items: center; }
+.cms-mast nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.cms-layout { display: grid; grid-template-columns: minmax(15rem, .8fr) minmax(0, 2fr); gap: var(--space-xl); align-items: start; }
+.cms-ledger { padding: var(--space-lg); background: var(--color-paper-3); border-top: 3px solid var(--color-ink); }
+.cms-ledger dt { font-size: var(--text-sm); color: var(--color-ink-secondary); }
+.cms-ledger dd { margin: 0 0 var(--space-lg); font-size: var(--text-lg); }
+.cms-workbench small { display: block; overflow-wrap: anywhere; font-size: var(--text-sm); }
+.cms-editor, .cms-workbench fieldset { min-width: 0; }
+.cms-workbench fieldset { border: 0; padding: 0; }
+.cms-workbench .cms-group, .cms-workbench .cms-prose, .cms-workbench .cms-collection { margin-block: var(--space-lg); }
+.cms-workbench .cms-item { border-top: 2px solid var(--color-rule-2); padding-block: var(--space-md); }
+.cms-workbench details { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-md); margin-block: var(--space-md); }
+.cms-workbench summary { min-height: 44px; cursor: pointer; padding-block: var(--space-xs); }
+.cms-index-row, .cms-history-row, .cms-asset-row { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-sm); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md); }
+.cms-index-row { justify-content: space-between; }
+.cms-history-row { display: grid; }
+.cms-confirm, .cms-recovery, .cms-error-summary { padding: var(--space-lg); border: 2px solid var(--color-ink); margin-block: var(--space-lg); background: var(--color-paper-2); }
+.cms-error, .cms-error-summary { color: var(--color-error); }
+.cms-help { color: var(--color-ink-secondary); font-size: var(--text-sm); }
+.cms-preview { border-top: 3px solid var(--color-accent); margin-top: var(--space-xl); padding-top: var(--space-lg); }
+.cms-preview p { white-space: pre-wrap; }
+.cms-preview img { max-height: 30rem; object-fit: contain; margin-block: var(--space-lg); }
+.cms-facts dl { display: grid; gap: var(--space-sm); }
+.cms-facts dd { overflow-wrap: anywhere; }
+.cms-facts pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-body); }
+.cms-loading div { background: var(--color-paper-3); min-height: 44px; margin-block: var(--space-lg); }
+@media (hover: hover) { .cms-workbench button:hover:not(:disabled), .cms-workbench input:hover:not(:disabled), .cms-workbench select:hover:not(:disabled) { border-color: var(--color-ink); } }
+@media (max-width: 52rem) { .cms-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); } .cms-workbench { padding: var(--space-md); } }
+@media (prefers-reduced-motion: reduce) { .cms-workbench * { animation: none !important; transition: none !important; } }

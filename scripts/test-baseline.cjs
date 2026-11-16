@@ -12,9 +12,10 @@ const root = path.resolve(__dirname, '..');
 const registrationOnly = process.argv.includes('--registration-only');
 const eventSetupOnly = process.argv.includes('--event-setup-only');
 const entryFoundationsOnly = process.argv.includes('--entry-foundations-only');
-if (process.argv.slice(2).some(arg => !['--registration-only', '--event-setup-only', '--entry-foundations-only'].includes(arg)) ||
-  [registrationOnly, eventSetupOnly, entryFoundationsOnly].filter(Boolean).length > 1) throw new Error('Unsupported baseline option');
-const focused = registrationOnly || eventSetupOnly || entryFoundationsOnly;
+const contentOnly = process.argv.includes('--content-only');
+if (process.argv.slice(2).some(arg => !['--registration-only', '--event-setup-only', '--entry-foundations-only', '--content-only'].includes(arg)) ||
+  [registrationOnly, eventSetupOnly, entryFoundationsOnly, contentOnly].filter(Boolean).length > 1) throw new Error('Unsupported baseline option');
+const focused = registrationOnly || eventSetupOnly || entryFoundationsOnly || contentOnly;
 const startedAt = performance.now();
 
 async function timed(name, run) {
@@ -39,6 +40,7 @@ const env = {
   // Dedicated HTTP tests independently exercise configured limiter behavior.
   LOGIN_RATE_LIMIT_MAX_REQUESTS: '500', RATE_LIMIT_MAX_REQUESTS: '2000',
   CORS_ORIGIN: 'http://localhost:5173',
+  STORAGE_PATH: path.join(root, 'apps/api/uploads', database),
 };
 let created = false;
 let client;
@@ -151,6 +153,11 @@ async function main() {
       method: 'POST', headers: { Authorization: `Bearer ${judgeToken}`, 'Content-Type': 'application/json' }, body: '{}',
     });
     assert.equal(forbidden.status, 403);
+    if (!focused || contentOnly) {
+      await check('check-content', { client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET });
+      await check('check-content-cleanup', { serverEnv: env });
+    }
+    if (contentOnly) { console.log('PASS: isolated content baseline (full gate still required).'); return; }
     if (!eventSetupOnly && !entryFoundationsOnly) {
       await check('check-studio-registrations', {
         client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET,
@@ -197,6 +204,10 @@ async function main() {
       if (!/^dance_baseline_[a-f0-9]{32}$/.test(database)) throw new Error('Invalid test database cleanup target');
       psql(`DROP DATABASE ${database};`);
     }
+    const storageRoot = path.resolve(root, 'apps/api/uploads');
+    const fixtureStorage = path.resolve(env.STORAGE_PATH);
+    if (path.dirname(fixtureStorage) !== storageRoot || !/^dance_baseline_[a-f0-9]{32}$/.test(path.basename(fixtureStorage))) throw new Error('Invalid fixture storage cleanup target');
+    require('node:fs').rmSync(fixtureStorage, { recursive: true, force: true });
     console.log(`TIME baseline total: ${((performance.now() - startedAt) / 1000).toFixed(2)}s`);
   }
 }

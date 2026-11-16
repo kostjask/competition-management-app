@@ -81,6 +81,18 @@ how to find active entries. Finite/unbounded limits use native nullable controls
 No imagery, new palette, remote font, shell replacement or material slots are needed.
 Technical checks and rendered review remain separate from human visual approval.
 
+P4-PUBLIC-EDITOR extends Cobalt to the shared CMS at the current `/content` paths.
+One URL-selected structured section sits beside a draft/published revision ledger.
+Exact IDs and publication impact use native disclosures to keep phone editing
+usable; the full identities remain inspectable. Private locale preview, explicit
+confirmation, server/local comparison and receipt reconciliation retain state
+through session recovery. Teacher/class/timetable and edition content are bounded
+native forms; Event facts stay read-only with owning-editor links. Media has
+document-owned upload and explicit rights/retirement actions. No stock material,
+new shell, remote font or public-page composition is introduced. Static Hallmark
+and Playwright rendered evidence are in [CMS validation](docs/CONTENT_EDITOR_VALIDATION.md);
+human visual, fluent-language and assistive approval remain release gates.
+
 The review/application finish pass resolved misleading filtered-empty guidance
 and repeated approval copy. The two decisions, contact and actual mail state
 carry the hierarchy; no imagery or material slots are needed. Validation and

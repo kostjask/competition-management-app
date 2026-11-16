@@ -6,7 +6,7 @@ retry feedback, pending/error states, retained review/profile drafts and
 lost-response/session recovery in ET/EN/RU. `scripts/check-review-email.cjs`,
 invoked by the foundation baseline, checks recipient bindings, partial acceptance,
 rollback, serializable retry races and unchanged decision state. The privileged
-operation inventory now has 25 operations, including checkpoint configuration
+operation inventory has 25 competition operations, including checkpoint configuration
 reads/writes. Image boundary/setup browser checks
 also verify event revision increments and authoritative readback before later
 configuration saves. Full workspace, browser, baseline and migration checks retain
@@ -380,9 +380,15 @@ deployed-data provenance, hosted CI and unperformed human/browser checks open.
 
 ## Public websites and shared CMS acceptance
 
-WEB-STUDIO/WEB-FESTIVAL are planned outcomes, not existing test coverage. Extend
-the current behavior/API/PostgreSQL/browser infrastructure with their own slices
-rather than claiming existing auth/event tests prove public publishing. Cover:
+WEB-STUDIO/WEB-FESTIVAL remain release outcomes. P4-PUBLIC-EDITOR has its own
+CMS contract/API/PostgreSQL/cleanup/browser coverage, independently of public HTML.
+Run `node scripts/test-baseline.cjs --content-only` after building API dependencies
+for the focused disposable database loop; the full baseline also runs both content
+fixtures. `pnpm test:focus api content.test.cjs` and
+`pnpm test:focus browser content.spec.ts` cover contracts and S20 recovery/rendering.
+[CMS evidence](CONTENT_EDITOR_VALIDATION.md) owns exact results and limitations.
+The 17 CMS admin operations are covered separately from the 25 competition
+admin operations; public JSON/media have four anonymous read paths. Continue to cover:
 
 - Anonymous published-only DTO/assets, private drafts/preview, ordinary-user/staff
   write denials, cross-site/edition substitution and no participant/private-file
@@ -398,8 +404,8 @@ rather than claiming existing auth/event tests prove public publishing. Cover:
   observability and rollback evidence. Studio launch and Wix replacement have
   independent acceptance; historical documents need no reconstructed score data.
 
-Owning tasks: [website roadmap](roadmap/website.md). No new suite or coverage claim
-is introduced by this documentation task. Runtime gates apply when code changes.
+Owning tasks: [website roadmap](roadmap/website.md). Public pages and hosted release
+checks must add their own evidence; existing CMS tests do not prove their delivery.
 
 ## Documentation-only changes
 

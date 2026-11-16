@@ -49,6 +49,13 @@ guarantee media cleanup.
 
 ## Future providers
 
+P4-PUBLIC-EDITOR adds a separate `content-private` namespace, owned by CMS
+documents rather than private operational images. Normalized raster publication
+requires current references and approved rights. Its durable staging/retirement/
+cleanup worker is independent of private-music P8-MEDIA work. Exact headers,
+leases, retry limits and restore restrictions: [content assets](api/content.md#raster-ownership-rights-and-cleanup).
+PDF/video remain reviewed external HTTPS links; no PDF upload or remote fetch is enabled.
+
 P8-MEDIA extends private provider selection, music validation and durable cleanup/
 retry; current raster protection is delivered in P2. P3-MUSIC-MODEL owns music metadata/ownership.
 Cloud-provider env fields are optional parsed settings, not installed adapters or

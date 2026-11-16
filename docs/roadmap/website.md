@@ -15,8 +15,8 @@ The 2026-11-14 screenshots/user confirmation establish festival landing, ET/EN/R
 rules, registration information/link, judges by edition, historical result links
 and contact/social links. Reported Wix cost: EUR 372/year, with net savings and
 bundled services unverified. Inventory actual assets/URLs before migration.
-Source inspection on 2026-11-16 finds event descriptions/contact/images and
-protected event/judge/image routes; CMS/publication/public APIs do not exist yet.
+P4-PUBLIC-EDITOR now implements structured CMS/publication/public JSON and raster
+APIs, retaining protected event/judge/image routes. Public HTML pages remain open.
 P4-PUBLIC-MODEL now has a [concrete design](../adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
 and a [live source inventory](../PUBLIC_CONTENT_INVENTORY.md). Archive attribution,
 rights/original exports and domain ownership remain migration/release checks.
@@ -45,10 +45,10 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   [inventory](../PUBLIC_CONTENT_INVENTORY.md) records actual Wix routes, result
   links and image identifiers, including conflicting year links and placeholder
   contact target. S20/F12 specify the owning editor/recovery contract.
-  Design-only completion: no executable schema/migration/API/UI or deployment.
+  This prerequisite was design-only; the editor task below supplies implementation.
   Original exports/rights, archive attribution and domain/provider verification
   remain P9-WIX-TRANSITION/release gates; no speculative content was approved.
-- [ ] P4-PUBLIC-EDITOR: after P4-PUBLIC-MODEL, deliver one controlled CMS workspace
+- [x] P4-PUBLIC-EDITOR (2026-11-16, local): delivered one controlled CMS workspace
   with Studio website and Festivals sections; retain Competition operations and
   authorized task-specific navigation as delivered. Edit ET/EN/RU text, teacher
   profiles/classes/public timetable/joining/contact, selected media, festival
@@ -59,6 +59,12 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   no participants/approvals/scores/results. Public teacher/judge profiles grant no
   accounts or permissions. Prove denied ordinary-user/staff writes and no draft
   leakage through preview, cache, media URLs or direct API access.
+  [Exact contract](../api/content.md) and [validation](../CONTENT_EDITOR_VALIDATION.md)
+  record migration 41, immutable revisions/receipts/audit, strict public projections,
+  raster rights/cleanup, canonical policy, conflicts/retries and S20/F12 ET/EN/RU
+  browser/Hallmark evidence. Selective copy includes text/color; images are explicitly
+  excluded and re-uploaded. Current paths are `/content/...`; `/app` and public HTML
+  remain consumer work. No public launch, production migration or human approval.
 - [ ] P4-STUDIO-PAGES: after model/editor, create public home/about, teachers,
   classes/groups/styles/ages, timetable, joining information, location/contact,
   selected media and social links. Content comes from the director; no student
@@ -98,8 +104,9 @@ privacy/locale/accessibility/hosting evidence. Festival replacement additionally
 needs archive/link migration and verified cutover. A studio-site launch does not
 close Wix replacement; local tests alone close neither external outcome.
 
-Next: P4-PUBLIC-EDITOR with S20/F12. Implement the ADR's schema/contracts and
-controlled draft/preview/publish workspace end to end, with denied/conflict/retry/
-media/policy tests and rendered Hallmark/browser evidence. Public-page composition
-and Wix migration remain their own tasks. Do not republish disputed archive links
-or the placeholder contact target without owner verification.
+Next: P4-STUDIO-PAGES with S18. Consume the published CMS through request-rendered
+public HTML, stable studio design, actual-language metadata/fallback and complete
+studio sections. Keep its independent release gates open until approved content,
+rights, host/TLS, hosted deployment/restore and human review exist. Festival pages
+and Wix migration remain separate. Do not republish disputed archives or the
+placeholder contact target without owner verification.

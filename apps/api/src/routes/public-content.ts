@@ -1,0 +1,1 @@
+export { publicContentRouter } from "./content";

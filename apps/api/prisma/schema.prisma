@@ -6,6 +6,131 @@ datasource db {
   provider = "postgresql"
 }
 
+model Festival {
+  id         String            @id @default(uuid())
+  slug       String            @unique
+  name       String
+  archivedAt DateTime?
+  createdAt  DateTime          @default(now())
+  editions   FestivalEdition[]
+}
+
+model FestivalEdition {
+  id            String           @id @default(uuid())
+  festivalId    String
+  slug          String
+  eventId       String?          @unique
+  archivedAt    DateTime?
+  everPublished Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  festival      Festival         @relation(fields: [festivalId], references: [id], onDelete: Restrict)
+  event         Event?           @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  document      ContentDocument?
+
+  @@unique([festivalId, slug])
+}
+
+model ContentDocument {
+  id                  String             @id @default(uuid())
+  kind                String
+  editionId           String?            @unique
+  draftRevisionId     String?
+  publishedRevisionId String?
+  publishedAt         DateTime?
+  policyDigest        String?
+  version             Int                @default(1)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  edition             FestivalEdition?   @relation(fields: [editionId], references: [id], onDelete: Restrict)
+  revisions           ContentRevision[]  @relation("DocumentRevisions")
+  draft               ContentRevision?   @relation("DocumentDraft", fields: [draftRevisionId, id], references: [id, documentId], onDelete: Restrict, onUpdate: NoAction)
+  published           ContentRevision?   @relation("DocumentPublished", fields: [publishedRevisionId, id], references: [id, documentId], onDelete: Restrict, onUpdate: NoAction)
+  operations          ContentOperation[]
+  assets              PublicAsset[]
+}
+
+model ContentRevision {
+  id            String                 @id @default(uuid())
+  documentId    String
+  number        Int
+  schemaVersion Int                    @default(1)
+  payload       Json
+  actorId       String
+  createdAt     DateTime               @default(now())
+  document      ContentDocument        @relation("DocumentRevisions", fields: [documentId], references: [id], onDelete: Restrict)
+  actor         User                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  drafts        ContentDocument[]      @relation("DocumentDraft")
+  publications  ContentDocument[]      @relation("DocumentPublished")
+  assets        ContentRevisionAsset[]
+
+  @@unique([id, documentId])
+  @@unique([documentId, number])
+  @@index([actorId])
+}
+
+model ContentRevisionAsset {
+  revisionId String
+  assetId    String
+  fieldPath  String
+  revision   ContentRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  asset      PublicAsset     @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@id([revisionId, assetId, fieldPath])
+  @@index([assetId])
+}
+
+model PublicAsset {
+  ready      Boolean                @default(false)
+  id         String                 @id @default(uuid())
+  documentId String
+  key        String                 @unique
+  digest     String
+  size       Int
+  width      Int
+  height     Int
+  rights     String                 @default("PENDING")
+  retiredAt  DateTime?
+  reviewedAt DateTime?
+  actorId    String
+  createdAt  DateTime               @default(now())
+  document   ContentDocument        @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  actor      User                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  references ContentRevisionAsset[]
+  cleanup    ContentAssetCleanup?
+
+  @@index([documentId])
+  @@index([actorId])
+}
+
+model ContentOperation {
+  operationId String          @id
+  actorId     String
+  documentId  String
+  kind        String
+  digest      String
+  version     Int
+  revisionId  String?
+  createdAt   DateTime        @default(now())
+  document    ContentDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  actor       User            @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([documentId, createdAt])
+  @@index([actorId])
+}
+
+model ContentAssetCleanup {
+  id          String      @id @default(uuid())
+  assetId     String      @unique
+  dueAt       DateTime
+  leaseUntil  DateTime?
+  attempts    Int         @default(0)
+  completedAt DateTime?
+  failureCode String?
+  asset       PublicAsset @relation(fields: [assetId], references: [id], onDelete: Restrict)
+
+  @@index([completedAt, dueAt])
+}
+
 enum EventStage {
   PRE_REGISTRATION
   REGISTRATION_OPEN
@@ -118,6 +243,7 @@ model Event {
   invitations         Invitation[]
   onboardingDrafts    OnboardingDraft[]
   entryConfiguration  EntryConfiguration?
+  publicEdition       FestivalEdition?
 }
 
 model DanceCategory {
@@ -387,18 +513,21 @@ model Score {
 }
 
 model User {
-  id             String   @id @default(uuid())
-  email          String   @unique
-  name           String
-  password       String? // Optional for now (supports OAuth later)
-  emailVerified  Boolean  @default(false)
-  sessionVersion Int      @default(0)
+  contentRevisions  ContentRevision[]
+  contentOperations ContentOperation[]
+  contentAssets     PublicAsset[]
+  id                String             @id @default(uuid())
+  email             String             @unique
+  name              String
+  password          String? // Optional for now (supports OAuth later)
+  emailVerified     Boolean            @default(false)
+  sessionVersion    Int                @default(0)
   // SQL-only User_session_version_nonnegative; reset/correction revoke prior JWT revisions.
-  createdAt      DateTime @default(now())
-  active         Boolean  @default(true)
-  deactivatedBy  String?
-  photoUrl       String?
-  photoPath      String?
+  createdAt         DateTime           @default(now())
+  active            Boolean            @default(true)
+  deactivatedBy     String?
+  photoUrl          String?
+  photoPath         String?
 
   roles                 UserRole[]
   studioRepresentatives StudioRepresentative[]

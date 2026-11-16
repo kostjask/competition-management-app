@@ -42,7 +42,9 @@ accessibility requirements. Target address/path mapping is not mounted routing.
 
 - **Purpose / actor:** developer/director maintain both sites without annual code
   rebuilds. Target /app/content/studio, /app/content/festivals and
-  /app/content/editions/:editionId under ADR-026; these are not mounted yet.
+  /app/content/editions/:editionId under ADR-026. P4-PUBLIC-EDITOR currently mounts
+  `/content/studio`, `/content/festivals`, `/content/editions/:editionId`; the
+  coordinated `/app` transition remains a public-consumer prerequisite.
 - **Navigation:** Studio website, Festivals and Competition operations as delivered;
   explicit edition selection for festival content, site selection for studio
   content. Public teacher biographies create no account. Other festival users see
@@ -60,7 +62,8 @@ accessibility requirements. Target address/path mapping is not mounted routing.
 
 ### S20 composition and recovery contract
 
-P4-PUBLIC-MODEL defines this implementation handoff; P4-PUBLIC-EDITOR builds it.
+P4-PUBLIC-MODEL defines this contract; P4-PUBLIC-EDITOR implements it locally.
+See [exact delivered boundaries](../api/content.md) and [validation](../CONTENT_EDITOR_VALIDATION.md).
 Use Hallmark app-screen review and the operational Cobalt direction from
 [DESIGN](../../DESIGN.md), not annual festival artwork on working controls.
 The signature is a draft/published revision ledger beside the structured editor,

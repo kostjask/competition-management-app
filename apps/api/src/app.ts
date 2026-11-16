@@ -18,6 +18,8 @@ export function createApp(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
   const app = express();
   app.set("trust proxy", false);
   app.disable("x-powered-by");
+  // Published content and withdrawals never use conditional cache reuse.
+  app.disable("etag");
   app.use(securityHeaders);
   app.use(cors((req, callback) => {
     const origin = req.headers.origin;
@@ -32,6 +34,7 @@ export function createApp(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
   app.use(["/api/v1/auth/resend-verification", "/api/v1/auth/correct-email", "/api/v1/auth/request-password-reset", "/api/v1/auth/reset-password"], authRecoveryLimit());
   app.use("/api/v1/invitations", requestLimit());
   app.use("/api/v1/images", requestLimit());
+  app.use(["/api/v1/content", "/api/v1/public"], requestLimit());
   app.use(express.json({ limit: "100kb", inflate: false }));
   const images = new ImagesController(prisma);
   app.get("/uploads/:resource/:filename", createAuthMiddleware(prisma), asyncHandler((req, res) => images.retrieve(req, res)));

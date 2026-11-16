@@ -52,12 +52,13 @@ models remain open; see [domain](DOMAIN.md) and the checkpoint for task status.
 with public content/publishing, festival registration/entries and competition
 operations as clear modules. Target two public addresses and shared private
 administration; [product scope](PRODUCT_SCOPE.md) owns audiences/exclusions.
-There is no CMS, public-content API or /app router base implemented yet.
+The structured CMS and explicit published JSON/raster APIs are implemented.
+Public HTML composition and the `/app` router-base transition remain open.
 
 P4-PUBLIC-MODEL's ADR-026 design defines optional unique edition/event links,
 immutable structured revisions, public DTO/document-owned rasters, authorized
 preview, no-store reads, locale routes, request-rendered public HTML and required
-/app identity-link transition checks. P4-PUBLIC-EDITOR implements the model and S20/F12;
+/app identity-link transition checks. P4-PUBLIC-EDITOR implements the model and S20/F12 at the current `/content` paths;
 no framework switch, new service or database split is implied.
 Current auth URLs, safe returns, mail links and origin checks remain canonical
 until a tested route transition. Anonymous studio pages do not need shared-domain

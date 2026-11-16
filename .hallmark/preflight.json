@@ -19,5 +19,25 @@
     "atomic option creation and complete source nomination preset",
     "filtered nominations and explicit stale/uncertain recovery"
   ],
-  "inferences": "Operational app screen for organizers; utilitarian Cobalt ledger, no hero or imagery/material slots. Preserve DESIGN.md and the existing shell. Representative screens remain P5."
+  "inferences": "Operational app screen for organizers; utilitarian Cobalt ledger, no hero or imagery/material slots. Preserve DESIGN.md and the existing shell. Representative screens remain P5.",
+  "contentEditor": {
+    "task": "P4-PUBLIC-EDITOR",
+    "scope": "app",
+    "lockedSystem": "DESIGN.md:1",
+    "tokens": "apps/web/src/features/events/design/tokens.css:1",
+    "contract": "docs/ui/public.md:41",
+    "preserved": [
+      "Cobalt tokens",
+      "current shell/auth paths",
+      "ET/EN/RU",
+      "no public operational DTOs"
+    ],
+    "introduced": [
+      "structured editor",
+      "draft/publication ledger",
+      "private preview",
+      "explicit receipts and rights"
+    ],
+    "material": "authored product content; no stock/proof slots"
+  }
 }
