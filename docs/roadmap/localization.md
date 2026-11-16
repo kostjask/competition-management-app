@@ -8,8 +8,9 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 WEB-STUDIO/WEB-FESTIVAL extend the existing I18N-UI/CONTENT/QA owners to public
 pages and the shared CMS. Reuse ADR-019 authored-language/fallback contracts;
-P4-PUBLIC-MODEL must define indexable locale URLs, actual page language/metadata
-and safe language continuity into the private application. Current mounted app
+ADR-026's completed model design defines indexable locale URLs, actual language/
+metadata and safe continuity into the private application; consumers must
+implement/test these rules. Current mounted app
 locale precedence is unchanged. Public-site release needs its own fluent/assistive
 review, not completion of future scoring translations.
 

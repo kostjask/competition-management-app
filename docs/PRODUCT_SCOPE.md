@@ -57,7 +57,8 @@ accessible alternatives; social content is not automatically authorized for reus
 Festival editions retain their own logos, artwork, controlled color theme,
 dates/location, translated rules and judge presentation. Keep previous editions
 available under stable links. The edition-to-operational-event relationship and
-URL details must be decided in P4-PUBLIC-MODEL before storage changes.
+URL details are defined by ADR-026's completed P4-PUBLIC-MODEL design; storage
+and routing implementation remain P4-PUBLIC-EDITOR/public-page work.
 
 Published registration information must reflect the canonical event policy and
 link to the correct edition/application. Until the application workflow is

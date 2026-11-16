@@ -21,8 +21,9 @@ Exact permissions/ownership/stages are in each resource contract.
 
 [ADR-026](adr/026-studio-and-festival-platform.md) targets anonymous studio/festival
 pages and a shared CMS. No public-content endpoint is implemented by that decision;
-P4-PUBLIC-MODEL must define published DTOs/assets, authorized editing/preview and
-publication contracts. Do not remove auth from current event/judge/image routes.
+ADR-026 now defines planned published DTO/assets, authorized editing/preview and
+atomic publication contracts. P4-PUBLIC-EDITOR must implement/test them; do not
+remove auth from current event/judge/image routes.
 Target /app browser routing does not change the /api/v1 namespace or current auth
 links. Website publication is distinct from P7 calculated-result publication.
 

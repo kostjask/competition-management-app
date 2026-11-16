@@ -35,7 +35,7 @@ requires that past result or rollout limitation.
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
-| Studio/festival websites / CMS / Wix replacement | [Website roadmap](roadmap/website.md), [public screens](ui/public.md), [publishing flow](flows/F12.md), ADR-026 | Existing protected event/judge/image boundaries; public publishing remains planned |
+| Studio/festival websites / CMS / Wix replacement | [Website roadmap](roadmap/website.md), [public screens](ui/public.md), [publishing flow](flows/F12.md), [inventory](PUBLIC_CONTENT_INVENTORY.md), ADR-026 | Concrete model/route/publication design complete; protected event/judge/image boundaries retained; CMS/public publishing implementation next |
 | Tests / CI / release evidence | [Testing](TESTING.md) | workspace scripts, tests, .github/workflows/ci.yml |
 | Storage / images | [Storage](STORAGE.md), [image contract](api/images.md) | storage services, ImagesController, upload middleware |
 
@@ -78,7 +78,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [023](adr/023-entry-history-and-calendar-dates.md) | Immutable saved revisions, privacy-minimal snapshots and event-local calendar eligibility |
 | [024](adr/024-incomplete-entry-drafts.md) | Nullable unscheduled drafts, retained ownership/history and actor-bound creation retries |
 | [025](adr/025-entry-submission-lifecycle.md) | Accepted studio-wide checkpoints, any-older percentage, staged review/locks/reopening and event-adjustable rules; source questionnaire/images retained |
-| [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites, shared administration/CMS, no CRM/student system; concrete publication/URL/storage design remains P4-PUBLIC-MODEL |
+| [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites and shared CMS; concrete revision/edition/asset/publication/locale/route design; no CRM/student system or runtime implementation |
 
 ADR-003 accepts the M2 application/review subset; live operation remains pending.
 ADR-004 scoring is reserved and unaccepted; its required scope is in

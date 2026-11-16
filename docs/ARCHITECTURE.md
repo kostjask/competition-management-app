@@ -54,10 +54,11 @@ operations as clear modules. Target two public addresses and shared private
 administration; [product scope](PRODUCT_SCOPE.md) owns audiences/exclusions.
 There is no CMS, public-content API or /app router base implemented yet.
 
-P4-PUBLIC-MODEL must choose concrete edition/event relations, content revisions,
-public assets/DTOs, preview/cache rules, host/path/locale mapping, rendering and
-deployment/session configuration before consumers. Reuse existing infrastructure
-where justified; no framework switch, new service or database split is implied.
+P4-PUBLIC-MODEL's ADR-026 design defines optional unique edition/event links,
+immutable structured revisions, public DTO/document-owned rasters, authorized
+preview, no-store reads, locale routes, request-rendered public HTML and required
+/app identity-link transition checks. P4-PUBLIC-EDITOR implements the model and S20/F12;
+no framework switch, new service or database split is implied.
 Current auth URLs, safe returns, mail links and origin checks remain canonical
 until a tested route transition. Anonymous studio pages do not need shared-domain
 login cookies. Never expose current private images/event DTOs as public content.

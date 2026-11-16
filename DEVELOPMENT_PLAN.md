@@ -6,13 +6,13 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next: P4-PUBLIC-MODEL — shared studio/festival content and publication design.**
-The user explicitly requested a product/plan rework: create the studio's first
-public website, replace the festival Wix portal and retain competition operations.
-Resolve public content/edition identity, publication/private-media boundaries,
-locale/URL mapping and shared administration before dependent code. Extend
-[ADR-026](docs/adr/026-studio-and-festival-platform.md) with concrete model/storage/
-routing decisions; do not start a speculative CRM or change production services.
+**Next: P4-PUBLIC-EDITOR — controlled shared CMS with S20/F12.**
+P4-PUBLIC-MODEL's [design](docs/adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
+and [source inventory](docs/PUBLIC_CONTENT_INVENTORY.md) are complete as a design
+prerequisite. Implement its structured storage/shared contracts, draft/authorized
+preview/explicit publication, public-read boundary and the owning organizer UI.
+Include audit, conflict/same-operation recovery, ET/EN/RU and Hallmark/browser
+acceptance. No speculative CRM or production service changes.
 
 This deliberately supersedes the earlier M3-first/public-after-M3 ordering.
 P5-ENTRIES remains the next participant-workflow task with prerequisites delivered;
@@ -40,9 +40,10 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 Source reviewed on 2026-11-16; runtime evidence below remains dated, not rerun.
 
-- Current branch main equals cached origin/main at 70ff865. Fetch is blocked by
-  filesystem permissions; live remote/PR overlap cannot be confirmed. No branch,
-  merge, commit, push or deployment is part of this documentation task.
+- Current branch/upstream/intended target are main/origin/main/main at c12df16.
+  Authorized fetch and open-PR inspection succeeded on 2026-11-16: no divergence
+  or open PR overlap. The working tree was initially clean. No branch, merge,
+  commit, push or deployment is part of this design task.
 - Auth/session/locale, controlled staff invitations/offboarding, organizer event
   setup and independent application/review workflows are delivered locally.
   [Review evidence](docs/APPLICATION_REVIEW_VALIDATION.md) and owning roadmaps
@@ -58,10 +59,13 @@ Source reviewed on 2026-11-16; runtime evidence below remains dated, not rerun.
   event-day estimates are P5-APPLICATION-ESTIMATES. Music follows
   P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC; approval, entry review and music acceptance
   remain separate. Live scoring/calculated results remain Phase 6–7 work.
-- Public studio/festival sites, CMS/publishing and target host/path mapping are
-  planned, not implemented. Event/judge/image API resources currently require
-  authentication; do not expose them to satisfy public pages. Public content
-  storage must not wait for the unrelated private-music model gate.
+- P4-PUBLIC-MODEL is complete as design only: ADR-026 defines identities,
+  publication/recovery/asset boundaries, locale/host/rendering/route transition,
+  with S20/F12 editor scope. Live Wix inventory found disputed archive attribution
+  and a placeholder mail target; owner/export/rights verification remains a
+  migration/release gate. No CMS/public APIs, public pages, schema or /app base
+  are implemented. Existing event/judge/image authentication remains required;
+  public raster cleanup is independent of private-music prerequisites.
 - The repository contains **40 migrations**. Migration 40 corrects migration 39's
   cross-schema AuditLog constraint lookup without rewriting published history.
   [Migration CI evidence](docs/TESTING.md#migration-ci-correction-2026-11-14)
@@ -106,7 +110,7 @@ Existing task IDs and technical completion remain valid.
 | Gate | Required before | Implication |
 | --- | --- | --- |
 | Local technical prerequisites | Dependent design/code/migrations/UI | Consume implemented auth/scope/audit/contracts as applicable; do not block isolated work on missing hosted evidence. A concrete security regression takes priority. |
-| Domain/model decisions | Dependent behavior/schema changes | P4-PUBLIC-MODEL decides CMS/edition/publication/URL/storage before consumers. Existing registration/entry/staff ADRs remain; live/scoring require their own decisions. |
+| Domain/model decisions | Dependent behavior/schema changes | P4-PUBLIC-MODEL/ADR-026 design is complete for CMS/edition/publication/URL/storage; implementation must enforce it. Existing registration/entry/staff ADRs remain; live/scoring require their own decisions. |
 | Intended-target deployment safety | Retained/hosted migration/deployment and event deletion | P2-SCOPE-DEPLOY, verified target/provenance, backups and coordinated rollout remain mandatory where consumed. Disposable local policy does not cover other targets. |
 | External workflow release | Exposing each released workflow | Require its implementation, hosted CI/ingress/observability/deploy/restore and human language/assistive checks. Real mail is required for released verification/invitation/recovery flows. |
 | Public publication | Anonymous content/assets/results | Explicit published DTOs/assets/revisions, private previews and cache/unpublish rules; no private participant data or scoring drafts. Content publication never changes event stage or approvals. |
@@ -125,15 +129,14 @@ complete by the replan. Select the first actionable unchecked task by default.
 
 | Order | Task | Dependencies / outcome |
 | --- | --- | --- |
-| 1 | P4-PUBLIC-MODEL | Scope/content inventory and concrete CMS/edition/publication/storage/host-route decisions; no M3/M5 prerequisite |
-| 2 | P4-PUBLIC-EDITOR | Shared developer/director CMS, controlled access, drafts/preview/publish and reusable edition setup after model |
-| 3 | P4-STUDIO-PAGES | New studio public site consuming CMS; no student-management data; WEB-STUDIO can release after its own gates |
-| 4 | P4-PUBLIC-PAGES | Festival public portal, published edition rules/judges/archives and truthful registration handoff |
-| 5 | P9-WIX-TRANSITION | Content/archive/URL migration and rehearsed replacement; retain Wix until verification and authorized cutover |
-| 6 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 | Next participant slice; ownership/checkpoint/config prerequisites already delivered locally |
-| 7 | P5-APPLICATION-ESTIMATES | Initial expected entry counts per actual event-local day; preserve completed M2 contracts |
-| 8 | P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION | Explicit music policy/private-media gates before complete M3 submission |
-| 9 | Phase 6–7 model/consumer tasks | Consume required M3/M4 workflows; live/scoring/recovery decisions before dependent screens and M5 |
+| 1 | P4-PUBLIC-EDITOR | Shared developer/director CMS, controlled access, drafts/preview/publish and reusable edition setup; P4-PUBLIC-MODEL design prerequisite delivered |
+| 2 | P4-STUDIO-PAGES | New studio public site consuming CMS; no student-management data; WEB-STUDIO can release after its own gates |
+| 3 | P4-PUBLIC-PAGES | Festival public portal, published edition rules/judges/archives and truthful registration handoff |
+| 4 | P9-WIX-TRANSITION | Content/archive/URL migration and rehearsed replacement; retain Wix until verification and authorized cutover |
+| 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 | Next participant slice; ownership/checkpoint/config prerequisites already delivered locally |
+| 6 | P5-APPLICATION-ESTIMATES | Initial expected entry counts per actual event-local day; preserve completed M2 contracts |
+| 7 | P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION | Explicit music policy/private-media gates before complete M3 submission |
+| 8 | Phase 6–7 model/consumer tasks | Consume required M3/M4 workflows; live/scoring/recovery decisions before dependent screens and M5 |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

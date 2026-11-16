@@ -31,7 +31,8 @@ teacher/judge biographies, selected artwork/media and archive documents may be
 public. Operational contact/account/participant records remain private by default;
 review archive documents and media rights/consent before migration/publication.
 No student registry, CRM or enquiry-form storage is included. Draft/private preview
-and public-cache/unpublish/asset-retention rules require P4-PUBLIC-MODEL decisions.
+and public-cache/unpublish/asset-retention rules are defined by ADR-026's model
+design; P4-PUBLIC-EDITOR must enforce them before public consumers.
 
 ## Storage, logs and delivery
 

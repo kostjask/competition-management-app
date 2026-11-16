@@ -69,8 +69,9 @@ See [boundary and role evidence](BOUNDARIES_ROLES_VALIDATION.md).
 ## Known gaps and owning tasks
 
 Public-site/CMS targets are in [ADR-026](adr/026-studio-and-festival-platform.md).
-P4-PUBLIC-MODEL owns concrete public DTO/assets, draft/preview exclusion, cache/
-unpublish rules and controlled developer/director writes. Public biographies never
+Its completed model design defines public DTO/assets, draft/preview exclusion,
+no-store/unpublish rules and controlled global-admin writes; P4-PUBLIC-EDITOR must
+implement/test those boundaries. Public biographies never
 grant accounts/assignments. Host/path migration must preserve exact Origin/CSRF,
 safe returns and identity-link behavior; no shared parent-domain cookie is implied.
 Existing event/image endpoints stay authenticated until new explicit contracts

@@ -105,8 +105,8 @@ festival portal at fest.neposedo.ee; shared private workspace initially targeted
 at fest.neposedo.ee/app. Both sites link to each other and provide ET/EN/RU.
 Public visitors need no account. Content administrators see site/edition context;
 festival representatives/judges/moderators retain their task-specific navigation.
-S18–S20/F11–F12 specify public content and CMS. P4-PUBLIC-MODEL must settle route
-mapping, rendering, locale URLs and auth/mail-link redirects before code changes;
+S18–S20/F11–F12 specify public content and CMS. ADR-026's completed model design
+settles route mapping, rendering, locale URLs and auth/mail-link transition tests;
 do not prepend /app to existing routes or weaken origin/session checks implicitly.
 
 Required global shell: skip link, home/events, language, authenticated workspace
@@ -155,9 +155,9 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
-| S18 | P studio host `/` and content pages | P4-STUDIO-PAGES; concrete paths/locale mapping pending P4-PUBLIC-MODEL |
+| S18 | P studio host `/et`, `/en`, `/ru` and content suffixes | P4-STUDIO-PAGES; mapping defined in ADR-026, not mounted |
 | S19 | P festival host `/` and edition/archive pages | P4-PUBLIC-PAGES; existing private `/events` routes remain protected |
-| S20 | P workspace content routes under target `/app` | P4-PUBLIC-EDITOR; exact mapping and legacy redirects pending model, no mounted /app base |
+| S20 | P `/app/content/studio`, `/app/content/festivals`, `/app/content/editions/:editionId` | P4-PUBLIC-EDITOR; ADR-026 mapping and S20 state contract, no mounted /app base |
 
 Route facts above are checked against src/routes/index.tsx; proposed paths remain
 subject to their owning task. Event create/edit have route-level admin guards;
