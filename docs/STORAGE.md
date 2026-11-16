@@ -12,7 +12,11 @@ under [P4-PUBLIC-MODEL](roadmap/website.md). That public asset lifecycle is not
 implemented, does not inherit private-music prerequisites and must not turn current
 authenticated uploads into public files. Define allowlisted types, content/size
 validation, draft/published references, cache/unpublish and replacement/cleanup
-before consumers. Current raster limits below remain unchanged.
+before consumers, following the completed ADR-026 design. That design chooses
+document-owned normalized rasters, protected previews, live-reference/rights-gated
+no-store public reads and independent durable cleanup. Documents initially use
+reviewed HTTPS links; first-party PDF import stays gated under P9-WIX-TRANSITION.
+Current raster limits below remain unchanged.
 
 - STORAGE_TYPE accepts only local; startup installs LocalStorageService.
 - Files live under configured STORAGE_PATH, resolved against the API working

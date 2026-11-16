@@ -17,6 +17,9 @@ and contact/social links. Reported Wix cost: EUR 372/year, with net savings and
 bundled services unverified. Inventory actual assets/URLs before migration.
 Source inspection on 2026-11-16 finds event descriptions/contact/images and
 protected event/judge/image routes; CMS/publication/public APIs do not exist yet.
+P4-PUBLIC-MODEL now has a [concrete design](../adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
+and a [live source inventory](../PUBLIC_CONTENT_INVENTORY.md). Archive attribution,
+rights/original exports and domain ownership remain migration/release checks.
 
 ## Order and boundaries
 
@@ -34,19 +37,17 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
 
 ## Tasks
 
-- [ ] P4-PUBLIC-MODEL: inventory studio content needs and actual Wix pages/assets/
-  documents/links. Extend ADR-026 with concrete models/contracts before dependent
-  implementation: studio pages, teachers/classes/public timetable, festival versus
-  edition versus operational event identity, stable URLs and retained content.
-  Specify draft/private preview/published revisions/unpublish and caching,
-  publication readiness, ET/EN/RU fallback and indexable locale metadata/URLs.
-  Decide target host/path/router base, email/auth link migration, safe returns,
-  exact-Origin session/CSRF and hosting/rendering/bundle boundaries without
-  prematurely choosing a framework. Define public DTOs/assets/documents, controlled
-  developer/director administration and provider cleanup/replacement; current
-  private uploads remain private. Resolve public media independently of
-  P8-MEDIA's private-music prerequisite. Public rules/status must consume canonical
-  event policy without bypassing freezes or introducing another lifecycle.
+- [x] P4-PUBLIC-MODEL (2026-11-16): [ADR-026](../adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
+  defines structured site/edition revisions, optional unique operational-event
+  linkage, global-admin authority, atomic publication/audit/receipts, live policy
+  projection, public DTO/raster boundaries, document links, cleanup, no-store,
+  ET/EN/RU locale metadata and host/router/auth-mail transition. The
+  [inventory](../PUBLIC_CONTENT_INVENTORY.md) records actual Wix routes, result
+  links and image identifiers, including conflicting year links and placeholder
+  contact target. S20/F12 specify the owning editor/recovery contract.
+  Design-only completion: no executable schema/migration/API/UI or deployment.
+  Original exports/rights, archive attribution and domain/provider verification
+  remain P9-WIX-TRANSITION/release gates; no speculative content was approved.
 - [ ] P4-PUBLIC-EDITOR: after P4-PUBLIC-MODEL, deliver one controlled CMS workspace
   with Studio website and Festivals sections; retain Competition operations and
   authorized task-specific navigation as delivered. Edit ET/EN/RU text, teacher
@@ -97,6 +98,8 @@ privacy/locale/accessibility/hosting evidence. Festival replacement additionally
 needs archive/link migration and verified cutover. A studio-site launch does not
 close Wix replacement; local tests alone close neither external outcome.
 
-Next: P4-PUBLIC-MODEL. Open specifics are content inventory, edition/event mapping,
-publication/media model and target URL/deployment/session design. ADR-026 records
-only the accepted broad direction; implementation tasks remain unchecked.
+Next: P4-PUBLIC-EDITOR with S20/F12. Implement the ADR's schema/contracts and
+controlled draft/preview/publish workspace end to end, with denied/conflict/retry/
+media/policy tests and rendered Hallmark/browser evidence. Public-page composition
+and Wix migration remain their own tasks. Do not republish disputed archive links
+or the placeholder contact target without owner verification.

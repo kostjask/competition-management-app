@@ -7,7 +7,8 @@ public studio site, a replacement festival portal and shared developer/director
 administration. Public studio pages are not a student-management or CRM system.
 The studio currently has social accounts only; useful festival Wix material and
 archives need migration. [ADR-026](adr/026-studio-and-festival-platform.md) records
-the broad architecture; [website tasks](roadmap/website.md) remain unimplemented.
+the concrete publication design; its model prerequisite is complete while the
+[website implementation tasks](roadmap/website.md) remain open.
 
 The `Studio`/`Dancer` entities below represent participating festival organizations
 and rosters, not internal Neposedõ student records. "Organization approval" is
@@ -29,7 +30,7 @@ Event scoping is not a claim of multi-organizer isolation.
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 | Public studio content | No CMS/publication model implemented | Studio/teacher/class/timetable presentation; no enrolment or student registry |
-| Festival edition publication | Current event API remains authenticated | Edition/event mapping, branding and draft/preview/published content under P4-PUBLIC-MODEL; public judge profiles grant no assignments |
+| Festival edition publication | Current event API remains authenticated; no CMS tables/APIs | ADR-026 defines optional unique Event linkage and immutable published revisions; P4-PUBLIC-EDITOR implements them; public profiles grant no assignments |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
 ENDED, CANCELLED. M2 transitions are enforced by ADR-003; live/final transitions remain P6-LIVE-MODEL.

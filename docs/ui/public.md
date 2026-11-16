@@ -41,7 +41,8 @@ accessibility requirements. Target address/path mapping is not mounted routing.
 ## S20 — Shared content administration
 
 - **Purpose / actor:** developer/director maintain both sites without annual code
-  rebuilds. Target workspace /app, with exact editor routes decided by model task.
+  rebuilds. Target /app/content/studio, /app/content/festivals and
+  /app/content/editions/:editionId under ADR-026; these are not mounted yet.
 - **Navigation:** Studio website, Festivals and Competition operations as delivered;
   explicit edition selection for festival content, site selection for studio
   content. Public teacher biographies create no account. Other festival users see
@@ -56,3 +57,49 @@ accessibility requirements. Target address/path mapping is not mounted routing.
   responsive keyboard/focus and rendered Hallmark review. Protect preview/assets
   and handle replacement/unpublish caching explicitly. P4-PUBLIC-EDITOR owns scope;
   current application routes stay unchanged until a separately validated mapping.
+
+### S20 composition and recovery contract
+
+P4-PUBLIC-MODEL defines this implementation handoff; P4-PUBLIC-EDITOR builds it.
+Use Hallmark app-screen review and the operational Cobalt direction from
+[DESIGN](../../DESIGN.md), not annual festival artwork on working controls.
+The signature is a draft/published revision ledger beside the structured editor,
+with exact revision identity and the next permitted action. No marketing hero,
+stock material, invented totals or silent publication. The director/developer
+audience and maintenance purpose are established by product scope.
+
+- Studio view: ordered about, teachers, classes, timetable, joining/contact and
+  selected-media sections. Native fields/disclosures keep one editing task in
+  view; class/teacher references use stable IDs, never matching by name.
+- Festivals view: a ruled festival/edition index with explicit draft/published
+  state, edition selection and create/copy actions. Edition view separates
+  editorial fields from read-only canonical event facts and links to setup/rules.
+  Public biographies remain distinct from staff assignments.
+- Desktop places revision/readiness alongside the form; phone/tablet stacks it
+  in document order. Preserve a capped measure, tokenized color/type, instant
+  visible focus, 44px hit areas and reduced motion. No color-only state.
+- URL retains selected edition, section and preview language through validated
+  nonsecret IDs/keys. Fields stay mounted in component state; no draft text,
+  secrets or media bytes in query strings/browser persistence.
+- Source language and ET/EN/RU translations are explicit. Preview all locales
+  with actual-language fallback notices and HTML lang. Optional translations
+  can be cleared. Interface/error/confirmation copy uses all three dictionaries;
+  language choice grants no permission.
+
+| State/action | Observable behavior |
+| --- | --- |
+| Loading / empty / error | Form/index-shaped loading placeholders; missing content explains one create/edit action; translated error and explicit retry without losing work |
+| Edit / save | Mark unsaved work; Save announces the acknowledged draft revision; current published revision remains visible |
+| Preview | Authorized saved revision only; Save first for unsaved fields; private/noindex notice and viewport/language selection; no preview capability tokens in public links |
+| Publish | Exact saved revision, canonical facts, readiness and impact; disabled reasons link to fields; explicit confirmation publishes no unsaved fields |
+| Unpublish / rollback / retire | Explain affected URLs/media; explicit confirmation; acknowledge receipt and refresh live state; rollback rechecks policy/rights |
+| Conflict | Retain local fields beside server revision; compare/reload/manual reconciliation; no automatic overwrite or merge |
+| Uncertain response | Retain operation ID/body; reconcile receipt/current version before explicit same-operation retry; superseded receipt never claims current publication |
+| Session/access change | Mounted inert session recovery retains work; refresh authority; no automatic mutation replay; translated denied-access navigation |
+| Copy edition | Select presentation sections; explain cleared dates/event/action/results; new draft requires review and copies no operational records |
+
+Field errors link from one announced summary; acknowledge saves/publications in a
+polite live region. Confirmations return focus to their trigger or resulting
+revision. Keyboard and long ET/EN/RU labels must work at phone/tablet/desktop
+widths. Implement/render these states before UI completion; this text is neither
+a mockup nor visual approval.
