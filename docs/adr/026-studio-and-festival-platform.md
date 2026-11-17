@@ -15,6 +15,18 @@ and re-uploaded into the new document). The design text below remains the decisi
 record; public HTML/SEO, `/app` identity-link transition, hosts and Wix migration
 are consumer/release work, not implied implementation. [Validation](../CONTENT_EDITOR_VALIDATION.md).
 
+Implementation note (2026-11-17): the [public HTML consumers](../api/public-pages.md)
+now have a separate React/Node render build and opt-in loopback server entry,
+using the same published-read service as JSON. Distinct explicitly configured
+origins allow local S18/S19 implementation and validation while preserving the
+existing private SPA/auth/mail routes. This is a local delivery boundary, not a
+second database/service domain or production topology decision. The coordinated
+`/app` transition below is a prerequisite for **cohosting** festival HTML and the
+private workspace; it is not required to exercise the isolated local consumers.
+P9-WIX-TRANSITION owns that integration before cutover, with all original
+identity/legacy-link/session tests. No ingress, hostname, cookie, DNS or deployment
+change follows from starting the local entry. [Evidence](../PUBLIC_SITES_VALIDATION.md).
+
 ## Context
 
 The existing monorepo primarily implements festival application and entry

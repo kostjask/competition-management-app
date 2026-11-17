@@ -39,6 +39,19 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P4-STUDIO-PAGES/S18 and P4-PUBLIC-PAGES/S19 introduce separate public reading
+surfaces in `packages/public-site`, preserving the locked Cobalt paper/local
+Latin/Cyrillic face without importing the authenticated shell or client. Direct
+section links, a real class/timetable opening ledger and a stable edition archive
+carry the design. Studio branding is stable; festival action/focus roles use only
+the shared accessible cobalt/forest/brick choices. Authored text and reviewed
+rasters supply the material; no invented photographs, proof, statistics or empty
+image frames. Non-home document titles outrank item headings; the studio directory
+uses three balanced links. No animation or browser script is needed. Explicit
+fallback, no-store errors and responsive no-script links preserve all content at
+320–1920px. [Evidence](docs/PUBLIC_SITES_VALIDATION.md) separates technical/visual
+checks from approved real material and human language/assistive acceptance.
+
 This baseline covers organizer dashboard, event create/setup, authenticated
 list/detail and the P4-REVIEW/P5-APPLICATION S06–S08 slice: independent decision
 ledger, ruled queue/detail, short application form and profile/contact editors.

@@ -155,6 +155,7 @@ async function main() {
     assert.equal(forbidden.status, 403);
     if (!focused || contentOnly) {
       await check('check-content', { client, baseUrl, adminToken: token, login, jwtSecret: env.JWT_SECRET });
+      await check('check-public-pages', { serverEnv: env, baseUrl });
       await check('check-content-cleanup', { serverEnv: env });
     }
     if (contentOnly) { console.log('PASS: isolated content baseline (full gate still required).'); return; }

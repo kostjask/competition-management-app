@@ -6,6 +6,7 @@
 | --- | --- |
 | apps/api | Express HTTP/security boundary, business rules, Prisma and provider integration |
 | apps/web | React routes/forms, context-based session/locale state, validated API clients |
+| packages/public-site | Separate React/Node public HTML renderer, local CSS build, published DTOs and ET/EN/RU metadata; no private browser bundle |
 | packages/schemas | Browser/server-safe Zod inputs, serialized DTOs, semantic feedback contracts |
 | packages/types | Shared declarations that cannot be inferred from schemas |
 
@@ -53,7 +54,11 @@ with public content/publishing, festival registration/entries and competition
 operations as clear modules. Target two public addresses and shared private
 administration; [product scope](PRODUCT_SCOPE.md) owns audiences/exclusions.
 The structured CMS and explicit published JSON/raster APIs are implemented.
-Public HTML composition and the `/app` router-base transition remain open.
+Separate local public HTML consumers now render those published DTOs without
+JavaScript, using an opt-in API public-only listener per explicit surface/origin.
+No private routes or credentialed CORS are mounted by that entry. The `/app`
+router/base/identity-link and production ingress transition remains open before
+cohosting. [Public consumer contract](api/public-pages.md) owns current wiring.
 
 P4-PUBLIC-MODEL's ADR-026 design defines optional unique edition/event links,
 immutable structured revisions, public DTO/document-owned rasters, authorized

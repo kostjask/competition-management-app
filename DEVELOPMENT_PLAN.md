@@ -6,14 +6,16 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next: P4-STUDIO-PAGES — new studio public site with S18.**
-P4-PUBLIC-EDITOR is delivered locally with S20/F12: structured contracts/storage,
-controlled draft/preview/publication, public-read/raster boundaries, transactional
-audit/receipts and the ET/EN/RU Cobalt editor. [Validation and limits](docs/CONTENT_EDITOR_VALIDATION.md).
-Build the studio public consumer with request-rendered readable HTML, actual-language
-fallback/metadata, all agreed studio sections and independent release acceptance.
-Coordinate the ADR-026 route/link transition only when its full gates are implemented;
-no target hostname, DNS, cookie, deployment or Wix cancellation change is authorized.
+**Next: P9-WIX-TRANSITION — coordinated local `/app`/legacy-link integration first.**
+P4-STUDIO-PAGES/S18 and P4-PUBLIC-PAGES/S19 are delivered as isolated local
+React/Node public consumers of the existing S20 CMS, with readable no-script HTML,
+ET/EN/RU/fallback/metadata/live sitemap, studio sections and festival archives/
+truthful handoff. [Contract](docs/api/public-pages.md) and
+[validation/limits](docs/PUBLIC_SITES_VALIDATION.md) define exact local scope.
+Before cohosting, implement and validate the ADR-026 router/base/client/return/
+onboarding/mail/legacy redirect transition together. Keep approved content/rights,
+archive attribution, ownership/TLS and hosted/human release checks open. No target
+hostname, DNS, cookie, deployment or Wix cancellation change is authorized.
 
 This deliberately supersedes the earlier M3-first/public-after-M3 ordering.
 P5-ENTRIES remains the next participant-workflow task with prerequisites delivered;
@@ -42,12 +44,12 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 Source and the CMS slice revalidated locally on 2026-11-17. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- CMS follow-up (2026-11-17): PR #6 is merged into main at 213b37a. The user
-  authorized a separate PR and merge for the validated local fixes. Branch
-  fix/cms-reviewed-publication starts from that merged main; no original CMS work
-  is duplicated. Publication requires the canonical-policy fingerprint from
+- CMS follow-up (2026-11-17): PR #6 and continuation PR #7 are merged into main
+  (latest d5bc51b). The public consumers started from that clean target, matching
+  fetched origin/main with no unmerged remote branch or open PR overlap.
+  No original CMS work is duplicated. Publication requires the canonical-policy fingerprint from
   private preview; document changes invalidate review/confirmation state. The
-  validated working-tree contents were preserved when changing the branch base.
+  validated follow-up is retained without a new branch/history/publication action.
   [Evidence](docs/CONTENT_EDITOR_VALIDATION.md#continuation-and-revalidation-2026-11-17)
   separates fresh local checks from the original PR's dated evidence. No deployment
   or application-database mutation is part of the Git publication workflow.
@@ -69,7 +71,9 @@ their dates; no hosted or application-database state is inferred.
 - P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
   locally complete and revalidated on 2026-11-17. The [CMS contract](docs/api/content.md) owns `/content` editing,
   immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
-  published JSON. Public HTML pages and the `/app` base remain unimplemented.
+  published JSON. P4-STUDIO-PAGES/P4-PUBLIC-PAGES now supply isolated public HTML
+  consumers and live metadata/sitemaps. The `/app` base/legacy identity-link and
+  production ingress transition remains unimplemented, required before cohosting.
   Existing event/judge/image authentication remains required. Wix archive
   attribution, placeholder contact and owner/export/rights verification remain
   migration/release gates. Public raster cleanup is independent of private music.
@@ -137,9 +141,9 @@ complete by the replan. Select the first actionable unchecked task by default.
 | Order | Task | Dependencies / outcome |
 | --- | --- | --- |
 | 1 | P4-PUBLIC-EDITOR — complete locally | Shared CMS and S20/F12 delivered; validation/release limits above |
-| 2 | P4-STUDIO-PAGES — next | New studio public site consuming CMS; no student-management data; WEB-STUDIO can release after its own gates |
-| 3 | P4-PUBLIC-PAGES | Festival public portal, published edition rules/judges/archives and truthful registration handoff |
-| 4 | P9-WIX-TRANSITION | Content/archive/URL migration and rehearsed replacement; retain Wix until verification and authorized cutover |
+| 2 | P4-STUDIO-PAGES — local consumer complete | Isolated request-rendered studio site; WEB-STUDIO still requires its own integration/material/hosted/human gates |
+| 3 | P4-PUBLIC-PAGES — local consumer complete | Isolated festival portal/edition rules/judges/archives and truthful handoff; WEB-FESTIVAL remains unreleased |
+| 4 | P9-WIX-TRANSITION — next | Coordinated `/app`/legacy identity links before cohosting; content/archive/URL migration and rehearsed replacement; retain Wix until verified authorized cutover |
 | 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 | Next participant slice; ownership/checkpoint/config prerequisites already delivered locally |
 | 6 | P5-APPLICATION-ESTIMATES | Initial expected entry counts per actual event-local day; preserve completed M2 contracts |
 | 7 | P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION | Explicit music policy/private-media gates before complete M3 submission |

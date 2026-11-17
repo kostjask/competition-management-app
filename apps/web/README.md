@@ -18,9 +18,12 @@ build it and restart the API after contract changes.
 The target includes public studio/festival sites and shared content administration;
 [product scope](../../docs/PRODUCT_SCOPE.md) and
 [ADR-026](../../docs/adr/026-studio-and-festival-platform.md) distinguish these
-from the current app. No /app base or anonymous content API is mounted. Model,
-host/locale/route/rendering and auth-link mapping precede new frontend structure;
-do not rename routes or add dependencies based on target addresses alone.
+from the current app. CMS/public JSON and separate local public HTML entries are
+implemented; the private SPA still has no `/app` base. Public rendering lives in
+`packages/public-site`, not the authenticated browser bundle.
+[Public entry/routing](../../docs/api/public-pages.md) documents explicit local
+origins and the still-required cohosting/identity-link transition. Do not mount
+public HTML over existing workspace routes based on target addresses alone.
 Public screens are S18–S20/F11–F12; existing application contracts stay valid.
 
 | Concern | Source / guide |

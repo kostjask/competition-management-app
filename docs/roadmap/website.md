@@ -16,7 +16,9 @@ rules, registration information/link, judges by edition, historical result links
 and contact/social links. Reported Wix cost: EUR 372/year, with net savings and
 bundled services unverified. Inventory actual assets/URLs before migration.
 P4-PUBLIC-EDITOR now implements structured CMS/publication/public JSON and raster
-APIs, retaining protected event/judge/image routes. Public HTML pages remain open.
+APIs, retaining protected event/judge/image routes. P4-STUDIO-PAGES and
+P4-PUBLIC-PAGES add isolated local HTML consumers; cohosted `/app` integration and
+all public release gates remain open. [Contract](../api/public-pages.md).
 P4-PUBLIC-MODEL now has a [concrete design](../adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
 and a [live source inventory](../PUBLIC_CONTENT_INVENTORY.md). Archive attribution,
 rights/original exports and domain ownership remain migration/release checks.
@@ -69,7 +71,7 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   clears confirmation/preview state across documents, focuses private previews and
   reduces phone ledger density. Publication-audit rollback, policy changes and
   festival-copy UI are covered by the fresh validation evidence.
-- [ ] P4-STUDIO-PAGES: after model/editor, create public home/about, teachers,
+- [x] P4-STUDIO-PAGES (2026-11-17, local consumer): after model/editor, create public home/about, teachers,
   classes/groups/styles/ages, timetable, joining information, location/contact,
   selected media and social links. Content comes from the director; no student
   records, bookings, enquiry pipeline, billing or news/feed integration is needed.
@@ -78,7 +80,12 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   phone/tablet/desktop, keyboard/assistive use, loading/error/missing/unpublished
   states and public-media permission/rights review. Verify domain ownership/TLS,
   deployment/backup/rollback and human approval before WEB-STUDIO release.
-- [ ] P4-PUBLIC-PAGES: after model/editor, deliver festival landing/upcoming/past
+  Delivered as a separate React/Node render build and opt-in loopback entry with
+  published-only content, actual timetable/class links, ET/EN/RU/readable HTML,
+  fallback/canonical/hreflang/live sitemap and no-script responsive navigation.
+  [Evidence and limitations](../PUBLIC_SITES_VALIDATION.md) separate local delivery
+  from production integration, approved material and human/hosted acceptance.
+- [x] P4-PUBLIC-PAGES (2026-11-17, local consumer): after model/editor, deliver festival landing/upcoming/past
   editions, annual branding/dates/location, ET/EN/RU rules, judge presentation,
   result document/link archives, contact/social links and registration handoff.
   Public content requires no account; expose only explicit published DTOs/assets.
@@ -89,6 +96,13 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   cache invalidation, mobile/keyboard/assistive use and localized metadata/social
   previews. Historical documents/links need no reconstructed score records; new
   calculated results retain P7-PUBLISH gates.
+  Delivered published portal/festival/edition indexes, canonical dates/venue,
+  rules/judges, attributed historical links and truthful external/contact handoff.
+  Current policy/rights/withdrawal checks are shared with JSON. Contact remains
+  visible during an available external action. No new internal registration or
+  calculated results claim. The existing S20 CMS is the owning organizer UI.
+  [Public contract](../api/public-pages.md) records isolated routes and the
+  `/app`/ingress prerequisite retained below; no production routes were changed.
 - [ ] P9-WIX-TRANSITION: after festival pages/editor pass, migrate useful content,
   judge artwork and historical result documents/links with reviewed rights and
   edition attribution. Inventory URLs and verify link/redirect coverage, domain/
@@ -99,14 +113,19 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   actual registration handoff. Keep Wix live until acceptance and obtain explicit
   authorization for domain cutover/cancellation. This does not require M3/M5;
   unfinished operational services cannot be advertised as available.
+  First local integration substep: implement the coordinated ADR-026 `/app`
+  router/Vite/client/return/onboarding/mail mapping and bounded indefinite legacy
+  redirects; test old queued token links, secret stripping, scope and session
+  boundaries together before cohosting festival HTML. The isolated local public
+  entry does not authorize replacing existing routes. External content/archive/
+  ownership/hosting evidence remains a separate cutover prerequisite.
 
 ## Exit criteria and next action
 
-PR #6 is merged into main at 213b37a. On 2026-11-17 the user authorized a
-separate PR and merge for its validated local follow-up fixes, based on that
-merged main. Shared contracts and migration 41 are retained rather than
-duplicating the CMS implementation. Deployment and release gates below are
-unchanged.
+PR #6 and its CMS continuation PR #7 are merged into main (latest d5bc51b).
+The public consumer work started from that clean target with no unmerged remote
+branch or open PR overlap. Shared contracts/migration 41 and S20 are retained;
+the public renderer adds no migration. Deployment and release gates remain open.
 
 WEB-STUDIO and WEB-FESTIVAL are distinct outcomes in the checkpoint. Both need
 usable director content editing, explicit safe publishing and released-scope
@@ -114,9 +133,9 @@ privacy/locale/accessibility/hosting evidence. Festival replacement additionally
 needs archive/link migration and verified cutover. A studio-site launch does not
 close Wix replacement; local tests alone close neither external outcome.
 
-Next: P4-STUDIO-PAGES with S18. Consume the published CMS through request-rendered
-public HTML, stable studio design, actual-language metadata/fallback and complete
-studio sections. Keep its independent release gates open until approved content,
-rights, host/TLS, hosted deployment/restore and human review exist. Festival pages
-and Wix migration remain separate. Do not republish disputed archives or the
-placeholder contact target without owner verification.
+Next: P9-WIX-TRANSITION's coordinated `/app` and legacy identity-link integration
+before cohosting. Inventory/verify real content exports, rights, archive attribution
+and host ownership alongside the separately gated cutover work. WEB-STUDIO and
+WEB-FESTIVAL remain independently unreleased. Do not republish disputed archives
+or the placeholder contact target without owner verification. If external access
+blocks the remaining transition work, continue P5-ENTRIES/S09–S10 in queue order.

@@ -1,0 +1,15 @@
+{
+  "name": "@dance/public-site",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": "./dist/index.js", "./site.css": "./dist/site.css" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node build-css.cjs",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "dependencies": { "@dance/schemas": "workspace:*", "react": "^19.3.1", "react-dom": "^19.3.1" },
+  "devDependencies": { "@types/react": "^19.3.0", "@types/react-dom": "^19.3.0" }
+}

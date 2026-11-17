@@ -34,7 +34,7 @@ async function install(page: Page, locale: Locale = "en", width = 390) {
     if (path.endsWith("/preview")) {
       const requestedLocale = url.searchParams.get("locale") === "ru" ? "ru" : url.searchParams.get("locale") === "en" ? "en" : "et";
       const payload = doc.draft.payload;
-      const content: CmsPublic = { kind: payload.kind, identity: null, revisionId: doc.draft.id, publishedAt: doc.draft.createdAt, requestedLocale, primaryLocale: "et", fields: ["title", "introduction"].flatMap(key => { const text = key === "title" ? payload.title : payload.introduction; return text ? [{ path: key, value: cmsText(text, requestedLocale) }] : []; }), images: [], links: [], facts: null, policyChanged: false, action: { kind: "contact", email: payload.contact.email, phone: null }, timetable: [], profiles: [], classes: [], brand: null, startsOn: null, endsOn: null };
+      const content: CmsPublic = { kind: payload.kind, identity: null, revisionId: doc.draft.id, publishedAt: doc.draft.createdAt, requestedLocale, primaryLocale: "et", fields: ["title", "introduction"].flatMap(key => { const text = key === "title" ? payload.title : payload.introduction; return text ? [{ path: key, value: cmsText(text, requestedLocale) }] : []; }), images: [], links: [], facts: null, policyChanged: false, contact: { email: payload.contact.email, phone: null }, action: { kind: "contact", email: payload.contact.email, phone: null }, timetable: [], profiles: [], classes: [], brand: null, startsOn: null, endsOn: null };
       return route.fulfill({ json: { content, issues: cmsReadiness(payload), policyDigest: state.policyDigest, facts: doc.facts } });
     }
     if (path.endsWith("/revisions") && method === "GET") return route.fulfill({ json: [doc.draft] });

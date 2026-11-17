@@ -1,5 +1,43 @@
 [
  {
+  "scope": "page",
+  "shape": "content index",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "published section index",
+   "real timetable opening",
+   "stable edition ledger",
+   "local Cyrillic face",
+   "no-script navigation",
+   "live locale metadata"
+  ],
+  "hero": "Settled, published timetable or edition ledger beside the document title",
+  "nav": "cross-site wordmark, explicit language and section index",
+  "footer": "colophon with home/archive links",
+  "imagery": "only document-owned rights-approved CMS rasters",
+  "photos": [],
+  "entry": "packages/public-site/src/index.tsx",
+  "fingerprint": "published-studio-timetable-and-festival-edition-index",
+  "sections": [
+   "opening facts",
+   "about or edition facts",
+   "classes or rules",
+   "joining or archive",
+   "contact",
+   "colophon"
+  ],
+  "signature": "published class/timetable and stable edition facts",
+  "waived": [
+   "1",
+   "8"
+  ],
+  "prompt": "P4-STUDIO-PAGES and P4-PUBLIC-PAGES with S18/S19; retain locked Cobalt, ET/EN/RU, accessibility and published-only boundaries",
+  "sweep": "static 0 FAIL, 0 open REFLEX, 0 WARN, 1 dismissal; skill render unavailable without puppeteer-core; 34 final Playwright renders/flows; fresh-context hero ship and finish 2 findings 2 resolved",
+  "date": "2026-11-17",
+  "mode": "build"
+ },
+ {
   "scope": "app",
   "shape": "app screen",
   "theme": "cobalt",

@@ -35,7 +35,7 @@ requires that past result or rollout limitation.
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
-| Studio/festival websites / CMS / Wix replacement | [Website roadmap](roadmap/website.md), [CMS contract](api/content.md), [public screens](ui/public.md), [publishing flow](flows/F12.md), [inventory](PUBLIC_CONTENT_INVENTORY.md), ADR-026 | CMS/revisions/assets/publication implemented; public-page consumers and Wix transition remain open; event/judge/image boundaries retained |
+| Studio/festival websites / CMS / Wix replacement | [Website roadmap](roadmap/website.md), [CMS contract](api/content.md), [public HTML](api/public-pages.md), [public screens](ui/public.md), [publishing flow](flows/F12.md), [inventory](PUBLIC_CONTENT_INVENTORY.md), ADR-026 | CMS and isolated local public consumers implemented; packages/public-site and API public entry; `/app`/ingress/Wix release gates remain open |
 | Tests / CI / release evidence | [Testing](TESTING.md) | workspace scripts, tests, .github/workflows/ci.yml |
 | Storage / images | [Storage](STORAGE.md), [image contract](api/images.md) | storage services, ImagesController, upload middleware |
 

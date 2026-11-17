@@ -103,6 +103,14 @@ readiness/rights/publication. Ordinary unpublish retains bytes and history.
 | GET /public/festivals?locale=et | Published portal plus currently published edition summaries and stable slugs |
 | GET /public/festivals/:festivalSlug/editions/:editionSlug?locale=et | Published edition projection, canonical minimal Event facts and truthful action |
 
+Public projections include explicit contact email/phone independently of the
+current handoff action, so an external registration action does not hide contact.
+The portal includes stable festival slug/name/resolved-summary identities and
+edition start/end calendar dates plus `upcoming`, `past` or `undated` grouping.
+Only configured public festival identities or those with a published edition are
+included. [HTML consumers](public-pages.md) document dates, locale metadata and
+live sitemap behavior; JSON and HTML share the same published-read service.
+
 Locale accepts only one `et`, `en` or `ru` value. Missing/unpublished resources
 share 404. Dependency connection failures return 503 without stale output.
 Public fields are resolved `{text, lang, fallback}` values with named stable paths;
@@ -130,6 +138,9 @@ affects subsequent requests and cannot recall downloaded copies.
 
 Current routes are `/content/studio`, `/content/festivals` and
 `/content/editions/:editionId`, with bounded section/preview-language query state.
-Existing auth/mail/application paths stay canonical. The planned `/app` transition
-and request-rendered public pages belong to their consumer tasks; no DNS, cookie,
-deployment or hosting change is included. See [validation](../CONTENT_EDITOR_VALIDATION.md).
+Existing auth/mail/application paths stay canonical. Isolated request-rendered
+public entries now consume this contract; the coordinated `/app`/legacy-link
+transition remains required before cohosting, owned by P9-WIX-TRANSITION.
+No DNS, cookie, deployment or hosting change is included. See
+[CMS validation](../CONTENT_EDITOR_VALIDATION.md) and
+[public consumer validation](../PUBLIC_SITES_VALIDATION.md).

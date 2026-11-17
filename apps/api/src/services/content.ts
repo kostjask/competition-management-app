@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Prisma, type PrismaClient, type ContentDocument, type ContentOperation } from "@prisma/client";
-import { CmsPayloadSchema, CmsDocumentSchema, CmsReceiptSchema, CmsPublicSchema, CmsIdSchema, cmsReadiness, cmsText,
-  type CmsPayload, type CmsLocale, type CmsPublic, type CmsIssue, type AuthoredContent, type AuditRecord } from "@dance/schemas";
+import { CmsPayloadSchema, CmsDocumentSchema, CmsReceiptSchema, CmsPublicSchema, CmsPublicPortalSchema, CmsIdSchema, cmsReadiness, cmsText, eventAgeDate,
+  type CmsPayload, type CmsLocale, type CmsPublic, type CmsPublicPortal, type CmsIssue, type AuthoredContent, type AuditRecord } from "@dance/schemas";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors";
 import type { AuthContext } from "../middleware/auth";
 import { appendAudit } from "./audit";
@@ -141,6 +141,39 @@ export async function projectContent(db: Db, document: ContentDocument, revision
   return CmsPublicSchema.parse({ kind: payload.kind, revisionId: revision.id, publishedAt: (document.publishedAt ?? revision.createdAt).toISOString(), requestedLocale: locale, primaryLocale: payload.primaryLocale,
     identity: edition ? { festivalSlug: edition.festival.slug, editionSlug: edition.slug } : null,
     fields, images, links, facts: facts ? { startsAt: facts.startsAt, endsAt: facts.endsAt, timeZone: facts.timeZone, venue: facts.venue, registrationDeadline: facts.registrationDeadline } : null,
-    policyChanged, action, timetable, profiles, classes, brand: payload.kind === "STUDIO_SITE" ? null : payload.brand.accent,
+    policyChanged, contact: { email: payload.contact.email, phone: payload.contact.phone }, action, timetable, profiles, classes, brand: payload.kind === "STUDIO_SITE" ? null : payload.brand.accent,
     startsOn: payload.kind === "FESTIVAL_EDITION" && !facts ? payload.startsOn : null, endsOn: payload.kind === "FESTIVAL_EDITION" && !facts ? payload.endsOn : null });
+}
+
+// Both HTML and JSON use this transaction and the same live publication checks.
+export async function readPublishedContent(prisma: PrismaClient, kind: CmsPayload["kind"], locale: CmsLocale,
+  identity?: { festivalSlug: string; editionSlug: string }): Promise<CmsPublic | CmsPublicPortal> {
+  return contentTransaction(prisma, db => readPublishedContentTx(db,kind,locale,identity));
+}
+export async function readPublishedVariants(prisma: PrismaClient, kind: CmsPayload["kind"], identity?: { festivalSlug: string; editionSlug: string }): Promise<Record<CmsLocale, CmsPublic | CmsPublicPortal>> {
+  return contentTransaction(prisma, async db => ({ et: await readPublishedContentTx(db,kind,"et",identity), en: await readPublishedContentTx(db,kind,"en",identity), ru: await readPublishedContentTx(db,kind,"ru",identity) }));
+}
+async function readPublishedContentTx(db: Db, kind: CmsPayload["kind"], locale: CmsLocale,
+  identity?: { festivalSlug: string; editionSlug: string }): Promise<CmsPublic | CmsPublicPortal> {
+    const document = await db.contentDocument.findFirst({ where: identity ? { kind: "FESTIVAL_EDITION", edition: { slug: identity.editionSlug, archivedAt: null, festival: { slug: identity.festivalSlug, archivedAt: null } } } : { kind } });
+    if (!document?.publishedRevisionId) throw new NotFoundError("Content");
+    const content = await projectContent(db, document, document.publishedRevisionId, locale);
+    if (document.kind !== "FESTIVAL_PORTAL") return content;
+    const payload = CmsPayloadSchema.parse((await db.contentRevision.findUniqueOrThrow({ where: { id: document.publishedRevisionId } })).payload);
+    if (payload.kind !== "FESTIVAL_PORTAL") throw new NotFoundError("Content");
+    const festivals = await db.festival.findMany({ where: { archivedAt: null, OR: [{ id: { in: payload.festivals.map(row => row.festivalId) } }, { editions: { some: { archivedAt: null, document: { publishedRevisionId: { not: null } } } } }] }, orderBy: { slug: "asc" } });
+    const editions = await db.contentDocument.findMany({ where: { kind: "FESTIVAL_EDITION", publishedRevisionId: { not: null }, edition: { archivedAt: null, festival: { archivedAt: null } } } });
+    const summaries = await Promise.all(editions.map(async row => {
+      const published = await projectContent(db, row, row.publishedRevisionId!, locale);
+      const startsOn = published.facts ? eventAgeDate(published.facts.startsAt, published.facts.timeZone) : published.startsOn;
+      const endsOn = published.facts ? eventAgeDate(published.facts.endsAt, published.facts.timeZone) : published.endsOn;
+      // Manual edition dates are organization-local calendar dates, never browser-local instants.
+      const today = eventAgeDate(new Date().toISOString(), published.facts?.timeZone ?? "Europe/Tallinn");
+      return { festivalSlug: published.identity!.festivalSlug, editionSlug: published.identity!.editionSlug,
+        title: published.fields.find(field => field.path === "title")?.value ?? null, revisionId: published.revisionId,
+        startsOn, endsOn, period: !(endsOn ?? startsOn) ? "undated" : (endsOn ?? startsOn)! < today ? "past" : "upcoming" };
+    }));
+    summaries.sort((a, b) => (b.startsOn ?? "").localeCompare(a.startsOn ?? "") || a.festivalSlug.localeCompare(b.festivalSlug) || a.editionSlug.localeCompare(b.editionSlug));
+    return CmsPublicPortalSchema.parse({ content, festivals: festivals.map(row => ({ slug: row.slug, name: row.name,
+      summary: content.fields.find(field => field.path === `festivals.${row.id}.summary`)?.value ?? null })), editions: summaries });
 }

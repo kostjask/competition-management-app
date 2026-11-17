@@ -11,6 +11,8 @@ function inspect(source, file) {
     if (ts.isJsxText(node)) add('text', node.text);
     if (ts.isJsxAttribute(node) && ['title', 'placeholder', 'alt', 'aria-label'].includes(node.name.text) && node.initializer && ts.isStringLiteral(node.initializer)) add(node.name.text, node.initializer.text);
     if (ts.isJsxExpression(node) && node.expression) {
+      // CSS/state/URL/native-enum attributes are not user-facing prose.
+      if (ts.isJsxAttribute(node.parent) && !['title', 'placeholder', 'alt', 'aria-label'].includes(node.parent.name.text)) return;
       if (ts.isStringLiteral(node.expression)) add('expression', node.expression.text);
       if (ts.isConditionalExpression(node.expression)) for (const value of [node.expression.whenTrue, node.expression.whenFalse]) if (ts.isStringLiteral(value)) add('conditional', value.text);
     }
@@ -18,7 +20,7 @@ function inspect(source, file) {
   }
   visit(tree); return result;
 }
-function scan() { return files(path.join(root, 'apps/web/src')).filter(file => file.endsWith('.tsx')).flatMap(file => inspect(fs.readFileSync(file, 'utf8'), path.relative(root, file).replaceAll('\\', '/'))); }
+function scan() { return ['apps/web/src', 'packages/public-site/src'].flatMap(directory => files(path.join(root,directory))).filter(file => file.endsWith('.tsx')).flatMap(file => inspect(fs.readFileSync(file, 'utf8'), path.relative(root, file).replaceAll('\\', '/'))); }
 function check() {
   const baseline = JSON.parse(fs.readFileSync(path.join(root, 'docs/i18n-hardcoded-baseline.json'), 'utf8'));
   const approved = new Set(baseline.entries.map(entry => JSON.stringify(entry)));

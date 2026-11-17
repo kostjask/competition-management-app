@@ -1,10 +1,12 @@
 # Public studio, festival and shared content screens
 
 Target contracts under [product scope](../PRODUCT_SCOPE.md) and
-[ADR-026](../adr/026-studio-and-festival-platform.md). None of these screens or
-public APIs are implemented. Inherit [UI/recovery](../UI_UX.md),
+[ADR-026](../adr/026-studio-and-festival-platform.md). S20/CMS/public JSON and
+isolated local S18/S19 HTML consumers are implemented; external release and
+cohosted `/app` integration remain open. [Contract](../api/public-pages.md).
+Inherit [UI/recovery](../UI_UX.md),
 [design direction](../DESIGN_SYSTEM.md#required-full-redesign), ET/EN/RU and
-accessibility requirements. Target address/path mapping is not mounted routing.
+accessibility requirements. Target domains are not mounted production routing.
 
 ## S18 — Public studio website
 
@@ -44,7 +46,8 @@ accessibility requirements. Target address/path mapping is not mounted routing.
   rebuilds. Target /app/content/studio, /app/content/festivals and
   /app/content/editions/:editionId under ADR-026. P4-PUBLIC-EDITOR currently mounts
   `/content/studio`, `/content/festivals`, `/content/editions/:editionId`; the
-  coordinated `/app` transition remains a public-consumer prerequisite.
+  coordinated `/app` transition remains a cohosting/release prerequisite; isolated
+  public consumers preserve these current private paths.
 - **Navigation:** Studio website, Festivals and Competition operations as delivered;
   explicit edition selection for festival content, site selection for studio
   content. Public teacher biographies create no account. Other festival users see

@@ -122,12 +122,17 @@ export const CmsPublicSchema = z.strictObject({ kind: CmsKindSchema, revisionId:
   fields: z.array(z.strictObject({ path: z.string(), value: Resolved })), images: z.array(z.strictObject({ path: z.string(), image: PublicImage })),
   links: z.array(z.strictObject({ path: z.string(), title: Resolved, url: CmsHttpsSchema, result: z.strictObject({ editionLabel: Name, date: Day, locale: CmsLocaleSchema }).optional() })),
   facts: CmsFactsSchema.omit({ eventId: true, entrySettings: true }).nullable(), policyChanged: z.boolean(),
+  contact: z.strictObject({ email: z.email().nullable(), phone: z.string().nullable() }),
   action: z.discriminatedUnion("kind", [z.strictObject({ kind: z.literal("contact"), email: z.string().nullable(), phone: z.string().nullable() }), z.strictObject({ kind: z.literal("external"), url: CmsHttpsSchema })]),
   timetable: z.array(z.strictObject({ classId: CmsIdSchema, weekday: z.int(), start: Time, end: Time, timeZone: Zone, location: Name, validFrom: Day.nullable(), validUntil: Day.nullable() })),
   classes: z.array(z.strictObject({ id: CmsIdSchema, teacherIds: z.array(CmsIdSchema) })), profiles: z.array(z.strictObject({ id: CmsIdSchema, name: Name })),
   brand: z.enum(["cobalt", "forest", "brick"]).nullable(), startsOn: Day.nullable(), endsOn: Day.nullable(),
 });
 export type CmsPublic = z.infer<typeof CmsPublicSchema>;
-export const CmsPublicPortalSchema = z.strictObject({ content: CmsPublicSchema, editions: z.array(z.strictObject({ festivalSlug: CmsSlugSchema, editionSlug: CmsSlugSchema, title: Resolved.nullable(), revisionId: CmsIdSchema })) });
+export const CmsPublicPortalSchema = z.strictObject({ content: CmsPublicSchema,
+  festivals: z.array(z.strictObject({ slug: CmsSlugSchema, name: Name, summary: Resolved.nullable() })),
+  editions: z.array(z.strictObject({ festivalSlug: CmsSlugSchema, editionSlug: CmsSlugSchema, title: Resolved.nullable(), revisionId: CmsIdSchema,
+    startsOn: Day.nullable(), endsOn: Day.nullable(), period: z.enum(["upcoming", "past", "undated"]) })) });
+export type CmsPublicPortal = z.infer<typeof CmsPublicPortalSchema>;
 export const CmsPreviewSchema = z.strictObject({ content: CmsPublicSchema, issues: z.array(CmsIssueSchema), policyDigest: CmsPolicyDigestSchema, facts: CmsFactsSchema.nullable() });
 export function cmsText(content: z.infer<typeof AuthoredContentSchema>, locale: CmsLocale) { return resolveAuthoredContent(content, locale); }

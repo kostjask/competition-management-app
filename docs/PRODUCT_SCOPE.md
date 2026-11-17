@@ -81,7 +81,8 @@ admin signup, shared password or automatic privilege from contact details.
 Content management covers ET/EN/RU text, branding/media/documents, draft editing,
 authorized preview and explicit publishing/unpublishing with revision/audit and
 conflict/retry recovery. Reuse ADR-019's authored-language/fallback policy where
-applicable; public URL locale/search metadata still need a concrete decision.
+applicable; ADR-026 and the [public consumer contract](api/public-pages.md) define
+implemented local locale/canonical/hreflang/sitemap behavior.
 Changing drafts must not silently change published pages. Preview must remain
 private and excluded from public caches/indexing. Selectively copy presentation
 to a new edition draft without copying participants, approvals, scores or results.

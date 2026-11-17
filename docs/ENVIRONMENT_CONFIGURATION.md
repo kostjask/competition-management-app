@@ -65,6 +65,18 @@ Application environment files are never rewritten by tests. Cloud storage remain
 unimplemented. See [email dispatch ADR](adr/014-transactional-email-dispatch.md)
 and [staging setup](STAGING.md) for queue key backup/rotation, retries and rollout.
 
+## Opt-in public HTML entries
+
+The ordinary API and Vite defaults are unchanged. Separate local studio/festival
+HTML listeners require `PUBLIC_SURFACE`, `PUBLIC_STUDIO_ORIGIN`,
+`PUBLIC_FESTIVAL_ORIGIN` and `PUBLIC_PORT` explicitly. Origins must be exact,
+distinct HTTPS origins, or HTTP loopback origins for local validation. The
+listener binds loopback and mounts only public reads/rasters/HTML; no private API,
+cookie CORS privilege, SPA or production ingress is added. See
+[public entry configuration](api/public-pages.md#isolated-entry-and-routing).
+Do not replace existing host routes or change WEB_ORIGIN/auth-mail links until
+the complete ADR-026 `/app`/legacy-link transition is validated.
+
 ## Troubleshooting
 
 - Database: start the checked-in Compose service; match its example URL/port.

@@ -383,8 +383,8 @@ deployed-data provenance, hosted CI and unperformed human/browser checks open.
 WEB-STUDIO/WEB-FESTIVAL remain release outcomes. P4-PUBLIC-EDITOR has its own
 CMS contract/API/PostgreSQL/cleanup/browser coverage, independently of public HTML.
 Run `node scripts/test-baseline.cjs --content-only` after building API dependencies
-for the focused disposable database loop; the full baseline also runs both content
-fixtures. `pnpm test:focus api content.test.cjs` and
+for the focused disposable database loop; the full baseline also runs CMS, public
+HTML and content-cleanup fixtures. `pnpm test:focus api content.test.cjs` and
 `pnpm test:focus browser content.spec.ts` cover contracts and S20 recovery/rendering.
 [CMS evidence](CONTENT_EDITOR_VALIDATION.md) owns exact results and limitations.
 The continuation adds reviewed-policy fingerprint/conflict/receipt checks and
@@ -408,8 +408,27 @@ admin operations; public JSON/media have four anonymous read paths. Continue to 
   observability and rollback evidence. Studio launch and Wix replacement have
   independent acceptance; historical documents need no reconstructed score data.
 
-Owning tasks: [website roadmap](roadmap/website.md). Public pages and hosted release
-checks must add their own evidence; existing CMS tests do not prove their delivery.
+The public consumer extension adds 8 `@dance/public-site` Node tests, 4 API public
+entry boundary tests and 34 JavaScript-disabled Chromium cases in
+`public-pages.spec.ts`. The browser matrix covers ET/EN/RU at 320/390/768/1440/1920,
+actual colour contrast, focus/skip navigation, class/teacher/timetable links,
+edition rules/results/handoff, fallback metadata and localized missing/error/retry.
+The existing translation source guard also scans the public renderer; native HTML
+enum/state/CSS attributes are not treated as visible prose.
+`scripts/check-public-pages.cjs` starts isolated public listeners against the
+baseline's verified random database and checks real CMS publication, private/draft/
+cross-festival exclusion, metadata/live sitemap, independent external/contact
+actions, approved raster reads and immediate GET/HEAD withdrawal. The ordinary
+application database and existing private routes are preserved.
+
+Start narrow with `pnpm --filter @dance/public-site test`,
+`pnpm test:focus api public-pages.test.cjs`,
+`pnpm test:focus browser public-pages.spec.ts` and the content-only baseline.
+Build first so the public stylesheet is current. Full workspace/browser/baseline/
+migration checks retain their normal gates. [Public evidence](PUBLIC_SITES_VALIDATION.md)
+records the Windows CRLF-only Prisma format-check limitation separately.
+Owning tasks: [website roadmap](roadmap/website.md). Hosted release and cohosting
+checks remain open; local CMS/public consumer tests prove neither.
 
 ## Documentation-only changes
 

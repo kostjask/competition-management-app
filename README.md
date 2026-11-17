@@ -1,8 +1,8 @@
 # Neposedõ studio and festival platform
 
 One system for a new dance studio website, a replacement festival portal and
-competition operations. The public sites/CMS are planned; festival application,
-organizer/staff and entry foundations are delivered locally, while participant
+competition operations. The CMS and isolated public HTML consumers are delivered
+locally alongside festival application, organizer/staff and entry foundations, while participant
 UI, music, live judging/results and external release gates remain unfinished.
 See [current checkpoint](DEVELOPMENT_PLAN.md).
 
@@ -23,8 +23,14 @@ from scratch; Instagram/Facebook remain social channels. A bounded CMS provides
 draft/preview/publish and reusable edition setup. CRM, student records, attendance,
 tuition billing and multiple organizers are outside current scope.
 [Product scope](docs/PRODUCT_SCOPE.md) and [website roadmap](docs/roadmap/website.md)
-own detail. Next: P4-PUBLIC-MODEL; public launches need not wait for M3/M5.
+own detail. Next: P9-WIX-TRANSITION, starting with the coordinated `/app` and
+legacy identity-link integration before cohosting. Public launches need not wait for M3/M5.
 Keep Wix live until replacement verification and authorized cutover.
+
+The ordinary API/Vite development commands retain their current routes. Separate
+public HTML listeners require explicit local origins/ports and existing published
+CMS content; see [public entry setup](docs/api/public-pages.md#isolated-entry-and-routing).
+This does not deploy or configure the target addresses.
 
 ## Local setup
 

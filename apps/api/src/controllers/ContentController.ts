@@ -1,10 +1,10 @@
 import type { Request, Response } from "express";
 import { randomUUID } from "node:crypto";
 import { CmsCommandSchema, CmsSaveSchema, CmsPublishSchema, CmsFestivalCreateSchema, CmsEditionCreateSchema, CmsLinkSchema, CmsPayloadSchema, CmsIdSchema,
-  CmsPreviewQuerySchema, CmsHistoryQuerySchema, CmsLocaleQuerySchema, CmsSlugSchema, CmsIndexSchema, CmsRevisionSchema, CmsPreviewSchema, CmsInitializeSchema, CmsPublicPortalSchema, emptyCmsPayload } from "@dance/schemas";
+  CmsPreviewQuerySchema, CmsHistoryQuerySchema, CmsLocaleQuerySchema, CmsSlugSchema, CmsIndexSchema, CmsRevisionSchema, CmsPreviewSchema, CmsInitializeSchema, emptyCmsPayload } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ForbiddenError, NotFoundError, ConflictError } from "../errors";
-import { contentAdmin, contentTransaction, contentOperation, contentDigest, documentRow, contentDetail, saveRevision, canonicalFacts, validateContentReferences, projectContent, receipt } from "../services/content";
+import { contentAdmin, contentTransaction, contentOperation, contentDigest, documentRow, contentDetail, saveRevision, canonicalFacts, validateContentReferences, projectContent, receipt, readPublishedContent } from "../services/content";
 import { appendAudit } from "../services/audit";
 
 export class ContentController extends BaseController {
@@ -139,18 +139,6 @@ export class ContentController extends BaseController {
     const { locale } = CmsLocaleQuerySchema.parse(req.query);
     const slug = req.params.festivalSlug === undefined ? undefined : CmsSlugSchema.parse(req.params.festivalSlug);
     const editionSlug = req.params.editionSlug === undefined ? undefined : CmsSlugSchema.parse(req.params.editionSlug);
-    res.json(await contentTransaction(this.prisma, async db => {
-      const document = await db.contentDocument.findFirst({ where: slug && editionSlug ? { kind: "FESTIVAL_EDITION", edition: { slug: editionSlug, archivedAt: null, festival: { slug, archivedAt: null } } }
-        : { kind } });
-      if (!document?.publishedRevisionId) throw new NotFoundError("Content");
-      const content = await projectContent(db, document, document.publishedRevisionId, locale);
-      if (document.kind !== "FESTIVAL_PORTAL") return content;
-      const editions = await db.contentDocument.findMany({ where: { kind: "FESTIVAL_EDITION", publishedRevisionId: { not: null }, edition: { archivedAt: null, festival: { archivedAt: null } } } });
-      return CmsPublicPortalSchema.parse({ content, editions: await Promise.all(editions.map(async row => {
-        const { edition } = await canonicalFacts(db, row);
-        const published = await projectContent(db, row, row.publishedRevisionId!, locale);
-        return { festivalSlug: edition!.festival.slug, editionSlug: edition!.slug, title: published.fields.find(field => field.path === "title")?.value ?? null, revisionId: published.revisionId };
-      })) });
-    }));
+    res.json(await readPublishedContent(this.prisma, kind, locale, slug && editionSlug ? { festivalSlug: slug, editionSlug } : undefined));
   }
 }

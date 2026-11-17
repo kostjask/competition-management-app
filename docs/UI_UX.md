@@ -155,11 +155,13 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
-| S18 | P studio host `/et`, `/en`, `/ru` and content suffixes | P4-STUDIO-PAGES; mapping defined in ADR-026, not mounted |
-| S19 | P festival host `/` and edition/archive pages | P4-PUBLIC-PAGES; existing private `/events` routes remain protected |
+| S18 | I isolated studio public entry `/et`, `/en`, `/ru` and content suffixes; P target host | P4-STUDIO-PAGES local consumer; host/release remains gated |
+| S19 | I isolated festival public entry `/` and edition/archive pages; P target host | P4-PUBLIC-PAGES local consumer; existing private `/events` routes remain protected; cohosting requires `/app` transition |
 | S20 | P `/app/content/studio`, `/app/content/festivals`, `/app/content/editions/:editionId` | P4-PUBLIC-EDITOR; ADR-026 mapping and S20 state contract, no mounted /app base |
 
-Route facts above are checked against src/routes/index.tsx; proposed paths remain
+Private route facts above are checked against src/routes/index.tsx; isolated
+public routes use packages/public-site/src/routes.ts and the API public entry.
+Proposed host/cohosting paths remain
 subject to their owning task. Event create/edit have route-level admin guards;
 backend writes independently require global admin. Preserve deliberate not-found
 and translated denied recovery as nested screens arrive.
