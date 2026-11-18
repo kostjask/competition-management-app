@@ -19,6 +19,6 @@ test("review commands, draft continuation and history strictly reject authority 
   assert.equal(UpdateStudioBodySchema.safeParse({ expectedRevision: 2 }).success, false);
   assert.equal(NewStudioRegistrationBodySchema.safeParse({ name: "Studio", onboardingRevision: 0 }).success, false);
   assert.equal(ApplicationReviewSchema.safeParse({ history: [], notifications: [], recipientEmail: "private@example.invalid" }).success, false);
-  for (const path of ["/applications", "/events/e/register", "/events/e/studio", "/events/e/studio?studio=s", "/admin/events/e/applications"]) assert.equal(safeReturnPath(path), path);
-  for (const path of ["//evil.example", "/applications?redirect=https://evil.example", "/events/e/register/other"]) assert.equal(safeReturnPath(path), "/");
+  for (const path of ["/applications", "/events/e/register", "/events/e/studio", "/events/e/studio?studio=s", "/admin/events/e/applications"]) assert.equal(safeReturnPath(path), "/app" + path);
+  for (const path of ["//evil.example", "/applications?redirect=https://evil.example", "/events/e/register/other"]) assert.equal(safeReturnPath(path), "/app");
 });

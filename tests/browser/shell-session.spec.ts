@@ -18,7 +18,7 @@ for (const locale of ["et","en","ru"] as const) for (const width of [320,390,768
       return route.fulfill({json:path.endsWith("/auth/profile") ? user : []});
     });
     const text = (key: "Shell.profile" | "Shell.account" | "Shell.judge" | "Shell.moderator" | "Shell.notFound" | "Shell.noRoles" | "Shell.events" | "Shell.skip" | "Access.denied") => getTranslation(key,locale);
-    await page.goto("/auth/profile");
+    await page.goto("/app/auth/profile");
     await expect(page.getByRole("heading",{name:text("Shell.profile")})).toBeFocused();
     await expect(page.locator("html")).toHaveAttribute("lang",locale); await expect(page).toHaveTitle(new RegExp(text("Shell.profile")));
     await expect(page.locator("main").getByText(text("Shell.judge"),{exact:true})).toBeVisible();
@@ -32,10 +32,10 @@ for (const locale of ["et","en","ru"] as const) for (const width of [320,390,768
     await page.getByRole("link",{name:text("Shell.events"),exact:true}).click();
     await expect(page.getByRole("heading",{name:getTranslation("Events.listTitle",locale),exact:true})).toBeVisible();
     await expect(page.getByText(getTranslation("Events.createFirstEvent",locale),{exact:true})).toHaveCount(0);
-    await page.goto("/events/new"); await expect(page.getByRole("heading",{name:text("Access.denied")})).toBeVisible();
-    await page.goto("/not-a-page"); await expect(page.getByRole("heading",{name:text("Shell.notFound")})).toBeFocused();
+    await page.goto("/app/events/new"); await expect(page.getByRole("heading",{name:text("Access.denied")})).toBeVisible();
+    await page.goto("/app/not-a-page"); await expect(page.getByRole("heading",{name:text("Shell.notFound")})).toBeFocused();
     await page.getByRole("link",{name:text("Shell.skip"),exact:true}).focus(); await page.keyboard.press("Enter"); await expect(page.locator("main")).toBeFocused();
-    user = {...user,roles:[],permissions:[]}; await page.goto("/"); await expect(page.getByText(text("Shell.noRoles"),{exact:true})).toBeVisible();
+    user = {...user,roles:[],permissions:[]}; await page.goto("/app"); await expect(page.getByText(text("Shell.noRoles"),{exact:true})).toBeVisible();
     await expect(page.getByRole("link",{name:text("Shell.judge"),exact:true})).toHaveCount(0);
   });
 }
@@ -53,7 +53,7 @@ for (const locale of ["et","en","ru"] as const) {
       if (!valid) { failures++; return route.fulfill({status:401,json:denial}); }
       return route.fulfill({json:user});
     });
-    await page.goto("/__fixtures/access/a");
+    await page.goto("/app/__fixtures/access/a");
     const field = page.getByLabel(getTranslation("Shell.name",locale),{exact:true}); await field.fill("Unsaved synthetic work");
     valid = false; await page.getByRole("button",{name:getTranslation("Access.allowed",locale),exact:true}).click();
     const dialog = page.getByRole("dialog"); await expect(dialog).toBeVisible();
@@ -75,12 +75,12 @@ test("guest events explain sign-in and unsafe return paths fall back to home", a
     if (unavailable) return route.fulfill({status:503,json:{...denial,reason:"unexpected"}});
     return route.fulfill(authenticated ? {json:user} : {status:401,json:denial});
   });
-  await page.goto("/events/a"); await expect(page.getByRole("heading",{name:getTranslation("Shell.unavailable","en")})).toBeVisible();
+  await page.goto("/app/events/a"); await expect(page.getByRole("heading",{name:getTranslation("Shell.unavailable","en")})).toBeVisible();
   unavailable=false; await page.locator("main").getByRole("button",{name:"Try again",exact:true}).click();
   await expect(page.getByRole("heading",{name:getTranslation("Shell.signInRequired","en")})).toBeVisible();
-  await page.goto("/auth/login?returnTo="+encodeURIComponent("https://foreign.invalid/?token=PRIVATE"));
+  await page.goto("/app/auth/login?returnTo="+encodeURIComponent("https://foreign.invalid/?token=PRIVATE"));
   await page.getByLabel("Email",{exact:true}).fill(user.email); await page.getByLabel("Password",{exact:true}).fill("password123");
-  await page.getByRole("button",{name:"Sign in",exact:true}).click(); await expect(page).toHaveURL("/");
+  await page.getByRole("button",{name:"Sign in",exact:true}).click(); await expect(page).toHaveURL("/app");
 });
 test("verification strips secrets and continues explicitly with safe cross-tab fallback", async ({page,context}) => {
   let authenticated = false; let verifications=0; const user=profile();
@@ -93,16 +93,16 @@ test("verification strips secrets and continues explicitly with safe cross-tab f
     if (route.request().url().endsWith("/verify-email")) { authenticated=true; verifications++; return route.fulfill({json:{session:"cookie",expiresAt:"2026-11-05T23:00:00.000Z",user:{id:user.id,email:user.email,name:user.name},message:"verified",messageId:"emailVerified"}}); }
     return route.fulfill(authenticated?{json:user}:{status:401,json:denial});
   });
-  const other = await context.newPage(); await other.goto("/");
+  const other = await context.newPage(); await other.goto("/app");
   await expect(other.getByRole("link",{name:"Sign in",exact:true})).toBeVisible();
   waiting = true;
-  await page.goto("/verify-email?token=synthetic-private-link&returnTo="+encodeURIComponent("//foreign.invalid"));
-  await expect(page).toHaveURL("/verify-email"); expect(verifications).toBe(0);
+  await page.goto("/app/verify-email?token=synthetic-private-link&returnTo="+encodeURIComponent("//foreign.invalid"));
+  await expect(page).toHaveURL("/app/verify-email"); expect(verifications).toBe(0);
   await expect(page.getByRole("button",{name:"Verify email",exact:true})).toBeDisabled();
   waiting = false; release(); await expect(page.getByRole("button",{name:"Verify email",exact:true})).toBeEnabled();
   await page.getByRole("button",{name:"Verify email",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Email verified"})).toBeVisible();
-  await page.getByRole("link",{name:"Continue",exact:true}).click(); await expect(page).toHaveURL("/"); expect(verifications).toBe(1);
+  await page.getByRole("link",{name:"Continue",exact:true}).click(); await expect(page).toHaveURL("/app"); expect(verifications).toBe(1);
   await expect(other.getByRole("button",{name:"Account",exact:true})).toBeVisible(); await other.close();
 });
 
@@ -111,9 +111,9 @@ test("event context links to the delivered application and keeps missing/denied 
   await page.addInitScript(() => localStorage.setItem("app-language","en"));
   const event = { id:"a",name:"Synthetic selected event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,unclassifiedDescription:null,organizerEmail:null,organizerPhone:null,revision:1,maxStudios:null,maxPerformances:null,imageUrl:null };
   await page.route("**/api/v1/**", route => route.fulfill(route.request().url().endsWith("/auth/profile") ? {json:user} : status === 200 ? {json:event} : {status,json:{...denial,reason:status===404?"recordNotFound":"permissionDenied"}}));
-  await page.goto("/events/a"); await expect(page.getByRole("heading",{name:event.name,exact:true})).toBeFocused();
+  await page.goto("/app/events/a"); await expect(page.getByRole("heading",{name:event.name,exact:true})).toBeFocused();
   await expect(page.getByText("Selected event: "+event.name,{exact:true})).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open application", exact: true })).toHaveAttribute("href", "/events/a/register");
+  await expect(page.getByRole("link", { name: "Open application", exact: true })).toHaveAttribute("href", "/app/events/a/register");
   status=404; await page.reload(); await expect(page.getByRole("heading",{name:"Page not found",exact:true})).toBeVisible();
   status=403; await page.reload(); await expect(page.getByRole("heading",{name:"Access denied",exact:true})).toBeVisible();
 });
@@ -124,13 +124,13 @@ test("logout notifies a second tab and does not claim success while offline", as
     if (route.request().url().endsWith("/auth/logout")) { if (offline) return route.abort(); valid=false; return route.fulfill({status:204}); }
     return route.fulfill(valid?{json:user}:{status:401,json:denial});
   });
-  await page.goto("/auth/profile"); const other=await context.newPage(); await other.goto("/auth/profile");
+  await page.goto("/app/auth/profile"); const other=await context.newPage(); await other.goto("/app/auth/profile");
   await expect(other.getByRole("heading",{name:"My profile",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Account",exact:true}).click();
   page.once("dialog",dialog=>dialog.accept()); await page.getByRole("button",{name:"Sign out on all devices",exact:true}).click();
-  await expect(page.getByRole("alert")).toBeVisible(); await expect(page).toHaveURL("/auth/profile");
+  await expect(page.getByRole("alert")).toBeVisible(); await expect(page).toHaveURL("/app/auth/profile");
   offline=false; page.once("dialog",dialog=>dialog.accept()); await page.getByRole("button",{name:"Sign out on all devices",exact:true}).click();
-  await expect(page).toHaveURL("/auth/login"); await expect(other.getByRole("dialog")).toBeVisible();
+  await expect(page).toHaveURL("/app/auth/login"); await expect(other.getByRole("dialog")).toBeVisible();
   await other.close();
 });
 test("login retains input through locale changes and follows a safe event return", async ({page}) => {
@@ -141,12 +141,12 @@ test("login retains input through locale changes and follows a safe event return
     if (route.request().url().endsWith("/events")) return route.fulfill({json:[]});
     return route.fulfill(valid?{json:user}:{status:401,json:denial});
   });
-  await page.goto("/auth/login?returnTo="+encodeURIComponent("/events"));
+  await page.goto("/app/auth/login?returnTo="+encodeURIComponent("/events"));
   await page.getByLabel("Email",{exact:true}).fill(user.email); await page.getByLabel("Password",{exact:true}).fill("password123");
   await page.getByRole("button",{name:"Eesti",exact:true}).click();
   await expect(page.getByLabel(getTranslation("Shell.email","et"),{exact:true})).toHaveValue(user.email);
   await expect(page.getByLabel(getTranslation("Shell.password","et"),{exact:true})).toHaveValue("password123");
-  await page.getByRole("button",{name:getTranslation("Shell.login","et"),exact:true}).click(); await expect(page).toHaveURL("/events");
+  await page.getByRole("button",{name:getTranslation("Shell.login","et"),exact:true}).click(); await expect(page).toHaveURL("/app/events");
 });
 test("UTC event editing preserves browser-zone boundaries and posted instants", async ({browser}) => {
   const context=await browser.newContext({timezoneId:"Pacific/Honolulu"}); const page=await context.newPage();
@@ -157,7 +157,7 @@ test("UTC event editing preserves browser-zone boundaries and posted instants", 
     if (route.request().method()==="POST") { posted=route.request().postDataJSON(); return route.fulfill({status:400,json:{...denial,reason:"invalidInput"}}); }
     return route.fulfill({json:route.request().url().endsWith("/auth/profile")?user:[]});
   });
-  await page.goto("/events/new"); await expect(page.locator("#event-startsAt")).toHaveValue("2026-11-05T10:00");
+  await page.goto("/app/events/new"); await expect(page.locator("#event-startsAt")).toHaveValue("2026-11-05T10:00");
   await page.locator("#event-name").fill("Synthetic UTC event");
   await page.locator("#event-timeZone").fill("UTC");
   await page.locator("#event-cutoff").selectOption("none");

@@ -8,6 +8,7 @@ export const DancerBirthDateSchema = z.iso.date().refine(value => !value.startsW
 });
 
 export const DancerSchema = z.strictObject({
+  revision: z.int().positive(),
   id: IdSchema,
   firstName: z.string(),
   lastName: z.string(),
@@ -18,13 +19,15 @@ export const DancerSchema = z.strictObject({
 export const DancersSchema = z.array(DancerSchema);
 
 export const CreateDancerBodySchema = z.strictObject({
-  firstName: z.string().trim().min(1, "First name is required"),
-  lastName: z.string().trim().min(1, "Last name is required"),
+  operationId: z.uuid(),
+  firstName: z.string().trim().min(1, "First name is required").max(200),
+  lastName: z.string().trim().min(1, "Last name is required").max(200),
   birthDate: DancerBirthDateSchema,
 });
 
-export const UpdateDancerBodySchema = CreateDancerBodySchema.partial().refine(
-  (body) => Object.values(body).some((value) => value !== undefined),
+export const DancerArchiveBodySchema = z.strictObject({ operationId: z.uuid(), expectedRevision: z.int().positive() });
+export const UpdateDancerBodySchema = CreateDancerBodySchema.omit({ operationId: true }).partial().extend(DancerArchiveBodySchema.shape).refine(
+  (body) => [body.firstName, body.lastName, body.birthDate].some((value) => value !== undefined),
   { message: "At least one dancer field is required", params: { reason: "nonemptyPatch" } },
 );
 

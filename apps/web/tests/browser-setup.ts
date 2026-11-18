@@ -10,6 +10,13 @@ export default async function setup() {
     mode: "development",
     // Keep synthetic browser tests independent of ignored local API settings.
     define: { "import.meta.env.VITE_API_URL": JSON.stringify("/api/v1") },
+    plugins: [{ name: "synthetic-api-fallback", configureServer(vite) {
+      // Page-level mocks own API behavior; never fall through to an ambient dev API.
+      vite.middlewares.use("/api/v1", (_req, res) => {
+        res.statusCode = 401; res.setHeader("Content-Type", "application/json");
+        res.end(JSON.stringify({ code: "UNAUTHORIZED", reason: "authenticationRequired", params: {}, issues: [] }));
+      });
+    } }],
     server: { host: "127.0.0.1", port: 4177, strictPort: true },
   });
   try { await server.listen(); }

@@ -10,6 +10,8 @@ export function resolveLocale(saved: unknown, browserLanguages: readonly string[
   return DEFAULT_LOCALE;
 }
 export function initialLocale(): Locale {
+  const linked = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("lang");
+  if (isLocale(linked)) return linked;
   let saved: unknown;
   try { saved = globalThis.localStorage?.getItem(STORAGE_KEY); } catch { /* Storage can be unavailable. */ }
   return resolveLocale(saved, typeof navigator === "undefined" ? [] : navigator.languages);

@@ -1,6 +1,7 @@
+import { identityLinkToken } from "./linkToken";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { AcceptInvitationSchema, safeReturnPath, type InvitationPreviewSchema } from "@dance/schemas";
+import { AcceptInvitationSchema, routerReturnPath, type InvitationPreviewSchema } from "@dance/schemas";
 import type { z } from "zod";
 import { getInvitation, acceptInvitation } from "../api/invitations";
 import { useAuth } from "./useAuth";
@@ -13,9 +14,9 @@ import { formatInstant } from "../i18n/format";
 import { toUiError, type UiError } from "../api/error";
 import { Alert, Button, ErrorSummary, LoadingState } from "../components/ui/Foundation";
 export function InvitationPage(){
-  const [params]=useSearchParams();const [token]=useState(()=>params.get("token"));const {user,loading,error:sessionError,refreshUser}=useAuth();const {t,locale}=useTranslation();
+  const [params]=useSearchParams();const [token]=useState(()=>identityLinkToken() ?? params.get("token"));const {user,loading,error:sessionError,refreshUser}=useAuth();const {t,locale}=useTranslation();
   const [preview,setPreview]=useState<z.infer<typeof InvitationPreviewSchema>|null>(null);const [attempt,setAttempt]=useState(0);const [name,setName]=useState("");const [password,setPassword]=useState("");const [busy,setBusy]=useState(false);const [accepted,setAccepted]=useState(false);const [error,setError]=useState<UiError|null>(null);
-  useEffect(()=>{if(token)window.history.replaceState(null,"",window.location.pathname);},[token]);
+  useEffect(()=>{if(token)window.history.replaceState(window.history.state,"",window.location.pathname);},[token]);
   useEffect(()=>{let active=true;if(token)void getInvitation(token).then(value=>{if(active){setPreview(value);setError(null);}}).catch((err:unknown)=>{if(active)setError(toUiError(err));});return()=>{active=false;};},[token,attempt]);
   const intended=!!user&&user.email===preview?.email;
   const accept=()=>{if(!token)return;const parsed=AcceptInvitationSchema.safeParse(preview?.accountExists||user?{token}:{token,name,password});if(!parsed.success){setError(toUiError(parsed.error));return;}setBusy(true);setError(null);void acceptInvitation(parsed.data).then(async()=>{setAccepted(true);setPassword("");await refreshUser();}).catch((err:unknown)=>setError(toUiError(err))).finally(()=>setBusy(false));};
@@ -31,6 +32,6 @@ export function InvitationPage(){
       </form>}
     </>}
     {error&&token&&<Button variant="quiet" onClick={()=>setAttempt(value=>value+1)}>{t("Shell.retry")}</Button>}
-    {accepted&&<Link className="ui-button ui-button-primary mt-4" to={safeReturnPath(preview?.event?"/events/"+preview.event.id:"/")}>{t("Shell.continue")}</Link>}
+    {accepted&&<Link className="ui-button ui-button-primary mt-4" to={routerReturnPath(preview?.event?"/events/"+preview.event.id:"/")}>{t("Shell.continue")}</Link>}
   </section>;
 }

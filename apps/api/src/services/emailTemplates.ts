@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EmailSchema, RecipientLocaleSchema } from "@dance/schemas";
+import { EmailSchema, RecipientLocaleSchema, workspaceLink } from "@dance/schemas";
 
 export const EmailContentSchema = z.strictObject({
   to: EmailSchema, locale: RecipientLocaleSchema,
@@ -46,7 +46,7 @@ export function renderEmail(input: EmailContent, origin: string) {
   const data = EmailContentSchema.parse(input);
   const language = copy[data.locale]; const [subject, body] = language[data.kind];
   const paths = { verification: "/verify-email", invitation: "/auth/accept-invitation", recovery: "/auth/reset-password", applicationApproved: "/applications", applicationRejected: "/applications", reviewChanged: "/applications" };
-  const link = new URL(paths[data.kind], origin);
+  const link = new URL(workspaceLink(paths[data.kind]), origin);
   link.searchParams.set("lang", data.locale);
   if (["verification", "invitation", "recovery"].includes(data.kind)) {
     if (!data.token) throw new Error("Email link is required");

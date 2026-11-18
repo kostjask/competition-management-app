@@ -7,6 +7,6 @@ export function ErrorFeedback({ error, fields = {} }: { error: UiError | null; f
   return <div role="alert"><p>{formatError(error, locale)}</p>{error.issues.length > 0 && <ul>{error.issues.map((issue, index) => {
     const field = issue.path.join(".");
     const target = Object.hasOwn(fields, field) ? fields[field] : undefined;
-    return <li key={index}>{target ? <a className="underline" href={"#" + target} onClick={() => document.getElementById(target)?.focus()}>{formatIssue(issue, locale)}</a> : formatIssue(issue, locale)}</li>;
+    return <li key={index}>{target ? <a className="underline" href={"#" + target} onClick={event => { event.preventDefault(); document.getElementById(target)?.focus(); }}>{formatIssue(issue, locale)}</a> : formatIssue(issue, locale)}</li>;
   })}</ul>}</div>;
 }

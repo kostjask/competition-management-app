@@ -437,7 +437,7 @@ test('retired studio registration paths no longer execute handlers', async (t) =
 
 const dancerPath = '/api/v1/studios/s/dancers';
 const dancerInput = { firstName: ' First ', lastName: ' Last ', birthDate: '2012-02-29' };
-const dancerRecord = () => ({
+const dancerRecord = () => ({ revision: 1,
   id: 'd', studioId: 's', firstName: 'First', lastName: 'Last',
   birthDate: new Date('2012-02-29T00:00:00.000Z'), photoUrl: null,
 });
@@ -458,16 +458,17 @@ async function dancerFixture(t) {
   prisma.dancer.findFirst = async ({ where }) => where.studioId === 's' && where.id === 'd' ? dancerRecord() : null;
   prisma.dancer.findMany = async (args) => { calls.push({ name: 'dancer-list', args }); return [dancerRecord()]; };
   prisma.dancer.create = async (args) => { calls.push({ name: 'dancer-create', args }); return { ...dancerRecord(), ...args.data }; };
-  prisma.dancer.update = async (args) => { calls.push({ name: 'dancer-update', args }); return { ...dancerRecord(), ...args.data }; };
+  prisma.dancerOperation = { findUnique: async () => null, create: async ({ data }) => data };
+  prisma.dancer.update = async (args) => { calls.push({ name: args.data.deletedAt ? 'dancer-delete' : 'dancer-update', args }); const { deletedAt, deletedBy, revision, ...fields } = args.data; return { ...dancerRecord(), ...fields, revision: 2 }; };
   prisma.dancer.updateMany = async (args) => { calls.push({ name: 'dancer-delete', args }); return { count: args.where.studioId === 's' ? 1 : 0 }; };
-  return context;
+  return { ...context, rawRequest: context.request, request: (path, options = {}) => context.request(path, { ...options, ...(['POST','PATCH','DELETE'].includes(options.method) && { body: { operationId: require('node:crypto').randomUUID(), ...(options.method !== 'POST' && { expectedRevision: 1 }), ...options.body } }) }) };
 }
 
 test('dancer CRUD accepts event-scoped permission and returns calendar-only DTOs', async (t) => {
   const { request, calls } = await dancerFixture(t);
   const created = await request(dancerPath, { user: 'owner', method: 'POST', body: dancerInput });
   assert.equal(created.status, 201);
-  assert.deepEqual(created.body, { id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: '2012-02-29', photoUrl: null });
+  assert.deepEqual(created.body, { revision: 1, id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: '2012-02-29', photoUrl: null });
   assert.equal(calls.find(({ name }) => name === 'dancer-create').args.data.birthDate.toISOString(), '2012-02-29T00:00:00.000Z');
   assert.equal((await request(`${dancerPath}/d`, { user: 'owner' })).status, 200);
   const updated = await request(`${dancerPath}/d`, { user: 'owner', method: 'PATCH', body: { firstName: ' Changed ' } });
@@ -547,7 +548,7 @@ test('dancer delete records the actor; missing active studios and dancers are in
   const { request, prisma, calls } = await dancerFixture(t);
   assert.equal((await request(`${dancerPath}/d`, { user: 'owner', method: 'DELETE' })).status, 204);
   const args = calls.find(({ name }) => name === 'dancer-delete').args;
-  assert.deepEqual(args.where, { id: 'd', studioId: 's', deletedAt: null });
+  assert.deepEqual(args.where, { id: 'd', studioId: 's', deletedAt: null, revision: 1 });
   assert.equal(args.data.deletedBy, 'owner');
   assert.ok(args.data.deletedAt instanceof Date);
   prisma.dancer.findFirst = async () => null;
@@ -571,7 +572,7 @@ const performanceInput = { studioId: 's', title: ' Title ', durationSec: 60, ord
 async function performanceFixture(t) {
   const f = await fixture(t);
   const { prisma, calls } = f;
-  const dancer = { id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: new Date('2012-02-29'), photoUrl: null };
+  const dancer = { revision: 1, id: 'd', studioId: 's', firstName: 'First', lastName: 'Last', birthDate: new Date('2012-02-29'), photoUrl: null };
   const performance = { revision: 1, id: 'p', eventId: 'e', studioId: 's', registrationId: 'registration', title: 'Title', durationSec: 60, orderOnStage: 1,
     categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [{ dancerId: 'd', dancer }] };
   const studio = { approvalStatus: 'APPROVED', event: { stage: 'REGISTRATION_OPEN' },

@@ -1,15 +1,19 @@
+import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 import type { Prisma } from "@prisma/client";
 import {
   CreateDancerBodySchema, UpdateDancerBodySchema, DancerSchema,
-  DancerCollectionParamsSchema, DancerItemParamsSchema,
+  DancerCollectionParamsSchema, DancerItemParamsSchema, DancerArchiveBodySchema, type Dancer,
 } from "@dance/schemas";
 import { BaseController } from "./BaseController";
-import { ForbiddenError, InternalServerError, NotFoundError } from "../errors";
+import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } from "../errors";
 import { isActionAllowed } from "../utils/stageChecks";
 import { guardEntryWrite, markEntryChanged, entrySettings, entryTransaction } from "../services/entryWorkflow";
 
+import { appendAudit } from "../services/audit";
+
 const dancerSelect = {
+  revision: true,
   id: true, studioId: true, firstName: true, lastName: true, birthDate: true, photoUrl: true,
 } satisfies Prisma.DancerSelect;
 type DancerRecord = Prisma.DancerGetPayload<{ select: typeof dancerSelect }>;
@@ -69,59 +73,67 @@ export class DancersController extends BaseController {
     res.json(serialize(dancer));
   }
 
+
+  private async mutate(req: Request, studioId: string, dancerId: string | null,
+    action: "CREATE" | "UPDATE" | "ARCHIVE", body: { operationId: string; expectedRevision?: number },
+    work: (tx: Prisma.TransactionClient) => Promise<DancerRecord>): Promise<Dancer> {
+    const actorId = this.getUserId(req);
+    const digest = createHash("sha256").update(JSON.stringify({ studioId, dancerId, action, body })).digest("hex");
+    return entryTransaction(this.prisma, async tx => {
+      const eventId = await this.requireAccess(req, tx, studioId);
+      const previous = await tx.dancerOperation.findUnique({ where: { operationId: body.operationId } });
+      if (previous) {
+        if (previous.actorId !== actorId || previous.studioId !== studioId || previous.action !== action || previous.digest !== digest) {
+          throw new ConflictError("Operation has different content", undefined, "concurrentChange");
+        }
+        return DancerSchema.parse(previous.response);
+      }
+      await this.requireAccess(req, tx, studioId, true);
+      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
+      if (dancerId) {
+        const current = await tx.dancer.findFirst({ where: { id: dancerId, studioId, deletedAt: null }, select: dancerSelect });
+        if (!current) throw new NotFoundError("Dancer", dancerId);
+        if (current.revision !== body.expectedRevision) throw new ConflictError("Dancer changed; compare before saving", undefined, "concurrentChange");
+      }
+      const dancer = serialize(await work(tx));
+      await tx.dancerOperation.create({ data: { operationId: body.operationId, studioId, dancerId: dancer.id, actorId,
+        action, digest, revision: dancer.revision, response: dancer } });
+      await appendAudit(tx, { action: action === "CREATE" ? "DANCER_CREATED" : action === "UPDATE" ? "DANCER_UPDATED" : "DANCER_ARCHIVED",
+        actor: { kind: "USER", userId: actorId }, targetType: "DANCER", targetId: dancer.id, eventId, studioId,
+        metadata: { operationId: body.operationId, revision: dancer.revision } });
+      await markEntryChanged(tx, eventId, studioId, ["roster"]);
+      return dancer;
+    });
+  }
+
   async create(req: Request, res: Response): Promise<void> {
     const { studioId } = DancerCollectionParamsSchema.parse(req.params);
     const body = CreateDancerBodySchema.parse(req.body);
-    const result = await entryTransaction(this.prisma, async (tx) => {
-      const eventId = await this.requireAccess(req, tx, studioId, true);
-      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
-      const dancer = await tx.dancer.create({
-        data: { studioId, firstName: body.firstName, lastName: body.lastName,
-          birthDate: new Date(`${body.birthDate}T00:00:00.000Z`) },
-        select: dancerSelect,
-      });
-      await markEntryChanged(tx, eventId, studioId, ["roster"]);
-      return serialize(dancer);
-    });
+    const result = await this.mutate(req, studioId, null, "CREATE", body, tx => tx.dancer.create({
+      data: { studioId, firstName: body.firstName, lastName: body.lastName, birthDate: new Date(body.birthDate + "T00:00:00.000Z") }, select: dancerSelect,
+    }));
     res.status(201).json(result);
   }
 
   async update(req: Request, res: Response): Promise<void> {
     const { studioId, dancerId } = DancerItemParamsSchema.parse(req.params);
     const body = UpdateDancerBodySchema.parse(req.body);
-    const result = await entryTransaction(this.prisma, async (tx) => {
-      const eventId = await this.requireAccess(req, tx, studioId, true);
-      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
-      const where = { id: dancerId, studioId, deletedAt: null };
-      const dancer = await tx.dancer.findFirst({ where, select: { id: true } });
-      if (!dancer) throw new NotFoundError("Dancer", dancerId);
-      const updated = await tx.dancer.update({
-        where,
-        data: {
-          ...(body.firstName !== undefined && { firstName: body.firstName }),
-          ...(body.lastName !== undefined && { lastName: body.lastName }),
-          ...(body.birthDate !== undefined && { birthDate: new Date(`${body.birthDate}T00:00:00.000Z`) }),
-        }, select: dancerSelect,
-      });
-      await markEntryChanged(tx, eventId, studioId, ["roster"]);
-      return serialize(updated);
-    });
+    const result = await this.mutate(req, studioId, dancerId, "UPDATE", body, tx => tx.dancer.update({
+      where: { id: dancerId, studioId, deletedAt: null, revision: body.expectedRevision },
+      data: { revision: { increment: 1 }, ...(body.firstName !== undefined && { firstName: body.firstName }),
+        ...(body.lastName !== undefined && { lastName: body.lastName }),
+        ...(body.birthDate !== undefined && { birthDate: new Date(body.birthDate + "T00:00:00.000Z") }) }, select: dancerSelect,
+    }));
     res.json(result);
   }
 
   async delete(req: Request, res: Response): Promise<void> {
     const { studioId, dancerId } = DancerItemParamsSchema.parse(req.params);
-    const userId = this.getUserId(req);
-    await entryTransaction(this.prisma, async (tx) => {
-      const eventId = await this.requireAccess(req, tx, studioId, true);
-      await guardEntryWrite(tx, eventId, studioId, ["roster"], this.isAdmin(req));
-      const result = await tx.dancer.updateMany({
-        where: { id: dancerId, studioId, deletedAt: null },
-        data: { deletedAt: new Date(), deletedBy: userId },
-      });
-      if (result.count !== 1) throw new NotFoundError("Dancer", dancerId);
-      await markEntryChanged(tx, eventId, studioId, ["roster"]);
-    });
+    const body = DancerArchiveBodySchema.parse(req.body);
+    await this.mutate(req, studioId, dancerId, "ARCHIVE", body, tx => tx.dancer.update({
+      where: { id: dancerId, studioId, deletedAt: null, revision: body.expectedRevision },
+      data: { revision: { increment: 1 }, deletedAt: new Date(), deletedBy: this.getUserId(req) }, select: dancerSelect,
+    }));
     res.status(204).send();
   }
 }

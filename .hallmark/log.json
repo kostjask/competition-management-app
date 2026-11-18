@@ -1,5 +1,39 @@
 [
  {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
+   "studio roster",
+   "calendar-date form",
+   "unscheduled draft",
+   "searchable native selection",
+   "immutable acknowledgement",
+   "explicit comparison"
+  ],
+  "hero": "none",
+  "nav": "existing shared shell",
+  "footer": "none",
+  "imagery": "actual operational data",
+  "photos": [],
+  "entry": "apps/web/src/pages/entries/entries.css",
+  "fingerprint": "scoped studio roster and saved participant draft",
+  "sections": [
+   "roster",
+   "calendar-date editor",
+   "draft details",
+   "participant selection",
+   "recovery"
+  ],
+  "signature": "studio roster and unscheduled entry ledger",
+  "waived": [],
+  "prompt": "P5-ENTRIES/S09/S10 with local /app transition, locked Cobalt, ET/EN/RU and accessibility",
+  "sweep": "0 FAIL 0 REFLEX 0 WARN; Hallmark render unavailable without puppeteer-core; Playwright captures; in-thread 4 findings resolved, confirmation clear",
+  "date": "2026-11-18",
+  "mode": "build"
+ },
+ {
   "scope": "page",
   "shape": "content index",
   "theme": "cobalt",

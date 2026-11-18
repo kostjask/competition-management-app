@@ -6,7 +6,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await page.setViewportSize({ width, height: 900 });
     await page.addInitScript(value => localStorage.setItem("app-language", value), locale);
     const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
-    await page.goto("/__fixtures/foundation");
+    await page.goto("/app/__fixtures/foundation");
     const text = fixtureCopy[locale];
     await expect(page.getByRole("heading", { name: text.title })).toBeVisible();
     await expect(page.locator("main")).toHaveAttribute("lang", locale);

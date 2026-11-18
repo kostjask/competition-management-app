@@ -29,6 +29,14 @@ change follows from starting the local entry. [Evidence](../PUBLIC_SITES_VALIDAT
 
 ## Context
 
+Implementation continuation (2026-11-17): the coordinated local
+[`/app`/legacy identity-link transition](../api/workspace-routing.md) now implements
+router/assets/client/returns/onboarding/mail together. An explicit loopback
+festival cohost serves the built SPA and protected API while public-only entries
+remain available. Target hosts, production ingress, content/rights/attribution,
+TLS/ownership and Wix cutover are still release work. The design below continues
+to govern those gates; local integration does not approve deployment.
+
 The existing monorepo primarily implements festival application and entry
 workflows. Neposedõ also needs a new public dance studio website; its present
 studio presence is Instagram/Facebook. The festival Wix site needs replacement

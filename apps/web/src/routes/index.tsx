@@ -27,6 +27,8 @@ const InvitationsPage = lazy(() => import("../pages/admin/InvitationsPage.tsx"))
 const StaffPage = lazy(() => import("../pages/admin/StaffPage.tsx"));
 const ReviewPage = lazy(() => import("../pages/applications/ReviewPage.tsx"));
 const PerformanceRegister = lazy(() => import("../pages/performances/PerformanceRegister.tsx"));
+const DancerRoster = lazy(() => import("../pages/entries/DancerRoster.tsx"));
+const EntryWorkspace = lazy(() => import("../pages/entries/EntryWorkspace.tsx"));
 const ApplicationsPage = lazy(() => import("../pages/applications/ApplicationsPage.tsx"));
 const EventApplicationPage = lazy(() => import("../pages/applications/EventApplicationPage.tsx"));
 const JudgeInterface = lazy(() => import("../pages/judge/JudgeInterface.tsx"));
@@ -98,6 +100,10 @@ export function AppRoutes() {
               <Route path="/events/:id" element={<RequireAuth><EventInfo /></RequireAuth>} />
               <Route path="/events/:id/edit" element={<RequireRole role="admin"><EventEdit /></RequireRole>} />
               <Route path="/applications" element={<RequireAuth><LazyWrapper><ApplicationsPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/studios/:studioId/dancers" element={<RequireAuth><LazyWrapper><DancerRoster /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:eventId/studios/:studioId/performances" element={<RequireAuth><LazyWrapper><EntryWorkspace /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:eventId/studios/:studioId/performances/new" element={<RequireAuth><LazyWrapper><EntryWorkspace creating /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:eventId/studios/:studioId/performances/:performanceId/edit" element={<RequireAuth><LazyWrapper><EntryWorkspace /></LazyWrapper></RequireAuth>} />
               <Route path="/content/studio" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />
               <Route path="/content/festivals" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />
               <Route path="/content/editions/:editionId" element={<RequireRole role="admin"><LazyWrapper><ContentPage /></LazyWrapper></RequireRole>} />

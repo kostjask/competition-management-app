@@ -17,8 +17,9 @@ and contact/social links. Reported Wix cost: EUR 372/year, with net savings and
 bundled services unverified. Inventory actual assets/URLs before migration.
 P4-PUBLIC-EDITOR now implements structured CMS/publication/public JSON and raster
 APIs, retaining protected event/judge/image routes. P4-STUDIO-PAGES and
-P4-PUBLIC-PAGES add isolated local HTML consumers; cohosted `/app` integration and
-all public release gates remain open. [Contract](../api/public-pages.md).
+P4-PUBLIC-PAGES add local HTML consumers. The coordinated `/app` integration and
+opt-in loopback festival cohost are rehearsed locally; public release/cutover
+gates remain open. [Contract](../api/public-pages.md) and [workspace evidence](../ENTRY_WORKSPACE_VALIDATION.md).
 P4-PUBLIC-MODEL now has a [concrete design](../adr/026-studio-and-festival-platform.md#concrete-model-and-publication-design)
 and a [live source inventory](../PUBLIC_CONTENT_INVENTORY.md). Archive attribution,
 rights/original exports and domain ownership remain migration/release checks.
@@ -65,8 +66,8 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   record migration 41, immutable revisions/receipts/audit, strict public projections,
   raster rights/cleanup, canonical policy, conflicts/retries and S20/F12 ET/EN/RU
   browser/Hallmark evidence. Selective copy includes text/color; images are explicitly
-  excluded and re-uploaded. Current paths are `/content/...`; `/app` and public HTML
-  remain consumer work. No public launch, production migration or human approval.
+  excluded and re-uploaded. Current browser paths are `/app/content/...`; the local
+  base/legacy-link transition and public HTML consumers are implemented. No public launch, production migration or human approval.
   The authorized PR #6 continuation binds publishing to reviewed canonical facts,
   clears confirmation/preview state across documents, focuses private previews and
   reduces phone ledger density. Publication-audit rollback, policy changes and
@@ -102,7 +103,7 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   visible during an available external action. No new internal registration or
   calculated results claim. The existing S20 CMS is the owning organizer UI.
   [Public contract](../api/public-pages.md) records isolated routes and the
-  `/app`/ingress prerequisite retained below; no production routes were changed.
+  local `/app` integration and external ingress gates below; no production routes were changed.
 - [ ] P9-WIX-TRANSITION: after festival pages/editor pass, migrate useful content,
   judge artwork and historical result documents/links with reviewed rights and
   edition attribution. Inventory URLs and verify link/redirect coverage, domain/
@@ -113,19 +114,21 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   actual registration handoff. Keep Wix live until acceptance and obtain explicit
   authorization for domain cutover/cancellation. This does not require M3/M5;
   unfinished operational services cannot be advertised as available.
-  First local integration substep: implement the coordinated ADR-026 `/app`
-  router/Vite/client/return/onboarding/mail mapping and bounded indefinite legacy
-  redirects; test old queued token links, secret stripping, scope and session
-  boundaries together before cohosting festival HTML. The isolated local public
-  entry does not authorize replacing existing routes. External content/archive/
-  ownership/hosting evidence remains a separate cutover prerequisite.
+  Local integration substep completed on 2026-11-18: coordinated ADR-026 `/app`
+  router/Vite/client/return/onboarding/mail mapping, bounded indefinite legacy
+  redirects and opt-in loopback festival cohost. Queued token links, pre-resource
+  secret stripping, explicit locale, scope/session boundaries and actual built
+  same-origin assets/API were checked. [Evidence](../ENTRY_WORKSPACE_VALIDATION.md).
+  External content/archive/URL inventory/ownership/hosting evidence remains a
+  separate cutover prerequisite; this task and WEB-FESTIVAL remain open.
 
 ## Exit criteria and next action
 
-PR #6 and its CMS continuation PR #7 are merged into main (latest d5bc51b).
-The public consumer work started from that clean target with no unmerged remote
-branch or open PR overlap. Shared contracts/migration 41 and S20 are retained;
-the public renderer adds no migration. Deployment and release gates remain open.
+PR #6 and its CMS continuation PR #7 are merged into main; public consumer work
+is retained at ee0bf72. The workspace/entry slice started from that clean intended
+target with no unmerged remote branch or open PR overlap. Shared CMS contracts,
+migration 41 and S20 are retained. Migration 42 belongs to the entry slice; the
+public renderer/base transition adds no migration. Deployment/release gates remain open.
 
 WEB-STUDIO and WEB-FESTIVAL are distinct outcomes in the checkpoint. Both need
 usable director content editing, explicit safe publishing and released-scope
@@ -133,9 +136,10 @@ privacy/locale/accessibility/hosting evidence. Festival replacement additionally
 needs archive/link migration and verified cutover. A studio-site launch does not
 close Wix replacement; local tests alone close neither external outcome.
 
-Next: P9-WIX-TRANSITION's coordinated `/app` and legacy identity-link integration
-before cohosting. Inventory/verify real content exports, rights, archive attribution
-and host ownership alongside the separately gated cutover work. WEB-STUDIO and
-WEB-FESTIVAL remain independently unreleased. Do not republish disputed archives
-or the placeholder contact target without owner verification. If external access
-blocks the remaining transition work, continue P5-ENTRIES/S09–S10 in queue order.
+Next website work: obtain and verify real exports/rights, archive attribution,
+legacy public URLs, host ownership and the hosted cutover/restore plan. The local
+`/app`/legacy-link cohost integration is delivered. Keep WEB-STUDIO and
+WEB-FESTIVAL independently unreleased; do not republish disputed archives or the
+placeholder contact without owner verification. With external transition access
+unavailable and S09/S10 complete, the checkpoint's next local task is
+P5-APPLICATION-ESTIMATES. Do not deploy or cancel Wix as part of local work.

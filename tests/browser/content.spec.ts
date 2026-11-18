@@ -53,7 +53,7 @@ async function install(page: Page, locale: Locale = "en", width = 390) {
 }
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440]) {
   test(`${locale} S20 save preview publish and keyboard at ${width}px`, async ({ page }, info) => {
-    const state = await install(page, locale, width); await page.goto("/content/studio"); await expect(page.locator("#cms-title-sourceText")).toHaveValue("Stuudio");
+    const state = await install(page, locale, width); await page.goto("/app/content/studio"); await expect(page.locator("#cms-title-sourceText")).toHaveValue("Stuudio");
     await page.locator("#cms-title-sourceText").fill("Muudetud"); await expect(page.getByText(label("unsaved",locale),{exact:true})).toBeVisible();
     await expect(page.getByRole("button", { name: label("preview",locale),exact:true })).toBeDisabled();
     await page.getByRole("button",{name:label("save",locale),exact:true}).click(); await expect(page.getByText(label("saved",locale),{exact:true})).toBeVisible(); expect(state.writes).toHaveLength(1); expect(state.publishCount).toBe(0);
@@ -70,32 +70,32 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
   });
 }
 test("S20 lost acknowledgement reconciles receipt without replay and retains local work", async ({page}) => {
-  const state = await install(page); await page.goto("/content/studio"); await page.locator("#cms-title-sourceText").fill("Saved but uncertain"); state.lost = true;
+  const state = await install(page); await page.goto("/app/content/studio"); await page.locator("#cms-title-sourceText").fill("Saved but uncertain"); state.lost = true;
   await page.getByRole("button",{name:label("save"),exact:true}).click(); await expect(page.getByRole("button",{name:label("reconcile"),exact:true})).toBeVisible(); await expect(page.locator("#cms-title-sourceText")).toHaveValue("Saved but uncertain"); await expect(page.locator("#cms-title-sourceText")).toBeDisabled();
   state.failRead = true; await page.getByRole("button",{name:label("reconcile"),exact:true}).click(); await expect(page.locator(".cms-error-summary")).toBeVisible(); state.failRead = false;
   await page.getByRole("button",{name:label("reconcile"),exact:true}).click(); await expect(page.getByText(label("server"),{exact:true})).toBeVisible(); expect(state.writes).toHaveLength(1); await expect(page.getByRole("button",{name:label("retrySame"),exact:true})).toBeDisabled();
   await page.getByRole("button",{name:label("useServer"),exact:true}).click(); await expect(page.locator("#cms-title-sourceText")).toBeEnabled(); expect(state.writes).toHaveLength(1);
 });
 test("S20 concurrent administrator conflict keeps local edits until explicit reconciliation", async ({page}) => {
-  const state = await install(page); await page.goto("/content/studio"); await page.locator("#cms-title-sourceText").fill("My title"); state.conflict = true;
+  const state = await install(page); await page.goto("/app/content/studio"); await page.locator("#cms-title-sourceText").fill("My title"); state.conflict = true;
   await page.getByRole("button",{name:label("save"),exact:true}).click(); state.documents[0]!.version = 2; state.documents[0]!.draft.payload.title!.sourceText = "Other title";
   await page.getByRole("button",{name:label("reconcile"),exact:true}).click(); await expect(page.locator('[id="cms-comparison.title-sourceText"]')).toHaveValue("Other title"); await expect(page.locator("#cms-title-sourceText")).toHaveValue("My title");
   await page.getByRole("button",{name:label("keepLocal"),exact:true}).click(); state.conflict = false; await page.getByRole("button",{name:label("save"),exact:true}).click(); await expect(page.getByText(label("saved"),{exact:true})).toBeVisible(); expect(state.writes[1]?.expectedVersion).toBe(2);
 });
 test("S20 mounted session recovery requires receipt check and explicit same-operation retry", async ({page}) => {
-  const state = await install(page); await page.goto("/content/studio"); await page.locator("#cms-title-sourceText").fill("Retained work"); state.valid = false;
+  const state = await install(page); await page.goto("/app/content/studio"); await page.locator("#cms-title-sourceText").fill("Retained work"); state.valid = false;
   await page.getByRole("button",{name:label("save"),exact:true}).click(); const dialog = page.getByRole("dialog"); await expect(dialog).toBeVisible(); await dialog.getByLabel(getTranslation("Shell.password","en"),{exact:true}).fill("password123"); await dialog.getByRole("button",{name:getTranslation("Shell.login","en"),exact:true}).click(); await expect(dialog).not.toBeVisible(); await expect(page.locator("#cms-title-sourceText")).toHaveValue("Retained work"); expect(state.writes).toHaveLength(0);
   await page.getByRole("button",{name:label("reconcile"),exact:true}).click(); await page.getByRole("button",{name:label("retrySame"),exact:true}).click(); await expect(page.getByText(label("saved"),{exact:true})).toBeVisible(); expect(state.writes).toHaveLength(1);
 });
 test("S20 collections use stable identities and language changes retain edits", async ({page}) => {
-  const state = await install(page); await page.goto("/content/studio?section=teachers"); await page.getByRole("button",{name:label("add")+" "+label("teachers"),exact:true}).click(); await page.locator('[id="cms-teachers.0.name"]').fill("Synthetic teacher");
+  const state = await install(page); await page.goto("/app/content/studio?section=teachers"); await page.getByRole("button",{name:label("add")+" "+label("teachers"),exact:true}).click(); await page.locator('[id="cms-teachers.0.name"]').fill("Synthetic teacher");
   await page.getByRole("button",{name:"Русский",exact:true}).click(); await expect(page.locator('[id="cms-teachers.0.name"]')).toHaveValue("Synthetic teacher");
   await page.getByRole("button",{name:label("save","ru"),exact:true}).click(); await expect(page.getByText(label("saved","ru"),{exact:true})).toBeVisible(); const payload = CmsPayloadSchema.parse(state.writes[0]?.payload); expect(payload.kind).toBe("STUDIO_SITE"); if (payload.kind === "STUDIO_SITE") expect(payload.teachers[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
 });
 
 test("S20 changing documents clears a previous publication confirmation", async ({ page }) => {
   const state = await install(page);
-  await page.goto("/content/studio");
+  await page.goto("/app/content/studio");
   await page.getByRole("button", { name: label("preview"), exact: true }).click();
   await page.getByRole("button", { name: label("publish"), exact: true }).click();
   await expect(page.locator(".cms-confirm")).toBeVisible();
@@ -107,7 +107,7 @@ test("S20 changing documents clears a previous publication confirmation", async 
 
 test("S20 changed policy requires a fresh preview and explicit publication review", async ({ page }) => {
   const state = await install(page);
-  await page.goto("/content/studio");
+  await page.goto("/app/content/studio");
   await page.getByRole("button", { name: label("preview"), exact: true }).click();
   state.policyDigest = 'b'.repeat(64);
   await page.getByRole("button", { name: label("publish"), exact: true }).click();
@@ -134,7 +134,7 @@ test("S20 delayed preview cannot move into another document", async ({ page }) =
   let release = () => {};
   const gate = new Promise<void>(resolve => { release = resolve; });
   await page.route(`**/content/documents/${id}/preview?**`, async route => { await gate; await route.fallback(); });
-  await page.goto("/content/studio");
+  await page.goto("/app/content/studio");
   await page.getByRole("button", { name: label("preview"), exact: true }).click();
   await page.getByRole("navigation", { name: getTranslation("Shell.navigation", "en") }).getByRole("link", { name: label("festivals"), exact: true }).click();
   await expect(page).toHaveURL(/\/content\/festivals$/);
@@ -159,7 +159,7 @@ test("S20 festival copy selection and canonical edition facts stay separate", as
     const portal = state.documents.find(row => row.id === portalId)!; portal.version++;
     await route.fulfill({ json: { operationId: body.operationId, documentId: portalId, kind: "EDITION", version: portal.version, revisionId: draft.draft.id, createdAt: draft.draft.createdAt } });
   });
-  await page.goto("/content/festivals");
+  await page.goto("/app/content/festivals");
   await page.locator(".cms-index summary").filter({ hasText: label("createEdition") }).click();
   await page.locator("#cms-new-festival").selectOption(festivalId);
   await page.locator("#cms-edition-slug").fill("2028");
@@ -170,7 +170,7 @@ test("S20 festival copy selection and canonical edition facts stay separate", as
   expect(state.writes[0]).toMatchObject({ festivalId, slug: "2028", copyDocumentId: source.id, sections: ["rules"], expectedVersion: 1 });
   await page.locator(".cms-index").getByRole("link", { name: source.label, exact: true }).click();
   await expect(page.locator(".cms-facts")).toContainText("Canonical hall");
-  await expect(page.locator(".cms-facts").getByRole("link", { name: label("setup"), exact: true })).toHaveAttribute("href", "/admin/events/synthetic-event/setup");
+  await expect(page.locator(".cms-facts").getByRole("link", { name: label("setup"), exact: true })).toHaveAttribute("href", "/app/admin/events/synthetic-event/setup");
   await page.locator("#cms-section").selectOption("startsOn");
   await expect(page.locator("#cms-startsOn")).toBeDisabled();
   source.facts.venue = "Updated canonical hall";
@@ -179,10 +179,10 @@ test("S20 festival copy selection and canonical edition facts stay separate", as
   await page.screenshot({ path: info.outputPath("content-edition-canonical-768.png"), fullPage: true });
 });
 test("S20 ordinary users receive denied navigation and no CMS requests", async ({page}) => {
-  const state = await install(page); state.admin = false; await page.goto("/content/studio"); await expect(page.getByRole("heading",{name:getTranslation("Access.denied","en"),exact:true})).toBeVisible(); await expect(page.getByRole("link",{name:label("studio"),exact:true})).toHaveCount(0); expect(state.writes).toHaveLength(0);
+  const state = await install(page); state.admin = false; await page.goto("/app/content/studio"); await expect(page.getByRole("heading",{name:getTranslation("Access.denied","en"),exact:true})).toBeVisible(); await expect(page.getByRole("link",{name:label("studio"),exact:true})).toHaveCount(0); expect(state.writes).toHaveLength(0);
 });
 test("S20 validation summary focuses the exact field and leaves it in keyboard order",async({page})=>{
-  const state=await install(page); await page.goto('/content/studio?section=teachers'); await page.getByRole('button',{name:label('add')+' '+label('teachers'),exact:true}).click();
+  const state=await install(page); await page.goto('/app/content/studio?section=teachers'); await page.getByRole('button',{name:label('add')+' '+label('teachers'),exact:true}).click();
   await page.getByRole('button',{name:label('save'),exact:true}).click(); await expect(page.locator('.cms-error-summary')).toBeFocused(); expect(state.writes).toHaveLength(0);
   await page.locator('.cms-error-summary a').first().click(); const field=page.locator('[id="cms-teachers.0.name"]'); await expect(field).toBeFocused(); expect(await field.getAttribute('tabindex')).toBeNull(); await field.fill('Corrected teacher');
   await page.keyboard.press('Tab'); await expect(page.getByRole('button',{name:label('add')+' '+label('biography'),exact:true})).toBeFocused();
@@ -191,7 +191,7 @@ test("S20 validation summary focuses the exact field and leaves it in keyboard o
 test('S20 loading, read failure, retry and explicit first creation stay distinct',async({page},info)=>{
   const state=await install(page); state.documents=[]; let release=()=>{}; const gate=new Promise<void>(resolve=>{release=resolve;});
   await page.route('**/api/v1/content/documents',async route=>{await gate;await route.fallback();});
-  await page.goto('/content/studio'); await expect(page).toHaveTitle(label('title')+' | '+getTranslation('Shell.brand','en')); await expect(page.locator('.cms-loading')).toBeVisible(); await expect(page.locator('.cms-loading div')).toHaveCount(3); await page.screenshot({path:info.outputPath('content-loading.png'),fullPage:true});
+  await page.goto('/app/content/studio'); await expect(page).toHaveTitle(label('title')+' | '+getTranslation('Shell.brand','en')); await expect(page.locator('.cms-loading')).toBeVisible(); await expect(page.locator('.cms-loading div')).toHaveCount(3); await page.screenshot({path:info.outputPath('content-loading.png'),fullPage:true});
   state.failRead=true; release(); await expect(page.locator('.cms-error-summary')).toBeVisible(); expect(state.writes).toHaveLength(0);
   state.failRead=false; await page.getByRole('button',{name:label('retry'),exact:true}).click(); await expect(page.getByText(label('empty'),{exact:true})).toBeVisible(); expect(state.writes).toHaveLength(0);
   state.lost=true; await page.getByRole('button',{name:label('add')+' '+label('studio'),exact:true}).click(); await expect(page.getByRole('button',{name:label('reconcile'),exact:true})).toBeVisible();

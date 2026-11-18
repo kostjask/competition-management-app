@@ -61,7 +61,7 @@ async function fixture(page: Page, locale: Locale = "en", width = 390) {
 
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440, 1920]) {
   test(`${locale} ownership register, filter and keyboard at ${width}px`, async ({ page }, info) => {
-    await fixture(page, locale, width); await page.goto("/admin/events/e/performances");
+    await fixture(page, locale, width); await page.goto("/app/admin/events/e/performances");
     await expect(page.getByRole("table")).toBeVisible();
     await expect(page.getByRole("rowheader", { name: "Synthetic performance <script>literal</script>" })).toBeVisible();
     await expect(page.locator("tbody td").last()).toHaveText("0");
@@ -77,7 +77,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await page.screenshot({ path: info.outputPath(`ownership-${locale}-${width}.png`), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     const link = page.getByRole("link", { name: "Synthetic studio", exact: true });
-    await expect(link).toHaveAttribute("href", "/admin/events/e/applications?studio=s");
+    await expect(link).toHaveAttribute("href", "/app/admin/events/e/applications?studio=s");
     await link.focus(); await expect(link).toBeFocused();
     const historyButton = page.getByRole("button", { name: `${getTranslation("Performance.history", locale)} 1`, exact: true });
     await historyButton.focus(); await page.keyboard.press("Enter");
@@ -97,7 +97,7 @@ test("loading, empty, network retry and API denial never present stale rows", as
   const state = await fixture(page);
   let release = () => {};
   state.hold = new Promise<void>(resolve => { release = resolve; });
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await expect(page.locator(".performance-skeleton")).toBeVisible();
   await page.screenshot({ path: info.outputPath("ownership-loading.png"), fullPage: true }); release();
   await expect(page.getByRole("table")).toBeVisible();
@@ -121,7 +121,7 @@ test("history loading, retry, empty and session recovery preserve the selected U
   const state = await fixture(page);
   let release = () => {};
   state.historyHold = new Promise<void>(resolve => { release = resolve; });
-  await page.goto("/admin/events/e/performances?studio=s&performance=p");
+  await page.goto("/app/admin/events/e/performances?studio=s&performance=p");
   const region = page.getByRole("region", { name: "Saved history", exact: true });
   await expect(region.getByRole("status")).toBeVisible();
   await page.screenshot({ path: info.outputPath("history-loading.png"), fullPage: true });
@@ -145,7 +145,7 @@ test("history loading, retry, empty and session recovery preserve the selected U
 
 test("direct routes enforce organizer role and preserve a filtered session recovery", async ({ page }) => {
   const state = await fixture(page); state.admin = false;
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await expect(page.getByRole("heading", { name: getTranslation("Access.denied", "en") })).toBeFocused();
   expect(state.reads).toBe(0);
   state.admin = true; await page.reload(); await expect(page.getByRole("table")).toBeVisible();
@@ -163,7 +163,7 @@ test("direct routes enforce organizer role and preserve a filtered session recov
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 375, 768, 1440, 1920]) {
   test(`${locale} incomplete draft keyboard save at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, locale, width); state.empty = true;
-    await page.goto("/admin/events/e/performances");
+    await page.goto("/app/admin/events/e/performances");
     const owner = page.getByLabel(getTranslation("Performance.draftOwner", locale), { exact: true });
     await owner.selectOption("s"); await owner.focus();
     await expect(owner).toBeFocused();
@@ -189,7 +189,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 375,
 
 test("uncertain draft saves preserve one operation across filters and expired sessions", async ({ page }, info) => {
   const state = await fixture(page); state.loseCreateResponse = true;
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await page.getByLabel("Studio (required)", { exact: true }).selectOption("s");
   const title = page.getByLabel("Title (optional)", { exact: true });
   await title.fill("Saved draft <script>literal</script>");
@@ -224,7 +224,7 @@ test("draft pending and definite stage rejection retain entered values without c
   const state = await fixture(page); state.rejectCreate = true;
   let release = () => {};
   state.createHold = new Promise<void>(resolve => { release = resolve; });
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await page.getByLabel("Studio (required)", { exact: true }).selectOption("s");
   await page.getByLabel("Title (optional)", { exact: true }).fill("Retain this title");
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
@@ -241,7 +241,7 @@ test("a save finishing after a filter change respects the current studio", async
   const state = await fixture(page);
   let release = () => {};
   state.createHold = new Promise<void>(resolve => { release = resolve; });
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await page.getByLabel("Studio (required)", { exact: true }).selectOption("s");
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await expect(page.getByRole("button", { name: "Saving", exact: true })).toBeDisabled();
@@ -256,7 +256,7 @@ test("a save finishing after a filter change respects the current studio", async
 
 test("draft creation explains the absence of an approved owner", async ({ page }) => {
   const state = await fixture(page); state.noDraftOwner = true;
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await expect(page.getByText("A studio needs both approvals before creating a draft.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Save draft", exact: true })).toHaveCount(0);
   expect(state.creates).toHaveLength(0);
@@ -264,7 +264,7 @@ test("draft creation explains the absence of an approved owner", async ({ page }
 
 test("mixed saved configuration labels every present and unselected value", async ({ page }, info) => {
   const state = await fixture(page, "en", 375); state.empty = true; state.mixedHistory = true;
-  await page.goto("/admin/events/e/performances");
+  await page.goto("/app/admin/events/e/performances");
   await page.getByLabel("Studio (required)", { exact: true }).selectOption("s");
   await page.getByRole("button", { name: "Save draft", exact: true }).click();
   await page.getByRole("button", { name: "Saved history 1", exact: true }).click();
@@ -326,7 +326,7 @@ async function checkpointFixture(page: Page, locale: Locale = 'en', width = 390)
 for (const locale of ['et', 'en', 'ru'] as const) for (const width of [320, 390, 768, 1440, 1920]) {
   test(`${locale} studio checkpoint confirmation and review at ${width}px`, async ({ page }, info) => {
     await checkpointFixture(page, locale, width);
-    await page.goto('/admin/events/e/performances?studio=s&entry=review');
+    await page.goto('/app/admin/events/e/performances?studio=s&entry=review');
     const basic = page.getByRole('region', { name: getTranslation('Entry.basic', locale), exact: true });
     await expect(basic.getByText(getTranslation('Entry.DRAFT', locale), { exact: true })).toBeVisible();
     const confirm = basic.getByLabel(getTranslation('Entry.confirm', locale), { exact: true });
@@ -345,7 +345,7 @@ for (const locale of ['et', 'en', 'ru'] as const) for (const width of [320, 390,
 test('checkpoint lost responses retain one operation through session recovery', async ({ page }) => {
   const { state, base } = await checkpointFixture(page);
   state.loseResponse = true;
-  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  await page.goto('/app/admin/events/e/performances?studio=s&entry=review');
   const basic = page.getByRole('region', { name: 'Basic performance details', exact: true });
   await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
   await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
@@ -364,7 +364,7 @@ test('checkpoint lost responses retain one operation through session recovery', 
 
 test('organizer reopens a named field, retains confirmation if readback fails, and shows stale errors', async ({ page }) => {
   const { state } = await checkpointFixture(page);
-  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  await page.goto('/app/admin/events/e/performances?studio=s&entry=review');
   const basic = page.getByRole('region', { name: 'Basic performance details', exact: true });
   await basic.getByText('Reopen for correction', { exact: true }).first().click();
   await basic.getByLabel('Organizer reason', { exact: true }).fill('Correct the title');
@@ -389,7 +389,7 @@ test('organizer reopens a named field, retains confirmation if readback fails, a
 
 for (const locale of ['et', 'en', 'ru'] as const) test(`${locale} rule freeze and deadline save at 320px`, async ({ page }, info) => {
   await checkpointFixture(page, locale, 320);
-  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.goto('/app/admin/events/e/performances?entry=rules');
   await expect(page.getByText(getTranslation('Entry.frozen', locale), { exact: true })).toBeVisible();
   await expect(page.getByLabel(getTranslation('Entry.olderPercent', locale), { exact: true })).toBeDisabled();
   await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
@@ -401,7 +401,7 @@ for (const locale of ['et', 'en', 'ru'] as const) test(`${locale} rule freeze an
 
 test('organizer details editor reconciles a lost save without duplicating the revision', async ({ page }) => {
   await checkpointFixture(page);
-  const dancer = { id: 'd', studioId: 's', firstName: 'Synthetic', lastName: 'Dancer', birthDate: '2020-01-01', photoUrl: null };
+  const dancer = { revision: 1, id: 'd', studioId: 's', firstName: 'Synthetic', lastName: 'Dancer', birthDate: '2020-01-01', photoUrl: null };
   let performance = PerformanceSchema.parse({ revision: 1, id: 'p', eventId: 'e', studioId: 's', registrationId: 'r-s', title: 'Synthetic performance', durationSec: 60, orderOnStage: 1, categoryId: 'c', ageGroupId: 'a', formatId: 'f', participants: [] });
   let writes = 0; let loseResponse = true;
   await page.route('**/api/v1/studios/s/dancers', route => route.fulfill({ json: [dancer] }));
@@ -417,7 +417,7 @@ test('organizer details editor reconciles a lost save without duplicating the re
     }
     return route.fulfill({ json: performance });
   });
-  await page.goto('/admin/events/e/performances?studio=s&edit=p');
+  await page.goto('/app/admin/events/e/performances?studio=s&edit=p');
   const editor = page.getByRole('region', { name: /Edit details:/ });
   await editor.getByLabel('Teacher', { exact: true }).fill('Synthetic teacher');
   await editor.getByLabel('Author / choreographer', { exact: true }).fill('Synthetic author');
@@ -443,7 +443,7 @@ test('organizer details editor reconciles a lost save without duplicating the re
 
 test('stale entry settings require explicit comparison while retaining local deadlines', async ({ page }) => {
   const { state } = await checkpointFixture(page);
-  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.goto('/app/admin/events/e/performances?entry=rules');
   await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
   state.configuration = { ...state.configuration, revision: 2, settings: { ...state.configuration.settings, basic: { enabled: true, deadline: '2026-11-30T18:00:00Z' } } };
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -460,7 +460,7 @@ test('uncertain configuration save reconciles its stored values and has no React
   const { state } = await checkpointFixture(page);
   const errors: string[] = [];
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
-  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.goto('/app/admin/events/e/performances?entry=rules');
   await page.locator('#config-basic-deadline').fill('2026-12-01T18:00');
   state.failConfiguration = true;
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -475,7 +475,7 @@ test('checkpoint loading, read failure, pending command and unconfigured state s
   const { state } = await checkpointFixture(page);
   let releaseRead = () => {};
   state.readHold = new Promise<void>(resolve => { releaseRead = resolve; });
-  await page.goto('/admin/events/e/performances?studio=s&entry=review');
+  await page.goto('/app/admin/events/e/performances?studio=s&entry=review');
   await expect(page.locator('.entry-loading')).toBeVisible();
   state.failRead = true; releaseRead();
   const review = page.getByRole('region', { name: 'Studio checkpoints', exact: true });
@@ -500,7 +500,7 @@ test('unchanged ambiguous deadline keeps its UTC offset and exact seconds', asyn
   const { state } = await checkpointFixture(page);
   const exact = '2026-10-25T00:30:22.456Z';
   state.configuration.settings.basic.deadline = exact;
-  await page.goto('/admin/events/e/performances?entry=rules');
+  await page.goto('/app/admin/events/e/performances?entry=rules');
   await expect(page.locator('#config-basic-deadline')).toHaveValue('2026-10-25T03:30');
   await expect(page.getByLabel('Choose a valid local time and its UTC offset when needed.', { exact: true })).toHaveValue('2026-10-25T00:30:00.000Z');
   await page.getByRole('button', { name: 'Save', exact: true }).click();

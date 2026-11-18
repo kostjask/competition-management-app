@@ -32,7 +32,7 @@ git diff --check
 Prisma configuration needs DATABASE_URL even for checks that do not connect.
 For those checks, an explicit placeholder such as
 postgresql://unused:unused@127.0.0.1:1/unused is sufficient. Do not replace an
-existing application environment file. Build/typecheck cover the four workspace
+existing application environment file. Build/typecheck cover the five workspace
 packages and the API seed. Lint currently covers web only. The API uses Node's
 built-in test runner against the compiled application; pnpm test builds its
 dependencies first. The web test script uses the existing tsx runner for Node tests and static React
@@ -608,6 +608,22 @@ scope/stage denials, concurrency and rollback. The migration suite tests whole-D
 refusal and full fresh/upgrade parity. [Ownership evidence](PERFORMANCE_OWNERSHIP_VALIDATION.md)
 records commands/results and external release limits. The organizer register is
 read-only; future entry editing/configuration retains its M3 prerequisites.
+
+## Representative entry workspace and route transition
+
+Use `pnpm test:focus api workspace-links.test.cjs`,
+`pnpm test:focus browser workspace-transition.spec.ts`,
+`pnpm test:focus browser entries.spec.ts` and `pnpm test:entry-foundations` while
+editing this slice. The full workspace/browser/baseline/migration gates remain
+required at handoff. Migration 42 adds dancer write receipts and revisions; the
+baseline checks exact retries, stale/concurrent edits, scoped context, active
+parents, immutable receipts and audit rollback. Browser setup supplies a synthetic
+401 fallback for unmatched API requests so no test contacts an ambient API.
+The 19 entry cases include ET/EN/RU at 320–1920px plus uncertain/session/conflict/
+archive recovery, selected correction and failed-read preservation. Four route
+transition cases cover queued verification, token stripping, locale and bounded
+legacy redirects. [Validation](ENTRY_WORKSPACE_VALIDATION.md) records actual runs
+and the missing optional Hallmark renderer dependency.
 
 ## Saved entry history and calendar foundations
 

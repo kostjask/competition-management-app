@@ -2,6 +2,22 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "entry-workflow",
+      "exportName": "entryWorkflowRouter",
+      "mount": "/events",
+      "method": "GET",
+      "path": "/:eventId/studios/:studioId/entry-context",
+      "tests": {
+        "success": "scripts/check-dancers.cjs",
+        "invalidInput": "scripts/check-dancers.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-dancers.cjs",
+        "crossParent": "scripts/check-dancers.cjs",
+        "inactiveRecord": "scripts/check-dancers.cjs",
+        "conflict": "N/A: read-only current options and advisory field availability"
+      }
+    },
+    {
       "router": "performances",
       "exportName": "performancesRouter",
       "mount": "/events",

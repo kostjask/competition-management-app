@@ -66,7 +66,7 @@ async function main() {
     assert.deepEqual(await onboarding.readOnboardingDraft(client, user.id), draft);
     assert.equal(await client.userRole.count({ where: { userId: user.id } }), 0);
     assert.equal(await client.studioRepresentative.count({ where: { userId: user.id } }), 0);
-    assert.equal(onboarding.onboardingReturnPath(event.id), '/events/' + event.id);
+    assert.equal(onboarding.onboardingReturnPath(event.id), '/app/events/' + event.id);
     const revised = await onboarding.saveOnboardingDraft(client, user.id, { ...body, operationId: randomUUID(), revision: 1 });
     const cancelled = await onboarding.cancelOnboardingDraft(client, user.id, revised.revision);
     assert.equal(cancelled.status, 'CANCELLED');

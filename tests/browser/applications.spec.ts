@@ -67,7 +67,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 1440
       await hold; retried = true;
       return route.fulfill({ status: 204 });
     });
-    await page.goto("/admin/events/e/applications?studio=s");
+    await page.goto("/app/admin/events/e/applications?studio=s");
     await page.locator("#organization-status").selectOption("REJECTED");
     await page.locator("#profile-city").fill("Unsaved city");
     const retry = page.getByRole("button", { name: label("Application.retryNotification", locale), exact: true });
@@ -83,7 +83,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 1440
     await expect(page.locator("#profile-city")).toHaveValue("Unsaved city");
     expect(state.row).toEqual(before); expect(state.writes).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    state.admin = false; await page.goto("/events/e/studio?studio=s");
+    state.admin = false; await page.goto("/app/events/e/studio?studio=s");
     await expect(page.locator("#profile-city")).toBeVisible();
     await expect(retry).toHaveCount(0);
   });
@@ -101,7 +101,7 @@ test("uncertain notification retry survives session recovery independently of re
     if (!queued) { queued = true; return route.abort(); }
     return route.fulfill({ status: 204 });
   });
-  await page.goto("/admin/events/e/applications?studio=s");
+  await page.goto("/app/admin/events/e/applications?studio=s");
   await page.locator("#profile-city").fill("Retained retry draft");
   const retry = page.getByRole("button", { name: label("Application.retryNotification"), exact: true });
   await retry.click(); await expect(page.locator(".ui-error-summary")).toBeVisible();
@@ -118,7 +118,7 @@ test("uncertain notification retry survives session recovery independently of re
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440]) {
   test(`${locale} S06 independent decision ledger and S08 profile at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, { admin: true, locale, width });
-    await page.goto("/admin/events/e/applications?studio=s");
+    await page.goto("/app/admin/events/e/applications?studio=s");
     await expect(page.getByRole("heading", { name: "Synthetic studio", exact: true })).toBeVisible();
     await expect(page.locator("#organization-status")).toHaveValue("PENDING");
     await page.locator("#organization-status").selectOption("APPROVED");
@@ -135,7 +135,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     expect(wrapped).toEqual([]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath(`review-${locale}-${width}.png`), fullPage: true });
-    state.admin = false; await page.goto("/events/e/studio?studio=s");
+    state.admin = false; await page.goto("/app/events/e/studio?studio=s");
     await expect(page.locator("#profile-studioName")).toBeVisible();
     await page.screenshot({ path: info.outputPath(`applicant-${locale}-${width}.png`), fullPage: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -143,7 +143,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
 }
 
 test("organizer dashboard shows independent pending counts and keeps selected filtered detail recoverable", async ({ page }) => {
-  await fixture(page, { admin: true }); await page.goto("/admin");
+  await fixture(page, { admin: true }); await page.goto("/app/admin");
   await page.getByRole("link", { name: label("Application.organization") + ": 1", exact: true }).click();
   await expect(page.locator("#review-axis")).toHaveValue("ORGANIZATION");
   await page.getByRole("link", { name: "Synthetic studio", exact: true }).click();
@@ -157,7 +157,7 @@ test("organizer dashboard shows independent pending counts and keeps selected fi
 
 for (const locale of ["et", "en", "ru"] as const) {
   test(`profile and contact validation focus their own fields in ${locale}`, async ({ page }, info) => {
-    const state = await fixture(page, { locale }); await page.goto("/events/e/studio?studio=s");
+    const state = await fixture(page, { locale }); await page.goto("/app/events/e/studio?studio=s");
     await page.locator("#profile-studioName").fill("");
     await page.getByRole("button", { name: label("Application.saveProfile", locale), exact: true }).click();
     await page.locator('.ui-error-summary a[href="#profile-studioName"]').click();
@@ -183,44 +183,44 @@ for (const locale of ["et", "en", "ru"] as const) {
 
 test("synthetic signup, verification, application, independent review and returning applicant journey", async ({ page }) => {
   const state = await fixture(page, { empty: true, draft: true }); state.valid = false;
-  await page.goto("/events/e/register"); await page.getByRole("link", { name: label("Shell.login"), exact: true }).last().click();
+  await page.goto("/app/events/e/register"); await page.getByRole("link", { name: label("Shell.login"), exact: true }).last().click();
   await page.getByRole("link", { name: label("Flow.signup"), exact: true }).click(); await expect(page).toHaveURL(/\/auth\/register\?eventId=e$/);
   for (const [id, value] of Object.entries({ name: "Synthetic applicant", email: "applicant@example.invalid", password: "fixture-password", studioName: "Verified draft studio", country: "EE", city: "Tartu", directorName: "Director" })) await page.locator("#signup-" + id).fill(value);
   await page.getByRole("button", { name: label("Flow.signup"), exact: true }).click(); await expect(page.getByRole("heading", { name: label("Flow.checkEmail"), exact: true })).toBeVisible();
   expect(state.signups[0]).toHaveProperty("onboarding.intendedEventId", "e");
-  await page.goto("/verify-email?token=synthetic-verification"); await page.getByRole("button", { name: label("Shell.verify"), exact: true }).click();
+  await page.goto("/app/verify-email?token=synthetic-verification"); await page.getByRole("button", { name: label("Shell.verify"), exact: true }).click();
   await page.getByRole("link", { name: label("Shell.continue"), exact: true }).click(); await page.getByRole("link", { name: label("Application.open"), exact: true }).click();
   await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
   await expect(page.locator("#profile-studioName")).toBeVisible(); state.admin = true;
-  await page.goto("/admin/events/e/applications?studio=s");
+  await page.goto("/app/admin/events/e/applications?studio=s");
   for (const axis of ["organization", "event"]) { await page.locator(`#${axis}-status`).selectOption("APPROVED"); await page.locator("form").filter({ has: page.locator(`#${axis}-status`) }).getByRole("button").click(); await page.getByRole("button", { name: label("Application.confirm"), exact: true }).click(); await expect(page.locator(`#${axis}-status`)).toHaveValue("APPROVED"); }
-  state.admin = false; await page.goto("/applications"); await page.getByRole("link", { name: label("Application.open") + ": Verified draft studio", exact: true }).click();
+  state.admin = false; await page.goto("/app/applications"); await page.getByRole("link", { name: label("Application.open") + ": Verified draft studio", exact: true }).click();
   await expect(page.locator(".application-ledger dd")).toHaveText([label("Registration.approved"), label("Registration.approved")]);
   await expect(page.getByText(label("Application.accepted"), { exact: true })).toBeVisible();
 });
 
 test("guest return retains exact studio and refuses arbitrary redirect parameters", async ({ page }) => {
-  const state = await fixture(page); state.valid = false; await page.goto("/events/e/studio?studio=s");
+  const state = await fixture(page); state.valid = false; await page.goto("/app/events/e/studio?studio=s");
   await page.getByRole("link", { name: label("Shell.login"), exact: true }).last().click();
-  await expect(page).toHaveURL(/returnTo=%2Fevents%2Fe%2Fstudio%3Fstudio%3Ds$/);
+  await expect(page).toHaveURL(/returnTo=%2Fapp%2Fevents%2Fe%2Fstudio%3Fstudio%3Ds$/);
   await page.locator("#login-email").fill("applicant@example.invalid"); await page.locator("#login-password").fill("fixture-password"); await page.getByRole("button", { name: label("Shell.login"), exact: true }).click();
   await expect(page).toHaveURL(/\/events\/e\/studio\?studio=s$/); await expect(page.locator("#profile-studioName")).toBeVisible();
 });
 
 test("roleless verified draft applies, preserves operation ID after lost response and returns through My applications", async ({ page }) => {
-  const state = await fixture(page, { empty: true, draft: true }); await page.goto("/events/e/register");
+  const state = await fixture(page, { empty: true, draft: true }); await page.goto("/app/events/e/register");
   await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); state.loseResponse = true;
   await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
   await expect(page.getByText(label("Application.uncertain"), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: label("Setup.retrySame"), exact: true }).click();
   await expect(page.getByRole("heading", { name: "Verified draft studio", exact: true })).toBeVisible();
   expect(state.writes).toHaveLength(2); expect(state.writes[0]).toEqual(state.writes[1]); expect(state.writes[0]?.onboardingRevision).toBe(2);
-  await page.goto("/applications"); await page.getByRole("link", { name: label("Application.open") + ": Verified draft studio" }).click();
+  await page.goto("/app/applications"); await page.getByRole("link", { name: label("Application.open") + ": Verified draft studio" }).click();
   await expect(page.locator("#profile-studioName")).toHaveValue("Verified draft studio");
 });
 
 test("pending cancellation confirms, retains identity and reapplies", async ({ page }) => {
-  const state = await fixture(page); await page.goto("/events/e/studio");
+  const state = await fixture(page); await page.goto("/app/events/e/studio");
   await page.getByRole("button", { name: label("Application.cancel"), exact: true }).click();
   await page.getByRole("button", { name: label("Application.confirm"), exact: true }).click();
   await expect(page.getByRole("button", { name: label("Application.reapply"), exact: true })).toBeVisible();
@@ -229,7 +229,7 @@ test("pending cancellation confirms, retains identity and reapplies", async ({ p
 });
 
 test("stale decision retains chosen reason until explicit server comparison", async ({ page }) => {
-  const state = await fixture(page, { admin: true }); await page.goto("/admin/events/e/applications?studio=s");
+  const state = await fixture(page, { admin: true }); await page.goto("/app/admin/events/e/applications?studio=s");
   await page.locator("#event-status").selectOption("REJECTED"); await page.locator("#event-reason").selectOption("CAPACITY"); state.failWrite = true;
   await page.locator("form").filter({ has: page.locator("#event-status") }).getByRole("button").click();
   await page.getByRole("button", { name: label("Application.confirm"), exact: true }).click();
@@ -242,14 +242,14 @@ test("stale decision retains chosen reason until explicit server comparison", as
 });
 
 test("acknowledged decision survives failed readback without repeating write", async ({ page }) => {
-  const state = await fixture(page, { admin: true }); await page.goto("/admin/events/e/applications?studio=s"); await page.locator("#event-status").selectOption("APPROVED");
+  const state = await fixture(page, { admin: true }); await page.goto("/app/admin/events/e/applications?studio=s"); await page.locator("#event-status").selectOption("APPROVED");
   state.failReadback = true; await page.locator("form").filter({ has: page.locator("#event-status") }).getByRole("button").click(); await page.getByRole("button", { name: label("Application.confirm"), exact: true }).click();
   await expect(page.getByText(label("Application.readbackFailed"), { exact: true })).toBeVisible(); expect(state.writes).toHaveLength(1);
   state.failRead = false; await page.getByRole("button", { name: label("Application.compare"), exact: true }).click(); await expect(page.locator("#event-status")).toHaveValue("APPROVED"); expect(state.writes).toHaveLength(1);
 });
 
 test("profile input survives language and expired-session recovery", async ({ page }) => {
-  const state = await fixture(page); await page.goto("/events/e/studio"); await page.locator("#profile-city").fill("Retained city");
+  const state = await fixture(page); await page.goto("/app/events/e/studio"); await page.locator("#profile-city").fill("Retained city");
   await page.getByRole("button", { name: "Русский", exact: true }).click(); await expect(page.locator("#profile-city")).toHaveValue("Retained city");
   state.valid = false; await page.locator("form").filter({ has: page.locator("#profile-city") }).getByRole("button").click();
   await expect(page.getByRole("dialog")).toBeVisible(); await page.getByRole("dialog").getByLabel(label("Shell.password", "ru"), { exact: true }).fill("fixture-password");
@@ -260,9 +260,9 @@ test("profile input survives language and expired-session recovery", async ({ pa
 });
 
 test("empty, failed, locked, wrong studio and denied review routes are truthful", async ({ page }) => {
-  const state = await fixture(page, { empty: true }); await page.goto("/applications"); await expect(page.getByRole("heading", { name: label("Application.none"), exact: true })).toBeVisible();
+  const state = await fixture(page, { empty: true }); await page.goto("/app/applications"); await expect(page.getByRole("heading", { name: label("Application.none"), exact: true })).toBeVisible();
   state.failRead = true; await page.reload(); await expect(page.getByRole("button", { name: label("Shell.retry"), exact: true })).toBeVisible();
-  state.failRead = false; state.row = registration(); state.event.stage = "DATA_REVIEW"; await page.goto("/events/e/studio?studio=s"); await expect(page.locator("#profile-studioName")).toBeDisabled();
-  await page.goto("/events/e/studio?studio=other"); await expect(page.getByText(label("Shell.notFound"), { exact: true })).toBeVisible();
-  await page.goto("/admin/events/e/applications"); await expect(page.getByRole("heading", { name: label("Access.denied"), exact: true })).toBeVisible();
+  state.failRead = false; state.row = registration(); state.event.stage = "DATA_REVIEW"; await page.goto("/app/events/e/studio?studio=s"); await expect(page.locator("#profile-studioName")).toBeDisabled();
+  await page.goto("/app/events/e/studio?studio=other"); await expect(page.getByText(label("Shell.notFound"), { exact: true })).toBeVisible();
+  await page.goto("/app/admin/events/e/applications"); await expect(page.getByRole("heading", { name: label("Access.denied"), exact: true })).toBeVisible();
 });

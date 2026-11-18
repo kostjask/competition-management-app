@@ -6,9 +6,9 @@ scope; milestone and release gates still apply. Task IDs are stable.
 
 ## Phase 3 — Registration and entry data foundations
 
-The current overall queue is public-content design/CMS/sites under the checkpoint.
-P5-ENTRIES remains the next participant consumer of these completed foundations;
-dated delivery notes below do not override that queue. Participating studios and
+P5-ENTRIES/S09/S10 now consume these foundations locally. The checkpoint selects
+P5-APPLICATION-ESTIMATES next while music/submission and external public-site
+transition gates remain open; dated delivery notes below do not override it. Participating studios and
 rosters are unrelated to the new public studio site's classes/teacher content.
 
 Local implementation entry: the relevant Phase 2 security, onboarding, audit and

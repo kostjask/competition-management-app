@@ -48,6 +48,11 @@ HTML CSP permits only local CSS/rasters and forbids scripts, forms, frames and
 base overrides. The existing public raster service rechecks live rights and
 publication for every GET/HEAD. No embedded social feed or remote media fetch.
 
+The separate [workspace rehearsal](workspace-routing.md#local-rehearsal) can now
+opt in to festival-only built `/app`/API cohosting and bounded legacy redirects.
+Public-only entry defaults and script-free public-page behavior remain as above;
+this is local integration, not production ingress or release approval.
+
 ## Content, language and metadata
 
 Studio pages render about, public teacher profiles, classes/teacher links,

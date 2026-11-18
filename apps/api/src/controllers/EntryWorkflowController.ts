@@ -3,13 +3,42 @@ import { Prisma } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { EntrySettingsSchema, EntryConfigurationSchema, EntryConfigurationBodySchema, EventIdParamsSchema,
   EntryParamsSchema, EntryCheckpointParamsSchema, EntryCommandSchema, EntryReviewSchema, EntryReceiptSchema,
-  EntryGrantSchema, BASIC_ENTRY_FIELDS, FINAL_ENTRY_FIELDS, type EntryKind } from "@dance/schemas";
+  EntryGrantSchema, EntryContextQuerySchema, EntryContextSchema, EntryFieldSchema, eventAgeDate, BASIC_ENTRY_FIELDS, FINAL_ENTRY_FIELDS, type EntryKind } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors";
 import { appendAudit } from "../services/audit";
 import { entrySettings, entryTransaction, currentEntryManifest, entryIssues, guardEntryWrite } from "../services/entryWorkflow";
+import { isActionAllowed } from "../utils/stageChecks";
 
 export class EntryWorkflowController extends BaseController {
+  async context(req: Request, res: Response) {
+    const { eventId, studioId } = EntryParamsSchema.parse(req.params);
+    const { performanceId } = EntryContextQuerySchema.parse(req.query);
+    const result = await entryTransaction(this.prisma, async db => {
+      const registration = await this.access(req, db, eventId, studioId);
+      const event = await db.event.findUniqueOrThrow({ where: { id: eventId } });
+      const studio = await db.studio.findUniqueOrThrow({ where: { id: studioId } });
+      const configuration = await entrySettings(db, eventId);
+      if (performanceId && !await db.performance.findFirst({ where: { id: performanceId, eventId, studioId, deletedAt: null }, select: { id: true } })) throw new NotFoundError("Performance", performanceId);
+      const issues = configuration ? entryIssues(await currentEntryManifest(db, eventId, studioId, configuration.settings), "FINAL") : [];
+      const writableFields = [];
+      for (const field of EntryFieldSchema.options) {
+        const permission = field === "roster" ? "dancer.manage" : "performance.manage";
+        if (!this.isAdmin(req) && (!this.hasPermission(req, permission, eventId) && !this.hasPermission(req, permission, null))) continue;
+        if (!configuration && !this.isAdmin(req) && !isActionAllowed(event.stage, permission, registration.canEditDuringReview)) continue;
+        try { await guardEntryWrite(db, eventId, studioId, [field], this.isAdmin(req), performanceId); writableFields.push(field); }
+        catch (error) { if (!(error instanceof ForbiddenError)) throw error; }
+      }
+      const [categories, ages, formats] = await Promise.all([
+        db.danceCategory.findMany({ where: { eventId }, select: { id: true, eventId: true, name: true }, orderBy: { name: "asc" } }),
+        db.ageGroup.findMany({ where: { eventId }, select: { id: true, eventId: true, name: true, minAge: true, maxAge: true }, orderBy: { minAge: "asc" } }),
+        db.danceFormat.findMany({ where: { eventId }, select: { id: true, eventId: true, name: true, minParticipants: true, maxParticipants: true, maxDurationSeconds: true }, orderBy: { name: "asc" } }),
+      ]);
+      return EntryContextSchema.parse({ eventId, studioId, studioName: studio.name, eventName: event.name, ageDate: eventAgeDate(event.startsAt.toISOString(), event.timeZone),
+        timeZone: event.timeZone, issues, settings: configuration?.settings ?? null, writableFields, options: { categories, ages, formats } });
+    });
+    res.json(result);
+  }
   private admin(req: Request) { if (!this.isAdmin(req)) throw new ForbiddenError(); }
   private async access(req: Request, db: Prisma.TransactionClient, eventId: string, studioId: string) {
     if (!this.isAdmin(req) && !this.hasPermission(req, "performance.manage", eventId) && !this.hasPermission(req, "performance.manage", null)) throw new ForbiddenError();

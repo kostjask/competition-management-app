@@ -67,7 +67,7 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   const pinned = await client.performanceRevision.findUniqueOrThrow({ where: { performanceId_revision: { performanceId: id, revision: final.body.manifest.entries[0].revision } } });
   assert.deepEqual(pinned.snapshot, final.body.manifest.entries[0].snapshot);
   assert.equal((await patch({ durationSec: 200 })).status, 403);
-  assert.equal((await request(`/studios/${studio.id}/dancers/${studio.dancers[0].id}`, ownerToken, 'PATCH', { firstName: 'Blocked' })).status, 403);
+  assert.equal((await request(`/studios/${studio.id}/dancers/${studio.dancers[0].id}`, ownerToken, 'PATCH', { operationId: randomUUID(), expectedRevision: 1, firstName: 'Blocked' })).status, 403);
   await assert.rejects(client.entryReceipt.update({ where: { id: final.body.id }, data: { reason: 'Rewrite' } }));
   await assert.rejects(client.entryReceipt.delete({ where: { id: final.body.id } }));
   const storedReceipt = await client.entryReceipt.findUniqueOrThrow({ where: { id: final.body.id } });
@@ -84,6 +84,9 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   assert.equal((await request(review + '/BASIC', ownerToken, 'POST', operation)).body.id, submitted.body.id, 'A lost response is reconciled after the deadline');
   assert.equal((await command('FINAL', 'REOPEN', adminToken, { reason: 'Duration correction', grant: { fields: ['durationSec'], performanceIds: [id], until } })).status, 200);
   assert.equal((await command('FINAL', 'ACCEPT')).status, 409, 'An old submission cannot accept a reopened or changed form');
+  const entryContext = (await request(prefix + '/studios/' + studio.id + '/entry-context?performanceId=' + id, ownerToken)).body;
+  assert.deepEqual(entryContext.writableFields, ['durationSec'], 'Selected-performance context honors the exact correction grant');
+  assert.equal((await request(prefix + '/studios/' + studio.id + '/entry-context', ownerToken)).body.writableFields.includes('durationSec'), false, 'A selected grant never unlocks the studio-wide form');
   assert.equal((await patch({ title: 'Outside scope' })).status, 403);
   assert.equal((await patch({ durationSec: 211 })).status, 200);
   assert.equal((await command('FINAL', 'SUBMIT', ownerToken)).status, 409, 'Kids category limit is 210 seconds, not the base format 240');

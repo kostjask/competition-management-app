@@ -38,7 +38,7 @@ remaining human, real-inbox and hosted release gates.
 
 ## S09 — Dancer management
 
-- **Purpose / roles / route:** manage an authorized roster; approved reps/admins; proposed `/studios/:studioId/dancers`.
+- **Purpose / roles / route:** manage an authorized roster; approved reps/admins; mounted `/app/studios/:studioId/dancers`.
 - **Primary action:** add/edit dancer or archive with impact confirmation.
 - **Data:** scoped dancer DTOs, calendar birth dates, event approval/stage/review permission, agreed age policy and historical usage summary when supported.
 - **Sections / components:** studio context/lock banner, searchable list/table, dancer editor, archive confirmation; photos only after upload/security gates.
@@ -49,14 +49,21 @@ remaining human, real-inbox and hosted release gates.
 
 ## S10 — Performance registration
 
-- **Purpose / roles / route:** prepare authorized entries; approved reps/admins; S10 proposed collection/new/edit URLs.
-- **Primary action:** save draft then continue review after draft contracts exist.
+- **Purpose / roles / route:** prepare authorized entries; approved reps/admins; mounted `/app/events/:eventId/studios/:studioId/performances` with `/new` and `/:performanceId/edit` children.
+- **Primary action:** save an acknowledged draft, then continue editing its revision.
 - **Data:** scoped performance, participant roster, permitted categories/age groups/formats, duration, revision and draft state.
 - **Sections / components:** title/details, searchable participant selection with counts, configuration/eligibility guidance, duration, music link and save status.
 - **States:** no entries/configuration, loading roster/options, field/relationship error, lock/deadline, unsaved/saving/saved/failed/conflict; preserve selection.
 - **Responsive / accessibility:** mobile sequential form, desktop details/participants with summary; selection uses actual checkboxes, selected counts and linked nested errors.
-- **API:** event performances CRUD plus dancer/configuration reads. Setup reads currently require event.manage; P5-ENTRIES must supply an authorized representative configuration-read contract, not grant management permission. ADR-023/024 now provide revisioned nullable unscheduled draft contracts; full representative S10 editing remains gated on P3-ENTRIES/P4-ENTRY-CONFIG.
+- **API:** event performances CRUD, revisioned dancer commands and the [scoped entry context](../api/entry-context.md). Setup management stays restricted; safe representative options, current availability and configured-policy draft issues use exact studio/event authority. ADR-023/024/025 supply nullable unscheduled drafts, saved revisions and current write/correction guards.
 - **Acceptance:** no schedule order is required for draft saves. Backend rejects supplied cross-event options/cross-studio participants. Draft acknowledgement never implies submission eligibility. F04.
+
+S09/S10 local delivery includes searchable native selection, field-linked errors,
+calendar dates, immutable dancer retries, roster archive impact confirmation,
+entry withdrawal/restore, saved draft guidance, stale comparison, session recovery
+and unsaved-navigation guards. Existing organizer review uses the same editor.
+Music and representative S12 submission remain pending; no unavailable upload or
+submission action is advertised. [Contracts](../api/entry-context.md).
 
 ## S11 — Music upload
 

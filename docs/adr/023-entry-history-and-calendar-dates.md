@@ -63,3 +63,17 @@ correction authorization and stale correction scopes there before P5 editing.
 Rollback requires a reviewed forward migration and coordinated binaries. Reverting
 DATE to timestamps cannot recover unknown legacy zones. Dropping revision storage
 would destroy retained evidence and is not an acceptable application rollback.
+
+## Roster concurrency continuation (2026-11-17)
+
+S09/P5-ENTRIES adds a positive dancer revision and immutable actor/target/body-bound
+write receipts for create, edit and archive. Concurrent edits use the expected
+revision; uncertain requests repeat the same operation rather than infer identity
+from names or create duplicates. Archive retries acknowledge the retained action;
+new operations on inactive records remain denied. Receipt, roster/checkpoint
+change and non-personal audit commit atomically. Migration 42 is additive and
+does not rewrite calendar values or previous migration/history records.
+[Dancer contract](../api/dancers.md) owns payload/replay behavior and
+[privacy](../PRIVACY.md) owns private acknowledgement retention. There is no
+new roster-history endpoint, restoration or automatic erasure policy. Rollback
+uses a reviewed forward migration and coordinated binaries, preserving receipts.

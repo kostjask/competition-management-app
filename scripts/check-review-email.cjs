@@ -22,7 +22,7 @@ module.exports = async function checkReviewEmail(client, mail) {
     assert.match(envelope.message.to, /^review-mail-(et|en|ru)@example.invalid$/);
     const locale = /review-mail-(et|en|ru)@/.exec(envelope.message.to)[1];
     assert.ok(envelope.message.html.includes(`lang="${locale}"`));
-    const link = new URL(envelope.message.text.split('\n\n')[1]); assert.equal(link.pathname, '/applications'); assert.equal(link.searchParams.get('lang'), locale);
+    const link = new URL(envelope.message.text.split('\n\n')[1]); assert.equal(link.pathname, '/app/applications'); assert.equal(link.searchParams.get('lang'), locale);
     assert.equal(JSON.stringify(row).includes(envelope.message.to), false); assert.equal(JSON.stringify(row).includes('untrusted-contact'), false);
   }
   let review = await readApplicationReview(client, event.id, studio.id, registration.id); assert.equal(review.notifications[0].state, 'QUEUED');
