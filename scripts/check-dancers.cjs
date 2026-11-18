@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
 const { createRequire } = require('node:module');
 const path = require('node:path');
 const { DancerSchema, DancersSchema } = createRequire(path.resolve(__dirname, '../apps/api/package.json'))('@dance/schemas');
@@ -29,20 +30,37 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   const outsiderToken = await login(baseUrl, outsider.email);
   const collection = `/studios/${studio.id}/dancers`;
   const request = async (route, token = ownerToken, method = 'GET', body) => {
+    if (['POST','PATCH','DELETE'].includes(method)) {
+      const id = route.split('/').at(-1);
+      const current = method === 'POST' ? null : await client.dancer.findUnique({ where: { id } });
+      body = { operationId: randomUUID(), ...(method !== 'POST' && { expectedRevision: current?.revision ?? 1 }), ...body };
+    }
     const response = await fetch(`${baseUrl}/api/v1${route}`, {
       method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       ...(body !== undefined && { body: JSON.stringify(body) }), signal: AbortSignal.timeout(5000),
     });
     return { status: response.status, body: response.status === 204 ? null : await response.json() };
   };
-  const input = { firstName: ' First ', lastName: ' Last ', birthDate: '2012-02-29' };
+  const input = { operationId: randomUUID(), firstName: ' First ', lastName: ' Last ', birthDate: '2012-02-29' };
   const created = await request(collection, ownerToken, 'POST', input);
   assert.equal(created.status, 201, 'An event-scoped representative must be able to create a dancer');
   const dancer = DancerSchema.parse(created.body);
   assert.equal(dancer.firstName, 'First');
   assert.equal(dancer.birthDate, '2012-02-29');
   assert.equal(dancer.photoUrl, null);
-  assert.deepEqual(Object.keys(dancer).sort(), ['birthDate', 'firstName', 'id', 'lastName', 'photoUrl', 'studioId']);
+  assert.deepEqual(Object.keys(dancer).sort(), ['birthDate', 'firstName', 'id', 'lastName', 'photoUrl', 'revision', 'studioId']);
+  assert.equal((await request(collection, ownerToken, 'POST', input)).body.id, dancer.id, 'Committed creation retries retain identity');
+  assert.equal((await request(collection, ownerToken, 'POST', { ...input, firstName: 'Changed retry' })).status, 409);
+  assert.equal(await client.dancer.count({ where: { studioId: studio.id } }), 1);
+  await assert.rejects(client.dancerOperation.update({ where: { operationId: input.operationId }, data: { action: 'ARCHIVE' } }));
+  await assert.rejects(client.dancerOperation.delete({ where: { operationId: input.operationId } }));
+  const contextPath = `/events/${event.id}/studios/${studio.id}/entry-context`;
+  const context = await request(contextPath); assert.equal(context.status, 200); assert.equal(context.body.studioId, studio.id);
+  assert.ok(context.body.writableFields.includes('roster'));
+  assert.equal((await request(contextPath, outsiderToken)).status, 403);
+  assert.equal((await request(`/events/${otherEvent.id}/studios/${studio.id}/entry-context`, adminToken)).status, 404);
+  assert.equal((await request(contextPath + '?performanceId=foreign')).status, 404);
+  assert.equal((await request(contextPath + '?unexpected=true')).status, 400);
   const item = `${collection}/${dancer.id}`;
   const stored = await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } });
   assert.equal(stored.birthDate.toISOString(), '2012-02-29T00:00:00.000Z');
@@ -86,6 +104,26 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   assert.equal((await request(collection)).status, 403);
   await client.studio.update({ where: { id: studio.id }, data: { approvalStatus: 'APPROVED' } });
 
+  const edit = { operationId: randomUUID(), expectedRevision: patched.body.revision, firstName: 'First revised' };
+  const edited = await request(item, ownerToken, 'PATCH', edit); assert.equal(edited.status, 200); assert.equal(edited.body.revision, patched.body.revision + 1);
+  assert.deepEqual((await request(item, ownerToken, 'PATCH', edit)).body, edited.body);
+  assert.equal((await request(item, ownerToken, 'PATCH', { ...edit, operationId: randomUUID(), lastName: 'Stale edit' })).status, 409);
+  assert.equal((await request(item, adminToken, 'PATCH', edit)).status, 409, 'Receipt is actor-bound');
+  const rollbackCommand = { operationId: randomUUID(), expectedRevision: edited.body.revision, firstName: 'Must roll back' };
+  await client.$executeRawUnsafe(`CREATE FUNCTION test_dancer_audit_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'DANCER_UPDATED' THEN RAISE EXCEPTION 'synthetic audit refusal'; END IF; RETURN NEW; END $$`);
+  await client.$executeRawUnsafe(`CREATE TRIGGER test_dancer_audit_failure BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION test_dancer_audit_failure()`);
+  try {
+    assert.equal((await request(item, ownerToken, 'PATCH', rollbackCommand)).status, 500);
+    assert.equal((await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } })).revision, edited.body.revision);
+    assert.equal(await client.dancerOperation.count({ where: { operationId: rollbackCommand.operationId } }), 0);
+  } finally {
+    await client.$executeRawUnsafe('DROP TRIGGER test_dancer_audit_failure ON "AuditLog"');
+    await client.$executeRawUnsafe('DROP FUNCTION test_dancer_audit_failure()');
+  }
+  const before = await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } });
+  const races = await Promise.all(['A','B'].map(firstName => request(item, ownerToken, 'PATCH', { operationId: randomUUID(), expectedRevision: before.revision, firstName })));
+  assert.deepEqual(races.map(row=>row.status).sort(), [200,409], 'Only one concurrent revision wins');
+  assert.equal(await client.dancerOperation.count({ where: { dancerId: dancer.id } }), 4);
   await client.event.update({ where: { id: event.id }, data: { stage: 'DATA_REVIEW' } });
   assert.equal((await request(collection)).status, 200);
   assert.equal((await request(item, ownerToken, 'PATCH', { firstName: 'Blocked' })).status, 403);
@@ -94,7 +132,7 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   for (const stage of ['PRE_REGISTRATION', 'FINALIZED', 'ENDED', 'CANCELLED']) {
     await client.event.update({ where: { id: event.id }, data: { stage } });
     assert.equal((await request(collection)).status, 200);
-    assert.equal((await request(collection, ownerToken, 'POST', input)).status, 403);
+    assert.equal((await request(collection, ownerToken, 'POST', { ...input, operationId: randomUUID() })).status, 403);
     assert.equal((await request(item, ownerToken, 'DELETE')).status, 403);
   }
   assert.equal((await request(item, adminToken, 'PATCH', { firstName: 'Admin edit' })).status, 200);
@@ -121,7 +159,9 @@ module.exports = async function checkDancers({ client, baseUrl, adminToken, logi
   assert.equal((await request(collection, adminToken)).status, 404);
   assert.equal((await request(item, ownerToken, 'DELETE')).status, 404);
   await client.studio.update({ where: { id: studio.id }, data: { deletedAt: null } });
-  assert.equal((await request(item, ownerToken, 'DELETE')).status, 204);
+  const archive = { operationId: randomUUID(), expectedRevision: (await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } })).revision };
+  assert.equal((await request(item, ownerToken, 'DELETE', archive)).status, 204);
+  assert.equal((await request(item, ownerToken, 'DELETE', archive)).status, 204, 'Archive retry returns its acknowledgement');
   const archived = await client.dancer.findUniqueOrThrow({ where: { id: dancer.id } });
   assert.equal(archived.deletedBy, owner.id);
   assert.ok(archived.deletedAt instanceof Date);

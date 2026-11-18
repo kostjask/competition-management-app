@@ -3,7 +3,7 @@ import { LanguageContext } from "./LanguageContext";
 import { initialLocale, isLocale, DEFAULT_LOCALE, STORAGE_KEY, type Locale } from "./locale";
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, updateLocale] = useState<Locale>(initialLocale);
-  const explicit = useRef(false);
+  const explicit = useRef(typeof window !== "undefined" && isLocale(new URLSearchParams(window.location.search).get("lang")));
   useEffect(() => { document.documentElement.lang = locale; }, [locale]);
   const setLocale = useCallback((value: Locale) => {
     const next = isLocale(value) ? value : DEFAULT_LOCALE;

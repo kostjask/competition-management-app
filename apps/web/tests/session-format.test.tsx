@@ -6,9 +6,9 @@ import { apiClient, clearLegacyToken, sessionEvents } from "../src/api/client";
 import { ApiError } from "../src/api/error";
 
 test("return destinations accept only implemented paths without credentials or encoded redirects", () => {
-  for (const value of ["/", "/events", "/events/demo-2026", "/events/demo/edit", "/events/new", "/judge", "/auth/profile", "/admin/events/demo-2026/staff", "/events/a/register", "/events/a/studio?studio=s", "/applications"]) assert.equal(safeReturnPath(value), value);
+  for (const value of ["/", "/events", "/events/demo-2026", "/events/demo/edit", "/events/new", "/judge", "/auth/profile", "/admin/events/demo-2026/staff", "/events/a/register", "/events/a/studio?studio=s", "/applications"]) assert.equal(safeReturnPath(value), value === "/" ? "/app" : "/app" + value);
   for (const value of [undefined, {}, "https://foreign.invalid", "//foreign.invalid", "/\\foreign.invalid", "/%2f%2fforeign", "/events/a?token=secret", "/events/a#secret", "/events/a/studio?studio=s&token=secret", "/judge/unsupported", "/auth/login", "/events/../admin", "/events/a%252fadmin", "/events\n"]) {
-    assert.equal(ReturnPathSchema.safeParse(value).success, false); assert.equal(safeReturnPath(value), "/");
+    assert.equal(ReturnPathSchema.safeParse(value).success, false); assert.equal(safeReturnPath(value), "/app");
   }
 });
 test("locale formatting preserves calendar days and documents UTC instant boundaries", () => {

@@ -22,7 +22,7 @@ const performanceSelect = {
   id: true, eventId: true, studioId: true, registrationId: true, title: true, durationSec: true, orderOnStage: true,
   categoryId: true, ageGroupId: true, formatId: true,
   participants: { select: { dancerId: true, dancer: { select: {
-    id: true, studioId: true, firstName: true, lastName: true, birthDate: true, photoUrl: true,
+    revision: true, id: true, studioId: true, firstName: true, lastName: true, birthDate: true, photoUrl: true,
   } } }, orderBy: { dancerId: "asc" } },
 } satisfies Prisma.PerformanceSelect;
 type PerformanceRecord = Prisma.PerformanceGetPayload<{ select: typeof performanceSelect }>;

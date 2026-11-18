@@ -5,8 +5,10 @@ Documentation only; no runtime validation, accessibility conformance or release
 completion is implied.
 
 Product/navigation scope reconciled 2026-11-16. [Product scope](PRODUCT_SCOPE.md)
-and ADR-026 add two public sites and a shared CMS; target hosts and /app are not
-mounted routes. Existing application route facts remain below until migrated.
+and ADR-026 add two public sites and a shared CMS. The local workspace now uses
+`/app`; target hosts remain unverified. Existing private route rows below are
+basename-relative unless they explicitly include `/app`. [Routing](api/workspace-routing.md)
+owns the coordinated local transition and separate hosted release gates.
 
 ## Scope, authority, and reading order
 
@@ -107,7 +109,8 @@ Public visitors need no account. Content administrators see site/edition context
 festival representatives/judges/moderators retain their task-specific navigation.
 S18–S20/F11–F12 specify public content and CMS. ADR-026's completed model design
 settles route mapping, rendering, locale URLs and auth/mail-link transition tests;
-do not prepend /app to existing routes or weaken origin/session checks implicitly.
+the local `/app` transition is now implemented without changing hosted routes,
+cookie/origin policy or release gates.
 
 Required global shell: skip link, home/events, language, authenticated workspace
 entry, account/profile/logout, main landmark and consistent help/contact location.
@@ -146,8 +149,8 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S06 | `/admin/events/:eventId/applications` | Independent queues/detail, reasons, confirmation, history and truthful notification states |
 | S07 | `/applications`; `/representative` | Role-independent application home delivered; representative entry console remains placeholder |
 | S08 | `/events/:id/register`, `/events/:id/studio?studio=:studioId`; P `/studios/:studioId` | Application/status/profile/contact delivered; standalone studio route remains proposed |
-| S09 | P `/studios/:studioId/dancers` | List/editor, P5-ENTRIES |
-| S10 | P `/events/:id/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | P5-ENTRIES |
+| S09 | `/studios/:studioId/dancers` | Local roster/editor/archive, P5-ENTRIES |
+| S10 | `/events/:eventId/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | Local nullable unscheduled draft/participant editor, P5-ENTRIES |
 | S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |
 | S12 | I `/admin/events/:eventId/performances`; P `/events/:id/studios/:studioId/review` | Organizer ownership/history/draft/details/configuration/checkpoint review/withdraw/restore delivered locally; representative checklist remains P5-SUBMISSION |
 | S13 | P `/admin/events/:id/schedule` | P6-SCHEDULE |
@@ -156,8 +159,8 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 | S18 | I isolated studio public entry `/et`, `/en`, `/ru` and content suffixes; P target host | P4-STUDIO-PAGES local consumer; host/release remains gated |
-| S19 | I isolated festival public entry `/` and edition/archive pages; P target host | P4-PUBLIC-PAGES local consumer; existing private `/events` routes remain protected; cohosting requires `/app` transition |
-| S20 | P `/app/content/studio`, `/app/content/festivals`, `/app/content/editions/:editionId` | P4-PUBLIC-EDITOR; ADR-026 mapping and S20 state contract, no mounted /app base |
+| S19 | I isolated festival public entry `/` and edition/archive pages; P target host | P4-PUBLIC-PAGES local consumer; explicit loopback festival/workspace cohosting available; hosted release remains gated |
+| S20 | `/app/content/studio`, `/app/content/festivals`, `/app/content/editions/:editionId` | P4-PUBLIC-EDITOR; mounted local /app base and legacy-link mapping; hosted deployment remains gated |
 
 Private route facts above are checked against src/routes/index.tsx; isolated
 public routes use packages/public-site/src/routes.ts and the API public entry.
@@ -315,10 +318,12 @@ screen-reader behavior checked; phone/tablet/desktop and long text verified; and
 negative ownership/stage/session/retry tests. Record evidence by screen/flow ID,
 revision, locale, viewport and role. Use [testing strategy](TESTING.md); browser
 and visual regression infrastructure exists for delivered slices. Extend it with
-each workflow; this documentation change reruns no browser evidence.
+each workflow; [workspace/entry validation](ENTRY_WORKSPACE_VALIDATION.md) records
+the latest S09/S10 and shared organizer editor evidence.
 
 P2-UI-FOUNDATION/SHELL and M2 setup/review/application UI are delivered locally.
-The [checkpoint](../DEVELOPMENT_PLAN.md#implementation-order) now prioritizes
-public content design/CMS and the independent WEB-STUDIO/WEB-FESTIVAL outcomes;
-P5-ENTRIES remains the next participant slice. M2 operational release retains
+CMS/public consumers, the local `/app` transition and P5-ENTRIES/S09/S10 are
+delivered locally. The [checkpoint](../DEVELOPMENT_PLAN.md#implementation-order)
+selects P5-APPLICATION-ESTIMATES next; independent WEB-STUDIO/WEB-FESTIVAL release
+gates and S11/S12 remain open. M2 operational release retains
 verify → apply → independent approvals → resume status and its external gates.

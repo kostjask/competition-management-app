@@ -22,7 +22,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
       if (route.request().url().endsWith("/remove")) { removals++; return route.fulfill({ status: 204 }); }
       return route.fulfill({ json: route.request().url().endsWith("/auth/profile") ? user() : overview() });
     });
-    await page.goto("/admin/events/e/staff");
+    await page.goto("/app/admin/events/e/staff");
     await expect(page.getByRole("heading", { name: label("Staff.title", locale), exact: true })).toBeFocused();
     await expect(page).toHaveTitle(new RegExp(label("Staff.title", locale)));
     await expect(page.getByRole("heading", { name: "Synthetic event", exact: true })).toBeVisible();
@@ -60,7 +60,7 @@ for (const locale of ["et", "en", "ru"] as const) {
       if (path.endsWith("/remove")) { removes++; data.assignments[0] = { ...data.assignments[0], status: "REMOVED", removedAt: "2026-11-06T00:00:00.000Z" }; return route.fulfill({ status: 204 }); }
       return route.fulfill({ json: data });
     });
-    await page.goto("/admin/events/e/staff");
+    await page.goto("/app/admin/events/e/staff");
     await expect(page.getByText(label("Staff.noAssignments", locale))).toBeVisible();
     await page.getByLabel(label("Shell.email", locale), { exact: true }).fill("judge@example.invalid");
     await page.getByLabel(label("Flow.language", locale), { exact: true }).selectOption("ru");
@@ -84,7 +84,7 @@ for (const locale of ["et", "en", "ru"] as const) {
       }
       return route.fulfill({ json: { email: "judge@example.invalid", roleKey: "judge", event: data.event, expiresAt: pending().expiresAt, status: "PENDING", accountExists: true } });
     });
-    await invitee.goto("/auth/accept-invitation?token=synthetic-staff-link");
+    await invitee.goto("/app/auth/accept-invitation?token=synthetic-staff-link");
     await invitee.getByRole("button", { name: label("Flow.invitation", locale), exact: true }).click();
     await expect(invitee.getByText(label("Flow.accepted", locale), { exact: true })).toBeVisible(); expect(accepts).toBe(1);
     await invitee.close(); await page.bringToFront();
@@ -107,7 +107,7 @@ test("uncertain removal requires refresh and never repeats the command", async (
     if (route.request().url().endsWith("/remove")) { removes++; data.assignments[0] = { ...data.assignments[0], status: "REMOVED", removedAt: "2026-11-06T00:00:00.000Z" }; return route.abort("failed"); }
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff");
+  await page.goto("/app/admin/events/e/staff");
   await page.getByLabel("Email", { exact: true }).fill("local-draft@example.invalid");
   await page.getByRole("button", { name: "Remove access for Synthetic staff 0", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove access", exact: true }).click();
@@ -131,7 +131,7 @@ test("pending removal keeps confirmation modal and controls disabled until ackno
     }
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff"); await page.getByRole("button", { name: "Remove access for Synthetic staff 0", exact: true }).click();
+  await page.goto("/app/admin/events/e/staff"); await page.getByRole("button", { name: "Remove access for Synthetic staff 0", exact: true }).click();
   const dialog = page.getByRole("dialog"); await dialog.getByRole("button", { name: "Remove access", exact: true }).click();
   await expect(dialog.getByRole("button", { name: "Cancel", exact: true })).toBeDisabled();
   await expect(dialog.getByRole("button", { name: "Remove access", exact: true })).toBeDisabled();
@@ -149,7 +149,7 @@ test("acknowledged removal restores focus without waiting for an animation frame
     }
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff");
+  await page.goto("/app/admin/events/e/staff");
   await page.getByLabel("Email", { exact: true }).fill("retained@example.invalid");
   await page.getByRole("button", { name: "Remove access for Synthetic staff 0", exact: true }).click();
   // Background tabs can suspend animation frames while a completed request still commits.
@@ -168,7 +168,7 @@ test("failed initial read is not empty success and accepted missing assignment n
     if (fail) return route.abort("failed");
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff"); await expect(page.getByRole("alert")).toBeVisible();
+  await page.goto("/app/admin/events/e/staff"); await expect(page.getByRole("alert")).toBeVisible();
   await expect(page.getByText(label("Staff.noAssignments", "en"))).toHaveCount(0);
   fail = false; await page.getByRole("button", { name: "Refresh status", exact: true }).click();
   await expect(page.getByText(label("Staff.noAssignments", "en"))).toBeVisible();
@@ -188,7 +188,7 @@ test("stale invitation conflict preserves draft and uses refreshed expiry on exp
     }
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff");
+  await page.goto("/app/admin/events/e/staff");
   const resend = page.getByRole("button", { name: "Resend invitation for judge@example.invalid", exact: true });
   await resend.click(); await expect(resend).toBeDisabled(); expect(resends).toBe(1);
   await page.getByRole("button", { name: "Refresh status", exact: true }).click(); await expect(resend).toBeEnabled();
@@ -204,7 +204,7 @@ test("accepted receipt survives failed refresh and pending controls stay disable
     if (acknowledged && failRead) return route.abort("failed");
     return route.fulfill({ json: data });
   });
-  await page.goto("/admin/events/e/staff"); await page.getByLabel("Email", { exact: true }).fill("judge@example.invalid");
+  await page.goto("/app/admin/events/e/staff"); await page.getByLabel("Email", { exact: true }).fill("judge@example.invalid");
   await page.getByRole("button", { name: label("Flow.invite", "en"), exact: true }).click();
   await expect(page.getByText(label("Staff.created", "en"))).toBeVisible();
   await expect(page.getByText(label("Staff.stale", "en"))).toBeVisible();
@@ -220,7 +220,7 @@ test("expired session preserves staff input and requires explicit status reload"
     if (!valid) return route.fulfill({ status: 401, json: denied });
     return route.fulfill({ json: path.endsWith("/auth/profile") ? user() : overview() });
   });
-  await page.goto("/admin/events/e/staff"); await page.getByLabel("Email", { exact: true }).fill("preserved@example.invalid");
+  await page.goto("/app/admin/events/e/staff"); await page.getByLabel("Email", { exact: true }).fill("preserved@example.invalid");
   valid = false; await page.getByRole("button", { name: "Refresh status", exact: true }).click();
   const recovery = page.getByRole("dialog"); await recovery.getByLabel("Password", { exact: true }).fill("password123");
   await recovery.getByRole("button", { name: label("Shell.login", "en"), exact: true }).click();
@@ -241,8 +241,8 @@ for (const mode of ["guest", "scoped-admin", "roleless", "missing"] as const) {
       }
       staffReads++; return route.fulfill({ status: 404, json: { code: "NOT_FOUND", reason: "recordNotFound", params: {}, issues: [] } });
     });
-    await page.goto("/admin/events/missing/staff");
-    if (mode === "guest") await expect(page).toHaveURL(/returnTo=%2Fadmin%2Fevents%2Fmissing%2Fstaff/);
+    await page.goto("/app/admin/events/missing/staff");
+    if (mode === "guest") await expect(page).toHaveURL(/returnTo=%2Fapp%2Fadmin%2Fevents%2Fmissing%2Fstaff/);
     else if (mode !== "missing") await expect(page.getByRole("heading", { name: label("Access.denied", "en") })).toBeVisible();
     else { await expect(page.getByRole("alert")).toBeVisible(); await expect(page.getByRole("button", { name: "Refresh status", exact: true })).toBeEnabled(); }
     await expect(page.getByText("long-synthetic-staff-address-0@example.invalid", { exact: true })).toHaveCount(0);

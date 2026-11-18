@@ -136,11 +136,12 @@ affects subsequent requests and cannot recall downloaded copies.
 
 ## Owning workspace
 
-Current routes are `/content/studio`, `/content/festivals` and
-`/content/editions/:editionId`, with bounded section/preview-language query state.
-Existing auth/mail/application paths stay canonical. Isolated request-rendered
-public entries now consume this contract; the coordinated `/app`/legacy-link
-transition remains required before cohosting, owned by P9-WIX-TRANSITION.
+Current browser routes are `/app/content/studio`, `/app/content/festivals` and
+`/app/content/editions/:editionId`, with bounded section/preview-language query state.
+API content paths remain `/api/v1/content`. The coordinated local
+[`/app`/legacy-link transition](workspace-routing.md) now supports an explicit
+festival cohost rehearsal. Public-only entries retain their separate defaults;
+hosted ingress and Wix transition release checks remain open.
 No DNS, cookie, deployment or hosting change is included. See
 [CMS validation](../CONTENT_EDITOR_VALIDATION.md) and
 [public consumer validation](../PUBLIC_SITES_VALIDATION.md).

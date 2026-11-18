@@ -17,6 +17,7 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-17–18 local /app transition and S09/S10 entry workspace | [Workspace/entry validation](ENTRY_WORKSPACE_VALIDATION.md) |
 | 2026-11-17 studio/festival public HTML consumers | [Public sites validation](PUBLIC_SITES_VALIDATION.md) |
 | 2026-11-16–17 shared CMS and publication | [Content editor validation and continuation](CONTENT_EDITOR_VALIDATION.md) |
 | 2026-11-14 entry recovery and nomination setup | [Recovery/setup validation](ENTRY_RECOVERY_VALIDATION.md), [checkpoint core](ENTRY_CHECKPOINT_VALIDATION.md) |

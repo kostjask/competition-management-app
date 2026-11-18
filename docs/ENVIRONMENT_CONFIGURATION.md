@@ -22,12 +22,12 @@ apps/api; dotenv reads its .env and shell values take precedence.
 | EMAIL_FROM | Required valid email | Resend verified sender; fake remains silent |
 | EMAIL_PROVIDER | fake / resend; fake | Fake makes no delivery claim and refuses production delivery; resend queues transactionally and starts the worker |
 | RESEND_API_KEY / EMAIL_QUEUE_KEY | Required for resend; key prefix re_ / dedicated 64 hexadecimal characters | HTTPS provider authentication / AES-256-GCM queue encryption; independent of JWT_SECRET |
-| WEB_ORIGIN | URL; http://localhost:5173 | Real mail requires HTTPS origin without path/query/credentials; localized identity links |
+| WEB_ORIGIN | URL; http://localhost:5173 | Exact origin without path; central link builder adds /app; real mail requires HTTPS |
 | NODE_ENV | development / test / production; development | Mode; seed refuses production |
 | PORT / HOST | Positive integer 4000 / 0.0.0.0 | Listener |
 | DEV_AUTH | true / false; false | Skips bearer entry only in development; refuses startup in test/production when true. Uses a real active, verified account and its actual roles. Keep false for real login. |
 | DEV_AUTH_EMAIL | Canonical email; admin@test.com | Development account selected when DEV_AUTH=true; explicit seed/provisioning required. Missing/ineligible accounts fail closed; no automatic activation, verification or role grants. |
-| VITE_API_URL | Web setting; http://localhost:4000/api/v1 | API base, including version; restart Vite |
+| VITE_API_URL | Web setting; /api/v1 | Same-origin API base; Vite proxies /api/v1 and /uploads to loopback port 4000; explicit origins supported; restart Vite |
 | STORAGE_PUBLIC_URL | Optional URL in EnvSchema; unset by default | Image URL base; use API origin for protected browser downloads. Unset returns /uploads/...; does not grant public access |
 | STORAGE_TYPE | local only | Unsupported s3/gcs selections fail startup; providers remain P8-MEDIA |
 | CORS_ORIGIN | Exact HTTP(S) origins separated by commas; development/test default http://localhost:5173,http://127.0.0.1:5173; production requires explicit origins | Allowlist enforced for requests and preflight; no credentials, path, query or trailing slash |
@@ -74,8 +74,10 @@ distinct HTTPS origins, or HTTP loopback origins for local validation. The
 listener binds loopback and mounts only public reads/rasters/HTML; no private API,
 cookie CORS privilege, SPA or production ingress is added. See
 [public entry configuration](api/public-pages.md#isolated-entry-and-routing).
-Do not replace existing host routes or change WEB_ORIGIN/auth-mail links until
-the complete ADR-026 `/app`/legacy-link transition is validated.
+The local `/app`/legacy-link transition is implemented. An explicit festival-only
+`start:workspace` entry can rehearse built SPA/API/public cohosting on loopback;
+see [routing setup](api/workspace-routing.md#local-rehearsal). No production ingress,
+host ownership, domain, cookie or deployment change is implied.
 
 ## Troubleshooting
 

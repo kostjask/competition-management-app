@@ -23,7 +23,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
       }
       return route.fulfill({ json: user });
     });
-    await page.goto("/auth/profile?locale=de");
+    await page.goto("/app/auth/profile?locale=de");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     expect(writes).toBe(0);
     const field = page.getByLabel(getTranslation("Preferences.language", locale), { exact: true });
@@ -57,7 +57,7 @@ for (const locale of ["et", "en", "ru"] as const) {
       }
       return route.fulfill({ json: user });
     });
-    await page.goto("/auth/profile");
+    await page.goto("/app/auth/profile");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
     await page.getByRole("button", { name: "English", exact: true }).click();
     const field = page.getByLabel(getTranslation("Preferences.language", "en"));
@@ -75,7 +75,7 @@ for (const locale of ["et", "en", "ru"] as const) {
     await expect(page.getByRole("status")).toContainText(getTranslation("Preferences.saved", "en"));
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     const anotherDevice = await context.newPage();
-    await anotherDevice.goto("/auth/profile");
+    await anotherDevice.goto("/app/auth/profile");
     await expect(anotherDevice.locator("html")).toHaveAttribute("lang", "ru");
     await expect(anotherDevice.getByLabel(getTranslation("Preferences.language", "ru"))).toHaveValue("ru");
   });
@@ -95,7 +95,7 @@ test("login reconciles account preference and logout returns to browser choice",
     if (!signedIn) return route.fulfill({ status: 401, json: { code: "UNAUTHORIZED", reason: "authenticationRequired", params: {}, issues: [] } });
     return route.fulfill({ json: user });
   });
-  await page.goto("/auth/login");
+  await page.goto("/app/auth/login");
   await page.getByLabel(getTranslation("Shell.email", "en"), { exact: true }).fill(user.email);
   await page.getByLabel(getTranslation("Shell.password", "en"), { exact: true }).fill("synthetic-password");
   await page.getByRole("button", { name: getTranslation("Shell.login", "en"), exact: true }).click();

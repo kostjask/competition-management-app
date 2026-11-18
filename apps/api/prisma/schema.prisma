@@ -352,6 +352,7 @@ model StudioEventRegistration {
 
 model Dancer {
   id                      String                   @id @default(cuid())
+  revision                Int                      @default(1)
   studioId                String
   firstName               String
   lastName                String
@@ -362,8 +363,26 @@ model Dancer {
   deletedBy               String?
   studio                  Studio                   @relation(fields: [studioId], references: [id])
   performanceParticipants PerformanceParticipant[]
+  operations              DancerOperation[]
 
   @@unique([id, studioId])
+}
+
+model DancerOperation {
+  operationId String   @id @db.Uuid
+  dancerId    String
+  studioId    String
+  actorId     String
+  revision    Int
+  action      String
+  digest      String
+  response    Json
+  createdAt   DateTime @default(now())
+  dancer      Dancer   @relation(fields: [dancerId, studioId], references: [id, studioId], onDelete: Restrict, onUpdate: Restrict)
+  actor       User     @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([dancerId, revision])
+  @@index([actorId])
 }
 
 model Performance {
@@ -536,6 +555,7 @@ model User {
   accountTokens         AccountToken[]
   auditActions          AuditLog[]             @relation("AuditActor")
   performanceRevisions  PerformanceRevision[]
+  dancerOperations      DancerOperation[]
   performanceOperations PerformanceOperation[]
   entryReceipts         EntryReceipt[]
   reviewDeliveries      EmailDelivery[]

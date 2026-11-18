@@ -58,7 +58,7 @@ export async function cancelOnboardingDraft(prisma: PrismaClient, ownerId: strin
 }
 
 export function onboardingReturnPath(intendedEventId: string | null): string {
-  return intendedEventId ? `/events/${encodeURIComponent(intendedEventId)}` : "/";
+  return safeReturnPath(intendedEventId ? `/events/${encodeURIComponent(intendedEventId)}` : "/");
 }
 
 export type OnboardingOwnerProof = z.infer<typeof OnboardingProofSchema> | Pick<AuthContext, "userId" | "sessionVersion">;

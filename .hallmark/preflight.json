@@ -1,9 +1,26 @@
 {
-  "date": "2026-11-17",
-  "scope": "P4-STUDIO-PAGES and P4-PUBLIC-PAGES",
-  "evidence": ["DESIGN.md:10", "docs/DESIGN_SYSTEM.md:9", "docs/ui/public.md:9", "packages/schemas/src/cms.schema.ts:117"],
-  "preserved": ["Cobalt paper and local Latin/Cyrillic font system", "existing CMS and private workspace routes", "published-only public projection", "ET/EN/RU and accessibility"],
-  "introduced": ["separate Node/React request-render entry", "public section index and edition ledger", "locale-aware metadata and live sitemap"],
-  "inferred": {"audience":"prospective students/parents and festival visitors", "use":"find classes/joining or edition rules/registration/results", "tone":"restrained and legible"},
-  "material": "published CMS prose and rights-approved rasters only; no stock material, invented facts or empty image slots"
+  "date": "2026-11-18",
+  "scope": "P5-ENTRIES/S09/S10 and local P9 workspace transition",
+  "evidence": [
+    "DESIGN.md:10",
+    "docs/DESIGN_SYSTEM.md:9",
+    "docs/ui/studio.md:35",
+    "apps/web/src/pages/entries/entries.css:1"
+  ],
+  "preserved": [
+    "Cobalt local Latin/Cyrillic fonts and scoped tokens",
+    "current organizer editor, auth and event authority",
+    "ET/EN/RU and accessibility"
+  ],
+  "introduced": [
+    "studio roster and calendar-date editor",
+    "saved draft and searchable participants",
+    "receipt/conflict/archive recovery"
+  ],
+  "inferred": {
+    "audience": "approved studio representatives and organizers",
+    "use": "save a roster and resumable unscheduled entry draft",
+    "tone": "restrained operations"
+  },
+  "material": "actual operational rows; synthetic fixtures for checks; no artwork or invented claims"
 }

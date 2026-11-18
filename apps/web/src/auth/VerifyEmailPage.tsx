@@ -1,6 +1,7 @@
+import { identityLinkToken } from "./linkToken";
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { safeReturnPath } from "@dance/schemas";
+import { routerReturnPath } from "@dance/schemas";
 import { verifyEmail } from "../api/auth";
 import { useAuth } from "./useAuth";
 import { useTranslation } from "../i18n/useTranslation";
@@ -11,11 +12,11 @@ import { readOnboarding } from "../api/onboarding";
 import { SwitchAccount } from "./SwitchAccount";
 
 export function VerifyEmailPage() {
-  const [params] = useSearchParams(); const [token] = useState(() => params.get("token")); const [destination] = useState(() => safeReturnPath(params.get("returnTo")));
+  const [params] = useSearchParams(); const [token] = useState(() => identityLinkToken() ?? params.get("token")); const [destination] = useState(() => routerReturnPath(params.get("returnTo")));
   const [resolvedDestination, setResolvedDestination] = useState(destination);
   const { user, loading: sessionLoading, error: sessionError, refreshUser } = useAuth(); const { t } = useTranslation();
   const [status, setStatus] = useState<"ready" | "busy" | "success">("ready"); const [error, setError] = useState<UiError | null>(null);
-  useEffect(() => { if (token) window.history.replaceState(null, "", window.location.pathname + (destination === "/" ? "" : "?returnTo=" + encodeURIComponent(destination))); }, [token, destination]);
+  useEffect(() => { if (token) window.history.replaceState(window.history.state, "", window.location.pathname + (destination === "/" ? "" : "?returnTo=" + encodeURIComponent(destination))); }, [token, destination]);
   return <section className="mx-auto max-w-md p-6"><h1 className="text-2xl font-semibold">{t(status === "success" ? "Shell.verifySuccess" : "Shell.verify")}</h1>
     <ErrorFeedback error={error} />
     {sessionLoading && status === "ready" && <p role="status">{t("Access.loading")}</p>}
@@ -27,7 +28,7 @@ export function VerifyEmailPage() {
         setStatus("busy"); setError(null);
         void verifyEmail({ token }).then(async () => {
           await refreshUser();
-          try { const context = await readOnboarding({}); setResolvedDestination(context.draft ? context.returnTo : destination); }
+          try { const context = await readOnboarding({}); setResolvedDestination(context.draft ? routerReturnPath(context.returnTo) : destination); }
           catch (err: unknown) { setResolvedDestination("/auth/onboarding"); setError(toUiError(err)); }
           setStatus("success");
         }).catch((err: unknown) => { setError(toUiError(err)); setStatus("ready"); });

@@ -5,7 +5,8 @@ const { CmsPayloadSchema, emptyCmsPayload, cmsReadiness, CmsPublishSchema, CMS_B
 test('CMS branding pairs meet text contrast and returns preserve only implemented CMS identities',()=>{
   for(const pair of Object.values(CMS_BRAND_PALETTE)) assert.ok(cmsContrast(pair.background,pair.foreground)>=4.5);
   assert.equal(ReturnPathSchema.safeParse('/content/studio').success,true); assert.equal(ReturnPathSchema.safeParse('/content/editions/'+randomUUID()).success,true);
-  for(const path of ['/content/studio?token=secret','//evil.invalid/content/studio','/content/editions/------------------------------------','/app/content/studio']) assert.equal(ReturnPathSchema.safeParse(path).success,false);
+  assert.equal(ReturnPathSchema.parse('/app/content/studio'),'/app/content/studio');
+  for(const path of ['/content/studio?token=secret','//evil.invalid/content/studio','/content/editions/------------------------------------','/app/app/content/studio']) assert.equal(ReturnPathSchema.safeParse(path).success,false);
 });
 test('CMS contracts reject unknown data, duplicate local identities, broken references and unsafe links', () => {
   const draft = emptyCmsPayload('STUDIO_SITE'); assert.equal(CmsPayloadSchema.safeParse(draft).success,true); assert.equal(cmsReadiness(draft).length,4);

@@ -20,7 +20,7 @@ for(const locale of ["et","en","ru"] as const) for(const width of [320,390,768,1
       if(path.endsWith("/onboarding/cancel"))cancelled=true;
       return route.fulfill({json:{email:owner.email,emailVerified:false,returnTo:"/events/e",draft:{id:"d",status:cancelled?"CANCELLED":"DRAFT",revision:cancelled?3:1,intendedEventId:"e",details,updatedAt:"2026-11-05T00:00:00.000Z"}}});
     });
-    await page.goto("/auth/register?eventId=e");
+    await page.goto("/app/auth/register?eventId=e");
     await page.getByRole("button",{name:t("Flow.signup"),exact:true}).click();await expect(page.getByRole("alert")).toBeVisible();
     await page.locator("#signup-name").fill(owner.name!);await page.getByRole("button",{name:"English",exact:true}).click();await expect(page.locator("#signup-name")).toHaveValue(owner.name!);await page.locator("button[lang=\""+locale+"\"]").click();await page.locator("#signup-email").fill(owner.email);await page.locator("#signup-password").fill("password123");
     for(const [key,value] of Object.entries(details))await page.locator("#signup-"+key).fill(value);
@@ -47,7 +47,7 @@ for(const locale of ["et","en","ru"] as const) for(const width of [320,390,768,1
       if(route.request().method()==="POST"){created++;expect(route.request().postDataJSON().locale).toBeUndefined();return route.fulfill({status:201,json:{invitationId:row.id,messageId:"invitationCreated",message:"Created",delivery:"unconfirmed"}});}
       return route.fulfill({json:created?[row]:[]});
     });
-    await page.goto("/admin/invitations");await page.locator("#staff-email").fill(owner.email);await page.locator("#staff-event").selectOption("e");
+    await page.goto("/app/admin/invitations");await page.locator("#staff-email").fill(owner.email);await page.locator("#staff-event").selectOption("e");
     await page.getByRole("button",{name:getTranslation("Flow.invite",locale),exact:true}).click();await expect(page.locator("main li")).toHaveCount(1);
     await page.getByRole("button",{name:getTranslation("Flow.renew",locale),exact:true}).click();await expect.poll(()=>resent).toBe(1);
     page.once("dialog",dialog=>dialog.accept());await page.getByRole("button",{name:getTranslation("Flow.revoke",locale),exact:true}).click();await expect(page.getByText(getTranslation("Flow.revoked",locale),{exact:true})).toBeVisible();
@@ -67,7 +67,7 @@ for(const locale of ["et","en","ru"] as const) {
       if(path.endsWith("/invitations/accept")){accepts++;expect(route.request().postDataJSON()).toEqual({token:"synthetic-secret"});return route.fulfill({status:201,json:{message:"Accepted",messageId:"invitationAccepted",accountCreated:false,user:{id:owner.id,email:owner.email,name:owner.name}}});}
       return route.fulfill({json:{email:owner.email,roleKey:"moderator",event:{id:"e",name:event.name},expiresAt:"2027-01-01T00:00:00.000Z",status:"PENDING",accountExists:true}});
     });
-    await page.goto("/auth/accept-invitation?token=synthetic-secret");await expect(page).toHaveURL("/auth/accept-invitation");await expect(page.getByText(t("Flow.wrongAccount"),{exact:true})).toBeVisible();expect(accepts).toBe(0);
+    await page.goto("/app/auth/accept-invitation?token=synthetic-secret");await expect(page).toHaveURL("/app/auth/accept-invitation");await expect(page.getByText(t("Flow.wrongAccount"),{exact:true})).toBeVisible();expect(accepts).toBe(0);
     page.once("dialog",dialog=>dialog.accept());await page.locator("main").getByRole("button",{name:t("Shell.logout"),exact:true}).click();
     await expect(page.locator("main").getByLabel(t("Shell.email"),{exact:true})).toHaveAttribute("readonly","");await page.locator("main").getByLabel(t("Shell.password"),{exact:true}).fill("password123");await page.locator("main").getByRole("button",{name:t("Shell.login"),exact:true}).click();
     await expect(page.getByRole("button",{name:t("Flow.invitation"),exact:true})).toBeVisible();expect(accepts).toBe(0);await page.getByRole("button",{name:t("Flow.invitation"),exact:true}).click();await expect(page.getByText(t("Flow.accepted"),{exact:true})).toBeVisible();expect(accepts).toBe(1);
@@ -83,9 +83,9 @@ for(const locale of ["et","en","ru"] as const) {
       if(path.includes("/invitations/"))return route.fulfill({json:{email:owner.email,roleKey:"judge",event:{id:"e",name:event.name},expiresAt:"2027-01-01T00:00:00.000Z",status,accountExists:false}});
       return route.fulfill({status:202,json:{messageId:"authRequestAccepted",delivery:"unconfirmed"}});
     });
-    for(const path of ["resend-verification","forgot-password","correct-email"]){await page.goto("/auth/"+path);await page.locator("#recovery-email").fill(owner.email);if(path==="correct-email"){await page.locator("#recovery-password").fill("password123");await page.locator("#recovery-newEmail").fill("corrected@example.invalid");}await page.getByRole("button",{name:t("Flow.send"),exact:true}).click();await expect(page.getByText(t("Flow.unconfirmed"),{exact:true})).toBeVisible();}
-    await page.goto("/auth/reset-password?token=synthetic-reset");await expect(page).toHaveURL("/auth/reset-password");await page.locator("#reset-password").fill("new-password123");await page.getByRole("button",{name:t("Flow.reset"),exact:true}).click();await expect(page.locator("#reset-password")).toHaveCount(0);
-    await page.goto("/auth/accept-invitation?token=synthetic-new");await expect(page.getByText(t("Flow.terminal"),{exact:true})).toBeVisible();expect(accepts).toBe(0);status="PENDING";
-    await page.goto("/auth/accept-invitation?token=synthetic-new");await page.locator("#invite-name").fill(owner.name!);await page.locator("#invite-password").fill("password123");await page.getByRole("button",{name:t("Flow.invitation"),exact:true}).click();await expect(page.getByText(t("Flow.accepted"),{exact:true})).toBeVisible();expect(accepts).toBe(1);
+    for(const path of ["resend-verification","forgot-password","correct-email"]){await page.goto("/app/auth/"+path);await page.locator("#recovery-email").fill(owner.email);if(path==="correct-email"){await page.locator("#recovery-password").fill("password123");await page.locator("#recovery-newEmail").fill("corrected@example.invalid");}await page.getByRole("button",{name:t("Flow.send"),exact:true}).click();await expect(page.getByText(t("Flow.unconfirmed"),{exact:true})).toBeVisible();}
+    await page.goto("/app/auth/reset-password?token=synthetic-reset");await expect(page).toHaveURL("/app/auth/reset-password");await page.locator("#reset-password").fill("new-password123");await page.getByRole("button",{name:t("Flow.reset"),exact:true}).click();await expect(page.locator("#reset-password")).toHaveCount(0);
+    await page.goto("/app/auth/accept-invitation?token=synthetic-new");await expect(page.getByText(t("Flow.terminal"),{exact:true})).toBeVisible();expect(accepts).toBe(0);status="PENDING";
+    await page.goto("/app/auth/accept-invitation?token=synthetic-new");await page.locator("#invite-name").fill(owner.name!);await page.locator("#invite-password").fill("password123");await page.getByRole("button",{name:t("Flow.invitation"),exact:true}).click();await expect(page.getByText(t("Flow.accepted"),{exact:true})).toBeVisible();expect(accepts).toBe(1);
   });
 }

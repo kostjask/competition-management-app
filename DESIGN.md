@@ -39,6 +39,16 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P5-ENTRIES extends the locked Cobalt app system to a searchable studio roster,
+calendar-date editor and unscheduled draft/participant workspace at the `/app`
+base. The shared organizer editor uses a paired basic/final desktop form and a
+sequential phone form, native searchable checkboxes, actual selection counts,
+saved issue links and current field availability. Inline receipt/conflict/archive
+states retain work and focus. Rendered review removed duplicate/misleading lock
+guidance and kept refresh with the other actions. No images, material slots,
+palette, remote font or shell replacement are introduced; human acceptance remains
+separate. [Validation](docs/ENTRY_WORKSPACE_VALIDATION.md).
+
 P4-STUDIO-PAGES/S18 and P4-PUBLIC-PAGES/S19 introduce separate public reading
 surfaces in `packages/public-site`, preserving the locked Cobalt paper/local
 Latin/Cyrillic face without importing the authenticated shell or client. Direct

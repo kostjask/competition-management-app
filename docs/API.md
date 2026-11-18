@@ -1,7 +1,7 @@
 # API integration status
 
 Local base: http://localhost:4000/api/v1.
-VITE_API_URL includes /api/v1; restart Vite after changes. Frontend page routes
+VITE_API_URL defaults to same-origin /api/v1; restart Vite after changes. Frontend page routes
 are separate. No unversioned business aliases exist; /health and /uploads remain
 at server root. /uploads is authenticated resource-scoped image retrieval, with
 no public static fallback; see [images](api/images.md).
@@ -22,9 +22,11 @@ Exact permissions/ownership/stages are in each resource contract.
 [ADR-026](adr/026-studio-and-festival-platform.md) governs the implemented shared
 CMS and published-content JSON/raster APIs. [Content](api/content.md) owns the
 controlled drafts, private preview, receipts and explicit publication boundaries.
-Public page composition is still separate; current event/judge/image routes stay authenticated.
-Target /app browser routing does not change the /api/v1 namespace or current auth
-links. Website publication is distinct from P7 calculated-result publication.
+Public-only entries remain separate; an explicit loopback cohost can serve the
+built workspace and protected API beside festival HTML. [Workspace routing](api/workspace-routing.md)
+owns `/app`, canonical auth/mail returns and bounded legacy redirects. Event,
+judge and private-image routes remain authenticated. The `/api/v1` namespace is
+unchanged. Website publication is distinct from P7 calculated-result publication.
 
 Phase 1 controller/shared DTO/client integration is complete for mounted business
 resources. Security/workflow completion is separate: see [SECURITY](SECURITY.md).
@@ -45,6 +47,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Dancers | /studios/:studioId/dancers; /:dancerId | [Dancers](api/dancers.md) |
 | Performances | /events/:eventId/performances; /:performanceId; POST /:performanceId/restore | [Performances](api/performances.md) |
 | Studio checkpoints | /events/:eventId/entry-configuration; /events/:eventId/studios/:studioId/entry-review | [Entry checkpoints](api/entry-workflow.md) |
+| Entry editor context | /events/:eventId/studios/:studioId/entry-context | [Scoped options and locks](api/entry-context.md) |
 | Event staff | GET /events/:eventId/staff; POST /events/:eventId/staff/:assignmentId/remove | [Staff access](api/invitations.md#accepted-staff-removal) |
 | Judges | /events/:eventId/judges; /:judgeId | [Judges](api/judges.md) |
 | Categories | /events/:eventId/categories; /:categoryId | [Categories](api/categories.md) |

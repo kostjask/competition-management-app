@@ -55,7 +55,7 @@ async function fixture(page: Page, locale: Locale = "en", width = 390) {
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 768, 1440, 1920]) {
   test(`${locale} withdrawal and same-identity restore at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, locale, width); const t = (key: TranslationKey) => getTranslation(key, locale);
-    await page.goto("/admin/events/e/performances?studio=s");
+    await page.goto("/app/admin/events/e/performances?studio=s");
     await page.getByRole("button", { name: t("Entry.withdraw"), exact: true }).click();
     await page.getByLabel(t("Entry.reason"), { exact: true }).fill("Reviewed withdrawal");
     const confirmation = page.getByLabel(t("Entry.lifecycleConfirm"), { exact: true }); await confirmation.focus(); await page.keyboard.press("Space");
@@ -78,7 +78,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 768,
   });
   test(`${locale} complete editable nomination preset at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, locale, width); const t = (key: TranslationKey) => getTranslation(key, locale);
-    await page.goto("/admin/events/e/performances?entry=rules");
+    await page.goto("/app/admin/events/e/performances?entry=rules");
     await page.getByText(t("Entry.presetFull"), { exact: true }).click();
     await page.getByLabel(t("Entry.presetConfirm"), { exact: true }).check();
     await page.getByRole("button", { name: t("Entry.copyPreset"), exact: true }).click();
@@ -98,7 +98,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 768,
 
 test("uncertain withdrawal preserves one operation across filters and session recovery", async ({ page }) => {
   const state = await fixture(page); state.lose = true;
-  await page.goto("/admin/events/e/performances"); await page.getByRole("button", { name: "Withdraw performance", exact: true }).click();
+  await page.goto("/app/admin/events/e/performances"); await page.getByRole("button", { name: "Withdraw performance", exact: true }).click();
   await page.getByLabel("Organizer reason", { exact: true }).fill("Lost response"); await page.getByLabel("I confirm this performance state change.").check();
   await page.getByRole("region", { name: "Withdraw performance: Recovery performance" }).getByRole("button", { name: "Withdraw performance", exact: true }).click();
   await expect(page.locator(".ui-error-summary")).toBeFocused();
@@ -115,7 +115,7 @@ test("uncertain withdrawal preserves one operation across filters and session re
 
 test("acknowledged action survives readback failure and stale state requires comparison", async ({ page }) => {
   const state = await fixture(page);
-  await page.goto("/admin/events/e/performances"); await page.getByRole("button", { name: "Withdraw performance", exact: true }).click();
+  await page.goto("/app/admin/events/e/performances"); await page.getByRole("button", { name: "Withdraw performance", exact: true }).click();
   await page.getByLabel("Organizer reason", { exact: true }).fill("Stale state"); await page.getByLabel("I confirm this performance state change.").check();
   const region = page.getByRole("region", { name: "Withdraw performance: Recovery performance" }); state.stale = true;
   await region.getByRole("button", { name: "Withdraw performance", exact: true }).click(); await expect(region.getByText("4: Active", { exact: false })).toBeVisible();
@@ -129,7 +129,7 @@ test("acknowledged action survives readback failure and stale state requires com
 
 test("option creation and lost configuration response reconcile without duplicate writes", async ({ page }) => {
   const state = await fixture(page); state.lose = true;
-  await page.goto("/admin/events/e/performances?entry=rules");
+  await page.goto("/app/admin/events/e/performances?entry=rules");
   await page.getByText("Create category, age group or format", { exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Custom category <script>literal</script>");
   await page.getByRole("button", { name: "Add option to draft", exact: true }).click();
@@ -140,7 +140,7 @@ test("option creation and lost configuration response reconcile without duplicat
 
 test("custom options form a complete nomination and frozen rules disable creation", async ({ page }) => {
   const state = await fixture(page);
-  await page.goto("/admin/events/e/performances?entry=rules");
+  await page.goto("/app/admin/events/e/performances?entry=rules");
   await page.getByText("Create category, age group or format", { exact: true }).click();
   const kind = page.getByLabel("Option type", { exact: true }); const name = page.getByLabel("Name", { exact: true });
   await name.fill("Custom stage"); await page.getByRole("button", { name: "Add option to draft", exact: true }).click();
@@ -163,7 +163,7 @@ test("custom options form a complete nomination and frozen rules disable creatio
 
 test("discarding a stale local setup also discards its unsaved option identities", async ({ page }) => {
   const state = await fixture(page);
-  await page.goto("/admin/events/e/performances?entry=rules");
+  await page.goto("/app/admin/events/e/performances?entry=rules");
   await page.getByText("Create category, age group or format", { exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Discarded option");
   await page.getByRole("button", { name: "Add option to draft", exact: true }).click();

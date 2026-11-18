@@ -27,7 +27,9 @@ own detail. Next: P9-WIX-TRANSITION, starting with the coordinated `/app` and
 legacy identity-link integration before cohosting. Public launches need not wait for M3/M5.
 Keep Wix live until replacement verification and authorized cutover.
 
-The ordinary API/Vite development commands retain their current routes. Separate
+The private browser workspace now uses `/app`; API routes stay `/api/v1`.
+[Routing and local cohosting](docs/api/workspace-routing.md) covers indefinite
+bounded legacy links and the opt-in loopback rehearsal. Separate
 public HTML listeners require explicit local origins/ports and existing published
 CMS content; see [public entry setup](docs/api/public-pages.md#isolated-entry-and-routing).
 This does not deploy or configure the target addresses.
@@ -46,7 +48,8 @@ if (!(Test-Path apps/web/.env)) { Copy-Item apps/web/.env.example apps/web/.env 
 
 Set a newly generated JWT_SECRET (at least 32 characters) in apps/api/.env.
 The example DATABASE_URL matches the local Compose fixture. Keep DEV_AUTH=false
-for seeded login. Web VITE_API_URL must be http://localhost:4000/api/v1; restart
+for seeded login. Web VITE_API_URL defaults to /api/v1, with a Vite loopback proxy;
+explicit API origins remain supported. Restart
 Vite after changes. [Environment reference](docs/ENVIRONMENT_CONFIGURATION.md).
 
 ```powershell
@@ -59,7 +62,7 @@ pnpm.cmd build
 pnpm.cmd dev
 ```
 
-Open http://localhost:5173; API/database health is http://localhost:4000/health.
+Open http://localhost:5173/app; API/database health is http://localhost:4000/health.
 The dev command starts both apps. Rebuild @dance/schemas and restart the API
 watcher after shared-contract changes; the API consumes emitted JavaScript.
 Compiled API: pnpm.cmd --filter api start. Scoped API commands read apps/api/.env;

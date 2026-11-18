@@ -80,6 +80,8 @@ try {
     $expectedSql += "`n" + (($auditConstraintSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $contentSql = Get-Content -Raw apps/api/prisma/migrations/20261116000000_public_content/migration.sql
     $expectedSql += "`n" + (($contentSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
+    $dancerReceiptsSql = Get-Content -Raw apps/api/prisma/migrations/20261117000000_dancer_write_receipts/migration.sql
+    $expectedSql += "`n" + (($dancerReceiptsSql -split '-- SQL-only guards')[1] -replace '(?m)^COMMIT;\r?$', '')
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {

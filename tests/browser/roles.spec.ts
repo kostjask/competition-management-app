@@ -14,22 +14,22 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     let user = profile();
     await page.route("**/api/v1/auth/profile", route => route.fulfill({ json: user }));
     const allowed = getTranslation("Access.allowed", locale); const denied = getTranslation("Access.denied", locale);
-    await page.goto("/__fixtures/access/a");
+    await page.goto("/app/__fixtures/access/a");
     await expect(page.getByRole("heading", { name: allowed })).toBeVisible();
     await page.getByRole("button", { name: allowed }).focus(); await expect(page.getByRole("button", { name: allowed })).toBeFocused();
-    await page.goto("/__fixtures/access/b");
+    await page.goto("/app/__fixtures/access/b");
     await expect(page.getByRole("heading", { name: denied })).toBeFocused();
     await page.screenshot({ path: info.outputPath("denied.png"), fullPage: true });
     await page.keyboard.press("Tab"); await expect(page.getByRole("link", { name: getTranslation("Access.home", locale) })).toBeFocused();
-    await page.keyboard.press("Enter"); await expect(page).toHaveURL("/");
+    await page.keyboard.press("Enter"); await expect(page).toHaveURL("/app");
     for (const unsupported of [profile("custom", "a", "Chief Judge"), profile("judge", null), { ...profile(), roles: [], permissions: [] }]) {
-      user = unsupported; await page.goto("/judge"); await expect(page.getByRole("heading", { name: denied })).toBeVisible();
+      user = unsupported; await page.goto("/app/judge"); await expect(page.getByRole("heading", { name: denied })).toBeVisible();
     }
-    user = profile("admin", "a", "Administrator"); await page.goto("/admin"); await expect(page.getByRole("heading", { name: denied })).toBeVisible();
+    user = profile("admin", "a", "Administrator"); await page.goto("/app/admin"); await expect(page.getByRole("heading", { name: denied })).toBeVisible();
     user = { ...profile("admin", null), isAdmin: true };
-    await page.goto("/__fixtures/access/b"); await expect(page.getByRole("button", { name: allowed })).toBeVisible();
+    await page.goto("/app/__fixtures/access/b"); await expect(page.getByRole("button", { name: allowed })).toBeVisible();
     user = profile(); user.roles.push(...profile("moderator", "b").roles);
-    await page.goto("/__fixtures/access/a"); await expect(page.getByRole("button", { name: allowed })).toBeVisible();
+    await page.goto("/app/__fixtures/access/a"); await expect(page.getByRole("button", { name: allowed })).toBeVisible();
     user.permissions = []; await page.reload();
     await expect(page.getByRole("heading", { name: allowed })).toBeVisible(); await expect(page.getByRole("button", { name: allowed })).toHaveCount(0);
     await expect(page.getByText(denied, { exact: true })).toBeVisible();
@@ -38,9 +38,9 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
 }
 test("guest direct navigation requires sign-in; expired profile cannot retain role content", async ({ page }) => {
   await page.route("**/api/v1/auth/profile", route => route.fulfill({ status: 401, json: { code: "UNAUTHORIZED", reason: "authenticationRequired", params: {}, issues: [] } }));
-  await page.goto("/judge"); await expect(page).toHaveURL(/auth\/login/);
+  await page.goto("/app/judge"); await expect(page).toHaveURL(/auth\/login/);
   await page.evaluate(() => localStorage.setItem("auth_token", "expired-synthetic-session"));
   await page.route("**/api/v1/auth/profile", route => route.fulfill({ status: 401, json: { code: "UNAUTHORIZED", reason: "authenticationRequired", params: {}, issues: [] } }));
-  await page.goto("/judge"); await expect(page).toHaveURL(/auth\/login/);
+  await page.goto("/app/judge"); await expect(page).toHaveURL(/auth\/login/);
   expect(await page.evaluate(() => localStorage.getItem("auth_token"))).toBeNull();
 });

@@ -15,8 +15,9 @@ Validation and remaining database/release limits are in
 [merge validation](../APPLICATION_REVIEW_VALIDATION.md#merge-reconciliation-2026-11-13).
 The checkpoint's core P3-ENTRIES review/configuration slice is now delivered
 locally; subsequent recovery and full option/preset setup complete P3-ENTRIES and
-P4-ENTRY-CONFIG locally. P5-ENTRIES remains the next participant consumer; current
-overall priority is the checkpoint's public-content model/CMS/site sequence.
+P4-ENTRY-CONFIG locally. P5-ENTRIES/S09/S10 now consume those foundations and
+share the organizer editor. The checkpoint selects P5-APPLICATION-ESTIMATES next;
+music/submission and external public-site transition gates remain open.
 The developer/director's shared website editing is owned by the
 [website roadmap](website.md), not a second implementation of event setup.
 

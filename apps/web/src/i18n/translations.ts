@@ -7,7 +7,9 @@ import { entryTranslations } from "./entryTranslations";
 import { contentTranslations } from "./contentTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
+import { rosterTranslations } from "./rosterTranslations";
 export const translations = {
+  Roster: rosterTranslations,
   Content: contentTranslations,
   Setup: eventSetupTranslations,
   Application: applicationTranslations,

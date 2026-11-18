@@ -59,6 +59,14 @@ the recipient's required localized template data. Do not infer their language
 from the inviting administrator's UI. Provider credentials stay in managed
 configuration; provider delivery failures must not leak recipient/token data.
 
+Revisioned roster commands retain immutable private dancer acknowledgements in
+`DancerOperation`: actor/studio/dancer identifiers, normalized command digest,
+acknowledged revision, calendar birth date and name DTO. They prevent duplicate
+creates and reconcile uncertain responses without identifying dancers in logs or
+audit metadata. They are not public DTOs or a general roster-history endpoint.
+These records and backups inherit the private history access/retention policy;
+no automatic retention/erasure period or permission to remove history is added.
+
 Files stay outside PostgreSQL. Treat names/URLs as private unless the publication
 policy explicitly authorizes public use; P2-BOUNDARIES-UPLOADS/P8-MEDIA must enforce
 content, ownership, retrieval and replacement lifecycle. Strip unnecessary image

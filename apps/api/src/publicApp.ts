@@ -9,11 +9,13 @@ import { securityHeaders } from "./middleware/securityHeaders";
 import { requestLimit } from "./middleware/authRecoveryLimit";
 import { errorHandler } from "./errors/handler";
 import { AppError } from "./errors";
+import { workspaceRouter } from "./workspaceApp";
+import { createApp } from "./app";
 
 const missing = (error: unknown) => error instanceof AppError && error.statusCode === 404;
 
-// Separate entry: no SPA fallback, credentials, private routes, browser scripts or draft reads.
-export function createPublicApp(prisma: PrismaClient, input: PublicSiteOptions) {
+// Public-only by default; explicit festival rehearsal may mount the bounded workspace.
+export function createPublicApp(prisma: PrismaClient, input: PublicSiteOptions, workspaceDirectory?: string) {
   const options = PublicSiteOptionsSchema.parse(input);
   const app = express(); app.disable("x-powered-by"); app.disable("etag"); app.set("trust proxy", false);
   app.use(securityHeaders);
@@ -23,6 +25,16 @@ export function createPublicApp(prisma: PrismaClient, input: PublicSiteOptions) 
     next();
   });
   app.use(requestLimit());
+  // Opt-in local rehearsal; public-only entry and production configuration stay separate.
+  if (workspaceDirectory) {
+    if (options.surface !== "festival") throw new Error("Workspace cohosting requires the festival surface");
+    app.use(workspaceRouter(workspaceDirectory));
+    const api = createApp(prisma);
+    app.use((req, res, next) => {
+      if ((req.path.startsWith("/api/v1/") && !req.path.startsWith("/api/v1/public/")) || req.path.startsWith("/uploads/")) api(req, res, next);
+      else next();
+    });
+  }
   app.get("/site.css", (_req, res, next) => { res.sendFile(require.resolve("@dance/public-site/site.css"), { cacheControl: false, lastModified: false, etag: false }, error => { if (error) next(error); }); });
   app.use("/api/v1/public", publicContentRouter(prisma));
   app.get("/", (_req, res) => { res.redirect(302, "/et"); });

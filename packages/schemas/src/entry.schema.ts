@@ -4,6 +4,9 @@ import { PerformanceSnapshotSchema } from "./performance.schema.js";
 import { CreateCategoryBodySchema } from "./category.schema.js";
 import { CreateAgeGroupBodySchema } from "./age-group.schema.js";
 import { CreateFormatBodySchema } from "./format.schema.js";
+import { CategorySchema } from "./category.schema.js";
+import { AgeGroupSchema } from "./age-group.schema.js";
+import { FormatSchema } from "./format.schema.js";
 
 export const EntryKindSchema = z.enum(["BASIC", "FINAL"]);
 export const EntryFieldSchema = z.enum(["title", "categoryId", "ageGroupId", "formatId", "durationSec", "teacher", "author", "participants", "roster", "entries"]);
@@ -17,6 +20,14 @@ export const EntrySettingsSchema = z.strictObject({
   })).max(2000),
 }).refine(value => new Set(value.nominations.map(row => JSON.stringify([row.categoryId, row.ageGroupId, row.formatId]))).size === value.nominations.length,
 { message: "Nomination combinations must be unique" });
+export const EntryIssueSchema = z.strictObject({ performanceId: IdSchema.nullable(), field: EntryFieldSchema, reason: z.enum(["required", "configuration", "participants", "birthDate", "age", "count", "duration"]) });
+export const EntryContextQuerySchema = z.strictObject({ performanceId: IdSchema.optional() });
+export const EntryContextSchema = z.strictObject({
+  eventId: IdSchema, studioId: IdSchema, studioName: z.string(), eventName: z.string(), ageDate: z.iso.date(), timeZone: z.string(),
+  issues: z.array(EntryIssueSchema), settings: EntrySettingsSchema.nullable(), writableFields: z.array(EntryFieldSchema),
+  options: z.strictObject({ categories: z.array(CategorySchema), ages: z.array(AgeGroupSchema), formats: z.array(FormatSchema) }),
+});
+export type EntryContext = z.infer<typeof EntryContextSchema>;
 export const EntryConfigurationSchema = z.strictObject({ revision: z.int().nonnegative(), frozen: z.boolean(), settings: EntrySettingsSchema.nullable() });
 export const EntryOptionsSchema = z.strictObject({
   categories: z.array(CreateCategoryBodySchema.extend({ id: IdSchema, name: z.string().trim().min(1).max(500) })).max(100),
@@ -31,7 +42,7 @@ export const EntryCheckpointParamsSchema = EntryParamsSchema.extend({ kind: Entr
 export const EntryGrantSchema = z.strictObject({ fields: z.array(EntryFieldSchema).min(1).max(11).refine(values => new Set(values).size === values.length),
   performanceIds: z.array(IdSchema).max(1000).nullable(), until: z.iso.datetime({ offset: true }),
 });
-export const EntryIssueSchema = z.strictObject({ performanceId: IdSchema.nullable(), field: EntryFieldSchema, reason: z.enum(["required", "configuration", "participants", "birthDate", "age", "count", "duration"]) });
+
 export const EntryManifestSchema = z.strictObject({
   settings: EntrySettingsSchema,
   entries: z.array(z.strictObject({ id: IdSchema, revision: z.int().positive(), snapshot: PerformanceSnapshotSchema })),

@@ -1,26 +1,26 @@
 # Development checkpoint
 
-Updated: 2026-11-17. This file owns current priority, state summary and release
+Updated: 2026-11-18. This file owns current priority, state summary and release
 gates. [Product scope](docs/PRODUCT_SCOPE.md) owns audiences/features; roadmaps own
 task checkboxes. [The map](docs/README.md) routes selected work to its docs/source.
 
 ## Next action
 
-**Next: P9-WIX-TRANSITION — coordinated local `/app`/legacy-link integration first.**
-P4-STUDIO-PAGES/S18 and P4-PUBLIC-PAGES/S19 are delivered as isolated local
-React/Node public consumers of the existing S20 CMS, with readable no-script HTML,
-ET/EN/RU/fallback/metadata/live sitemap, studio sections and festival archives/
-truthful handoff. [Contract](docs/api/public-pages.md) and
-[validation/limits](docs/PUBLIC_SITES_VALIDATION.md) define exact local scope.
-Before cohosting, implement and validate the ADR-026 router/base/client/return/
-onboarding/mail/legacy redirect transition together. Keep approved content/rights,
-archive attribution, ownership/TLS and hosted/human release checks open. No target
-hostname, DNS, cookie, deployment or Wix cancellation change is authorized.
+**Next local task: P5-APPLICATION-ESTIMATES — expected counts per event-local day.**
+Define revisioned initial-application estimates and their adjustment/review behavior
+using the event's actual calendar days; estimates are not submitted entries.
+Preserve the completed application/approval and entry contracts.
 
-This deliberately supersedes the earlier M3-first/public-after-M3 ordering.
-P5-ENTRIES remains the next participant-workflow task with prerequisites delivered;
-its backend work is retained. Public websites do not depend on completing M3/M5.
-The ordered queue below owns subsequent selection.
+The coordinated local P9-WIX-TRANSITION `/app`/legacy-link integration and
+P5-ENTRIES with owning S09/S10 are delivered. [Validation and limits](docs/ENTRY_WORKSPACE_VALIDATION.md)
+record routing, roster/draft/participant UI, retry/concurrency and isolated
+migration/API/browser checks. Existing S20 and organizer entry review are reused.
+Music and representative submission remain separately gated M3 work.
+
+P9-WIX-TRANSITION stays open for real content/rights/archive/URL inventory,
+ownership/TLS, replacement costs and hosted/human cutover evidence. Keep Wix live.
+No deployment, DNS, cookie-scope change or cancellation is authorized. Public
+websites retain independent release gates and do not depend on finishing M3/M5.
 
 ## Product delivery goal
 
@@ -32,7 +32,8 @@ One organization, two public experiences, one shared administration workspace:
 | Festival portal | fest.neposedo.ee | Replace Wix: editions/branding, rules, judges, registration handoff, results/archive and contact |
 | Private workspace | fest.neposedo.ee/app initially | Developer/director content administration plus authorized festival representatives, staff and judges |
 
-These are target addresses, not verified DNS, hosted services or mounted routes.
+These are target addresses, not verified DNS or hosted services. The private
+`/app` base is implemented and rehearsed locally.
 Neposedõ has two teachers and one or two festivals/competitions yearly. Only the
 developer and director need content/organization administration. Studio public
 content is created from scratch; social accounts continue to carry frequent
@@ -41,12 +42,13 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source and the CMS slice revalidated locally on 2026-11-17. Older reports retain
+Source and the workspace/entry slice revalidated locally on 2026-11-18. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- CMS follow-up (2026-11-17): PR #6 and continuation PR #7 are merged into main
-  (latest d5bc51b). The public consumers started from that clean target, matching
-  fetched origin/main with no unmerged remote branch or open PR overlap.
+- CMS follow-up: PR #6 and continuation PR #7 are merged into main. Public
+  consumers are retained at ee0bf72; the workspace/entry slice starts from that
+  clean intended target, matching fetched origin/main with no unmerged remote
+  branch or open PR overlap.
   No original CMS work is duplicated. Publication requires the canonical-policy fingerprint from
   private preview; document changes invalidate review/confirmation state. The
   validated follow-up is retained without a new branch/history/publication action.
@@ -64,23 +66,29 @@ their dates; no hosted or application-database state is inferred.
   configuration/review/recovery are retained. [ADR-025](docs/adr/025-entry-submission-lifecycle.md),
   [recovery evidence](docs/ENTRY_RECOVERY_VALIDATION.md) and
   [checkpoint evidence](docs/ENTRY_CHECKPOINT_VALIDATION.md) own policy/results.
-- P5-ENTRIES representative S09/S10, music and submission UI remain open. Initial
-  event-day estimates are P5-APPLICATION-ESTIMATES. Music follows
+- P5-ENTRIES and owning representative S09/S10 are complete locally: scoped roster
+  create/edit/archive, unscheduled saved drafts, options/participants, withdrawal/
+  restore and retained network/session/stale-edit recovery. Migration 42 adds
+  dancer revisions and immutable retry receipts. [Evidence](docs/ENTRY_WORKSPACE_VALIDATION.md).
+  S11 music and S12 submission remain open; P5-UI-ENTRIES is therefore not closed.
+  Initial event-day estimates are next under P5-APPLICATION-ESTIMATES. Music follows
   P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC; approval, entry review and music acceptance
   remain separate. Live scoring/calculated results remain Phase 6–7 work.
 - P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
-  locally complete and revalidated on 2026-11-17. The [CMS contract](docs/api/content.md) owns `/content` editing,
+  locally complete and retained. The [CMS contract](docs/api/content.md) owns `/app/content` editing,
   immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
   published JSON. P4-STUDIO-PAGES/P4-PUBLIC-PAGES now supply isolated public HTML
-  consumers and live metadata/sitemaps. The `/app` base/legacy identity-link and
-  production ingress transition remains unimplemented, required before cohosting.
+  consumers and live metadata/sitemaps. The coordinated `/app`/legacy identity-link
+  transition and opt-in loopback festival cohost are implemented and rehearsed;
+  production ingress and cutover remain unverified external work.
   Existing event/judge/image authentication remains required. Wix archive
   attribution, placeholder contact and owner/export/rights verification remain
   migration/release gates. Public raster cleanup is independent of private music.
-- The repository contains **41 migrations**. Migration 41 adds CMS records,
-  restrictive/composite ownership and immutable history/audit guards; migration 40
-  retains its published correction. All migrations passed disposable fresh/upgrade/
-  parity and full API baseline checks. Last application-database evidence remains
+- The repository contains **42 migrations**. Migration 42 adds positive dancer
+  revisions, immutable actor/target/body-bound receipts and atomic safe audit
+  metadata; migration 41 retains CMS ownership/history and migration 40 its
+  published correction. All 42 passed disposable fresh/upgrade/catalog parity
+  and full API baseline checks. Last application-database evidence remains
   2026-11-14 (1–39 applied, 40 pending); that database was not inspected or migrated
   here. No current hosted success is inferred.
 - The full Hallmark redesign direction remains active. Bounded Cobalt organizer
@@ -143,9 +151,9 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 1 | P4-PUBLIC-EDITOR — complete locally | Shared CMS and S20/F12 delivered; validation/release limits above |
 | 2 | P4-STUDIO-PAGES — local consumer complete | Isolated request-rendered studio site; WEB-STUDIO still requires its own integration/material/hosted/human gates |
 | 3 | P4-PUBLIC-PAGES — local consumer complete | Isolated festival portal/edition rules/judges/archives and truthful handoff; WEB-FESTIVAL remains unreleased |
-| 4 | P9-WIX-TRANSITION — next | Coordinated `/app`/legacy identity links before cohosting; content/archive/URL migration and rehearsed replacement; retain Wix until verified authorized cutover |
-| 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 | Next participant slice; ownership/checkpoint/config prerequisites already delivered locally |
-| 6 | P5-APPLICATION-ESTIMATES | Initial expected entry counts per actual event-local day; preserve completed M2 contracts |
+| 4 | P9-WIX-TRANSITION — local integration complete; external gates open | Coordinated `/app`/legacy identity links and opt-in cohost validated; real content/archive/URL and hosted replacement evidence required; retain Wix |
+| 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 — complete locally | Scoped roster and saved entry/participant drafts with recovery; broader UI task stays open for S11/S12 |
+| 6 | P5-APPLICATION-ESTIMATES — next local task | Initial expected entry counts per actual event-local day; preserve completed M2 contracts |
 | 7 | P3-MUSIC-MODEL → P8-MEDIA → P5-MUSIC → P5-SUBMISSION | Explicit music policy/private-media gates before complete M3 submission |
 | 8 | Phase 6–7 model/consumer tasks | Consume required M3/M4 workflows; live/scoring/recovery decisions before dependent screens and M5 |
 

@@ -1,13 +1,8 @@
-import { BrowserRouter } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AppRoutes } from "./routes";
 import { SessionRecovery } from "./auth/SessionRecovery";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <SessionRecovery><AppRoutes /></SessionRecovery>
-    </BrowserRouter>
-  );
-}
+const router = createBrowserRouter([{ path: "*", element: <SessionRecovery><AppRoutes /></SessionRecovery> }], { basename: "/app" });
+function App() { return <RouterProvider router={router} />; }
 
 export default App

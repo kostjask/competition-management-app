@@ -9,7 +9,9 @@ For frontend-only development from the root: pnpm --filter web dev (port 5173).
 React tests and maintained Playwright Chromium coverage for delivered workflows.
 Human language and assistive review remain separate release evidence.
 
-VITE_API_URL must include /api/v1 (local http://localhost:4000/api/v1).
+The browser workspace uses /app; router links remain basename-relative.
+VITE_API_URL defaults to /api/v1. Vite proxies /api/v1 and /uploads to loopback
+port 4000; explicit API origins remain supported. [Routing/cohosting](../../docs/api/workspace-routing.md).
 Restart Vite after environment changes. Shared @dance/schemas emits runtime JS;
 build it and restart the API after contract changes.
 
@@ -19,10 +21,11 @@ The target includes public studio/festival sites and shared content administrati
 [product scope](../../docs/PRODUCT_SCOPE.md) and
 [ADR-026](../../docs/adr/026-studio-and-festival-platform.md) distinguish these
 from the current app. CMS/public JSON and separate local public HTML entries are
-implemented; the private SPA still has no `/app` base. Public rendering lives in
+implemented; the private SPA now uses `/app`. Public rendering lives in
 `packages/public-site`, not the authenticated browser bundle.
 [Public entry/routing](../../docs/api/public-pages.md) documents explicit local
-origins and the still-required cohosting/identity-link transition. Do not mount
+origins; [workspace routing](../../docs/api/workspace-routing.md) supplies the local
+identity-link/cohosting transition. Hosted ingress still needs separate review. Do not mount
 public HTML over existing workspace routes based on target addresses alone.
 Public screens are S18–S20/F11–F12; existing application contracts stay valid.
 
@@ -61,8 +64,8 @@ The organizer performance register/editor is at
 It shows saved performance titles, explicit studio applications and participant
 counts, including zero, plus draft creation, details/history, configuration,
 checkpoint review and retained withdrawal/restore. URL filters, error/retry,
-loading/empty states and session recovery use Cobalt and ET/EN/RU. Representative
-entry/music/submission UI retains its M3 gates.
+loading/empty states and session recovery use Cobalt and ET/EN/RU. Representative S09/S10 roster and entry editing are delivered locally;
+music/submission UI retains its M3 gates.
 [Current recovery evidence](../../docs/ENTRY_RECOVERY_VALIDATION.md).
 
 Global admins review independent decisions at /admin/events/:eventId/applications;
@@ -75,15 +78,16 @@ confirmed pending cancellation and same-studio reapply retain revisions/history.
 Frozen commands survive uncertain responses/session recovery; explicit server
 comparison preserves local input until replacement. Private form data stays in
 mounted state. [Contracts/evidence](../../docs/APPLICATION_REVIEW_VALIDATION.md)
-record limits; entry/billing-editor extensions and external release gates remain.
+record limits; estimates/billing-editor extensions and external release gates remain.
 
 ## Shared content administration
 
-Global administrators use `/content/studio`, `/content/festivals` and
-`/content/editions/:editionId` for structured ET/EN/RU content, saved private
+Global administrators use `/app/content/studio`, `/app/content/festivals` and
+`/app/content/editions/:editionId` for structured ET/EN/RU content, saved private
 preview, exact-revision publication/unpublication and reviewed document media.
 Initialize missing singletons explicitly. Unsaved/conflicting/uncertain writes
 remain mounted; reconcile receipts/current state before explicit retry. Selective
 edition copy excludes images and operational data. Linked Event facts are read-only.
-The `/app` transition and public HTML pages remain separate tasks. [Contracts](../../docs/api/content.md)
+The coordinated `/app` transition, bounded legacy links and optional local
+festival cohost are implemented; public HTML remains a separate renderer. [Contracts](../../docs/api/content.md)
 and [local validation](../../docs/CONTENT_EDITOR_VALIDATION.md) own exact boundaries.
