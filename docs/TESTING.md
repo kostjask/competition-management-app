@@ -48,6 +48,15 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P5-APPLICATION-ESTIMATES and P3-MUSIC-MODEL use the focused
+`application-estimates.test.tsx` / `music-model.test.tsx` web contracts and
+`applications.spec.ts` browser suite. The registration and full baselines invoke
+`check-application-estimates.cjs` and `check-music-model.cjs` in their own disposable
+database. The migration suite compares their additive tables, composite keys,
+CHECKs and immutable-history triggers on fresh and existing-data schemas.
+Model tests do not substitute for P8-MEDIA real file/provider/access tests.
+[Dated evidence](APPLICATION_ESTIMATES_MUSIC_VALIDATION.md).
+
 During editing, run the affected test file first. These commands build only its
 runtime dependencies through Turbo, then always execute the selected test:
 

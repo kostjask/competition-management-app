@@ -1,11 +1,11 @@
 {
   "date": "2026-11-18",
-  "scope": "P5-ENTRIES/S09/S10 and local P9 workspace transition",
+  "scope": "P5-APPLICATION-ESTIMATES/S06/S08 and P3-MUSIC-MODEL",
   "evidence": [
     "DESIGN.md:10",
     "docs/DESIGN_SYSTEM.md:9",
     "docs/ui/studio.md:35",
-    "apps/web/src/pages/entries/entries.css:1"
+    "apps/web/src/pages/applications/estimates.css:1"
   ],
   "preserved": [
     "Cobalt local Latin/Cyrillic fonts and scoped tokens",
@@ -13,13 +13,13 @@
     "ET/EN/RU and accessibility"
   ],
   "introduced": [
-    "studio roster and calendar-date editor",
-    "saved draft and searchable participants",
-    "receipt/conflict/archive recovery"
+    "actual event-local day/count editor",
+    "reasoned organizer correction and immutable history",
+    "receipt/conflict/session recovery"
   ],
   "inferred": {
-    "audience": "approved studio representatives and organizers",
-    "use": "save a roster and resumable unscheduled entry draft",
+    "audience": "applicants, studio representatives and organizers",
+    "use": "record and review expected performance counts without changing approvals",
     "tone": "restrained operations"
   },
   "material": "actual operational rows; synthetic fixtures for checks; no artwork or invented claims"

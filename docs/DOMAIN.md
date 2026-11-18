@@ -1,5 +1,20 @@
 # Domain rules and model boundaries
 
+## Application estimates and private music
+
+[ADR-027](adr/027-application-estimates.md) defines revisioned expected counts for
+each actual event-local calendar day. Planning estimates never create entries,
+reserve capacity or change independent organization/event approvals. Earlier
+snapshots retain their dates and timezone; adjustments share the application
+revision and current owner/review rules.
+
+[ADR-028](adr/028-private-music-model.md) defines registration-owned tracks before
+complete entries, optional exact-owner performance attachment, immutable validated
+version metadata and independent confirmation/acceptance/reopening. Bytes stay
+outside PostgreSQL. The model/contracts are implemented; P8-MEDIA transport/private
+delivery and P5-MUSIC UI remain prerequisites for actual upload/playback. No public
+CMS asset access or broad roster permission is implied by music ownership.
+
 ## Current product scope
 
 [Product scope](PRODUCT_SCOPE.md) is canonical: one Neposedõ organization, a new
@@ -26,7 +41,7 @@ Event scoping is not a claim of multi-organizer isolation.
 | Organization approval | PENDING / APPROVED / REJECTED | Separate from every event application |
 | Event registration | Unique studio/event pair with revisioned retained M2 transitions under ADR-003; PENDING / APPROVED / REJECTED / LOCKED / CANCELLED; application/review UI delivered locally | External M2 release evidence remains open |
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
-| Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration is implemented; representative UI remains P5 |
+| Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration and representative S09/S10 are delivered; music/submission UI retain their P5 gates |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
 | Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
 | Public studio content | Structured singleton revisions, profiles/classes/timetable, explicit publication and document-owned assets | Public-page composition/release remains open; no enrolment or student registry |

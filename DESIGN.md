@@ -39,6 +39,15 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P5-APPLICATION-ESTIMATES adds an event-day/count ledger to S08 and its owning S06
+review. Native labelled counts expose every real calendar day and explicit zero;
+current event timezone accompanies the form. The editor retains local values
+through errors/session recovery; explicit server comparison controls replacement.
+Reasoned organizer corrections and immutable snapshots use a disclosed ruled
+history, separate from approval actions. Existing Cobalt tokens, instant focus,
+44px controls and ET/EN/RU remain; no images or material slots are needed.
+P3-MUSIC-MODEL introduces no premature upload/playback or acceptance controls.
+
 P5-ENTRIES extends the locked Cobalt app system to a searchable studio roster,
 calendar-date editor and unscheduled draft/participant workspace at the `/app`
 base. The shared organizer editor uses a paired basic/final desktop form and a

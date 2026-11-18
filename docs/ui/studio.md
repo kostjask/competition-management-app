@@ -18,6 +18,14 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 ## S08 — Application and studio profile
 
+P5-APPLICATION-ESTIMATES extends S08 with a required count for every current
+event-local day, including zero, and an independent saved-history ledger. Legacy
+applications without counts show unrecorded. Owners may adjust before cutoff;
+closed/cancelled/rejected/locked records explain the restriction. Network/session
+recovery retains the exact operation; stale writes retain local values until
+explicit server comparison/replacement. Estimates never imply submitted entries
+or change either approval. [Contract](../api/registrations.md#planning-estimates).
+
 - **Purpose / roles / routes:** apply and maintain authorized studio/contact details; `/events/:id/register`, `/events/:id/studio?studio=:studioId` mounted; standalone `/studios/:studioId` remains proposed.
 - **Primary action:** submit application, inspect status or save permitted profile changes.
 - **Data:** selected event, studio fields, representative contact, separate approvals, profile edit authority; optional invoice details private.
@@ -73,7 +81,7 @@ submission action is advertised. [Contracts](../api/entry-context.md).
 - **Sections / components:** limits before chooser, labeled file input/drop area, progress/cancel, current file metadata, explicit playback controls, retry/replacement confirmation.
 - **States:** no file, uploading, server processing, ready, invalid/failed/canceled, expired access, locked; previous file retained after failed replacement.
 - **Responsive / accessibility:** no drag-only upload; touch controls, named progress, keyboard-operable audio, no autoplay; long filenames wrap.
-- **API:** pending P3-MUSIC-MODEL/P8-MEDIA contracts; image upload endpoints do not accept music.
+- **API:** [P3-MUSIC-MODEL storage/contracts](../api/music.md) are defined locally; P8-MEDIA transport/private access and P5-MUSIC remain pending. Image upload endpoints do not accept music.
 - **Acceptance:** selected file alone never appears ready; server validates content/ownership; retry does not detach the working file. F04.
 
 ## S12 — Data-review checklist and submission

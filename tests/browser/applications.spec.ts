@@ -1,7 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
-import { EventSchema, StudioSchema, StudioRegistrationSchema, NewStudioRegistrationBodySchema, UpdateStudioApprovalBodySchema, UpdateStudioRegistrationBodySchema, UpdateRepresentativeBodySchema, RegisterSchema, type StudioRegistration, type UserProfile } from "../../packages/schemas/src/index";
+import { EventSchema, StudioSchema, StudioRegistrationSchema, NewStudioRegistrationBodySchema, UpdateStudioApprovalBodySchema, UpdateStudioRegistrationBodySchema, UpdateRepresentativeBodySchema, RegisterSchema, SaveApplicationEstimatesSchema, type ApplicationEstimateRevision, type StudioRegistration, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey, type TranslationArgs } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
+import { mkdirSync, writeFileSync } from "node:fs";
 type PlainKey = { [K in TranslationKey]: TranslationArgs<K> extends [] ? K : never }[TranslationKey];
 const label = (key: PlainKey, locale: Locale = "en") => getTranslation(key, locale);
 const instant = "2026-01-01T00:00:00.000Z";
@@ -13,6 +14,9 @@ async function fixture(page: Page, options: { admin?: boolean; empty?: boolean; 
   await page.setViewportSize({ width: options.width ?? 390, height: 950 });
   await page.addInitScript(locale => localStorage.setItem("app-language", locale), options.locale ?? "en");
   const state = { admin: options.admin ?? false, event: eventFixture(), row: options.empty ? null : registration(), valid: true, failRead: false, failWrite: false, loseResponse: false, failReadback: false, writes: [] as Record<string, unknown>[], signups: [] as Record<string, unknown>[], city: "Tallinn", contact: "Synthetic applicant", contactEmail: "applicant@example.invalid" };
+  const estimates: ApplicationEstimateRevision[] = [];
+  const estimateOperations = new Map<string, ApplicationEstimateRevision>();
+  let decisionRevision: number | null = null;
   const profile = () => { const row = state.row; return row ? StudioSchema.parse({ id: "s", eventId: "e", name: row.studio.name, approvalStatus: row.studio.approvalStatus, approvalReason: row.studio.approvalReason, country: "EE", city: state.city, directorName: null, directorPhone: null, invoiceDetails: null, logoUrl: null, registrations: [{ ...row, studio: undefined, nextActor: undefined }].map(({ studio: _studio, nextActor: _actor, ...value }) => value), representatives: [{ id: "rep", studioId: "s", userId: "applicant", name: state.contact, email: state.contactEmail, active: true, createdAt: instant }] }) : null; };
   await page.route("**/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname; const method = route.request().method();
@@ -27,13 +31,25 @@ async function fixture(page: Page, options: { admin?: boolean; empty?: boolean; 
     if (path === "/api/v1/events" && method === "GET") return route.fulfill({ json: [state.event] });
     if (path === "/api/v1/studios" && method === "GET") return route.fulfill({ json: state.row ? [profile()] : [] });
     if (path === "/api/v1/studios/s" && method === "GET") return route.fulfill({ json: profile() });
-    if (path.endsWith("/review")) return route.fulfill({ json: { history: [{ action: "REGISTRATION_CREATED", createdAt: instant, revision: 1, fromStatus: null, toStatus: null, reason: null }], notifications: state.row && state.row.revision > 1 ? [{ id: "notice", revision: state.row.revision, axis: "EVENT", state: "RETRYING", createdAt: instant }] : [] } });
+    if (path.endsWith("/review")) return route.fulfill({ json: { estimates, history: [{ action: "REGISTRATION_CREATED", createdAt: instant, revision: 1, fromStatus: null, toStatus: null, reason: null }], notifications: decisionRevision ? [{ id: "notice", revision: decisionRevision, axis: "EVENT", state: "RETRYING", createdAt: instant }] : [] } });
     if (path === "/api/v1/events/e/studio-registrations" && method === "GET") return route.fulfill({ json: state.row ? [state.row] : [] });
     const body: Record<string, unknown> = method === "DELETE" ? {} : route.request().postDataJSON(); state.writes.push(body);
     if (state.failWrite) return route.fulfill({ status: 409, json: failure() });
+    if (path.endsWith("/estimates") && state.row) {
+      const parsed = SaveApplicationEstimatesSchema.parse(body);
+      let receipt = estimateOperations.get(parsed.operationId);
+      if (!receipt) {
+        if (parsed.revision !== state.row.revision) return route.fulfill({ status: 409, json: failure() });
+        state.row.revision++;
+        receipt = { revision: state.row.revision, eventRevision: parsed.eventRevision, counts: parsed.counts, timeZone: state.event.timeZone, source: state.admin ? "ORGANIZER" : "APPLICANT", reason: parsed.reason ?? null, createdAt: instant };
+        estimates.unshift(receipt); estimateOperations.set(parsed.operationId, receipt);
+      }
+      if (state.loseResponse) { state.loseResponse = false; return route.abort(); }
+      return route.fulfill({ json: receipt });
+    }
     if (method === "POST") {
       if ("studioId" in body && state.row) state.row = { ...state.row, status: "PENDING", revision: state.row.revision + 1 };
-      else { const parsed = NewStudioRegistrationBodySchema.parse(body); state.row = registration(); state.row.studio.name = parsed.name; state.city = parsed.city ?? ""; }
+      else { const parsed = NewStudioRegistrationBodySchema.parse(body); state.row = registration(); state.row.studio.name = parsed.name; state.city = parsed.city ?? ""; if (parsed.estimates && estimates.length === 0) estimates.unshift({ revision: 1, eventRevision: parsed.eventRevision ?? 1, counts: parsed.estimates, timeZone: state.event.timeZone, source: "APPLICANT", reason: null, createdAt: instant }); }
     } else if (path.endsWith("/approval") && state.row) {
       const parsed = UpdateStudioApprovalBodySchema.parse(body); expect(parsed.revision).toBe(state.row.revision);
       state.row = { ...state.row, revision: state.row.revision + 1, studio: { ...state.row.studio, approvalStatus: parsed.status, approvalReason: parsed.reason ?? null } };
@@ -45,6 +61,7 @@ async function fixture(page: Page, options: { admin?: boolean; empty?: boolean; 
       state.contact = parsed.name ?? state.contact; state.contactEmail = parsed.email ?? state.contactEmail;
       state.row = { ...state.row, revision: state.row.revision + 1 };
     } else if (state.row) { state.city = typeof body.city === "string" ? body.city : state.city; state.row = { ...state.row, revision: state.row.revision + 1 }; }
+    if ("status" in body && state.row) decisionRevision = state.row.revision;
     if (state.loseResponse) { state.loseResponse = false; return route.abort(); }
     if (state.failReadback) { state.failRead = true; state.failReadback = false; }
     return route.fulfill({ ...(method === "DELETE" ? { status: 204 } : { json: path.endsWith("/representatives/rep") ? profile()?.representatives[0] : path === "/api/v1/studios/s" || path.endsWith("/approval") ? profile() : state.row }) });
@@ -190,7 +207,7 @@ test("synthetic signup, verification, application, independent review and return
   expect(state.signups[0]).toHaveProperty("onboarding.intendedEventId", "e");
   await page.goto("/app/verify-email?token=synthetic-verification"); await page.getByRole("button", { name: label("Shell.verify"), exact: true }).click();
   await page.getByRole("link", { name: label("Shell.continue"), exact: true }).click(); await page.getByRole("link", { name: label("Application.open"), exact: true }).click();
-  await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
+  await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); await page.locator('#apply-estimate-2099-06-01').fill('0'); await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
   await expect(page.locator("#profile-studioName")).toBeVisible(); state.admin = true;
   await page.goto("/app/admin/events/e/applications?studio=s");
   for (const axis of ["organization", "event"]) { await page.locator(`#${axis}-status`).selectOption("APPROVED"); await page.locator("form").filter({ has: page.locator(`#${axis}-status`) }).getByRole("button").click(); await page.getByRole("button", { name: label("Application.confirm"), exact: true }).click(); await expect(page.locator(`#${axis}-status`)).toHaveValue("APPROVED"); }
@@ -209,7 +226,7 @@ test("guest return retains exact studio and refuses arbitrary redirect parameter
 
 test("roleless verified draft applies, preserves operation ID after lost response and returns through My applications", async ({ page }) => {
   const state = await fixture(page, { empty: true, draft: true }); await page.goto("/app/events/e/register");
-  await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); state.loseResponse = true;
+  await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio"); await page.locator('#apply-estimate-2099-06-01').fill('2'); state.loseResponse = true;
   await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
   await expect(page.getByText(label("Application.uncertain"), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: label("Setup.retrySame"), exact: true }).click();
@@ -265,4 +282,82 @@ test("empty, failed, locked, wrong studio and denied review routes are truthful"
   state.failRead = false; state.row = registration(); state.event.stage = "DATA_REVIEW"; await page.goto("/app/events/e/studio?studio=s"); await expect(page.locator("#profile-studioName")).toBeDisabled();
   await page.goto("/app/events/e/studio?studio=other"); await expect(page.getByText(label("Shell.notFound"), { exact: true })).toBeVisible();
   await page.goto("/app/admin/events/e/applications"); await expect(page.getByRole("heading", { name: label("Access.denied"), exact: true })).toBeVisible();
+});
+
+for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440]) {
+  test(`${locale} event-day estimates validate, save and support organizer review at ${width}px`, async ({ page }, info) => {
+    const state = await fixture(page, { locale, width });
+    state.event.startsAt = "2028-02-28T22:30:00.000Z"; state.event.endsAt = "2028-03-02T00:00:00.000Z";
+    await page.goto("/app/events/e/studio?studio=s");
+    await expect(page.locator(".estimate-fields input")).toHaveCount(3);
+    await page.getByRole("button", { name: label("Application.saveEstimates", locale), exact: true }).click();
+    await page.locator('.ui-error-summary a[href="#estimate-2028-02-29"]').click();
+    await expect(page.locator("#estimate-2028-02-29")).toBeFocused();
+    await page.locator("#estimate-2028-02-29").fill("0"); await page.locator("#estimate-2028-03-01").fill("2"); await page.locator("#estimate-2028-03-02").fill("4");
+    await page.getByRole("button", { name: label("Application.saveEstimates", locale), exact: true }).focus(); await page.keyboard.press("Enter");
+    await expect(page.getByText(label("Application.saved", locale), { exact: true })).toBeVisible();
+    expect(state.row?.status).toBe("PENDING"); expect(state.row?.studio.approvalStatus).toBe("PENDING");
+    expect(state.writes[0]).toHaveProperty("counts", [{ date: "2028-02-29", count: 0 }, { date: "2028-03-01", count: 2 }, { date: "2028-03-02", count: 4 }]);
+    state.admin = true; state.event.stage = "DATA_REVIEW"; await page.goto("/app/admin/events/e/applications?studio=s");
+    await expect(page.locator("#estimate-2028-02-29")).toHaveValue("0");
+    await page.locator("#estimate-2028-03-01").fill("3");
+    await page.getByRole("button", { name: label("Application.saveEstimates", locale), exact: true }).click();
+    await page.locator('.ui-error-summary a[href="#estimate-reason"]').click(); await expect(page.locator("#estimate-reason")).toBeFocused();
+    await page.locator("#estimate-reason").fill("Confirmed by studio"); await page.getByRole("button", { name: label("Application.saveEstimates", locale), exact: true }).click();
+    await expect(page.getByText(label("Application.saved", locale), { exact: true })).toBeVisible();
+    await page.getByText(label("Application.estimateHistory", locale), { exact: true }).click();
+    await expect(page.locator(".estimate-history > li")).toHaveCount(2);
+    await expect(page.locator(".estimate-history")).toContainText("Confirmed by studio");
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath(`estimates-${locale}-${width}.png`), fullPage: true });
+    if (locale === "en" && width === 1440) {
+      const html = await page.evaluate(() => `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${[...document.querySelectorAll("style")].map(style => style.outerHTML).join("")}</head><body>${document.querySelector(".event-workbench")?.outerHTML}</body></html>`);
+      mkdirSync(".hallmark/estimates", { recursive: true }); writeFileSync(".hallmark/estimates/review.html", html);
+    }
+    state.admin = false; await page.goto("/app/events/e/studio?studio=s");
+    await expect(page.locator("#estimate-2028-02-29")).toBeDisabled();
+  });
+}
+
+test("estimate lost response and expired session retain one operation until acknowledged", async ({ page }) => {
+  const state = await fixture(page); await page.goto("/app/events/e/studio?studio=s");
+  await page.locator("#estimate-2099-06-01").fill("5"); state.loseResponse = true;
+  await page.getByRole("button", { name: label("Application.saveEstimates"), exact: true }).click();
+  await expect(page.locator("#estimate-2099-06-01")).toHaveValue("5");
+  state.valid = false; await page.getByRole("button", { name: label("Setup.retrySame"), exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("dialog").locator('input[type="password"]').fill("synthetic password");
+  await page.getByRole("dialog").getByRole("button", { name: label("Shell.login"), exact: true }).click();
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  await page.getByRole("button", { name: label("Setup.retrySame"), exact: true }).click();
+  await expect(page.getByText(label("Application.saved"), { exact: true })).toBeVisible();
+  expect(state.row?.revision).toBe(2); expect(state.writes[0]).toEqual(state.writes[1]);
+});
+
+test("stale estimate retains local values until explicit server replacement", async ({ page }) => {
+  const state = await fixture(page); await page.goto("/app/events/e/studio?studio=s");
+  await page.locator("#estimate-2099-06-01").fill("7"); state.failWrite = true;
+  await page.getByRole("button", { name: label("Application.saveEstimates"), exact: true }).click();
+  await expect(page.locator("#estimate-2099-06-01")).toHaveValue("7");
+  await page.getByRole("button", { name: label("Application.compare"), exact: true }).click();
+  await expect(page.locator(".application-compare")).toContainText(label("Application.noEstimates"));
+  await expect(page.locator("#estimate-2099-06-01")).toHaveValue("7");
+  await page.getByRole("button", { name: label("Application.replace"), exact: true }).click();
+  await expect(page.locator("#estimate-2099-06-01")).toHaveValue("");
+});
+
+test("initial estimate refreshes changed event days without losing application input", async ({ page }) => {
+  const state = await fixture(page, { empty: true, draft: true }); await page.goto("/app/events/e/register");
+  await page.locator("#apply-estimate-2099-06-01").fill("2"); state.failWrite = true;
+  await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
+  await expect(page.getByRole("button", { name: label("Application.refreshDays"), exact: true })).toBeVisible();
+  state.event.revision = 2; state.event.endsAt = "2099-06-02T10:00:00.000Z";
+  await page.getByRole("button", { name: label("Application.refreshDays"), exact: true }).click();
+  await expect(page.locator("#apply-studioName")).toHaveValue("Verified draft studio");
+  await expect(page.locator("#apply-estimate-2099-06-01")).toHaveValue("2");
+  await page.locator("#apply-estimate-2099-06-02").fill("0"); state.failWrite = false;
+  await page.getByRole("button", { name: label("Application.apply"), exact: true }).click();
+  await expect(page.getByText(label("Application.saved"), { exact: true }).first()).toBeVisible();
+  expect(state.writes[1]).toHaveProperty("eventRevision", 2);
+  expect(state.writes[1]).toHaveProperty("estimates", [{ date: "2099-06-01", count: 2 }, { date: "2099-06-02", count: 0 }]);
 });

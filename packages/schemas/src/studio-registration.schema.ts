@@ -1,12 +1,15 @@
 import { z } from "zod";
 import { IdSchema, EmailSchema } from "./common.schema.js";
 import { StudioApprovalStatusSchema, StudioEventMembershipSchema, UpdateRegistrationBodySchema, ReviewReasonSchema } from "./studio.schema.js";
+import { ApplicationEstimateCountsSchema, ApplicationEstimateRevisionSchema } from "./application-estimates.schema.js";
 
 const TextSchema = z.string().trim().min(1);
 
 export const NewStudioRegistrationBodySchema = z.strictObject({
   operationId: z.uuid().optional(),
   onboardingRevision: z.int().positive().optional(),
+  eventRevision: z.int().positive().optional(),
+  estimates: ApplicationEstimateCountsSchema.optional(),
   name: TextSchema,
   country: TextSchema.optional(),
   city: TextSchema.optional(),
@@ -45,6 +48,7 @@ export type UpdateStudioRegistrationInput = z.input<typeof UpdateStudioRegistrat
 export type StudioRegistration = z.infer<typeof StudioRegistrationSchema>;
 
 export const ApplicationReviewSchema = z.strictObject({
+  estimates: z.array(ApplicationEstimateRevisionSchema).default([]),
   history: z.array(z.strictObject({ action: z.enum(["STUDIO_APPROVAL_CHANGED", "REGISTRATION_APPROVAL_CHANGED", "REGISTRATION_CORRECTED", "REGISTRATION_CANCELLED", "REGISTRATION_REAPPLIED", "REGISTRATION_CREATED"]), createdAt: z.iso.datetime(), revision: z.int().positive().nullable(), fromStatus: StudioEventMembershipSchema.shape.status.nullable(), toStatus: StudioEventMembershipSchema.shape.status.nullable(), reason: ReviewReasonSchema.nullable() })),
   notifications: z.array(z.strictObject({ id: IdSchema, revision: z.int().positive(), axis: z.enum(["ORGANIZATION", "EVENT"]), state: z.enum(["SIMULATED", "NO_RECIPIENT", "QUEUED", "RETRYING", "ACCEPTED", "EXPIRED"]), retryable: z.boolean().default(false), createdAt: z.iso.datetime() })),
 });

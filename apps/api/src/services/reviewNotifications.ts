@@ -3,6 +3,7 @@ import { ApplicationReviewSchema, AuditMetadataSchema } from "@dance/schemas";
 import { config } from "../config/env";
 import { queueEmail } from "./emailQueue";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors";
+import { serializeEstimate } from "./applicationEstimates";
 
 function expiredDelivery(delivery: { state: string; expiresAt: Date }, now: Date) {
   return delivery.state === "CANCELLED" || (delivery.state === "PENDING" && delivery.expiresAt <= now);
@@ -44,7 +45,8 @@ export async function readApplicationReview(tx: Prisma.TransactionClient, eventI
   const notices = await tx.reviewNotice.findMany({ where: { registrationId }, select: { id: true, revision: true, axis: true, mode: true, createdAt: true,
     deliveries: { where: { supersededAt: null }, select: { state: true, attempts: true, expiresAt: true, reviewRecipientId: true } } }, orderBy: [{ createdAt: "desc" }, { id: "desc" }] });
   const now = new Date();
-  return ApplicationReviewSchema.parse({ history: history.map(row => { const metadata = AuditMetadataSchema.parse(row.metadata); return {
+  const estimates = await tx.applicationEstimateRevision.findMany({ where: { registrationId }, orderBy: { revision: "desc" } });
+  return ApplicationReviewSchema.parse({ estimates: estimates.map(serializeEstimate), history: history.map(row => { const metadata = AuditMetadataSchema.parse(row.metadata); return {
     action: row.action, createdAt: row.createdAt.toISOString(), revision: metadata.revision ?? null,
     fromStatus: metadata.fromStatus ?? null, toStatus: metadata.toStatus ?? null, reason: metadata.reasonCode ?? null,
   }; }), notifications: notices.map(row => ({ id: row.id, revision: row.revision, axis: row.axis, createdAt: row.createdAt.toISOString(),

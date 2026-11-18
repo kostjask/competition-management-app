@@ -13,6 +13,7 @@ export function studioRegistrationsRouter(prisma: PrismaClient) {
   router.post("/:eventId/studio-registrations/:studioId/review/:notificationId/retry", asyncHandler((req, res) => controller.retryNotification(req, res)));
   router.post("/:eventId/studio-registrations", asyncHandler((req, res) => controller.create(req, res)));
   router.patch("/:eventId/studio-registrations/:studioId", asyncHandler((req, res) => controller.update(req, res)));
+  router.patch("/:eventId/studio-registrations/:studioId/estimates", asyncHandler((req, res) => controller.estimates(req, res)));
   router.delete("/:eventId/studio-registrations/:studioId", asyncHandler((req, res) => controller.cancel(req, res)));
   return router;
 }

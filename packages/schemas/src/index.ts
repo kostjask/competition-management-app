@@ -21,3 +21,5 @@ export * from "./content.schema.js";
 export * from "./calendar.js";
 export * from "./entry.schema.js";
 export * from "./cms.schema.js";
+export * from "./application-estimates.schema.js";
+export * from "./music.schema.js";

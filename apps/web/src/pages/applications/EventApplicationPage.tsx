@@ -36,7 +36,7 @@ function EventApplication({ id }: { id: string }) {
       {value.rows.length > 1 && <ul className="application-queue">{value.rows.map(value => <li key={value.id}><Link to={`?studio=${encodeURIComponent(value.studioId)}`} aria-current={value.id === row?.id || undefined}>{value.studio.name}</Link></li>)}</ul>}
       {selected && !row ? <Alert tone="danger">{t("Shell.notFound")}</Alert> : row ? <ApplicationDetail key={row.studioId} event={value.event} row={row} admin={false} onChanged={changed} /> : user?.isAdmin ? <Link to={`/admin/events/${encodeURIComponent(id)}/applications`}>{t("Application.review")}</Link> : wrongDraft ? <Alert><p>{t("Application.otherDraft")}</p><Link to={`/events/${encodeURIComponent(wrongDraft)}/register`}>{t("Application.open")}</Link></Alert> : <>
         {!applicationOpen(value.event, now) && <Alert>{t("Setup.windowClosed")}</Alert>}
-        <ApplyForm eventId={id} draft={draft} disabled={!applicationOpen(value.event, now)} onCreated={row => { setValue({ ...value, rows: [...value.rows, row] }); setParams({ studio: row.studioId }, { replace: true }); setCreated(true); }} />
+        <ApplyForm event={value.event} draft={draft} disabled={!applicationOpen(value.event, now)} onRefresh={async () => { const [event, rows] = await Promise.all([getEvent(id), getStudios(id)]); setValue(current => current ? { ...current, event, rows } : null); }} onCreated={row => { setValue({ ...value, rows: [...value.rows, row] }); setParams({ studio: row.studioId }, { replace: true }); setCreated(true); }} />
       </>}
     </>}
   </div>;

@@ -1,0 +1,11 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: event-day planning ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V4 · weakest: date density; native labelled counts and disclosed history. */
+/* Hallmark · waive 49b · real organizer contact link wraps at 320px · retaining the complete contact address avoids horizontal overflow on narrow phones. */
+/* Hallmark · waive 72 · outer event-workbench is a continuous document · full captures show readable final content without clipping or a cramped bounded panel. */
+/* Hallmark · finish-review: subagent · 1 actionable finding resolved in the same phone recapture; no material gap. */
+/* Hallmark · sweep: 0 FAIL, 0 open REFLEX, 0 WARN; 2 reviewed waivers (49b, 72), ten files and rendered authenticated-workbench snapshot. */
+.estimate-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: var(--space-md); margin-block: var(--space-md); }
+.estimate-ledger > div { display: flex; justify-content: space-between; gap: var(--space-md); border-bottom: 1px solid var(--color-rule-2); padding-block: var(--space-sm); }
+.estimate-ledger dd { margin: 0; font-variant-numeric: tabular-nums; }
+.estimate-history { padding-inline-start: var(--space-lg); }
+.estimate-history li { padding-block: var(--space-md); overflow-wrap: break-word; }

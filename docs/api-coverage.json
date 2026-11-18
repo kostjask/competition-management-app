@@ -2,6 +2,22 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "studio-registrations",
+      "exportName": "studioRegistrationsRouter",
+      "mount": "/events",
+      "method": "PATCH",
+      "path": "/:eventId/studio-registrations/:studioId/estimates",
+      "tests": {
+        "success": "scripts/check-application-estimates.cjs",
+        "invalidInput": "scripts/check-application-estimates.cjs",
+        "authentication": "coverage inventory protected operations reject unauthenticated requests before data access",
+        "permission": "scripts/check-application-estimates.cjs",
+        "crossParent": "scripts/check-application-estimates.cjs",
+        "inactiveRecord": "scripts/check-application-estimates.cjs",
+        "conflict": "scripts/check-application-estimates.cjs"
+      }
+    },
+    {
       "router": "entry-workflow",
       "exportName": "entryWorkflowRouter",
       "mount": "/events",

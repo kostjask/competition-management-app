@@ -16,8 +16,10 @@ Validation and remaining database/release limits are in
 The checkpoint's core P3-ENTRIES review/configuration slice is now delivered
 locally; subsequent recovery and full option/preset setup complete P3-ENTRIES and
 P4-ENTRY-CONFIG locally. P5-ENTRIES/S09/S10 now consume those foundations and
-share the organizer editor. The checkpoint selects P5-APPLICATION-ESTIMATES next;
-music/submission and external public-site transition gates remain open.
+share the organizer editor. P5-APPLICATION-ESTIMATES adds owning S06 day/count
+review, reasoned correction and immutable history under ADR-027. The checkpoint
+selects P8-MEDIA after the completed music model; music/submission and external
+public-site transition gates remain open.
 The developer/director's shared website editing is owned by the
 [website roadmap](website.md), not a second implementation of event setup.
 

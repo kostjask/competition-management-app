@@ -1,5 +1,47 @@
 # Studio registration contract
 
+## Planning estimates
+
+[ADR-027](../adr/027-application-estimates.md) owns planning estimates. New
+application POST optionally accepts `eventRevision` and `estimates`, for example:
+
+```json
+{
+  "operationId": "f228f339-bbc7-4ec1-b43f-28e39fe68154",
+  "name": "Example studio",
+  "representativeName": "Example representative",
+  "representativeEmail": "representative@example.invalid",
+  "eventRevision": 1,
+  "estimates": [{ "date": "2028-02-29", "count": 0 }, { "date": "2028-03-01", "count": 3 }]
+}
+```
+
+Dates must match every inclusive event-local day exactly once. Each count is an
+integer 0–10000; snapshots allow 1–366 days. `eventRevision` must match when
+counts are supplied. Omission means unrecorded, preserving established M2 clients;
+the current UI requires an explicit count, including zero, for every day.
+
+`PATCH /events/:eventId/studio-registrations/:studioId/estimates` accepts a strict
+body `{operationId, revision, eventRevision, counts, reason?}`. `counts` has the
+same date/count shape. Owners may adjust PENDING/APPROVED applications before the
+application cutoff. Global admins may correct them in review stages and must
+supply a nonempty reason (up to 500 characters). Other memberships, wrong parents,
+inactive studios and inappropriate lifecycle states are denied. Unknown fields,
+missing/extra/duplicate days, negatives and fractions fail validation. Stale
+application/event revisions and changed/foreign operation replays return 409.
+
+Successful writes atomically advance the existing application revision, append
+an immutable estimate snapshot and safe audit, returning
+`{revision,eventRevision,timeZone,counts,source,reason,createdAt}`. Exact actor/body
+retries acknowledge the original snapshot after current ownership checks. Counts
+never create entries, reserve capacity, reset either approval or queue decision
+mail. `GET .../:studioId/review` adds newest-first `estimates` with that same
+public projection; operation bindings and actor identities stay private. Earlier
+dates remain historical when event dates change; save a new complete snapshot
+against refreshed current days. S06/S08 provide comparison and explicit retry.
+
+## Established application lifecycle
+
 [API index](../API.md). Paths are relative to `/api/v1`. Authentication requires
 an active verified account. A new applicant needs no role. Policy and actor matrix:
 [ADR-003](../adr/003-registration-lifecycle.md).

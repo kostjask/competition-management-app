@@ -3,12 +3,13 @@ import type { Request, Response } from "express";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { CreateStudioRegistrationBodySchema, UpdateStudioRegistrationBodySchema, StudioRegistrationParamsSchema,
-  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema, IdSchema } from "@dance/schemas";
+  StudioRegistrationSchema, EventIdParamsSchema, CancelStudioRegistrationQuerySchema, IdSchema, SaveApplicationEstimatesSchema } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, InternalServerError, NotFoundError, ValidationError } from "../errors";
 import { assertApplicationWindow, assertReviewWindow, registrationTransaction, reconcileRepresentativeAccess } from "../services/registrationPolicy";
 import { appendAudit } from "../services/audit";
 import { queueReviewNotice, readApplicationReview, retryReviewNotice } from "../services/reviewNotifications";
+import { recordEstimates, serializeEstimate, validateEstimateDays } from "../services/applicationEstimates";
 
 const registrationSelect = {
   id: true, studioId: true, eventId: true, status: true, revision: true, decisionReason: true,
@@ -55,7 +56,7 @@ export class StudioRegistrationsController extends BaseController {
       throw new ValidationError("Representative name and email are required");
     }
     const result = await registrationTransaction(this.prisma, async tx => {
-      const event = await tx.event.findUnique({ where: { id: eventId }, select: { stage: true, registrationDeadline: true } });
+      const event = await tx.event.findUnique({ where: { id: eventId } });
       if (!event) throw new NotFoundError("Event");
       if (body.operationId) {
         const existing = await tx.studioEventRegistration.findUnique({ where: { operationId: body.operationId },
@@ -67,6 +68,7 @@ export class StudioRegistrationsController extends BaseController {
         }
       }
       assertApplicationWindow(event);
+      if (body.estimates) validateEstimateDays(event, body.estimates, body.eventRevision, "estimates");
       if (body.onboardingRevision !== undefined) {
         const draft = await tx.onboardingDraft.findUnique({ where: { userId } });
         if (isAdmin || !draft || draft.status !== "DRAFT" || draft.revision !== body.onboardingRevision
@@ -84,6 +86,9 @@ export class StudioRegistrationsController extends BaseController {
       }, select: { registrations: { select: registrationSelect } } });
       const registration = studio.registrations[0];
       if (!registration) throw new InternalServerError();
+      if (body.estimates) await recordEstimates(tx, { registrationId: registration.id, eventId, studioId: registration.studioId,
+        revision: registration.revision, eventRevision: event.revision, timeZone: event.timeZone, counts: body.estimates,
+        actorId: userId, source: isAdmin ? "ORGANIZER" : "APPLICANT", digest, operationId: body.operationId });
       await appendAudit(tx, { action: "REGISTRATION_CREATED", actor: { kind: "USER", userId },
         targetType: "REGISTRATION", targetId: registration.id, eventId, studioId: registration.studioId, metadata: { revision: registration.revision } });
       return serialize(registration);
@@ -140,6 +145,44 @@ export class StudioRegistrationsController extends BaseController {
       const registration = await tx.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId, eventId } }, select: { id: true } });
       if (!registration) throw new NotFoundError("Registration");
       return readApplicationReview(tx, eventId, studioId, registration.id);
+    });
+    res.json(result);
+  }
+
+  async estimates(req: Request, res: Response): Promise<void> {
+    const { studioId, eventId } = StudioRegistrationParamsSchema.parse(req.params);
+    const body = SaveApplicationEstimatesSchema.parse(req.body);
+    const actorId = this.getUserId(req);
+    const digest = createHash("sha256").update(JSON.stringify({ eventId, studioId, ...body })).digest("hex");
+    const result = await registrationTransaction(this.prisma, async tx => {
+      // Current authority is required even when replaying an immutable receipt.
+      await this.owner(req, tx, studioId, eventId);
+      const current = await tx.studioEventRegistration.findUnique({ where: { studioId_eventId: { studioId, eventId } } });
+      if (!current) throw new NotFoundError("Registration");
+      const receipt = await tx.applicationEstimateRevision.findUnique({ where: { operationId: body.operationId } });
+      if (receipt) {
+        if (receipt.actorId !== actorId || receipt.registrationId !== current.id || receipt.digest !== digest) throw new ConflictError("Operation changed", undefined, "concurrentChange");
+        return serializeEstimate(receipt);
+      }
+      if (body.revision !== current.revision) throw new ConflictError("Reload application", undefined, "concurrentChange");
+      const event = await tx.event.findUnique({ where: { id: eventId } });
+      if (!event) throw new NotFoundError("Event");
+      if (this.isAdmin(req)) {
+        assertReviewWindow(event.stage);
+        if (!body.reason) throw new ValidationError("Organizer correction requires a reason");
+      } else {
+        assertApplicationWindow(event);
+        if (body.reason) throw new ForbiddenError("Organizer correction only");
+      }
+      if (!["PENDING", "APPROVED"].includes(current.status)) throw new ForbiddenError("Application unavailable", "pendingRequired");
+      validateEstimateDays(event, body.counts, body.eventRevision);
+      await tx.studioEventRegistration.update({ where: { id: current.id, revision: body.revision }, data: { revision: { increment: 1 } } });
+      return recordEstimates(tx, { registrationId: current.id, studioId, eventId, revision: current.revision + 1,
+        eventRevision: event.revision, timeZone: event.timeZone, counts: body.counts, actorId,
+        source: this.isAdmin(req) ? "ORGANIZER" : "APPLICANT", reason: body.reason, operationId: body.operationId, digest });
+    }).catch((error: unknown) => {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") throw new ConflictError("Retry the same operation", undefined, "concurrentChange");
+      throw error;
     });
     res.json(result);
   }

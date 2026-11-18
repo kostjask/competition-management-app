@@ -1,0 +1,32 @@
+const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+
+module.exports = async function checkMusicModel({ client }) {
+  const event = await client.event.create({ data: { name: 'Music model fixture', startsAt: new Date('2099-01-01'), endsAt: new Date('2099-01-02') } });
+  const studio = await client.studio.create({ data: { eventId: event.id, name: 'Music owner', registrations: { create: { eventId: event.id } } }, include: { registrations: true } });
+  const other = await client.studio.create({ data: { eventId: event.id, name: 'Other music owner', registrations: { create: { eventId: event.id } } }, include: { registrations: true } });
+  const identity = { registrationId: studio.registrations[0].id, studioId: studio.id, eventId: event.id };
+  const track = await client.musicTrack.create({ data: identity });
+  await assert.rejects(client.musicTrack.create({ data: { ...identity, studioId: other.id } }));
+  const performance = await client.performance.create({ data: { ...identity } });
+  await client.musicTrack.update({ where: { id: track.id }, data: { performanceId: performance.id } });
+  await assert.rejects(client.musicTrack.create({ data: { ...identity, performanceId: performance.id } }));
+  const otherPerformance = await client.performance.create({ data: { eventId: event.id, studioId: other.id, registrationId: other.registrations[0].id } });
+  await assert.rejects(client.musicTrack.update({ where: { id: track.id }, data: { performanceId: otherPerformance.id } }));
+  await assert.rejects(client.musicTrack.update({ where: { id: track.id }, data: { state: 'CONFIRMED' } }));
+  const metadata = { trackId: track.id, objectKey: randomUUID(), sha256: 'a'.repeat(64), displayName: 'Synthetic.mp3', detectedMime: 'audio/mpeg', byteLength: 1024, durationMs: 60000, uploadedBy: 'fixture-actor' };
+  for (const patch of [{ byteLength: 0 }, { durationMs: 0 }, { sha256: 'invalid' }, { displayName: '../unsafe.mp3' }, { detectedMime: 'text/html' }]) await assert.rejects(client.musicVersion.create({ data: { ...metadata, ...patch } }));
+  const version = await client.musicVersion.create({ data: metadata });
+  await client.musicTrack.update({ where: { id: track.id }, data: { currentVersionId: version.id, state: 'CONFIRMED' } });
+  const draft = await client.musicTrack.create({ data: identity });
+  await assert.rejects(client.musicTrack.update({ where: { id: draft.id }, data: { currentVersionId: version.id } }));
+  await assert.rejects(client.musicVersion.update({ where: { id: version.id }, data: { displayName: 'changed' } }));
+  await assert.rejects(client.musicVersion.delete({ where: { id: version.id } }));
+  await assert.rejects(client.musicTrack.update({ where: { id: track.id }, data: { registrationId: other.registrations[0].id, studioId: other.id, performanceId: null } }));
+  const operation = { operationId: randomUUID(), trackId: track.id, actorId: 'fixture-actor', revision: 2, action: 'REOPEN', reason: 'Correction', digest: 'b'.repeat(64), response: { revision: 2, state: 'DRAFT' } };
+  await assert.rejects(client.musicOperation.create({ data: { ...operation, reason: null } }));
+  await client.musicOperation.create({ data: operation });
+  await assert.rejects(client.musicOperation.update({ where: { operationId: operation.operationId }, data: { reason: 'changed' } }));
+  assert.equal((await client.musicTrack.findUniqueOrThrow({ where: { id: track.id } })).currentVersionId, version.id, 'Failed replacements/foreign pointers retain the current version');
+  console.log('PASS: private music model enforces immutable ownership/version history, exact performance association, metadata and current-version isolation.');
+};
