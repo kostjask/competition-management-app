@@ -48,6 +48,18 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P5-SUBMISSION/S12 adds `submission.test.tsx` for strict review fingerprints and
+typed recovery destinations, and representative submission cases in
+`entries.spec.ts`. The existing `performances.spec.ts` owns shared organizer
+checkpoint review. `check-entry-workflow.cjs` covers stale-policy fingerprints,
+current-scope submission availability, retired/empty/duplicate correction targets,
+terminal-event grants and current-access receipt replay in the disposable baseline.
+Run `pnpm test:entry-foundations` while editing, then the full workspace/baseline
+gates. The final targeted browser command is
+`node node_modules/@playwright/test/cli.js test entries.spec.ts performances.spec.ts --grep "submission|checkpoint|reopens"`;
+the full browser gate remains `pnpm test:browser`.
+[Submission evidence](SUBMISSION_VALIDATION.md) separates actual results and limits.
+
 P5-APPLICATION-ESTIMATES and P3-MUSIC-MODEL use the focused
 `application-estimates.test.tsx` / `music-model.test.tsx` web contracts and
 `applications.spec.ts` browser suite. The registration and full baselines invoke

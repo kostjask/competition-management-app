@@ -33,7 +33,7 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   const read = async () => { const response = await request(review); assert.equal(response.status, 200); return response.body; };
   const command = async (kind, action, token = adminToken, extras = {}) => {
     const state = (await read()).checkpoints.find(row => row.kind === kind);
-    return request(review + '/' + kind, token, 'POST', { expectedRevision: state.revision, operationId: randomUUID(), action, ...extras });
+    return request(review + '/' + kind, token, 'POST', { expectedRevision: state.revision, expectedReview: state.reviewToken, operationId: randomUUID(), action, ...extras });
   };
   assert.equal((await request(review, strangerToken)).status, 403);
   assert.equal((await request(`/events/${otherEvent.id}/studios/${studio.id}/entry-review`)).status, 404);
@@ -44,13 +44,23 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   const input = { studioId: studio.id, title: 'Saved basic', categoryId: event.categories[0].id, ageGroupId: event.ageGroups[0].id, formatId: event.formats[0].id };
   const create = await request(prefix + '/performances', ownerToken, 'POST', input); assert.equal(create.status, 201);
   const id = create.body.id; const item = prefix + '/performances/' + id;
+  const staleReview = (await read()).checkpoints.find(row => row.kind === 'BASIC');
+  const changedPolicy = await request(prefix + '/entry-configuration', adminToken, 'PUT', { expectedRevision: 1,
+    settings: { ...settings, basic: { enabled: true, deadline: new Date(Date.now() + 3600000).toISOString() } } });
+  assert.equal(changedPolicy.status, 200);
+  assert.equal((await read()).checkpoints.find(row => row.kind === 'BASIC').revision, staleReview.revision);
+  assert.equal((await request(review + '/BASIC', ownerToken, 'POST', { expectedRevision: staleReview.revision,
+    expectedReview: staleReview.reviewToken, operationId: randomUUID(), action: 'SUBMIT' })).status, 409, 'Policy changes invalidate a reviewed manifest even without a form revision change');
+  const ownerReview = (await request(review, ownerToken)).body;
+  assert.equal(ownerReview.organizer, false); assert.equal((await read()).organizer, true);
+  assert.deepEqual(ownerReview.music, { configured: false, entries: [{ performanceId: id, status: 'MISSING' }] });
   const patch = async (fields, token = ownerToken) => {
     const stored = await client.performance.findUniqueOrThrow({ where: { id } });
     return request(item, token, 'PATCH', { expectedRevision: stored.revision, ...fields });
   };
   // Basic confirmation intentionally does not require final roster/duration/credits.
   const beforeBasic = (await read()).checkpoints.find(row => row.kind === 'BASIC');
-  const operation = { expectedRevision: beforeBasic.revision, operationId: randomUUID(), action: 'SUBMIT' };
+  const operation = { expectedRevision: beforeBasic.revision, expectedReview: beforeBasic.reviewToken, operationId: randomUUID(), action: 'SUBMIT' };
   const submitted = await request(review + '/BASIC', ownerToken, 'POST', operation); assert.equal(submitted.status, 200);
   assert.deepEqual(submitted.body.manifest.roster, [], 'Basic receipts do not retain the unrelated full studio roster');
   assert.equal((await request(review + '/BASIC', ownerToken, 'POST', operation)).body.id, submitted.body.id);
@@ -63,6 +73,11 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   assert.equal((await command('FINAL', 'SUBMIT', ownerToken)).status, 409);
   assert.equal((await patch({ durationSec: 210, teacher: 'Teacher', author: 'Choreographer', dancerIds: studio.dancers.map(d => d.id) })).status, 200);
   const final = await command('FINAL', 'SUBMIT', ownerToken); assert.equal(final.status, 200);
+  assert.equal((await command('BASIC', 'REOPEN', adminToken, { reason: 'Basic scope cannot bypass final lock',
+    grant: { fields: ['title'], performanceIds: [id], until: new Date(Date.now() + 3600000).toISOString() } })).status, 200);
+  const blockedBasic = (await request(review, ownerToken)).body.checkpoints.find(row => row.kind === 'BASIC');
+  assert.equal(blockedBasic.canSubmit, false);
+  assert.equal((await command('BASIC', 'SUBMIT', ownerToken)).status, 403, 'Basic grant cannot bypass final lock');
   assert.equal(final.body.manifest.entries[0].snapshot.participants.length, 5, 'One dancer of any older age among five is allowed');
   const pinned = await client.performanceRevision.findUniqueOrThrow({ where: { performanceId_revision: { performanceId: id, revision: final.body.manifest.entries[0].revision } } });
   assert.deepEqual(pinned.snapshot, final.body.manifest.entries[0].snapshot);
@@ -83,6 +98,11 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
     settings: { ...settings, basic: { enabled: true, deadline: new Date(Date.now() - 1000).toISOString() }, final: { enabled: true, deadline: new Date(Date.now() - 1000).toISOString() } } })).status, 200);
   assert.equal((await request(review + '/BASIC', ownerToken, 'POST', operation)).body.id, submitted.body.id, 'A lost response is reconciled after the deadline');
   assert.equal((await command('FINAL', 'REOPEN', adminToken, { reason: 'Duration correction', grant: { fields: ['durationSec'], performanceIds: [id], until } })).status, 200);
+  for (const performanceIds of [[], [id, id]]) assert.equal((await command('FINAL', 'REOPEN', adminToken, { reason: 'Invalid scope', grant: { fields: ['durationSec'], performanceIds, until } })).status, 400);
+  await client.performance.update({ where: { id }, data: { deletedAt: new Date() } });
+  assert.equal((await request(review, ownerToken)).body.checkpoints.find(row => row.kind === 'FINAL').canSubmit, false);
+  assert.equal((await command('FINAL', 'SUBMIT', ownerToken)).status, 403, 'A retired correction target cannot authorize submission');
+  await client.performance.update({ where: { id }, data: { deletedAt: null } });
   assert.equal((await command('FINAL', 'ACCEPT')).status, 409, 'An old submission cannot accept a reopened or changed form');
   const entryContext = (await request(prefix + '/studios/' + studio.id + '/entry-context?performanceId=' + id, ownerToken)).body;
   assert.deepEqual(entryContext.writableFields, ['durationSec'], 'Selected-performance context honors the exact correction grant');
@@ -94,12 +114,12 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   assert.equal((await command('FINAL', 'SUBMIT', ownerToken)).status, 200);
   assert.equal((await patch({ durationSec: 200 })).status, 403, 'Resubmission consumes the reopening');
   const headBeforeReplace = (await read()).checkpoints.find(row => row.kind === 'FINAL');
-  const oldGrant = { expectedRevision: headBeforeReplace.revision, operationId: randomUUID(), action: 'REOPEN', reason: 'First scope',
+  const oldGrant = { expectedRevision: headBeforeReplace.revision, expectedReview: headBeforeReplace.reviewToken, operationId: randomUUID(), action: 'REOPEN', reason: 'First scope',
     grant: { fields: ['teacher'], performanceIds: [id], until } };
   assert.equal((await request(review + '/FINAL', adminToken, 'POST', oldGrant)).status, 200);
   const staleVersion = (await read()).checkpoints.find(row => row.kind === 'FINAL').revision;
   assert.equal((await command('FINAL', 'REOPEN', adminToken, { reason: 'Replacement scope', grant: { fields: ['durationSec'], performanceIds: [id], until } })).status, 200);
-  assert.equal((await request(review + '/FINAL', ownerToken, 'POST', { expectedRevision: staleVersion, operationId: randomUUID(), action: 'SUBMIT' })).status, 409);
+  assert.equal((await request(review + '/FINAL', ownerToken, 'POST', { expectedRevision: staleVersion, expectedReview: "a".repeat(64), operationId: randomUUID(), action: 'SUBMIT' })).status, 409);
   assert.equal((await request(review + '/FINAL', adminToken, 'POST', oldGrant)).status, 200, 'Retry returns its old receipt without reinstating its old grant');
   assert.equal((await patch({ teacher: 'Old grant must not work' })).status, 403);
   assert.equal((await patch({ durationSec: 200 })).status, 200);
@@ -112,9 +132,12 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   assert.equal((await command('FINAL', 'SUBMIT', adminToken, { exception: true, reason: 'A future birth date cannot be waived' })).status, 409);
   await client.dancer.update({ where: { id: studio.dancers[1].id }, data: { birthDate: new Date('2020-01-01') } });
   await client.event.update({ where: { id: event.id }, data: { stage: 'ENDED' } });
+  assert.equal((await command('FINAL', 'REOPEN', adminToken, { reason: 'Terminal correction', grant: { fields: ['durationSec'], performanceIds: [id], until } })).status, 200);
+  assert.equal((await command('FINAL', 'SUBMIT', ownerToken)).status, 403, 'A correction grant never authorizes representative submission in a terminal event');
+  assert.equal((await read()).checkpoints.find(row => row.kind === 'FINAL').locked, true);
   assert.equal((await patch({ author: 'Late retained correction' }, adminToken)).status, 200);
   const state = (await read()).checkpoints.find(row => row.kind === 'FINAL');
-  const concurrentBody = { expectedRevision: state.revision, action: 'SUBMIT', exception: true, reason: 'Late reviewed exception' };
+  const concurrentBody = { expectedRevision: state.revision, expectedReview: state.reviewToken, action: 'SUBMIT', exception: true, reason: 'Late reviewed exception' };
   const concurrent = await Promise.all([1, 2].map(() => request(review + '/FINAL', adminToken, 'POST', { ...concurrentBody, operationId: randomUUID() })));
   assert.deepEqual(concurrent.map(row => row.status).sort(), [200, 409]);
   const beforeRollback = await client.entryReceipt.count();
@@ -136,5 +159,6 @@ module.exports = async function checkEntryWorkflow({ client, baseUrl, adminToken
   assert.equal(applicationReview.status, 200); assert.ok(applicationReview.body.history.every(row => !row.action.startsWith('ENTRY_')));
   await client.studioRepresentative.updateMany({ where: { studioId: studio.id }, data: { active: false } });
   assert.equal((await request(review, ownerToken)).status, 403);
+  assert.equal((await request(review + '/BASIC', ownerToken, 'POST', operation)).status, 403, 'Receipt replay rechecks current ownership');
   console.log('PASS: studio-wide basic/final receipts, any-older 20% age rule, category duration, locks/roster scope, rule freeze, retries, stale/concurrent writes and immutable audit rollback.');
 };

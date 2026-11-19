@@ -70,7 +70,7 @@ S09/S10 local delivery includes searchable native selection, field-linked errors
 calendar dates, immutable dancer retries, roster archive impact confirmation,
 entry withdrawal/restore, saved draft guidance, stale comparison, session recovery
 and unsaved-navigation guards. Existing organizer review uses the same editor.
-Representative S12 submission remains pending. S10 and the organizer editor link
+Representative submission consumes this workspace through S12 below. S10 and the organizer editor link
 to the scoped S11 music child; entry and music approvals stay separate.
 [Contracts](../api/entry-context.md).
 
@@ -90,9 +90,19 @@ indeterminate/determinate progress, immediate stop, retained uncertain operation
 refresh/explicit comparison, session recovery, navigation warning, native private
 non-autoplay audio and current acknowledged metadata. Organizer rules and reasoned
 correction share the locked Cobalt system. [Evidence](../MUSIC_DELIVERY_VALIDATION.md)
-separates technical checks from human/hosted release approval. S12 remains open.
+separates technical checks from human/hosted release approval. S12 consumes its independent music state.
 
 ## S12 — Data-review checklist and submission
+
+The representative checklist and shared organizer correction/review are delivered
+locally on 2026-11-19. The entry index and S08 link to
+`/app/events/:eventId/studios/:studioId/performances?entry=review&checkpoint=BASIC|FINAL`.
+Field-linked blockers, independent music notices, explicit studio-wide locking,
+source-pinned commands, focused durable receipts and scoped correction/resubmission
+consume the existing checkpoint model. Failed/uncertain/stale/session states retain
+work and require authoritative comparison before a fresh confirmation. The shared
+organizer view retains reasoned named-field/entry deadlines and separate acceptance.
+[Evidence](../SUBMISSION_VALIDATION.md) owns checks and release limits.
 
 Delivered foundation (2026-11-11): global-admin-only
 `/admin/events/:eventId/performances?studio=:studioId` shows saved entries, their
@@ -106,7 +116,8 @@ P3-ENTRIES-DRAFT extends this foundation with inline owner/optional-title creati
 missing-field summaries and separate unscheduled labels under ADR-024. Uncertain
 creates retain their body/operation for explicit retry through filter/session
 recovery; decoded acknowledgement is required for success. Nullable saved history
-is readable. This does not deliver the representative S10 editor or S12 submission.
+is readable. That historical foundation alone did not deliver S10/S12; their
+owning representative implementations are now delivered locally.
 
 - **Purpose / roles / routes:** resolve blockers and submit/review; own approved reps and admin review, proposed routes in inventory.
 - **Primary action:** fix a linked issue, then submit entries or request authorized correction.
@@ -114,5 +125,5 @@ is readable. This does not deliver the representative S10 editor or S12 submissi
 - **Sections / components:** studio/event and progress, blockers before warnings, entry summaries with field links, confirmation, durable receipt; admin correction reason/scope/deadline.
 - **States:** checking, no entries, incomplete music/configuration, stale review, submission uncertain, submitted/locked/correction requested/expired; errors do not clear work.
 - **Responsive / accessibility:** one-column ordered checklist mobile; desktop summaries/detail; errors link to exact entry/field, receipt heading receives focus on success.
-- **API:** current entry reads; validation/submit/receipt/correction/version contracts pending P3-ENTRIES/HISTORY.
+- **API:** [canonical checkpoint contract](../api/entry-workflow.md); `reviewToken`/`expectedReview`, server `canSubmit`, immutable receipt and current music summary.
 - **Acceptance:** final server validation and retry-safe receipt; unaffected entries remain locked during scoped correction; submission is not studio approval. F07/F10.

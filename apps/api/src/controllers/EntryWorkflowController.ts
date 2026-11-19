@@ -3,11 +3,11 @@ import { Prisma } from "@prisma/client";
 import { createHash } from "node:crypto";
 import { EntrySettingsSchema, EntryConfigurationSchema, EntryConfigurationBodySchema, EventIdParamsSchema,
   EntryParamsSchema, EntryCheckpointParamsSchema, EntryCommandSchema, EntryReviewSchema, EntryReceiptSchema,
-  EntryGrantSchema, EntryContextQuerySchema, EntryContextSchema, EntryFieldSchema, eventAgeDate, BASIC_ENTRY_FIELDS, FINAL_ENTRY_FIELDS, type EntryKind } from "@dance/schemas";
+  EntryGrantSchema, EntryContextQuerySchema, EntryContextSchema, EntryFieldSchema, MusicStateSchema, eventAgeDate, BASIC_ENTRY_FIELDS, FINAL_ENTRY_FIELDS, type EntryKind, type EntryReview } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { ConflictError, ForbiddenError, NotFoundError } from "../errors";
 import { appendAudit } from "../services/audit";
-import { entrySettings, entryTransaction, currentEntryManifest, entryIssues, guardEntryWrite } from "../services/entryWorkflow";
+import { entrySettings, entryTransaction, currentEntryManifest, entryIssues, guardEntryWrite, guardEntrySubmission, entryReviewToken } from "../services/entryWorkflow";
 import { isActionAllowed } from "../utils/stageChecks";
 
 export class EntryWorkflowController extends BaseController {
@@ -114,26 +114,44 @@ export class EntryWorkflowController extends BaseController {
     const result = await entryTransaction(this.prisma, async db => {
       const registration = await this.access(req, db, eventId, studioId);
       const config = await entrySettings(db, eventId);
-      if (!config) return EntryReviewSchema.parse({ studioId, checkpoints: [] });
+      const [policy, tracks, event] = await Promise.all([
+        db.musicConfiguration.findUnique({ where: { eventId }, select: { eventId: true } }),
+        db.musicTrack.findMany({ where: { registrationId: registration.id, performanceId: { not: null } }, select: { performanceId: true, state: true, currentVersionId: true } }),
+        db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } }),
+      ]);
+      const music: EntryReview["music"] = { configured: policy !== null, entries: [] };
+      const metadata = { studioId, organizer: this.isAdmin(req), music };
+      if (!config) return EntryReviewSchema.parse({ ...metadata, checkpoints: [] });
       const manifest = await currentEntryManifest(db, eventId, studioId, config.settings);
+      metadata.music.entries = manifest.entries.map(entry => {
+        const track = tracks.find(track => track.performanceId === entry.id);
+        return { performanceId: entry.id, status: track?.currentVersionId ? MusicStateSchema.parse(track.state) : "MISSING" };
+      });
       const heads = await db.entryCheckpoint.findMany({ where: { registrationId: registration.id }, include: { receipts: { orderBy: { revision: "desc" } } } });
       const finalHead = heads.find(head => head.kind === "FINAL");
       const finalGrantResult = EntryGrantSchema.safeParse(finalHead?.grant);
       const finalGrant = finalGrantResult.success && Date.parse(finalGrantResult.data.until) > Date.now() ? finalGrantResult.data : null;
       const finalLocksBasic = config.settings.final.enabled && (finalHead?.earlyLocked === true || (config.settings.final.deadline !== null && Date.parse(config.settings.final.deadline) <= Date.now()));
-      return EntryReviewSchema.parse({ studioId, checkpoints: (["BASIC", "FINAL"] as const).map(kind => {
+      const checkpoints = await Promise.all((["BASIC", "FINAL"] as const).map(async kind => {
         const row = heads.find(head => head.kind === kind);
         const window = config.settings[kind === "BASIC" ? "basic" : "final"];
         const grant = EntryGrantSchema.safeParse(row?.grant);
         const activeGrant = grant.success && Date.parse(grant.data.until) > Date.now() ? grant.data : null;
         const inheritedGrant = kind === "BASIC" && finalGrant && finalGrant.fields.some(field => BASIC_ENTRY_FIELDS.includes(field)) ? { ...finalGrant, fields: finalGrant.fields.filter(field => BASIC_ENTRY_FIELDS.includes(field)) } : null;
         const blockedByFinal = kind === "BASIC" && finalLocksBasic && inheritedGrant === null;
-        return { kind, revision: row?.revision ?? 0, status: row?.status ?? "DRAFT", enabled: window.enabled,
-          locked: blockedByFinal || ((row?.earlyLocked === true || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) && activeGrant === null && inheritedGrant === null),
+        let canSubmit = this.isAdmin(req) && window.enabled;
+        if (!this.isAdmin(req)) {
+          try { await guardEntrySubmission(db, eventId, studioId, kind); canSubmit = true; }
+          catch (error) { if (!(error instanceof ForbiddenError)) throw error; }
+        }
+        return { kind, reviewToken: entryReviewToken(manifest, kind, config.revision), revision: row?.revision ?? 0, status: row?.status ?? "DRAFT", enabled: window.enabled,
+          canSubmit,
+          locked: ["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage) || blockedByFinal || ((row?.earlyLocked === true || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) && activeGrant === null && inheritedGrant === null),
           deadline: window.deadline, grant: blockedByFinal ? null : activeGrant ?? inheritedGrant, issues: entryIssues(manifest, kind),
           receipts: (row?.receipts ?? []).filter(receipt => this.isAdmin(req) || receipt.action !== "REOPEN" || receipt.visible)
             .map(receipt => this.receipt(receipt, kind, this.isAdmin(req))) };
-      }) });
+      }));
+      return EntryReviewSchema.parse({ ...metadata, checkpoints });
     });
     res.json(result);
   }
@@ -161,16 +179,10 @@ export class EntryWorkflowController extends BaseController {
       const head = await db.entryCheckpoint.findUnique({ where: { registrationId_kind: { registrationId: registration.id, kind } } });
       if ((head?.revision ?? 0) !== body.expectedRevision) throw new ConflictError("Studio form changed; refresh and compare", undefined, "concurrentChange");
       const manifest = await currentEntryManifest(db, eventId, studioId, config.settings);
+      if (body.expectedReview !== entryReviewToken(manifest, kind, config.revision)) throw new ConflictError("Reviewed data changed; refresh and confirm again", undefined, "concurrentChange");
       const fields = kind === "BASIC" ? BASIC_ENTRY_FIELDS : [...BASIC_ENTRY_FIELDS, ...FINAL_ENTRY_FIELDS];
       if (kind === "BASIC") manifest.roster = [];
-      if (!this.isAdmin(req)) {
-        // Submission consumes a grant but does not need permission for every field in a partial reopening.
-        const grant = EntryGrantSchema.safeParse(head?.grant);
-        const window = config.settings[kind === "BASIC" ? "basic" : "final"];
-        if (head?.earlyLocked || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) {
-          if (!grant.success || Date.parse(grant.data.until) <= Date.now()) throw new ForbiddenError("Contact the organizer to reopen this form", "stageLocked");
-        } else await guardEntryWrite(db, eventId, studioId, kind === "BASIC" ? ["title"] : ["roster"], false);
-      }
+      if (!this.isAdmin(req)) await guardEntrySubmission(db, eventId, studioId, kind);
       if (body.action === "ACCEPT" && head?.status !== "REVIEW_PENDING") throw new ConflictError("Submit the current studio form before accepting it");
       const blockers = entryIssues(manifest, kind);
       if (body.action !== "REOPEN" && blockers.some(issue => !body.exception || !["age", "count", "duration"].includes(issue.reason))) throw new ConflictError("Resolve the checkpoint's blockers before confirming", undefined, "invalidConfiguration");

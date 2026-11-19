@@ -59,7 +59,7 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
       return <div key={axis}><dt>{t(axis === "ORGANIZATION" ? "Application.organization" : "Application.event")}</dt><dd>{t(statusKey[axis === "ORGANIZATION" ? current.studio.approvalStatus : current.status])}</dd>{reason && <dd>{t(reasonKey[reason])}</dd>}</div>;
     })}</dl>
     <p>{t(current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED" ? "Application.accepted" : current.nextActor === "NONE" ? "Application.noNext" : current.nextActor === "ORGANIZER" ? "Registration.organizerNext" : "Registration.applicantNext")}</p>
-    {(admin || (current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED")) && <nav className="application-entry-links" aria-label={t("Roster.entries")}><Link to={`/studios/${current.studioId}/dancers`}>{t("Roster.title")}</Link><Link to={`/events/${event.id}/studios/${current.studioId}/performances`}>{t("Roster.entries")}</Link></nav>}
+    {(admin || (current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED")) && <nav className="application-entry-links" aria-label={t("Roster.entries")}><Link to={`/studios/${current.studioId}/dancers`}>{t("Roster.title")}</Link><Link to={`/events/${event.id}/studios/${current.studioId}/performances`}>{t("Roster.entries")}</Link><Link to={`/events/${event.id}/studios/${current.studioId}/performances?entry=review`}>{t("Entry.review")}</Link></nav>}
     {currentEvent.organizerEmail && <a href={`mailto:${currentEvent.organizerEmail}`}>{t("Registration.contactOrganizer")}: {currentEvent.organizerEmail}</a>}
     {!open && <p>{t("Setup.windowClosed")}</p>}
     <ErrorSummary error={error} title={t("Feedback.validation")} />

@@ -5,6 +5,41 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "studio-wide checklist",
+   "field-linked blockers",
+   "independent music notices",
+   "source-pinned confirmation",
+   "receipt ledger",
+   "scoped correction"
+  ],
+  "hero": "none",
+  "nav": "existing workspace shell",
+  "footer": "none",
+  "imagery": "actual operational data; synthetic validation fixtures",
+  "photos": [],
+  "entry": "apps/web/src/pages/performances/performance-register.css",
+  "fingerprint": "studio checkpoints with source-pinned submission and scoped correction",
+  "sections": [
+   "checkpoint choice",
+   "blockers",
+   "music notices",
+   "confirmation",
+   "receipt history",
+   "correction scope"
+  ],
+  "signature": "studio-wide source-pinned confirmation and durable receipt",
+  "waived": [],
+  "prompt": "P5-SUBMISSION/S12 with owning representative and shared organizer UI",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; Playwright 40 cases; in-thread finish 5 resolved; Hallmark render tier not run",
+  "date": "2026-11-19",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "private current version",
    "configured limits",
    "explicit progress",

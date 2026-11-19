@@ -1,6 +1,6 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: same-identity recovery and nomination ledger · v2.0.0 */
-/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V; extends locked Cobalt, with category/age filters reducing repeated nomination controls. */
-/* Hallmark · finish-review: in-thread; 3 findings resolved in Playwright captures; withdrawn-empty and draft guidance, preset disclosure; no material slots. */
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: studio-wide review, submission and correction ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V; preserves locked Cobalt, with field-linked blockers, independent music notices and acknowledged receipts. */
+/* Hallmark · finish-review: in-thread; S12 5 findings resolved in Playwright recaptures and regressions; notices, locked copy, phone actions, uncertainty, first-entry return; no material slots. */
 @import "../events/event-setup.css";
 .entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block: var(--space-md); }
 .entry-actions [aria-pressed="true"] { background: var(--color-accent-wash); border-color: var(--color-accent); color: var(--color-accent-deep); }
@@ -22,6 +22,11 @@
 .entry-loading span + span { min-height: var(--space-xl); }
 .entry-nomination { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); margin-block: var(--space-md); }
 @media (max-width: 48rem) { .entry-nomination { grid-template-columns: minmax(0, 1fr); } }
+.entry-submission-receipt { border-block: 2px solid var(--color-accent); padding-block: var(--space-md); margin-block: var(--space-lg); }
+.entry-submission-receipt h4, .entry-checkpoint h3, .entry-music-review h3 { min-width: 0; overflow-wrap: break-word; }
+.entry-submission-receipt h4:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.entry-music-review a, .entry-checkpoint li a { min-height: 2.75rem; display: inline-flex; align-items: center; }
+.entry-review .ui-button { white-space: nowrap; }
 .performance-filter { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-md); margin-block: var(--space-lg); }
 .performance-filter .ui-field { flex: 1 1 16rem; max-width: 28rem; }
 .performance-register { border-collapse: collapse; width: 100%; table-layout: fixed; }

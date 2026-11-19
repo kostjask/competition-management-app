@@ -70,9 +70,15 @@ invalidate current acceptance.
 
 ## Commands, receipts and reopening
 
-Every POST carries `expectedRevision`, UUID `operationId` and action
+Every POST carries `expectedRevision`, `expectedReview`, UUID `operationId` and action
 SUBMIT/ACCEPT/REOPEN. Optional `reason`, `visible` and `exception` have strict shared
-validation. REOPEN additionally requires:
+validation. `expectedReview` is the exact 64-character lowercase hexadecimal
+`reviewToken` returned for that checkpoint. The server fingerprints the current
+entry/roster snapshots, checkpoint kind and configuration revision and recomputes
+it inside the serializable command transaction. Policy/source changes invalidate
+an older review even when its checkpoint revision has not changed. It conveys no
+authority. Matching receipt replay still precedes freshness checks, after current
+owner/permission checks. REOPEN additionally requires:
 
 ```json
 {
@@ -83,7 +89,8 @@ validation. REOPEN additionally requires:
 ```
 
 This is the command's `grant` value. Null performanceIds selects the whole studio;
-a scoped ID list selects existing entries only. The roster and structural entries
+a nonempty distinct scoped ID list selects existing entries only. Its targets
+must still be active exact-owner performances at representative submission. The roster and structural entries
 fields require studio-wide scope. FINAL can reopen classification fields too;
 BASIC cannot reopen final/roster fields. Grant expiry is explicit and must be in
 the future; replacement/resubmission consumes the prior scope. Entry and dancer
@@ -115,7 +122,38 @@ that every manifest snapshot equals an immutable saved revision of its studio.
 Source changes cannot silently change an older receipt. Save/capture/audit failure
 rolls everything back.
 
-## Owning UI and remaining work
+## Owning UI and submission
+
+The review DTO includes server-derived `organizer`, checkpoint `canSubmit` and
+independent `music: { configured, entries: [{ performanceId, status }] }`.
+Music status is MISSING, DRAFT, CONFIRMED or ACCEPTED for each active performance;
+no storage keys, version access or uploader identity enters this summary.
+Music notices do not block either data checkpoint: ADR-025 gives music its own
+window and confirmation. Entry submission never confirms or accepts music.
+
+`canSubmit` describes permission/window/scope availability, not absence of
+validation blockers. It uses the same representative submission guard as commands. A final
+grant can permit basic-field editing while requiring resubmission through FINAL;
+it does not create a separate BASIC submission grant. Basic grants cannot bypass
+a later final lock. Terminal events deny new representative submissions even
+with an unexpired grant; global-admin correction authority remains explicit.
+
+Representatives use `/app/events/:eventId/studios/:studioId/performances?entry=review`
+with optional `&checkpoint=BASIC|FINAL`. S08 and the entry index link directly to
+this S12 view. Field links reach the exact representative editor control and
+return to the same checkpoint. The typed sign-in return allowlist retains only
+these supported review parameters. Organizer controls are shown only with the
+server's organizer authority; backend checks still enforce every command.
+
+The explicit confirmation explains the studio-wide lock and separate approvals.
+Acknowledgement focuses a receipt heading with identity, server time, revision,
+entry count and the next actor; receipt history survives reload. Uncertain writes
+retain the exact operation through same-account session recovery. Refresh compares
+current state/history before explicitly discarding an uncertain operation.
+Failed review/readback cannot authorize a fresh confirmation. Stale/denied writes
+require refresh and confirmation again. Leaving retained confirmation work warns,
+including checkpoint/query navigation. Scoped grants show named entries, fields
+and the event-zone deadline; ungranted fields remain locked.
 
 The global-admin organizer register uses `?entry=rules`, or
 `?studio=:studioId&entry=review&checkpoint=BASIC|FINAL`. `?edit=:performanceId`
@@ -132,10 +170,10 @@ It preserves snapshots/receipts, invalidates acceptance and does not unlock othe
 entries. The organizer register's `state=withdrawn` view offers same-identity
 restoration, with reason, confirmation, revision comparison, same-operation retry
 and acknowledged readback recovery. See the [performance contract](performances.md#withdrawal-and-restoration).
-Representative entry/roster screens, per-day initial
-application estimates and media/music deadlines,
-confirmation/acceptance/reminders retain their own tasks. No ready/accepted music
-state is fabricated by this data-checkpoint implementation.
+Representative roster/entry screens, per-day estimates and private music are
+delivered in their owning slices. S12 consumes them without merging their
+approvals or windows. [Submission evidence](../SUBMISSION_VALIDATION.md) retains
+local checks and separate human/hosted release limits.
 
 ## Atomic options and reusable preset
 
