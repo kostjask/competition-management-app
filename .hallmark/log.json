@@ -5,6 +5,42 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "event-local calendar days",
+   "planning counts",
+   "reasoned corrections",
+   "immutable history",
+   "explicit retries",
+   "separate approvals"
+  ],
+  "hero": "none (app)",
+  "nav": "existing workspace and separated roster/entry links",
+  "footer": "none (app)",
+  "imagery": "none",
+  "photos": [],
+  "entry": "apps/web/src/pages/applications/EstimatesEditor.tsx",
+  "fingerprint": "actual-day native count grid with disclosed revision ledger",
+  "sections": [
+   "application context",
+   "day counts",
+   "estimate history",
+   "independent decisions",
+   "profile/contact"
+  ],
+  "signature": "event-day planning ledger with explicit zero",
+  "waived": [
+   "49b",
+   "72"
+  ],
+  "prompt": "P5-APPLICATION-ESTIMATES S06/S08 owning UI and P3-MUSIC-MODEL; preserve locked Cobalt, accessibility and ET/EN/RU",
+  "sweep": "0 FAIL, 0 open REFLEX, 0 WARN; 2 reviewed waivers; rendered ten-file sweep",
+  "finishReview": "subagent; one actionable finding resolved in recapture; material gap none"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "studio roster",
    "calendar-date form",
    "unscheduled draft",

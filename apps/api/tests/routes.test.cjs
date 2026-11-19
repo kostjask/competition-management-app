@@ -291,6 +291,7 @@ const application = { name: ' Fixture ', representativeName: ' Applicant ', repr
 
 test('application review history requires exact active membership and event', async t => {
   const { request, prisma } = await registrationFixture(t);
+  prisma.applicationEstimateRevision = { findMany: async () => [] };
   prisma.auditLog.findMany = async () => [{ action: 'REGISTRATION_CREATED', metadata: { revision: 1 }, createdAt: new Date('2026-01-01') }];
   prisma.reviewNotice.findMany = async () => [];
   assert.equal((await request(registrationPath + '/s/review', { user: 'applicant' })).status, 200);

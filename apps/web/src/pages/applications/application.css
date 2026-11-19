@@ -27,3 +27,5 @@
 .application-skeleton { min-height: 8rem; background: var(--color-paper-2); border-bottom: 1px solid var(--color-rule-2); padding: var(--space-lg); }
 .application-compare { padding-block: var(--space-md); border-block: 2px solid var(--color-ink); }
 @media (max-width: 64rem) { .application-layout { grid-template-columns: minmax(0, 1fr); } }
+.application-entry-links { display: flex; flex-wrap: wrap; gap: var(--space-md); margin-block: var(--space-md); }
+.application-entry-links a { display: inline-flex; align-items: center; min-height: 2.75rem; }

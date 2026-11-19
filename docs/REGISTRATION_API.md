@@ -4,7 +4,8 @@
 
 1. Account access and verification establish identity.
 2. An event application requests independent organization and event approvals.
-3. Final entry submission confirms roster/performances/music; it is not implemented.
+3. Studio-wide BASIC/FINAL checkpoint APIs retain entry confirmation/review receipts;
+   representative submission and music UI remain separately gated.
 
 A role does not establish ownership or approval. Pending applicants do not need
 a representative role to apply or inspect owned applications. Public signup now
@@ -23,6 +24,7 @@ the linked resource contracts.
 | Own identity/roles | GET /auth/profile | [Auth](api/auth.md); authenticated |
 | Apply / list own or admin registrations | POST/GET /events/:eventId/studio-registrations | [Applications](api/registrations.md) |
 | Admin event decision / pending cancellation | PATCH/DELETE /events/:eventId/studio-registrations/:studioId | [Applications](api/registrations.md) |
+| Planning estimates / immutable history | PATCH /events/:eventId/studio-registrations/:studioId/estimates; GET /review | [Estimates](api/registrations.md#planning-estimates); independent of approvals and entry submission |
 | Organization profile / approval / own contact | /studios/:studioId and actions | [Studios](api/studios.md) |
 | Inspect / accept / administer invitations and event staff | /invitations and actions; /events/:eventId/staff and removal | [Invitations](api/invitations.md); scoped lifecycle, intended-account acceptance and retained offboarding implemented locally |
 
@@ -61,7 +63,8 @@ implemented by these contracts.
   Pending profile edits and review decisions use revision receipts. Frozen
   commands, explicit server comparison and session recovery preserve mounted work.
   [Evidence](APPLICATION_REVIEW_VALIDATION.md) separates synthetic browser/database
-  checks from external release gates. Entry dashboards remain placeholders.
+  checks from external release gates. Representative roster and entry drafts are
+  delivered separately under S09/S10.
 - Delivered auth pages cover studio signup, owner draft recovery, verification,
   resend/correction/reset and cookie-session recovery. Transactional encrypted
   provider dispatch is implemented; real inbox/hosted release evidence stays open.
@@ -72,15 +75,18 @@ implemented by these contracts.
 - Durable nullable unscheduled entry drafts and immutable saved revisions are
   implemented under ADR-023/024. The opt-in [studio checkpoint API](api/entry-workflow.md)
   now adds basic/final confirmation/review receipts and scoped reopening under
-  ADR-025. Music and complete representative workflow delivery remain later work.
+  ADR-025. S09/S10 roster/draft consumers are delivered; music and complete
+  representative submission remain later work.
 
 P4-CORE setup and P4-REVIEW/P5-APPLICATION are delivered locally. Notification
 intent commits with each changed decision under ADR-021; fake mode never claims
 sent mail and provider acceptance never claims inbox delivery. P3-ENTRIES and
 P4-ENTRY-CONFIG, including withdrawal/restore and organizer consumers, are complete
-locally. Initial per-day estimates and representative entry/media/submission
-consumers remain open. Overall priority now follows the public-site replan in
-the checkpoint; these registration contracts are unchanged. The
+locally. Per-day estimates extend the initial application and S06/S08 review
+under [ADR-027](adr/027-application-estimates.md). The private music model is
+defined under [ADR-028](adr/028-private-music-model.md); P8-MEDIA delivery,
+P5-MUSIC and P5-SUBMISSION consumers remain open. Current priority follows the
+checkpoint. The
 [accepted lifecycle](adr/025-entry-submission-lifecycle.md) records the confirmed
 studio-wide checkpoints and any-older percentage policy.
 P3-PERFORMANCE-OWNER/CONSTRAINTS are locally implemented under

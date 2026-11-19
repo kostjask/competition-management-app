@@ -17,6 +17,7 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-18 application estimates and private music model | [Estimate/music validation](APPLICATION_ESTIMATES_MUSIC_VALIDATION.md) |
 | 2026-11-17–18 local /app transition and S09/S10 entry workspace | [Workspace/entry validation](ENTRY_WORKSPACE_VALIDATION.md) |
 | 2026-11-17 studio/festival public HTML consumers | [Public sites validation](PUBLIC_SITES_VALIDATION.md) |
 | 2026-11-16–17 shared CMS and publication | [Content editor validation and continuation](CONTENT_EDITOR_VALIDATION.md) |

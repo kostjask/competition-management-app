@@ -335,3 +335,10 @@ editors and retained recovery. [Review/application evidence](APPLICATION_REVIEW_
 records the fresh-context finish review, rendered states and technical gate limits.
 The required full redesign, accessibility and ET/EN/RU constraints remain unchanged;
 human approval and the shared shell/other workflow redesigns remain open.
+
+P5-APPLICATION-ESTIMATES adopts the same bounded S06/S08 system for actual
+event-local day/count rows, a reasoned organizer correction form and disclosed
+immutable history. Explicit zero, stale-day guidance, retained retry and deliberate
+server replacement carry state. P3-MUSIC-MODEL adds no unimplemented media control.
+The [estimate/music evidence](APPLICATION_ESTIMATES_MUSIC_VALIDATION.md) records
+technical checks separately from human language/visual/assistive acceptance.

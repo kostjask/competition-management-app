@@ -43,6 +43,8 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Auth | /auth; see contract for account/session/recovery/onboarding/preferences operations | [Auth](api/auth.md) |
 | Events | /events; /events/:eventId | [Events](api/events.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
+| Application estimates | PATCH /events/:eventId/studio-registrations/:studioId/estimates; history in registration /review | [Planning estimates](api/registrations.md#planning-estimates) |
+| Private music model | No mounted transport yet; P8-MEDIA prerequisite | [Music model](api/music.md) |
 | Studios | /studios; /:studioId; approval/representatives actions | [Studios](api/studios.md) |
 | Dancers | /studios/:studioId/dancers; /:dancerId | [Dancers](api/dancers.md) |
 | Performances | /events/:eventId/performances; /:performanceId; POST /:performanceId/restore | [Performances](api/performances.md) |

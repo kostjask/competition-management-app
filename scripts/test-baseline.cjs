@@ -165,6 +165,8 @@ async function main() {
       });
       await check('check-registration-lifecycle', { client, baseUrl, adminToken: token, login });
       await check('check-application-review', { client, baseUrl, adminToken: token, login });
+      await check('check-application-estimates', { client, baseUrl, adminToken: token, login });
+      await check('check-music-model', { client });
     }
     if (!entryFoundationsOnly) await check('check-event-setup', { client, baseUrl, adminToken: token, login });
     if (focused && !entryFoundationsOnly) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }

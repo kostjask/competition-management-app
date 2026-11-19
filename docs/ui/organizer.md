@@ -22,6 +22,13 @@ links; read failures have their own retry and are never rendered as zero.
 
 ## S06 — Studio approval queue
 
+The owning P5-APPLICATION-ESTIMATES extension displays current day/count estimates
+and immutable history beside the independent approvals. A global admin may save
+a reasoned correction for PENDING/APPROVED applications during review stages;
+this never resets decisions or sends decision mail. The shared application
+revision detects concurrent reviews/corrections. Earlier dates remain inspectable,
+and comparison never silently replaces local work. [Contract](../api/registrations.md#planning-estimates).
+
 - **Purpose / roles / route:** review the right organization/event separately; global admins; `/admin/events/:eventId/applications`.
 - **Primary action:** inspect then approve/reject/request correction where supported.
 - **Data:** registration summaries, authorized studio details, independent approval statuses, decision revision/audit and reason policy.

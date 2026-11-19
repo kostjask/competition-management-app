@@ -11,6 +11,7 @@ import { Confirmation } from "./Confirmation";
 import { DecisionForm } from "./DecisionForm";
 import { ApplicationHistory } from "./ApplicationHistory";
 import { StudioEditor } from "./StudioEditor";
+import { EstimatesEditor } from "./EstimatesEditor";
 import { applicationOpen, reviewOpen, statusKey, reasonKey } from "./policy";
 
 type Snapshot = { studio: Studio; row: StudioRegistration; review: ApplicationReview; event: Event };
@@ -58,7 +59,7 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
       return <div key={axis}><dt>{t(axis === "ORGANIZATION" ? "Application.organization" : "Application.event")}</dt><dd>{t(statusKey[axis === "ORGANIZATION" ? current.studio.approvalStatus : current.status])}</dd>{reason && <dd>{t(reasonKey[reason])}</dd>}</div>;
     })}</dl>
     <p>{t(current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED" ? "Application.accepted" : current.nextActor === "NONE" ? "Application.noNext" : current.nextActor === "ORGANIZER" ? "Registration.organizerNext" : "Registration.applicantNext")}</p>
-    {(admin || (current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED")) && <nav className="entry-actions" aria-label={t("Roster.entries")}><Link to={`/studios/${current.studioId}/dancers`}>{t("Roster.title")}</Link><Link to={`/events/${event.id}/studios/${current.studioId}/performances`}>{t("Roster.entries")}</Link></nav>}
+    {(admin || (current.status === "APPROVED" && current.studio.approvalStatus === "APPROVED")) && <nav className="application-entry-links" aria-label={t("Roster.entries")}><Link to={`/studios/${current.studioId}/dancers`}>{t("Roster.title")}</Link><Link to={`/events/${event.id}/studios/${current.studioId}/performances`}>{t("Roster.entries")}</Link></nav>}
     {currentEvent.organizerEmail && <a href={`mailto:${currentEvent.organizerEmail}`}>{t("Registration.contactOrganizer")}: {currentEvent.organizerEmail}</a>}
     {!open && <p>{t("Setup.windowClosed")}</p>}
     <ErrorSummary error={error} title={t("Feedback.validation")} />
@@ -71,6 +72,8 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
       <p>{t("Application.event")}: {t(statusKey[comparison.row.status])}</p>
       {comparison.row.decisionReason && <p>{t(reasonKey[comparison.row.decisionReason])}</p>}
       <p>{t("Application.revision")}: {comparison.row.revision}</p>
+      <h4>{t("Application.estimates")}</h4>
+      {comparison.review.estimates[0] ? <dl className="estimate-ledger">{comparison.review.estimates[0].counts.map(count => <div key={count.date}><dt>{count.date}</dt><dd>{count.count}</dd></div>)}</dl> : <p>{t("Application.noEstimates")}</p>}
       <dl className="setup-grid">
         <div><dt>{t("Flow.country")}</dt><dd>{comparison.studio.country || "—"}</dd></div>
         <div><dt>{t("Flow.city")}</dt><dd>{comparison.studio.city || "—"}</dd></div>
@@ -82,6 +85,9 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
     </section>}
     {!snapshot && !error && <div className="application-skeleton" role="status">{t("Access.loading")}</div>}
     {snapshot && <>
+      <EstimatesEditor key={`estimates-${snapshot.row.revision}-${editorVersion}`} event={currentEvent} row={current} history={snapshot.review.estimates} admin={admin}
+        disabled={disabled} editable={["PENDING", "APPROVED"].includes(current.status) && (admin ? reviewAllowed : open)}
+        save={value => { void execute({ target: t("Application.saveEstimates"), effect: "", execute: value }); }} />
       {admin ? <>
         <DecisionForm key={`organization-${snapshot.row.revision}-${editorVersion}`} row={current} axis="ORGANIZATION" disabled={disabled} submit={body => decision("ORGANIZATION", body)} />
         <DecisionForm key={`event-${snapshot.row.revision}-${editorVersion}`} row={current} axis="EVENT" disabled={disabled || !reviewAllowed || ["CANCELLED", "LOCKED"].includes(current.status)} submit={body => decision("EVENT", body)} />

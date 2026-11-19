@@ -342,12 +342,32 @@ model StudioEventRegistration {
   studio Studio @relation(fields: [studioId], references: [id])
   event  Event  @relation(fields: [eventId], references: [id])
 
-  reviewNotices    ReviewNotice[]
-  performances     Performance[]
-  entryCheckpoints EntryCheckpoint[]
+  reviewNotices     ReviewNotice[]
+  performances      Performance[]
+  entryCheckpoints  EntryCheckpoint[]
+  estimateRevisions ApplicationEstimateRevision[]
+  musicTracks       MusicTrack[]
 
   @@unique([studioId, eventId])
   @@unique([id, studioId, eventId])
+}
+
+model ApplicationEstimateRevision {
+  id             String                  @id @default(uuid()) @db.Uuid
+  registrationId String
+  revision       Int
+  eventRevision  Int
+  timeZone       String
+  counts         Json
+  source         String
+  reason         String?
+  operationId    String                  @unique @db.Uuid
+  actorId        String
+  digest         String
+  createdAt      DateTime                @default(now())
+  registration   StudioEventRegistration @relation(fields: [registrationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([registrationId, revision])
 }
 
 model Dancer {
@@ -415,9 +435,64 @@ model Performance {
   scores       Score[]
   revisions    PerformanceRevision[]
   operations   PerformanceOperation[]
+  musicTrack   MusicTrack?
 
   @@unique([eventId, orderOnStage])
   @@unique([id, studioId])
+  @@unique([id, registrationId, studioId, eventId])
+}
+
+model MusicTrack {
+  id               String                  @id @default(uuid()) @db.Uuid
+  registrationId   String
+  studioId         String
+  eventId          String
+  performanceId    String?                 @unique
+  revision         Int                     @default(1)
+  state            String                  @default("DRAFT")
+  currentVersionId String?                 @db.Uuid
+  createdAt        DateTime                @default(now())
+  registration     StudioEventRegistration @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  performance      Performance?            @relation(fields: [performanceId, registrationId, studioId, eventId], references: [id, registrationId, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  versions         MusicVersion[]          @relation("TrackVersions")
+  currentVersion   MusicVersion?           @relation("CurrentMusicVersion", fields: [currentVersionId, id], references: [id, trackId], onDelete: Restrict, onUpdate: NoAction)
+  operations       MusicOperation[]
+
+  @@unique([performanceId, registrationId, studioId, eventId])
+  @@index([registrationId, studioId, eventId])
+}
+
+model MusicVersion {
+  id           String       @id @default(uuid()) @db.Uuid
+  trackId      String       @db.Uuid
+  objectKey    String       @unique
+  sha256       String
+  displayName  String
+  detectedMime String
+  byteLength   Int
+  durationMs   Int
+  uploadedBy   String
+  createdAt    DateTime     @default(now())
+  track        MusicTrack   @relation("TrackVersions", fields: [trackId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentFor   MusicTrack[] @relation("CurrentMusicVersion")
+
+  @@unique([id, trackId])
+  @@index([trackId])
+}
+
+model MusicOperation {
+  operationId String     @id @db.Uuid
+  trackId     String     @db.Uuid
+  actorId     String
+  revision    Int
+  action      String
+  reason      String?
+  digest      String
+  response    Json
+  createdAt   DateTime   @default(now())
+  track       MusicTrack @relation(fields: [trackId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([trackId, revision])
 }
 
 model PerformanceRevision {
