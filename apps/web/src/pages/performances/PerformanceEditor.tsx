@@ -76,6 +76,7 @@ export default function PerformanceEditor({ row, saved, close, context: initialC
   const nomination = context?.settings?.nominations.find(row => row.categoryId === fields.categoryId && row.ageGroupId === fields.ageGroupId && row.formatId === fields.formatId);
   const maxParticipants = nomination ? nomination.maxParticipants : format?.maxParticipants;
   return <section className="entry-editor participant-editor" aria-labelledby="entry-editor-title"><h2 id="entry-editor-title" ref={heading} tabIndex={-1}>{t("Entry.edit")}: {row.title ?? t("Performance.untitled")}</h2>
+    <Link to={`/events/${row.eventId}/studios/${row.studioId}/music?performance=${encodeURIComponent(row.id)}`}>{t("Music.title")}</Link>
     {context && context.writableFields.length < EntryFieldSchema.options.length && <p>{t("Roster.locked")}</p>}
     <ErrorSummary error={error} title={t("Entry.error")} fields={{ title: "edit-title", categoryId: "edit-categoryId", ageGroupId: "edit-ageGroupId", formatId: "edit-formatId", durationSec: "edit-durationSec", teacher: "edit-teacher", author: "edit-author", dancerIds: "edit-participants" }} />
     {context && context.issues.some(issue => issue.performanceId === row.id) && <section className="entry-guidance"><h3>{t("Roster.checks")}</h3><p>{t("Roster.checksHelp")}</p><ul>{context.issues.filter(issue => issue.performanceId === row.id).map((issue, index) => <li key={index}><Link to={`#edit-${issue.field}`}>{t(`Entry.field_${issue.field}`)}</Link>: {t(`Entry.issue_${issue.reason}`)}</li>)}</ul></section>}

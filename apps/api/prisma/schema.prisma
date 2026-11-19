@@ -243,6 +243,7 @@ model Event {
   invitations         Invitation[]
   onboardingDrafts    OnboardingDraft[]
   entryConfiguration  EntryConfiguration?
+  musicConfiguration  MusicConfiguration?
   publicEdition       FestivalEdition?
 }
 
@@ -451,6 +452,7 @@ model MusicTrack {
   revision         Int                     @default(1)
   state            String                  @default("DRAFT")
   currentVersionId String?                 @db.Uuid
+  correctionUntil  DateTime?
   createdAt        DateTime                @default(now())
   registration     StudioEventRegistration @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
   performance      Performance?            @relation(fields: [performanceId, registrationId, studioId, eventId], references: [id, registrationId, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
@@ -460,6 +462,22 @@ model MusicTrack {
 
   @@unique([performanceId, registrationId, studioId, eventId])
   @@index([registrationId, studioId, eventId])
+}
+
+model MusicConfiguration {
+  eventId  String @id
+  revision Int    @default(1)
+  policy   Json
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Restrict)
+}
+
+// Rows exist before external bytes. Cleanup retires expired staging before deletion.
+model MusicUpload {
+  id        String   @id @db.Uuid
+  expiresAt DateTime
+  deleting  Boolean  @default(false)
+
+  @@index([expiresAt])
 }
 
 model MusicVersion {

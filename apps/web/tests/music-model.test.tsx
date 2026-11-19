@@ -20,6 +20,6 @@ test("music metadata cannot expose storage or accept path names; commands pin ve
   assert.equal(MusicCommandSchema.safeParse(command).success, true);
   assert.equal(MusicCommandSchema.safeParse({ ...command, versionId: undefined }).success, false);
   assert.equal(MusicCommandSchema.safeParse({ ...command, action: "REOPEN", versionId: undefined }).success, false);
-  assert.equal(MusicCommandSchema.safeParse({ ...command, action: "REOPEN", versionId: undefined, reason: "Correction" }).success, true);
+  assert.equal(MusicCommandSchema.safeParse({ ...command, action: "REOPEN", versionId: undefined, reason: "Correction", until: "2099-01-01T00:00:00Z" }).success, true);
   assert.equal(MusicTrackSchema.safeParse({ id: crypto.randomUUID(), registrationId: "r", studioId: "s", eventId: "e", performanceId: null, revision: 1, state: "CONFIRMED", currentVersion: null }).success, false);
 });

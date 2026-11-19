@@ -12,7 +12,7 @@ export function workspaceRouter(directory: string) {
     if (target) { res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" }).redirect(302, target); return; }
     if (req.path !== "/app" && !req.path.startsWith("/app/")) { next(); return; }
     res.set({ "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow",
-      "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
+      "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'" });
     next();
   });
   router.use("/app/assets", express.static(resolve(root, "assets"), { dotfiles: "deny", etag: false, lastModified: false, cacheControl: false }), (_req, res) => { res.status(404).end(); });

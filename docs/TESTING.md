@@ -6,7 +6,7 @@ retry feedback, pending/error states, retained review/profile drafts and
 lost-response/session recovery in ET/EN/RU. `scripts/check-review-email.cjs`,
 invoked by the foundation baseline, checks recipient bindings, partial acceptance,
 rollback, serializable retry races and unchanged decision state. The privileged
-operation inventory has 25 competition operations, including checkpoint configuration
+operation inventory has 26 competition operations, including music and checkpoint configuration
 reads/writes. Image boundary/setup browser checks
 also verify event revision increments and authoritative readback before later
 configuration saves. Full workspace, browser, baseline and migration checks retain
@@ -56,6 +56,15 @@ database. The migration suite compares their additive tables, composite keys,
 CHECKs and immutable-history triggers on fresh and existing-data schemas.
 Model tests do not substitute for P8-MEDIA real file/provider/access tests.
 [Dated evidence](APPLICATION_ESTIMATES_MUSIC_VALIDATION.md).
+
+P8-MEDIA/P5-MUSIC add `music-audio.test.cjs` (bounded content parsers),
+`music-storage.test.cjs` (private provider startup), `music.spec.ts` (ET/EN/RU
+preparation/upload/confirmation, failed replacement, cancellation, session and
+organizer recovery), and `check-music-delivery.cjs` in registration/full baselines.
+The baseline owns a random `.private-music/dance_baseline_*` root and removes only
+that verified root. It uses real multipart/private byte ranges and PostgreSQL
+scope/replay/concurrency/audit/cleanup checks. Migration 45 is included in fresh/
+upgrade/catalog parity. [Music evidence](MUSIC_DELIVERY_VALIDATION.md).
 
 During editing, run the affected test file first. These commands build only its
 runtime dependencies through Turbo, then always execute the selected test:
@@ -400,7 +409,7 @@ The continuation adds reviewed-policy fingerprint/conflict/receipt checks and
 explicit publication-audit rollback to the CMS fixture. Browser coverage also
 checks document switching, late preview responses, selected edition copy, current
 canonical facts and keyboard focus/return after private preview.
-The 17 CMS admin operations are covered separately from the 25 competition
+The 17 CMS admin operations are covered separately from the 26 competition
 admin operations; public JSON/media have four anonymous read paths. Continue to cover:
 
 - Anonymous published-only DTO/assets, private drafts/preview, ordinary-user/staff

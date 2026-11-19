@@ -42,3 +42,4 @@ Thumbs.db
 
 # Hallmark local review records
 .hallmark/
+.private-music/

@@ -7,8 +7,8 @@ scope; milestone and release gates still apply. Task IDs are stable.
 ## Phase 3 — Registration and entry data foundations
 
 P5-ENTRIES/S09/S10 and P5-APPLICATION-ESTIMATES consume these foundations locally.
-P3-MUSIC-MODEL is defined; the checkpoint selects P8-MEDIA next while music/
-submission and external public-site transition gates remain open. Dated delivery
+P3-MUSIC-MODEL now feeds P8-MEDIA/P5-MUSIC private delivery and S11. The checkpoint
+selects P5-SUBMISSION/S12 next; external public-site transition gates remain open. Dated delivery
 notes below do not override it. Participating studios and rosters are unrelated
 to the new public studio site's classes/teacher content.
 

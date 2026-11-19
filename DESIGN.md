@@ -39,6 +39,16 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P8-MEDIA/P5-MUSIC extend Cobalt to the application-owned music child workspace.
+Current event/studio identity, explicit limits and a ruled current-version ledger
+precede the chooser. One URL-selected track and native audio replace a decorative
+media gallery. Upfront limits use MiB/seconds and clearly labelled UTC windows;
+the organizer's rule disclosure and reasoned correction remain native forms.
+Progress distinguishes transfer from server validation, stop is available before
+the first progress event, and uncertain writes retain their File/operation for
+retry or explicit saved-state comparison. No imagery or material slots are needed.
+Human language/assistive/visual acceptance remains a separate release gate.
+
 P5-APPLICATION-ESTIMATES adds an event-day/count ledger to S08 and its owning S06
 review. Native labelled counts expose every real calendar day and explicit zero;
 current event timezone accompanies the form. The editor retains local values

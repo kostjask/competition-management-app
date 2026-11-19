@@ -145,7 +145,7 @@ test('scoped admin cannot use any mounted global-admin operation', async t => {
   const { request, prisma } = await fixture(t);
   const { operations } = require('../../../docs/api-coverage.json');
   const adminOperations = operations.filter(row => row.tests.globalAdmin);
-  assert.equal(adminOperations.length, 25);
+  assert.equal(adminOperations.length, 26);
   let assignments;
   prisma.userRole.findMany = async ({ where }) => {
     assert.deepEqual(where, { userId: 'actor', removedAt: null });

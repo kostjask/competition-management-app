@@ -15,6 +15,7 @@ import { dancersRouter } from "./dancers";
 import { imagesRouter } from "./images";
 import { performancesRouter } from "./performances";
 import { entryWorkflowRouter } from "./entry-workflow";
+import { musicRouter } from "./music";
 import { contentRouter } from "./content";
 import { publicContentRouter } from "./public-content";
 import type { RecoveryDelivery } from "../services/authRecovery";
@@ -42,6 +43,7 @@ export function apiRouter(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
     ageGroupsRouter(prisma),
     performancesRouter(prisma),
     entryWorkflowRouter(prisma),
+    musicRouter(prisma),
   );
   router.use("/studios", authenticate, studiosRouter(prisma), dancersRouter(prisma));
   router.use("/images", authenticate, imagesRouter(prisma));

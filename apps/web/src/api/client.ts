@@ -122,6 +122,22 @@ async function deleteRequest<TBody>(endpoint: string, body?: TBody): Promise<unk
   return body === undefined ? undefined : result;
 }
 export const apiClient = {
+  privateMusicUrl: (endpoint: string): string => {
+    if (!/^\/events\/[^/]+\/studios\/[^/]+\/music\/[0-9a-f-]{36}\/versions\/[0-9a-f-]{36}\/bytes$/.test(endpoint)) throw new ApiError(502, "Invalid music target");
+    return `${API_BASE_URL}${endpoint}`;
+  },
+  uploadProgress: (endpoint: string, body: FormData, headers: Record<string, string>, signal: AbortSignal, progress: (value: number) => void): Promise<unknown> => new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest(); xhr.open("POST", `${API_BASE_URL}${endpoint}`); xhr.withCredentials = true; xhr.timeout = 120000;
+    xhr.setRequestHeader("X-CSRF-Protection", "1"); Object.entries(headers).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    const abort = () => xhr.abort(); signal.addEventListener("abort", abort, { once: true });
+    const finish = () => signal.removeEventListener("abort", abort);
+    xhr.upload.onprogress = event => { if (event.lengthComputable) progress(Math.min(100, Math.round(event.loaded / event.total * 100))); };
+    xhr.onload = () => { finish(); let data: unknown; try { data = JSON.parse(xhr.responseText); } catch { reject(new ApiError(502, "Invalid response", undefined, "INVALID_RESPONSE", "invalidResponse")); return; }
+      if (xhr.status === 401) sessionEvents.dispatchEvent(new Event("expired"));
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data); else reject(parseApiError(xhr.status, data)); };
+    xhr.onerror = xhr.ontimeout = xhr.onabort = () => { finish(); reject(new ApiError(0, "Upload response uncertain", undefined, "NETWORK", "network")); };
+    if (signal.aborted) { finish(); reject(new ApiError(0, "Upload cancelled", undefined, "NETWORK", "network")); return; } xhr.send(body);
+  }),
   contentImage: async (endpoint: string): Promise<Blob> => {
     if (!/^\/content\/documents\/[0-9a-f-]{36}\/assets\/[0-9a-f-]{36}$/.test(endpoint)) throw new ApiError(502, "Invalid image target");
     const result = await request(endpoint, { redirect: "error", cache: "no-store" }, true, true);

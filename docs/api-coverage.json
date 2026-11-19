@@ -2,6 +2,30 @@
   "scope": "Phase 1 method/path review. Entries identify test evidence and explicit non-applicable/deferred cases; this is not a percentage or browser-coverage claim.",
   "operations": [
     {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "PUT", "path": "/:eventId/music-configuration",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "invalidInput": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "globalAdmin": "scoped admin cannot use any mounted global-admin operation", "conflict": "scripts/check-music-delivery.cjs" }
+    },
+    {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "GET", "path": "/:eventId/studios/:studioId/music",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "crossParent": "scripts/check-music-delivery.cjs", "inactiveRecord": "scripts/check-music-delivery.cjs", "conflict": "N/A: read-only current music" }
+    },
+    {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "POST", "path": "/:eventId/studios/:studioId/music",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "invalidInput": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "crossParent": "scripts/check-music-delivery.cjs", "inactiveRecord": "scripts/check-music-delivery.cjs", "conflict": "scripts/check-music-delivery.cjs" }
+    },
+    {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "POST", "path": "/:eventId/studios/:studioId/music/:trackId/commands",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "invalidInput": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "crossParent": "scripts/check-music-delivery.cjs", "inactiveRecord": "scripts/check-music-delivery.cjs", "conflict": "scripts/check-music-delivery.cjs" }
+    },
+    {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "GET", "path": "/:eventId/studios/:studioId/music/:trackId/versions/:versionId/bytes",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "crossParent": "scripts/check-music-delivery.cjs", "inactiveRecord": "scripts/check-music-delivery.cjs", "conflict": "N/A: current-version-only authorized range delivery" }
+    },
+    {
+      "router": "music", "exportName": "musicRouter", "mount": "/events", "method": "POST", "path": "/:eventId/studios/:studioId/music/:trackId/versions",
+      "tests": { "success": "scripts/check-music-delivery.cjs", "invalidInput": "scripts/check-music-delivery.cjs", "authentication": "coverage inventory protected operations reject unauthenticated requests before data access", "permission": "scripts/check-music-delivery.cjs", "crossParent": "scripts/check-music-delivery.cjs", "inactiveRecord": "scripts/check-music-delivery.cjs", "conflict": "scripts/check-music-delivery.cjs" }
+    },
+    {
       "router": "studio-registrations",
       "exportName": "studioRegistrationsRouter",
       "mount": "/events",

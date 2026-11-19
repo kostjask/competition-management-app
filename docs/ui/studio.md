@@ -70,19 +70,27 @@ S09/S10 local delivery includes searchable native selection, field-linked errors
 calendar dates, immutable dancer retries, roster archive impact confirmation,
 entry withdrawal/restore, saved draft guidance, stale comparison, session recovery
 and unsaved-navigation guards. Existing organizer review uses the same editor.
-Music and representative S12 submission remain pending; no unavailable upload or
-submission action is advertised. [Contracts](../api/entry-context.md).
+Representative S12 submission remains pending. S10 and the organizer editor link
+to the scoped S11 music child; entry and music approvals stay separate.
+[Contracts](../api/entry-context.md).
 
 ## S11 — Music upload
 
-- **Purpose / roles / route:** attach valid private music; authorized reps/admins; S10 editor music child proposed.
+- **Purpose / roles / route:** attach valid private music; exact active PENDING/APPROVED members and global admins; `/app/events/:eventId/studios/:studioId/music` from S08 or S10 with `?performance=...`. Preparation grants no roster/configuration access.
 - **Primary action:** upload/replace and preview the acknowledged file.
 - **Data:** performance identity, current media/version, allowed type/size/duration/deadline and upload progress.
 - **Sections / components:** limits before chooser, labeled file input/drop area, progress/cancel, current file metadata, explicit playback controls, retry/replacement confirmation.
 - **States:** no file, uploading, server processing, ready, invalid/failed/canceled, expired access, locked; previous file retained after failed replacement.
 - **Responsive / accessibility:** no drag-only upload; touch controls, named progress, keyboard-operable audio, no autoplay; long filenames wrap.
-- **API:** [P3-MUSIC-MODEL storage/contracts](../api/music.md) are defined locally; P8-MEDIA transport/private access and P5-MUSIC remain pending. Image upload endpoints do not accept music.
+- **API:** [Private music contract](../api/music.md) supplies revisioned explicit policy, actor/body/hash receipts, staging/replacement, current-version byte ranges, attachment, confirmation, organizer acceptance and reasoned bounded reopening. Image upload endpoints do not accept music.
 - **Acceptance:** selected file alone never appears ready; server validates content/ownership; retry does not detach the working file. F04.
+
+Local S11 implementation includes upfront MiB/seconds/UTC limits, named
+indeterminate/determinate progress, immediate stop, retained uncertain operation,
+refresh/explicit comparison, session recovery, navigation warning, native private
+non-autoplay audio and current acknowledged metadata. Organizer rules and reasoned
+correction share the locked Cobalt system. [Evidence](../MUSIC_DELIVERY_VALIDATION.md)
+separates technical checks from human/hosted release approval. S12 remains open.
 
 ## S12 — Data-review checklist and submission
 

@@ -34,6 +34,7 @@ apps/api; dotenv reads its .env and shell values take precedence.
 | RATE_LIMIT_WINDOW_MS / RATE_LIMIT_MAX_REQUESTS | Positive integers; 900000 / 100 | Separate socket-IP buckets for recovery, signup/verification, invitations (all methods), and image uploads |
 | LOGIN_RATE_LIMIT_MAX_REQUESTS | Positive integer; 20 | Separate login bucket using the same window |
 | STORAGE_PATH | ./uploads | Local file root resolved against API working directory; used by read/write/delete |
+| MUSIC_STORAGE_PATH | Optional absolute private volume path; unset disables music upload | Outside uploads/web/public roots; API/workspace startup checks write/delete. Event MIME/byte/duration/deadline policy is separately required. [Music lifecycle](api/music.md) |
 | APP_BASE_URL | Not consumed | Use WEB_ORIGIN for email links; safe return policy is ADR-016 |
 
 Browser sessions require exact allowed origins and credentialed requests. A wildcard

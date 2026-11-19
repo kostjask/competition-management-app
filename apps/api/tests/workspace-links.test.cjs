@@ -14,7 +14,7 @@ const { renderEmail } = require('../dist/services/emailTemplates');
 const { createPublicApp } = require('../dist/publicApp');
 
 test('canonical returns migrate exactly once, retain scoped studio filters and reject redirect tricks', () => {
-  for (const path of ['/events/e/register','/events/e/studio?studio=s','/admin/events/e/performances?studio=s','/content/studio','/studios/s/dancers','/events/e/studios/s/performances/p/edit']) {
+  for (const path of ['/events/e/register','/events/e/studio?studio=s','/admin/events/e/performances?studio=s','/content/studio','/studios/s/dancers','/events/e/studios/s/performances/p/edit','/events/e/studios/s/music','/events/e/studios/s/music?performance=p&track=00000000-0000-4000-8000-000000000001']) {
     assert.equal(safeReturnPath(path), '/app' + path);
     assert.equal(safeReturnPath('/app' + path), '/app' + path);
     assert.equal(routerReturnPath('/app' + path), path);
@@ -22,6 +22,7 @@ test('canonical returns migrate exactly once, retain scoped studio filters and r
   for (const path of ['//evil.invalid','https://evil.invalid','/app//evil.invalid','/app/app/events','/app/arbitrary','/app/events/../admin','/app/events/e%2Fedit','/app/events/e%252Fedit','/app/events/e?token=secret','/app/events/e#secret','/app/content/studio\n','/app/events/e/studio?studio=s&extra=x']) {
     assert.equal(ReturnPathSchema.safeParse(path).success, false, path); assert.equal(safeReturnPath(path), '/app');
   }
+  for (const suffix of ['?performance=//evil.invalid','?performance=p&token=secret','?track=bad','?performance=a&performance=b','?performance=p#secret']) assert.equal(ReturnPathSchema.safeParse('/app/events/e/studios/s/music' + suffix).success, false);
 });
 
 test('legacy mapping is bounded, excludes public paths and forwards only typed link parameters', () => {
@@ -54,8 +55,9 @@ test('opt-in festival cohost serves only built workspace routes/assets and retai
   const request=(path,method='GET')=>new Promise((resolve,reject)=>{
     const req=require('node:http').request({hostname:'127.0.0.1',port:server.address().port,path,method,headers:{Host:'festival.example.invalid'}},res=>{const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve(new Response(Buffer.concat(chunks).length?Buffer.concat(chunks):null,{status:res.statusCode,headers:res.headers})));});req.on('error',reject);req.end();
   });
-  for(const path of ['/app','/app/auth/login','/app/content/studio','/app/events/e/studios/s/performances/p/edit','/app/assets/app.js','/app/identity-link.js']) {
+  for(const path of ['/app','/app/auth/login','/app/content/studio','/app/events/e/studios/s/performances/p/edit','/app/events/e/studios/s/music?performance=p','/app/assets/app.js','/app/identity-link.js']) {
     const res=await request(path);assert.equal(res.status,200,path);assert.equal(res.headers.get('cache-control'),'no-store');assert.equal(res.headers.get('referrer-policy'),'no-referrer');assert.ok(res.headers.get('content-security-policy').includes("script-src 'self'"));
+    assert.ok(res.headers.get('content-security-policy').includes("media-src 'self'"), 'Private playback is restricted to the same-origin authenticated proxy');
   }
   for(const path of ['/app/not-implemented','/app/assets/missing.js','/app/package.json','/api/v1/auth/profile','/api/v1/events/e','/uploads/users/private.png']) {
     const res=await request(path);assert.ok([401,404].includes(res.status),path);assert.ok(!(await res.text()).includes('Private workspace shell'));
