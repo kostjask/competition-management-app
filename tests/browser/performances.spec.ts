@@ -279,7 +279,7 @@ async function checkpointFixture(page: Page, locale: Locale = 'en', width = 390)
   const base = await fixture(page, locale, width);
   const settings: EntrySettings = { basic: { enabled: true, deadline: null }, final: { enabled: true, deadline: null }, allowYounger: true, olderPercent: 20, requireTeacher: true, requireAuthor: true, nominations: [] };
   const state = { loseResponse: false, failRead: false, failConfiguration: false, stale: false, emptyReview: false, readHold: Promise.resolve(), commandHold: Promise.resolve(), commands: [] as unknown[], configuration: { revision: 1, frozen: true, settings }, receipts: new Map<string, ReturnType<typeof EntryReceiptSchema.parse>>() };
-  const review = EntryReviewSchema.parse({ studioId: 's', checkpoints: (['BASIC', 'FINAL'] as const).map(kind => ({ kind, revision: 1, status: 'DRAFT', enabled: true, locked: false, deadline: null, grant: null, issues: [], receipts: [] })) });
+  const review = EntryReviewSchema.parse({ studioId: 's', organizer: true, music: { configured: false, entries: [] }, checkpoints: (['BASIC', 'FINAL'] as const).map(kind => ({ kind, reviewToken: 'a'.repeat(64), revision: 1, status: 'DRAFT', enabled: true, locked: false, canSubmit: true, deadline: null, grant: null, issues: [], receipts: [] })) });
   const snapshot = { policyVersion: 3, eventId: 'e', studioId: 's', registrationId: 'r-s', studioName: 'Synthetic studio', title: 'Synthetic performance', durationSec: 210, orderOnStage: null, teacher: 'Teacher', author: 'Author', timeZone: 'Europe/Tallinn', ageDate: '2026-01-01', archived: false,
     configuration: { category: { id: 'c', name: 'Kids' }, ageGroup: { id: 'a', name: 'Up to 7', minAge: 0, maxAge: 7 }, format: { id: 'f', name: 'Group', minParticipants: 3, maxParticipants: 1000, maxDurationSeconds: 240 } }, participants: [] };
   await page.route('**/api/v1/events/e/**', async route => {
@@ -298,7 +298,7 @@ async function checkpointFixture(page: Page, locale: Locale = 'en', width = 390)
     if (path.endsWith('/entry-review')) {
       await state.readHold;
       if (state.failRead) return route.abort();
-      return route.fulfill({ json: state.emptyReview ? { studioId: 's', checkpoints: [] } : review });
+      return route.fulfill({ json: state.emptyReview ? { ...review, checkpoints: [] } : review });
     }
     if (/entry-review\/(BASIC|FINAL)$/.test(path)) {
       const kind = EntryKindSchema.parse(path.split('/').at(-1));
@@ -330,6 +330,7 @@ for (const locale of ['et', 'en', 'ru'] as const) for (const width of [320, 390,
     const basic = page.getByRole('region', { name: getTranslation('Entry.basic', locale), exact: true });
     await expect(basic.getByText(getTranslation('Entry.DRAFT', locale), { exact: true })).toBeVisible();
     const confirm = basic.getByLabel(getTranslation('Entry.confirm', locale), { exact: true });
+    await expect(confirm).toBeEnabled();
     await confirm.focus(); await page.keyboard.press('Space');
     await basic.getByRole('button', { name: getTranslation('Entry.submit', locale), exact: true }).click();
     await expect(basic.getByText(getTranslation('Entry.REVIEW_PENDING', locale), { exact: true })).toBeVisible();
@@ -351,13 +352,13 @@ test('checkpoint lost responses retain one operation through session recovery', 
   await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
   await expect(basic.locator('.ui-error-summary')).toBeFocused();
   base.expired = true;
-  await basic.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await basic.getByRole('button', { name: 'Retry confirmation' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.getByRole('dialog').locator('input[type="password"]').fill('synthetic password');
   await page.getByRole('dialog').getByRole('button', { name: getTranslation('Shell.login', 'en'), exact: true }).click();
   await expect(page.getByRole('dialog')).not.toBeVisible();
   state.loseResponse = false;
-  await basic.getByRole('button', { name: 'Reconcile and retry the same operation' }).click();
+  await basic.getByRole('button', { name: 'Retry confirmation' }).click();
   await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();
   expect(state.receipts.size).toBe(1); expect(state.commands.at(-1)).toEqual(state.commands[0]);
 });
@@ -378,10 +379,12 @@ test('organizer reopens a named field, retains confirmation if readback fails, a
   await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
   await expect(basic.getByRole('status').filter({ hasText: 'Saved and acknowledged' })).toBeVisible();
   state.failRead = false; state.stale = true;
+  await basic.getByRole('button', { name: 'Refresh saved checkpoint', exact: true }).click();
+  await basic.getByLabel('Organizer reason', { exact: true }).fill('Retain this correction draft');
   await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
   await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
   await expect(basic.locator('.ui-error-summary')).toBeFocused();
-  await expect(basic.getByLabel('Organizer reason', { exact: true })).toHaveValue('Correct the title');
+  await expect(basic.getByLabel('Organizer reason', { exact: true })).toHaveValue('Retain this correction draft');
   await basic.getByRole('button', { name: 'Refresh saved checkpoint', exact: true }).click();
   await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();
   await expect(basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.')).not.toBeChecked();
@@ -488,7 +491,7 @@ test('checkpoint loading, read failure, pending command and unconfigured state s
   state.commandHold = new Promise<void>(resolve => { releaseCommand = resolve; });
   await basic.getByLabel('I confirm this checkpoint for the whole studio and its lock.').check();
   await basic.getByRole('button', { name: 'Submit studio checkpoint', exact: true }).click();
-  await expect(basic.getByRole('button', { name: 'Reconcile and retry the same operation' })).toBeDisabled();
+  await expect(basic.getByRole('button', { name: 'Retry confirmation' })).toBeDisabled();
   await expect(basic.getByText('Saved and acknowledged by the server.', { exact: true })).toHaveCount(0);
   releaseCommand();
   await expect(basic.getByText('Review pending', { exact: true })).toBeVisible();

@@ -59,7 +59,7 @@ module.exports = async function checkEntryRecovery({ client, baseUrl, adminToken
   const review = prefix + `/studios/${studio.id}/entry-review`;
   const command = async (action, extra = {}, token = adminToken) => {
     const head = (await request(review)).body.checkpoints.find(row => row.kind === 'FINAL');
-    return request(review + '/FINAL', token, 'POST', { action, operationId: randomUUID(), expectedRevision: head.revision, ...extra });
+    return request(review + '/FINAL', token, 'POST', { action, operationId: randomUUID(), expectedRevision: head.revision, expectedReview: head.reviewToken, ...extra });
   };
   assert.equal((await command('SUBMIT', {}, ownerToken)).status, 200);
   assert.equal((await command('ACCEPT')).status, 200);

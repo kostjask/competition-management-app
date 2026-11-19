@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { EntrySettingsSchema, EntryGrantSchema, EntryManifestSchema, PerformanceSnapshotSchema, ageOnDate, eventAgeDate,
   BASIC_ENTRY_FIELDS, FINAL_ENTRY_FIELDS, type EntryField, type EntryKind, type EntryIssue, type EntryManifest, type EntrySettings } from "@dance/schemas";
 import { ConflictError, ForbiddenError } from "../errors";
@@ -6,6 +7,11 @@ import { ConflictError, ForbiddenError } from "../errors";
 export async function entrySettings(db: Prisma.TransactionClient, eventId: string) {
   const row = await db.entryConfiguration.findUnique({ where: { eventId } });
   return row ? { revision: row.revision, settings: EntrySettingsSchema.parse(row.settings) } : null;
+}
+
+/** Bind confirmation to the reviewed sources, including policy edits with unchanged form revisions. */
+export function entryReviewToken(manifest: EntryManifest, kind: EntryKind, configurationRevision: number) {
+  return createHash("sha256").update(JSON.stringify([kind, configurationRevision, manifest])).digest("hex");
 }
 export async function requireMutableEntryRules(db: Prisma.TransactionClient, eventId: string) {
   if (await entrySettings(db, eventId) && await db.studioEventRegistration.count({ where: { eventId } }) > 0) {
@@ -42,6 +48,25 @@ export async function guardEntryWrite(db: Prisma.TransactionClient, eventId: str
       throw new ForbiddenError("This part of the studio form is locked; contact the organizer", "stageLocked");
     }
   }
+}
+
+/** Partial final corrections submit through FINAL; an inherited edit grant is not a BASIC submission grant. */
+export async function guardEntrySubmission(db: Prisma.TransactionClient, eventId: string, studioId: string, kind: EntryKind) {
+  const config = await entrySettings(db, eventId);
+  if (!config) throw new ForbiddenError("Configure checkpoints first", "stageLocked");
+  const event = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
+  if (["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage)) throw new ForbiddenError("This event is closed", "stageLocked");
+  const registration = await db.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId, eventId } } });
+  const head = await db.entryCheckpoint.findUnique({ where: { registrationId_kind: { registrationId: registration.id, kind } } });
+  const window = config.settings[kind === "BASIC" ? "basic" : "final"];
+  if (!window.enabled) throw new ForbiddenError("This checkpoint is disabled", "stageLocked");
+  if (head?.earlyLocked || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) {
+    const grant = EntryGrantSchema.safeParse(head?.grant);
+    if (!grant.success || Date.parse(grant.data.until) <= Date.now()) throw new ForbiddenError("Contact the organizer to reopen this form", "stageLocked");
+    if (grant.data.performanceIds !== null && await db.performance.count({ where: { id: { in: grant.data.performanceIds }, eventId, studioId,
+      registrationId: registration.id, deletedAt: null } }) !== grant.data.performanceIds.length) throw new ForbiddenError("The correction entries are no longer active", "stageLocked");
+    await guardEntryWrite(db, eventId, studioId, grant.data.fields, false, grant.data.performanceIds?.[0]);
+  } else await guardEntryWrite(db, eventId, studioId, kind === "BASIC" ? ["title"] : ["roster"], false);
 }
 
 export async function markEntryChanged(db: Prisma.TransactionClient, eventId: string, studioId: string, fields: readonly EntryField[]) {

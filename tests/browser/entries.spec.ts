@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { CreateDancerBodySchema, UpdateDancerBodySchema, DancerArchiveBodySchema, CreatePerformanceBodySchema, UpdatePerformanceBodySchema,
-  DancerSchema, PerformanceSchema, StudioSchema, EntryContextSchema, EntryFieldSchema, type Dancer, type Performance, type UserProfile } from "../../packages/schemas/src/index";
+  DancerSchema, PerformanceSchema, StudioSchema, EntryContextSchema, EntryFieldSchema, EntryReviewSchema, EntryCommandSchema, EntryReceiptSchema, type Dancer, type Performance, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
 
@@ -141,4 +141,160 @@ test("roster loading, read failure and retry preserve editor fields", async ({ p
   await page.getByRole("button", { name: "Edit dancer: Synthetic Dancer" }).click(); await page.locator("#dancer-lastName").fill("Keep local");
   state.fail = true; await page.getByRole("button", { name: "Refresh options and locks", exact: true }).click(); await expect(page.locator(".ui-error-summary")).toBeFocused(); await expect(page.locator("#dancer-lastName")).toHaveValue("Keep local");
   state.fail = false; await page.getByRole("button", { name: "Try again", exact: true }).click(); await expect(page.locator("#dancer-lastName")).toBeEnabled(); await expect(page.locator("#dancer-lastName")).toHaveValue("Keep local");
+});
+
+async function submissionFixture(page: Page, locale: Locale = "en", width = 390) {
+  const owner = await fixture(page, locale, width);
+  owner.entries = [PerformanceSchema.parse({ id: "p", revision: 1, eventId: "e", studioId: "s", registrationId: "r", title: "Synthetic entry", durationSec: 120,
+    orderOnStage: null, categoryId: "c", ageGroupId: "a", formatId: "f", participants: [{ dancerId: "d", dancer: owner.dancers[0] }] })];
+  const settings = { basic: { enabled: true, deadline: null }, final: { enabled: true, deadline: null }, allowYounger: true, olderPercent: 20, requireTeacher: false, requireAuthor: false, nominations: [] };
+  const review = EntryReviewSchema.parse({ studioId: "s", organizer: false, music: { configured: false, entries: [{ performanceId: "p", status: "MISSING" }] },
+    checkpoints: (["BASIC", "FINAL"] as const).map(kind => ({ kind, reviewToken: "a".repeat(64), revision: 1, status: "DRAFT", enabled: true, locked: false, canSubmit: true, deadline: null, grant: null, issues: [], receipts: [] })) });
+  const state = { review, owner, commands: [] as ReturnType<typeof EntryCommandSchema.parse>[], receipts: new Map<string, ReturnType<typeof EntryReceiptSchema.parse>>(),
+    lose: false, failRead: false, reject: false, stale: false, hold: Promise.resolve(), readHold: Promise.resolve() };
+  await page.route("**/api/v1/events/e/studios/s/entry-review**", async route => {
+    if (owner.expired) return route.fulfill({ status: 401, json: { ...denied, code: "UNAUTHORIZED", reason: "authenticationRequired" } });
+    if (route.request().method() === "GET") { await state.readHold; return state.failRead ? route.abort() : route.fulfill({ json: review }); }
+    const body = EntryCommandSchema.parse(route.request().postDataJSON()); state.commands.push(body); await state.hold;
+    if (state.reject || state.stale) return route.fulfill({ status: state.reject ? 403 : 409, json: { ...denied, ...(state.stale && { code: "CONFLICT", reason: "concurrentChange" }) } });
+    const kind = route.request().url().endsWith("/FINAL") ? "FINAL" : "BASIC";
+    const head = review.checkpoints.find(row => row.kind === kind)!;
+    let receipt = state.receipts.get(body.operationId);
+    if (!receipt) {
+      const p = owner.entries[0];
+      receipt = EntryReceiptSchema.parse({ id: `receipt-${state.receipts.size + 1}`, revision: head.revision + 1, kind, action: body.action, createdAt: "2026-11-19T12:00:00Z", actorKind: "USER", reason: null, visible: false,
+        manifest: { settings, roster: [], entries: [{ id: p.id, revision: p.revision, snapshot: { policyVersion: 3, eventId: "e", studioId: "s", registrationId: "r", studioName: "Synthetic studio", title: p.title,
+          teacher: null, author: null, durationSec: p.durationSec, orderOnStage: null, timeZone: "Europe/Tallinn", ageDate: "2026-11-01", archived: false,
+          configuration: { category: { id: "c", name: "Dance" }, ageGroup: { id: "a", name: "Children", minAge: 0, maxAge: 17 }, format: { id: "f", name: "Solo", minParticipants: 1, maxParticipants: 1, maxDurationSeconds: 210 } }, participants: [] } }] } });
+      state.receipts.set(body.operationId, receipt); head.revision++; head.status = "REVIEW_PENDING"; head.locked = true; head.canSubmit = false; head.grant = null; head.receipts.unshift(receipt);
+    }
+    if (state.lose) return route.abort(); return route.fulfill({ json: receipt });
+  });
+  return state;
+}
+
+for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440, 1920]) {
+  test(`${locale} representative submission receipt and independent music at ${width}px`, async ({ page }, info) => {
+    const state = await submissionFixture(page, locale, width); const t = (key: TranslationKey) => getTranslation(key, locale);
+    await page.goto(base + "?entry=review&checkpoint=FINAL");
+    await expect(page.getByRole("button", { name: t("Entry.accept"), exact: true })).toHaveCount(0);
+    await expect(page.getByText(t("Entry.music_MISSING"), { exact: false })).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`submission-review-${locale}-${width}.png`), fullPage: true });
+    const confirm = page.getByLabel(t("Entry.confirm"), { exact: true }); await confirm.focus(); await page.keyboard.press("Space");
+    await page.getByRole("button", { name: t("Entry.submit"), exact: true }).click();
+    await expect(page.locator(".entry-submission-receipt h4")).toBeFocused();
+    await expect(page.locator(".entry-submission-receipt")).toContainText("receipt-1");
+    await expect(confirm).toBeDisabled(); expect(state.receipts.size).toBe(1);
+    expect(state.commands[0].expectedReview).toBe("a".repeat(64));
+    await page.screenshot({ path: info.outputPath(`submission-${locale}-${width}.png`), fullPage: true });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    expect(await page.locator(".entry-review button:visible").evaluateAll(buttons => buttons.every(button => button.scrollWidth <= button.clientWidth))).toBe(true);
+    await page.reload(); await expect(page.locator(".entry-receipts")).toContainText("receipt-1");
+  });
+}
+
+test("submission blockers open the exact duration field and return to the same checkpoint", async ({ page }) => {
+  const state = await submissionFixture(page); const head = state.review.checkpoints[1];
+  head.issues = [{ performanceId: "p", field: "durationSec", reason: "duration" }];
+  await page.goto(base + "?entry=review&checkpoint=FINAL");
+  await page.getByRole("link", { name: "Duration", exact: true }).click();
+  await expect(page.locator("#edit-durationSec")).toBeFocused();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).toHaveURL(base + "?entry=review&checkpoint=FINAL");
+});
+
+test("submission lost response retains the exact operation through session recovery and comparison", async ({ page }) => {
+  const state = await submissionFixture(page); state.lose = true;
+  await page.goto(base + "?entry=review&checkpoint=FINAL"); await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "en"), exact: true }).click();
+  await expect(page.locator(".entry-checkpoint .ui-error-summary")).toBeFocused();
+  await expect(page.getByText(getTranslation("Entry.noReceipts", "en"), { exact: true })).toHaveCount(0);
+  await expect(page.getByText(getTranslation("Entry.ready", "en"), { exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: getTranslation("Entry.basic", "en"), exact: true })).toBeDisabled();
+  state.owner.expired = true; await page.getByRole("button", { name: getTranslation("Entry.retrySubmission", "en"), exact: true }).click();
+  const dialog = page.getByRole("dialog"); await expect(dialog).toBeVisible(); await dialog.locator('input[type="password"]').fill("synthetic password");
+  await dialog.getByRole("button", { name: getTranslation("Shell.login", "en"), exact: true }).click(); await expect(dialog).not.toBeVisible();
+  state.lose = false; await page.getByRole("button", { name: getTranslation("Entry.retrySubmission", "en"), exact: true }).click();
+  await expect(page.locator(".entry-submission-receipt h4")).toBeFocused();
+  expect(state.receipts.size).toBe(1); expect(state.commands.at(-1)).toEqual(state.commands[0]);
+});
+
+test("submission refresh compares uncertain success, and stale or denied writes require confirmation again", async ({ page }) => {
+  const state = await submissionFixture(page); state.lose = true;
+  await page.goto(base + "?entry=review"); await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "en"), exact: true }).click();
+  await page.getByRole("button", { name: getTranslation("Entry.refresh", "en"), exact: true }).click();
+  await expect(page.locator(".entry-receipts")).toContainText("receipt-1");
+  await page.getByRole("button", { name: getTranslation("Entry.useReview", "en"), exact: true }).click();
+  await expect(page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: getTranslation("Entry.final", "en"), exact: true }).click();
+  state.stale = true; state.lose = false; await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "en"), exact: true }).click();
+  await expect(page.locator(".entry-checkpoint .ui-error-summary")).toBeFocused();
+  await expect(page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true })).not.toBeChecked();
+  await page.getByRole("button", { name: getTranslation("Entry.refresh", "en"), exact: true }).click();
+  state.stale = false; state.reject = true; await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "en"), exact: true }).click();
+  await expect(page.locator(".entry-checkpoint .ui-error-summary")).toBeFocused();
+  expect(state.receipts.size).toBe(1);
+});
+
+test("submission review distinguishes loading, failure, no configuration and empty blockers", async ({ page }) => {
+  const state = await submissionFixture(page); let release = () => {};
+  state.readHold = new Promise<void>(resolve => { release = resolve; });
+  await page.goto(base + "?entry=review"); await expect(page.locator(".entry-loading")).toBeVisible(); state.failRead = true; release();
+  await expect(page.locator(".entry-review .ui-error-summary")).toBeVisible(); state.failRead = false; state.review.checkpoints = [];
+  await page.getByRole("button", { name: getTranslation("Shell.retry", "en"), exact: true }).click();
+  await expect(page.getByText(getTranslation("Entry.noSetup", "en"), { exact: true })).toBeVisible();
+});
+
+test("submission correction keeps unrelated fields locked and resubmits the final checkpoint", async ({ page }) => {
+  const state = await submissionFixture(page); const head = state.review.checkpoints[1];
+  head.status = "REQUIRES_CHANGES"; head.reviewToken = "b".repeat(64); head.grant = { fields: ["durationSec"], performanceIds: ["p"], until: "2099-01-01T00:00:00Z" };
+  head.issues = [{ performanceId: "p", field: "durationSec", reason: "duration" }];
+  state.owner.context.writableFields = ["durationSec"];
+  await page.goto(base + "?entry=review&checkpoint=FINAL");
+  await expect(page.getByText(getTranslation("Entry.REQUIRES_CHANGES", "en"), { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Duration", exact: true }).click();
+  await expect(page.locator("#edit-title")).toBeDisabled(); await expect(page.locator("#edit-durationSec")).toBeEnabled();
+  await page.locator("#edit-durationSec").fill("110"); await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByText(getTranslation("Entry.saved", "en"), { exact: true })).toBeVisible(); head.issues = [];
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "en"), exact: true }).click();
+  await expect(page.locator(".entry-submission-receipt h4")).toBeFocused(); expect(state.commands[0].expectedReview).toBe("b".repeat(64));
+  expect(state.owner.updates[0]).toEqual({ expectedRevision: 1, durationSec: 110 });
+  await expect(page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true })).toBeDisabled();
+});
+
+test("submission language changes retain confirmation and the uncertain operation", async ({ page }, info) => {
+  const state = await submissionFixture(page, "en", 320); state.lose = true;
+  await page.goto(base + "?entry=review&checkpoint=FINAL");
+  await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
+  await page.getByRole("button", { name: "Русский", exact: true }).click();
+  await expect(page.getByLabel(getTranslation("Entry.confirm", "ru"), { exact: true })).toBeChecked();
+  await page.getByRole("button", { name: getTranslation("Entry.submit", "ru"), exact: true }).click();
+  await expect(page.locator(".entry-checkpoint .ui-error-summary")).toBeFocused();
+  await page.screenshot({ path: info.outputPath("submission-retry-ru-320.png"), fullPage: true });
+  expect(await page.locator(".entry-review button:visible").evaluateAll(buttons => buttons.every(button => button.scrollWidth <= button.clientWidth))).toBe(true);
+  await page.getByRole("button", { name: "English", exact: true }).click(); state.lose = false;
+  await page.getByRole("button", { name: getTranslation("Entry.retrySubmission", "en"), exact: true }).click();
+  await expect(page.locator(".entry-submission-receipt h4")).toBeFocused();
+  expect(state.receipts.size).toBe(1); expect(state.commands[1]).toEqual(state.commands[0]);
+});
+
+test("submission empty checklist keeps its checkpoint through entry creation and editing", async ({ page }, info) => {
+  const state = await submissionFixture(page); state.owner.entries = []; state.review.music.entries = [];
+  state.review.checkpoints[0].issues = [{ performanceId: null, field: "entries", reason: "required" }];
+  await page.goto(base + "?entry=review&checkpoint=BASIC");
+  await page.screenshot({ path: info.outputPath("submission-empty.png"), fullPage: true });
+  await page.getByRole("link", { name: getTranslation("Entry.field_entries", "en"), exact: true }).click();
+  await expect(page).toHaveURL(base + "/new?entry=review&checkpoint=BASIC");
+  await page.locator("#entry-new-title").fill("Created from checklist"); await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page).toHaveURL(base + "/p/edit?entry=review&checkpoint=BASIC");
+  state.review.checkpoints[0].issues = (["categoryId", "ageGroupId", "formatId"] as const).map(field => ({ performanceId: "p", field, reason: "required" }));
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page).toHaveURL(base + "?entry=review&checkpoint=BASIC");
+  await expect(page.getByRole("link", { name: "Category", exact: true })).toBeVisible();
+  await page.screenshot({ path: info.outputPath("submission-empty-return.png"), fullPage: true });
 });

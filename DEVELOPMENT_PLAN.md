@@ -6,11 +6,19 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next local task: P5-SUBMISSION with owning S12 — representative review and submission.**
-Consume P5-ENTRIES and the delivered P8-MEDIA/P5-MUSIC prerequisites. Build the
-field-linked blocker/warning review, explicit studio-wide lock confirmation,
-durable submission receipt and scoped correction/resubmission. Keep application,
-entry and music acceptance independent; M3 remains open.
+**Next local task: P6-LIVE-MODEL — settle queue and live-operation policy.**
+P5-SUBMISSION/S12 is complete locally. Review the
+[live-model decision brief](docs/LIVE_MODEL_DECISIONS.md) and settle stage/session
+queues, moderator/admin authority and skip/advance/reopen behavior before its ADR,
+migration and owning organizer screens. The brief is a proposal, not a second
+completed implementation. Local M3/M4 technical prerequisites are available;
+human/hosted release gates and M3/M5 remain open.
+
+[Submission evidence](docs/SUBMISSION_VALIDATION.md) records the field-linked
+checklist, independent music notices, source-pinned confirmations, durable receipts,
+scoped correction and exact-operation/session/navigation recovery. Final workspace,
+full disposable API baseline and 40 affected browser checks pass; preserved
+documentation scratch-link and CRLF-only format-check limits are explicit.
 
 P8-MEDIA and P5-MUSIC/S11 are delivered locally with organizer policy, private
 content validation/staging, atomic replacement, exact-operation recovery,
@@ -31,7 +39,7 @@ The coordinated local P9-WIX-TRANSITION `/app`/legacy-link integration and
 P5-ENTRIES with owning S09/S10 are delivered. [Validation and limits](docs/ENTRY_WORKSPACE_VALIDATION.md)
 record routing, roster/draft/participant UI, retry/concurrency and isolated
 migration/API/browser checks. Existing S20 and organizer entry review are reused.
-Representative submission remains the next M3 work; music retains external release gates.
+Representative submission is delivered locally; entry and music workflows retain external release gates.
 
 P9-WIX-TRANSITION stays open for real content/rights/archive/URL inventory,
 ownership/TLS, replacement costs and hosted/human cutover evidence. Keep Wix live.
@@ -58,13 +66,14 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source and private music delivery revalidated locally on 2026-11-19. Older reports retain
+Source and representative submission revalidated locally on 2026-11-19. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- Integration base: clean main 846fc7f includes merged estimate/music-model PR #9,
+- Integration base: main 6ee1bfa includes merged private-music PR #10, estimate/music-model PR #9,
   workspace/entry PR #8,
   public consumers and CMS PRs #6/#7. Initial and final fetched origin/main match
-  HEAD with no unmerged local/remote branch or open PR overlap.
+  HEAD. No open PR overlaps this work; the old implementation branch is patch-
+  equivalent to PR #10 with an empty content diff, so no merge is needed.
   No original CMS work is duplicated. Publication requires the canonical-policy fingerprint from
   private preview; document changes invalidate review/confirmation state. The
   validated follow-up is retained without a new branch/history/publication action.
@@ -86,7 +95,7 @@ their dates; no hosted or application-database state is inferred.
   create/edit/archive, unscheduled saved drafts, options/participants, withdrawal/
   restore and retained network/session/stale-edit recovery. Migration 42 adds
   dancer revisions and immutable retry receipts. [Evidence](docs/ENTRY_WORKSPACE_VALIDATION.md).
-  S11 music is now delivered; S12 submission remains open, so P5-UI-ENTRIES is not closed.
+  S11 music and S12 submission are now delivered; P5-UI-ENTRIES is complete locally.
   P5-APPLICATION-ESTIMATES now supplies initial and adjusted actual-day planning
   counts plus S06/S08 reasoned organizer review/history. P3-MUSIC-MODEL defines
   application-owned tracks, immutable versions/receipts and separate confirmation/
@@ -94,8 +103,11 @@ their dates; no hosted or application-database state is inferred.
   P8-MEDIA/P5-MUSIC now supply explicit revisioned limits/windows, private local
   staging/cleanup/current-version delivery and S11 plus organizer review under
   ADR-029. Commit-time eligibility/session/admin checks cover in-flight revocation.
-  P5-SUBMISSION is next; approval, entry review and music acceptance stay separate.
-  Live scoring/results remain Phase 6–7 work.
+  P5-SUBMISSION supplies field-linked blockers, independent music notices, current
+  server availability, source-pinned commands, focused receipts and scoped
+  correction/resubmission. [Evidence](docs/SUBMISSION_VALIDATION.md) records final
+  validation and known check limits. Approval, entry review and music acceptance
+  stay separate. Live/scoring/results remain Phase 6–7 work after their decisions.
 - P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
   locally complete and retained. The [CMS contract](docs/api/content.md) owns `/app/content` editing,
   immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
@@ -176,10 +188,10 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 2 | P4-STUDIO-PAGES — local consumer complete | Isolated request-rendered studio site; WEB-STUDIO still requires its own integration/material/hosted/human gates |
 | 3 | P4-PUBLIC-PAGES — local consumer complete | Isolated festival portal/edition rules/judges/archives and truthful handoff; WEB-FESTIVAL remains unreleased |
 | 4 | P9-WIX-TRANSITION — local integration complete; external gates open | Coordinated `/app`/legacy identity links and opt-in cohost validated; real content/archive/URL and hosted replacement evidence required; retain Wix |
-| 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 — complete locally | Scoped roster and saved entry/participant drafts with recovery; broader UI task stays open for S11/S12 |
+| 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 — complete locally | Scoped roster and saved entry/participant drafts with recovery; S11/S12 are now complete locally in their owning slices |
 | 6 | P5-APPLICATION-ESTIMATES with S06/S08 — complete locally | Actual-day planning counts, revisioned owner adjustments and reasoned organizer correction; preserve M2 approvals |
-| 7 | P3-MUSIC-MODEL/P8-MEDIA/P5-MUSIC complete locally → P5-SUBMISSION next | Private metadata, explicit policy, staging/replacement/access/cleanup and S11/organizer review delivered; S12 submission consumes them to finish local M3 implementation |
-| 8 | Phase 6–7 model/consumer tasks | Consume required M3/M4 workflows; live/scoring/recovery decisions before dependent screens and M5 |
+| 7 | P3-MUSIC-MODEL/P8-MEDIA/P5-MUSIC/P5-SUBMISSION — complete locally | Private music and S11/organizer review plus S12 checklist, receipts and scoped correction delivered; M3 release gates remain open |
+| 8 | Phase 6–7 model/consumer tasks — next | Resolve the P6-LIVE-MODEL decision brief, then its ADR/model and owning screens; consume local M3/M4 while retaining live/scoring/recovery and M5 gates |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

@@ -40,7 +40,7 @@ export type EntryConfigurationInput = z.infer<typeof EntryConfigurationBodySchem
 export const EntryParamsSchema = z.object({ eventId: IdSchema, studioId: IdSchema });
 export const EntryCheckpointParamsSchema = EntryParamsSchema.extend({ kind: EntryKindSchema });
 export const EntryGrantSchema = z.strictObject({ fields: z.array(EntryFieldSchema).min(1).max(11).refine(values => new Set(values).size === values.length),
-  performanceIds: z.array(IdSchema).max(1000).nullable(), until: z.iso.datetime({ offset: true }),
+  performanceIds: z.array(IdSchema).min(1).max(1000).refine(values => new Set(values).size === values.length).nullable(), until: z.iso.datetime({ offset: true }),
 });
 
 export const EntryManifestSchema = z.strictObject({
@@ -53,12 +53,17 @@ export const EntryReceiptSchema = z.strictObject({ id: IdSchema, revision: z.int
   reason: z.string().nullable(), visible: z.boolean(), manifest: EntryManifestSchema,
 });
 export const EntryCheckpointSchema = z.strictObject({ kind: EntryKindSchema, revision: z.int().nonnegative(),
+  reviewToken: z.string().regex(/^[a-f0-9]{64}$/),
   status: z.enum(["DRAFT", "REVIEW_PENDING", "ACCEPTED", "REQUIRES_CHANGES"]), enabled: z.boolean(),
-  locked: z.boolean(), deadline: z.iso.datetime({ offset: true }).nullable(), grant: EntryGrantSchema.nullable(),
+  locked: z.boolean(), canSubmit: z.boolean(), deadline: z.iso.datetime({ offset: true }).nullable(), grant: EntryGrantSchema.nullable(),
   issues: z.array(EntryIssueSchema), receipts: z.array(EntryReceiptSchema),
 });
-export const EntryReviewSchema = z.strictObject({ studioId: IdSchema, checkpoints: z.array(EntryCheckpointSchema) });
+export const EntryReviewSchema = z.strictObject({ studioId: IdSchema, organizer: z.boolean(),
+  music: z.strictObject({ configured: z.boolean(), entries: z.array(z.strictObject({ performanceId: IdSchema,
+    status: z.enum(["MISSING", "DRAFT", "CONFIRMED", "ACCEPTED"]) })) }), checkpoints: z.array(EntryCheckpointSchema) });
+export type EntryReview = z.infer<typeof EntryReviewSchema>;
 export const EntryCommandSchema = z.strictObject({ expectedRevision: z.int().nonnegative(), operationId: z.uuid(),
+  expectedReview: z.string().regex(/^[a-f0-9]{64}$/),
   action: z.enum(["SUBMIT", "ACCEPT", "REOPEN"]),
   reason: z.string().trim().min(1).max(1000).optional(), visible: z.boolean().default(false),
   grant: EntryGrantSchema.optional(), exception: z.boolean().default(false),

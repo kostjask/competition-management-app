@@ -18,6 +18,12 @@ result documents. Public CMS publication never substitutes for P7-PUBLISH.
 Complete model/specification tasks before their own dependent screens. Do not
 require these models for M2 registration.
 
+The next P6-LIVE-MODEL decisions are collected in the
+[live-model brief](../LIVE_MODEL_DECISIONS.md): current implementation, queue
+topology, moderator/admin authority, skip/advance/reopen policy and recovery
+recommendations. This is a proposal, not an accepted ADR or implementation;
+resolve its material domain choices before dependent migrations/screens.
+
 - [ ] P6-UI-LIVE: within P6-SCHEDULE/TEMPLATES/JUDGE/MODERATOR after the respective model/recovery decisions, implement S13 accessible schedule editor/conflicts, scoring-template setup, S14 current/next/completion/connection console and S15 rubric/exact inputs/autosave/explicit submission/lock/correction. UI exit requires F07–F09 touch/keyboard venue rehearsal, stale/repeated/reconnecting/removed-access/manual-fallback cases and full cross-phase language/accessibility/state/visual gates; current identity and local/server acknowledgement remain visible throughout.
 
 - [ ] P6-LIVE-MODEL: extend ADR-003 with SCHEDULED/LIVE/FINALIZED/ENDED/CANCELLED transitions, stage/session/queue states, authorized advance/pause/skip/withdraw/reopen actions, and safe lifecycle migration. Separate schedule-entry/stage/session ordering from performance identity/draft submission; define moving/swapping/withdrawing and archived-slot reuse with transactional uniqueness/concurrency checks. Preserve existing orders/history, allow unscheduled entries from P3-ENTRIES, and add schedule indexes/conflict/transition tests.

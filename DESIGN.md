@@ -39,6 +39,15 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P5-SUBMISSION/S12 extends the same Cobalt system to the representative checkpoint
+review. The studio-wide basic/final ledger separates field-linked blockers from
+independent music notices. Actual server availability, named correction scope,
+explicit lock confirmation and focused receipt history carry the hierarchy.
+The organizer shares these controls with separate acceptance/reopening authority.
+No imagery, new font, palette or shell is introduced. Localized phone/desktop
+and recovery evidence is in [submission validation](docs/SUBMISSION_VALIDATION.md);
+human language, assistive and visual acceptance remains open.
+
 P8-MEDIA/P5-MUSIC extend Cobalt to the application-owned music child workspace.
 Current event/studio identity, explicit limits and a ruled current-version ledger
 precede the chooser. One URL-selected track and native audio replace a decorative

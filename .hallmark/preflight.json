@@ -1,26 +1,53 @@
 {
   "date": "2026-11-19",
-  "scope": "P8-MEDIA/P5-MUSIC S11 and organizer policy/acceptance/correction",
+  "scope": "P5-SUBMISSION/S12 and shared organizer checkpoint review",
   "evidence": [
     "DESIGN.md:10",
-    "docs/DESIGN_SYSTEM.md:9",
-    "docs/ui/studio.md:78",
-    "apps/web/src/pages/music/music.css:1"
+    "docs/DESIGN_SYSTEM.md:10",
+    "apps/web/src/features/events/design/tokens.css:1",
+    "apps/web/src/pages/performances/performance-register.css:1"
   ],
+  "findings": {
+    "framework": "React/TypeScript/Vite",
+    "fonts": "locked local system-ui/Segoe UI with Latin/Cyrillic fallback",
+    "palette": "existing Cobalt scoped tokens",
+    "motion": "existing short control feedback; no new animation"
+  },
   "preserved": [
-    "Cobalt local Latin/Cyrillic fonts and scoped tokens",
-    "current organizer editor, auth and event authority",
-    "ET/EN/RU and accessibility"
+    "existing shell, Cobalt tokens and geometry",
+    "ET/EN/RU and backend authority",
+    "independent application, entry and music decisions"
   ],
   "introduced": [
-    "private current-version and configured-limit ledger",
-    "upload/progress/cancellation and exact-operation recovery",
-    "independent music confirmation/acceptance and reasoned correction"
+    "source-pinned studio-wide checklist and receipts",
+    "representative scoped correction and exact-operation recovery",
+    "checkpoint-preserving first-entry and field navigation"
   ],
-  "inferred": {
-    "audience": "applicants, studio representatives and organizers",
-    "use": "prepare, upload, preview and review music without changing application or entry approvals",
-    "tone": "restrained operations"
-  },
-  "material": "actual operational rows; synthetic fixtures for checks; no artwork or invented claims"
+  "material": "actual server data; synthetic fixtures for checks; no imagery slots",
+  "previous": {
+    "date": "2026-11-19",
+    "scope": "P8-MEDIA/P5-MUSIC S11 and organizer policy/acceptance/correction",
+    "evidence": [
+      "DESIGN.md:10",
+      "docs/DESIGN_SYSTEM.md:9",
+      "docs/ui/studio.md:78",
+      "apps/web/src/pages/music/music.css:1"
+    ],
+    "preserved": [
+      "Cobalt local Latin/Cyrillic fonts and scoped tokens",
+      "current organizer editor, auth and event authority",
+      "ET/EN/RU and accessibility"
+    ],
+    "introduced": [
+      "private current-version and configured-limit ledger",
+      "upload/progress/cancellation and exact-operation recovery",
+      "independent music confirmation/acceptance and reasoned correction"
+    ],
+    "inferred": {
+      "audience": "applicants, studio representatives and organizers",
+      "use": "prepare, upload, preview and review music without changing application or entry approvals",
+      "tone": "restrained operations"
+    },
+    "material": "actual operational rows; synthetic fixtures for checks; no artwork or invented claims"
+  }
 }
