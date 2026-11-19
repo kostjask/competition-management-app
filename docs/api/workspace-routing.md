@@ -55,7 +55,9 @@ database checks instead own a randomly named disposable database.
 The browser client defaults to same-origin `/api/v1`. In ordinary Vite development,
 only `/api/v1` and `/uploads` proxy to the loopback API on port 4000; explicit
 `VITE_API_URL` overrides remain supported. The SPA and its assets use no-store,
-no-referrer, noindex and same-origin CSP. Missing assets return 404 rather than
+no-referrer, noindex and same-origin CSP (including `media-src 'self'` for private
+music playback). S11 music paths and bounded performance/track selections are
+allowlisted for cohosting and safe authentication returns. Missing assets return 404 rather than
 HTML. Public HTML retains its script-free CSP. The studio public entry cannot
 enable workspace cohosting. Exact Host, CORS, CSRF and backend authorization
 remain mandatory; no forwarded-host trust or cross-subdomain cookie is added.

@@ -29,6 +29,7 @@ const ReviewPage = lazy(() => import("../pages/applications/ReviewPage.tsx"));
 const PerformanceRegister = lazy(() => import("../pages/performances/PerformanceRegister.tsx"));
 const DancerRoster = lazy(() => import("../pages/entries/DancerRoster.tsx"));
 const EntryWorkspace = lazy(() => import("../pages/entries/EntryWorkspace.tsx"));
+const MusicPage = lazy(() => import("../pages/music/MusicPage.tsx"));
 const ApplicationsPage = lazy(() => import("../pages/applications/ApplicationsPage.tsx"));
 const EventApplicationPage = lazy(() => import("../pages/applications/EventApplicationPage.tsx"));
 const JudgeInterface = lazy(() => import("../pages/judge/JudgeInterface.tsx"));
@@ -100,6 +101,7 @@ export function AppRoutes() {
               <Route path="/events/:id" element={<RequireAuth><EventInfo /></RequireAuth>} />
               <Route path="/events/:id/edit" element={<RequireRole role="admin"><EventEdit /></RequireRole>} />
               <Route path="/applications" element={<RequireAuth><LazyWrapper><ApplicationsPage /></LazyWrapper></RequireAuth>} />
+              <Route path="/events/:eventId/studios/:studioId/music" element={<RequireAuth><LazyWrapper><MusicPage /></LazyWrapper></RequireAuth>} />
               <Route path="/studios/:studioId/dancers" element={<RequireAuth><LazyWrapper><DancerRoster /></LazyWrapper></RequireAuth>} />
               <Route path="/events/:eventId/studios/:studioId/performances" element={<RequireAuth><LazyWrapper><EntryWorkspace /></LazyWrapper></RequireAuth>} />
               <Route path="/events/:eventId/studios/:studioId/performances/new" element={<RequireAuth><LazyWrapper><EntryWorkspace creating /></LazyWrapper></RequireAuth>} />

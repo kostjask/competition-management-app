@@ -44,6 +44,8 @@ const EnvSchema = z.object({
   STORAGE_TYPE: z.literal("local").default("local"),
   STORAGE_PATH: z.string().default("./uploads"),
   STORAGE_PUBLIC_URL: z.string().url().optional(),
+  // Explicitly opt in; no public image namespace or implicit temporary root.
+  MUSIC_STORAGE_PATH: z.string().min(1).optional(),
 
   // AWS S3 (optional, required if STORAGE_TYPE=s3)
   AWS_REGION: z.string().optional(),
@@ -180,6 +182,7 @@ export const config = {
       enabled: false,
     },
   },
+  music: { root: env.MUSIC_STORAGE_PATH },
 
   // Email
   email: {

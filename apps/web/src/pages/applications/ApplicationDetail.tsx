@@ -85,6 +85,7 @@ export function ApplicationDetail({ event, row, admin, onChanged }: { event: Eve
     </section>}
     {!snapshot && !error && <div className="application-skeleton" role="status">{t("Access.loading")}</div>}
     {snapshot && <>
+      {["PENDING", "APPROVED"].includes(current.status) && <Link to={`/events/${event.id}/studios/${current.studioId}/music`}>{t("Music.prepare")}</Link>}
       <EstimatesEditor key={`estimates-${snapshot.row.revision}-${editorVersion}`} event={currentEvent} row={current} history={snapshot.review.estimates} admin={admin}
         disabled={disabled} editable={["PENDING", "APPROVED"].includes(current.status) && (admin ? reviewAllowed : open)}
         save={value => { void execute({ target: t("Application.saveEstimates"), effect: "", execute: value }); }} />

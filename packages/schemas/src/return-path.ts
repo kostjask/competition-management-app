@@ -6,7 +6,8 @@ const WorkspaceReturnPathSchema = z.string().max(240).refine(value =>
 
 const CmsReturnPathSchema = z.string().max(240).regex(/^\/content\/(?:studio|festivals|editions\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/);
 const EntryReturnPathSchema = z.string().max(240).regex(/^\/(?:studios\/[A-Za-z0-9_-]+\/dancers|events\/[A-Za-z0-9_-]+\/studios\/[A-Za-z0-9_-]+\/performances(?:\/new|\/[A-Za-z0-9_-]+\/edit)?)$/);
-const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema);
+const MusicReturnPathSchema = z.string().max(240).regex(/^\/events\/[A-Za-z0-9_-]+\/studios\/[A-Za-z0-9_-]+\/music(?:\?(?:performance=[A-Za-z0-9_-]+(?:&track=[0-9a-f-]{36})?|track=[0-9a-f-]{36}(?:&performance=[A-Za-z0-9_-]+)?))?$/);
+const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema).or(MusicReturnPathSchema);
 export const WORKSPACE_BASE = "/app";
 /** Absolute browser/mail links. Router destinations use paths relative to its basename. */
 export function workspaceLink(path: string): string { return WORKSPACE_BASE + (path === "/" ? "" : path); }

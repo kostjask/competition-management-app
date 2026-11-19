@@ -52,7 +52,10 @@ not a production-readiness or deployed-data audit. Task priority: [checkpoint](.
   Raster content is decoded/re-encoded into bounded metadata-free WebP; private
   authenticated retrieval requires live references and uses safe headers/no-store.
   Reference/audit rollback and new-file cleanup are tested. Unreachable orphan
-  cleanup and provider expansion remain P8-MEDIA; see [image evidence](IMAGE_BOUNDARIES_VALIDATION.md).
+  older operational-image durable cleanup and cloud-provider expansion remain
+  delivery-hardening work; see [image evidence](IMAGE_BOUNDARIES_VALIDATION.md).
+  Private music now uses separate configured staging/current-version authorization,
+  retained versions and durable cleanup under [ADR-029](adr/029-private-music-delivery.md).
 
 P2-BOUNDARIES/ERRORS and P2-ROLES are locally complete: exact-origin CORS,
 API headers, validated production configuration, bounded sensitive-route limits,
@@ -109,7 +112,7 @@ is inferred from the local probes.
 | Cookie/native session isolation, Origin/CSRF, safe returns and audited all-session logout implemented locally; production HTTPS rollout and full workflow evidence remain | P9-DEPLOY / P2-UI-AUTH |
 | Minimal immutable transactional audit/privacy policy implemented; per-feature coverage and organizational retention review continue | Owning feature tasks; P9 operations |
 | Resend/queue/templates/retries implemented locally; link UI implemented locally; real staging inbox evidence remains open | P2-EMAIL / P2-UI-AUTH |
-| Durable orphan cleanup/retry and cloud/private media provider lifecycle remain incomplete | P8-MEDIA; current raster authorization/content/retrieval are delivered under ADR-015 |
+| Older operational-image durable cleanup and future cloud providers remain incomplete | P8-DELIVERY-HARDENING; music staging/private local delivery is implemented under ADR-029; raster authorization/content/retrieval remain ADR-015 |
 
 ## Change requirements
 

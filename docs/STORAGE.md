@@ -7,16 +7,12 @@ Current implementation is local only. Sources:
 
 ## Current behavior
 
-The planned studio/festival CMS needs reviewed public images and archive documents
-under [P4-PUBLIC-MODEL](roadmap/website.md). That public asset lifecycle is not
-implemented, does not inherit private-music prerequisites and must not turn current
-authenticated uploads into public files. Define allowlisted types, content/size
-validation, draft/published references, cache/unpublish and replacement/cleanup
-before consumers, following the completed ADR-026 design. That design chooses
-document-owned normalized rasters, protected previews, live-reference/rights-gated
-no-store public reads and independent durable cleanup. Documents initially use
-reviewed HTTPS links; first-party PDF import stays gated under P9-WIX-TRANSITION.
-Current raster limits below remain unchanged.
+The delivered CMS uses document-owned normalized rasters, protected previews,
+live-reference/rights-gated no-store public reads and independent durable cleanup
+under [ADR-026](adr/026-studio-and-festival-platform.md). It never turns the older
+authenticated operational images into public files. Documents use reviewed HTTPS
+links; first-party PDF import stays gated under P9-WIX-TRANSITION. Current
+operational raster limits below remain unchanged.
 
 - STORAGE_TYPE accepts only local; startup installs LocalStorageService.
 - Files live under configured STORAGE_PATH, resolved against the API working
@@ -35,7 +31,8 @@ Current raster limits below remain unchanged.
   audit transaction. Failed mutation attempts new-file cleanup and preserves the
   old file. Successful commit precedes old-file cleanup; unreachable orphan files
   may remain after crashes/cleanup failures. Superseded/orphan files are never
-  served. Durable compensation/cleanup/retry remains P8-MEDIA.
+  served. Retrofitting durable cleanup for these older operational images remains
+  follow-up delivery hardening; private music's cleanup does not cover them.
 - Existing legacy files are retained on disk, but noncanonical keys are no longer
   served. Re-upload permitted images; no legacy transformation/deletion is run.
 - Current image routes target events, **users**, dancers and studios. There is
@@ -47,7 +44,7 @@ ownership/permission/content enforcement is implemented under P2-BOUNDARIES-UPLO
 Image UI and full workflow release checks remain open. Entity deletion does not
 guarantee media cleanup.
 
-## Future providers
+## Separate CMS and music namespaces
 
 P4-PUBLIC-EDITOR adds a separate `content-private` namespace, owned by CMS
 documents rather than private operational images. Normalized raster publication
@@ -56,8 +53,20 @@ cleanup worker is independent of private-music P8-MEDIA work. Exact headers,
 leases, retry limits and restore restrictions: [content assets](api/content.md#raster-ownership-rights-and-cleanup).
 PDF/video remain reviewed external HTTPS links; no PDF upload or remote fetch is enabled.
 
-P8-MEDIA extends private provider selection, music validation and durable cleanup/
-retry; current raster protection is delivered in P2. P3-MUSIC-MODEL owns music metadata/ownership.
+P8-MEDIA/P5-MUSIC use an explicit absolute `MUSIC_STORAGE_PATH` outside uploads
+and web/public roots. Startup checks the volume; unset disables uploads. Revisioned
+event MIME/size/duration/deadline limits are also required. Files stream to private
+staging; bounded MP3/PCM WAV parsers validate content before an atomic version/
+current-pointer/receipt/audit transaction. Failed replacement retains prior bytes.
+Playback is an authenticated current-version range proxy, with no public mount
+or bearer URL. One-hour staging expiry and a minute worker retire orphan staging
+before deletion; failures retry. Committed versions/receipts remain retained.
+[Music contract](api/music.md) and [ADR-029](adr/029-private-music-delivery.md)
+own exact limits, supported formats, recovery and production volume requirements.
+
+## Future providers
+
+Current operational raster protection is delivered in P2.
 Cloud-provider env fields are optional parsed settings, not installed adapters or
 conditional credential checks. Adding an SDK/import alone does not complete
 private access, deployment, backup, URL and migration policy. No cloud pricing or

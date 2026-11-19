@@ -151,7 +151,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S08 | `/events/:id/register`, `/events/:id/studio?studio=:studioId`; P `/studios/:studioId` | Application/status/profile/contact and revisioned event-day estimates delivered; standalone studio route remains proposed |
 | S09 | `/studios/:studioId/dancers` | Local roster/editor/archive, P5-ENTRIES |
 | S10 | `/events/:eventId/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | Local nullable unscheduled draft/participant editor, P5-ENTRIES |
-| S11 | P performance editor `/music` child | P5-MUSIC; concrete parent is S10 item |
+| S11 | `/app/events/:eventId/studios/:studioId/music` | P5-MUSIC; S08 preparation and S10 `?performance=` child |
 | S12 | I `/admin/events/:eventId/performances`; P `/events/:id/studios/:studioId/review` | Organizer ownership/history/draft/details/configuration/checkpoint review/withdraw/restore delivered locally; representative checklist remains P5-SUBMISSION |
 | S13 | P `/admin/events/:id/schedule` | P6-SCHEDULE |
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
@@ -305,7 +305,7 @@ Record substantial decisions in their owning ADR before dependent schema/code.
 | UX-D04 Locale/content | ADR-013 defines account/recipient precedence; ADR-019 accepts M2 authored-content source-language and explicit fallback. Later workflow content remains open. | I18N-PREFERENCES delivered locally; I18N-CONTENT remains open for storage/editors/later workflows |
 | UX-D05 Registration policy | M2 application policy accepted in [ADR-003](adr/003-registration-lifecycle.md): independent decisions, deadline/timezone, retained revisioned cancel/reapply, semantic reasons and pending profile correction. Entry transitions remain M3. | P3 registration backend/contracts and P4/P5 application/review screens are implemented locally; release gates remain open |
 | UX-D06 Entries/history | ADR-023/024/025 implement immutable revisions, nullable drafts, studio checkpoints/receipts, corrections and retained withdrawal/restore/resubmission. Cross-event shared roster identity retains ADR-001 gates. | P3-HISTORY/ENTRIES locally complete; representative consumers remain P5-ENTRIES/SUBMISSION |
-| UX-D07 Eligibility/media | ADR-023 event-local completed age and ADR-025 any-older percentage/category limits are enforced by checkpoint backend. Public CMS assets and private music are separate consumers. | P3-ENTRIES and P3-MUSIC-MODEL complete locally; P8-MEDIA/P5-MUSIC before music delivery; P4-PUBLIC-MODEL before public assets |
+| UX-D07 Eligibility/media | ADR-023 event-local completed age and ADR-025 any-older percentage/category limits are enforced by checkpoint backend. Public CMS assets and private music are separate consumers. | P3-ENTRIES/MUSIC-MODEL and P8-MEDIA/P5-MUSIC delivered locally; ADR-029 owns private music; ADR-026 owns public assets; external release gates remain |
 | UX-D08 Staff authority | ADR-013/017/018 select global-admin staff management with explicit event scope and retained offboarding. Studio inviter/member extension remains P5-MEMBERS; separate stage authority remains a live-model decision. | Staff model/UI delivered locally; member/live extensions retain their own gates |
 | UX-D09 Live/recovery | Single/multiple stages/sessions, transition authority, offline blocked versus durable queued drafts, freshness thresholds and manual fallback; recommend acknowledged online operations first, explicit read-only offline status until reconciled. | ADR-003 live portion/P6-RECOVERY before live UI promises |
 | UX-D10 Scoring/publication | Rubric precision/rounding/ties/penalties, peer visibility, lock/reopen authority and correction publication; recommend exact versioned rules and explicit final submission/publication. | ADR-004/P6-SCORING-MODEL before score/results implementation |
@@ -325,6 +325,7 @@ P2-UI-FOUNDATION/SHELL and M2 setup/review/application UI are delivered locally.
 CMS/public consumers, the local `/app` transition and P5-ENTRIES/S09/S10 are
 delivered locally. The [checkpoint](../DEVELOPMENT_PLAN.md#implementation-order)
 now includes P5-APPLICATION-ESTIMATES/S06/S08 and the P3-MUSIC-MODEL prerequisite;
-P8-MEDIA is next. Independent WEB-STUDIO/WEB-FESTIVAL release
-gates and S11/S12 remain open. M2 operational release retains
+P8-MEDIA/P5-MUSIC now supply the S11 private music workbench and organizer
+configuration/acceptance/correction. P5-SUBMISSION/S12 is next. Independent
+WEB-STUDIO/WEB-FESTIVAL release gates remain open. M2 operational release retains
 verify → apply → independent approvals → resume status and its external gates.

@@ -18,8 +18,9 @@ locally; subsequent recovery and full option/preset setup complete P3-ENTRIES an
 P4-ENTRY-CONFIG locally. P5-ENTRIES/S09/S10 now consume those foundations and
 share the organizer editor. P5-APPLICATION-ESTIMATES adds owning S06 day/count
 review, reasoned correction and immutable history under ADR-027. The checkpoint
-selects P8-MEDIA after the completed music model; music/submission and external
-public-site transition gates remain open.
+now includes P8-MEDIA/P5-MUSIC's organizer music policy, independent acceptance
+and reasoned correction workbench. Representative submission and external
+public-site transition gates remain open; P5-SUBMISSION/S12 is next.
 The developer/director's shared website editing is owned by the
 [website roadmap](website.md), not a second implementation of event setup.
 

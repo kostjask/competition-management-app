@@ -5,6 +5,41 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "private current version",
+   "configured limits",
+   "explicit progress",
+   "uncertain response recovery",
+   "separate music acceptance"
+  ],
+  "hero": "none (app)",
+  "nav": "existing workspace and owning application/entry links",
+  "footer": "none (app)",
+  "imagery": "actual version metadata and policy; synthetic browser fixtures",
+  "photos": [],
+  "entry": "apps/web/src/pages/music/MusicPage.tsx",
+  "fingerprint": "private version and deadline ledger with immediate stop and frozen operation",
+  "sections": [
+   "event and studio identity",
+   "policy disclosure",
+   "limits",
+   "current version",
+   "upload and confirmation",
+   "organizer acceptance and correction"
+  ],
+  "signature": "private version and deadline ledger",
+  "waived": [],
+  "prompt": "P8-MEDIA and P5-MUSIC with S11 and organizer policy/acceptance/correction; locked Cobalt, accessibility and ET/EN/RU",
+  "sweep": "static 0 FAIL 0 REFLEX 0 WARN; own render tier not run; Playwright app captures",
+  "finishReview": "subagent; ship; 3 findings resolved and recaptured; material gap none",
+  "date": "2026-11-19",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "event-local calendar days",
    "planning counts",
    "reasoned corrections",

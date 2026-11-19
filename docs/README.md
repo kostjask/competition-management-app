@@ -32,7 +32,7 @@ requires that past result or rollout limitation.
 | Security / roles / invitations | [Security](SECURITY.md), [roles](../ROLE_ARCHITECTURE.md), ADR-006/008 | auth middleware, permission helpers, invitation controller |
 | Audit / privacy / onboarding foundation | [Privacy](PRIVACY.md), ADR-012/013/014 | services/audit, onboarding, staffPolicy, emailQueue; schema/migrations |
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001/003/019 | registration/studio controllers, schema.prisma |
-| Application estimates / private music model | [Estimate contract](api/registrations.md#planning-estimates), [music model](api/music.md), ADR-027/028 | application estimate service, shared schemas, Prisma models; media transport remains P8-MEDIA |
+| Application estimates / private music | [Estimate contract](api/registrations.md#planning-estimates), [music contract](api/music.md), ADR-027/028/029 | application estimates; MusicController, music policy/content/storage services, shared contracts and S11 workbench |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |

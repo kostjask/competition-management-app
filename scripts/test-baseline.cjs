@@ -41,6 +41,7 @@ const env = {
   LOGIN_RATE_LIMIT_MAX_REQUESTS: '500', RATE_LIMIT_MAX_REQUESTS: '2000',
   CORS_ORIGIN: 'http://localhost:5173',
   STORAGE_PATH: path.join(root, 'apps/api/uploads', database),
+  MUSIC_STORAGE_PATH: path.join(root, '.private-music', database),
 };
 let created = false;
 let client;
@@ -167,6 +168,7 @@ async function main() {
       await check('check-application-review', { client, baseUrl, adminToken: token, login });
       await check('check-application-estimates', { client, baseUrl, adminToken: token, login });
       await check('check-music-model', { client });
+      await check('check-music-delivery', { client, baseUrl, adminToken: token, login, musicRoot: env.MUSIC_STORAGE_PATH });
     }
     if (!entryFoundationsOnly) await check('check-event-setup', { client, baseUrl, adminToken: token, login });
     if (focused && !entryFoundationsOnly) { console.log(`PASS: isolated ${eventSetupOnly ? 'event setup' : 'registration'} baseline (focused; full gate still required).`); return; }
@@ -211,6 +213,9 @@ async function main() {
     const fixtureStorage = path.resolve(env.STORAGE_PATH);
     if (path.dirname(fixtureStorage) !== storageRoot || !/^dance_baseline_[a-f0-9]{32}$/.test(path.basename(fixtureStorage))) throw new Error('Invalid fixture storage cleanup target');
     require('node:fs').rmSync(fixtureStorage, { recursive: true, force: true });
+    const musicStorage = path.resolve(env.MUSIC_STORAGE_PATH);
+    if (path.dirname(musicStorage) !== path.resolve(root, '.private-music') || path.basename(musicStorage) !== database) throw new Error('Invalid private music fixture cleanup target');
+    require('node:fs').rmSync(musicStorage, { recursive: true, force: true });
     console.log(`TIME baseline total: ${((performance.now() - startedAt) / 1000).toFixed(2)}s`);
   }
 }

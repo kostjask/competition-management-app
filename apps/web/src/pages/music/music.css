@@ -1,0 +1,22 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: private version and deadline ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V; the current private file and acknowledgement carry operational identity. */
+/* Hallmark · finish-review: subagent · 3 findings · 3 resolved · gap: none; Playwright recaptures, own render tier not run. */
+@import "../entries/entries.css";
+.music-workbench h1, .music-workbench h2 { overflow-wrap: break-word; min-width: 0; }
+.music-workbench form { display: grid; gap: var(--space-md); max-width: 48rem; }
+.music-workbench audio, .music-workbench progress { width: 100%; max-width: 40rem; }
+.music-workbench audio:focus-visible, .music-workbench summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.music-policy { margin-block: var(--space-lg); border-block: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+.music-policy summary { min-height: 2.75rem; cursor: pointer; }
+.music-policy summary:hover { color: var(--color-accent); }
+.music-policy summary:active { color: var(--color-ink); }
+.music-policy fieldset { min-width: 0; }
+.music-track { margin-block: var(--space-xl); }
+.music-ledger { margin-block: var(--space-lg); }
+.music-ledger > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); padding-block: var(--space-sm); border-bottom: 1px solid var(--color-rule-2); }
+.music-ledger dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.music-workbench .entry-check { min-height: 2.75rem; }
+@media (max-width: 30rem) {
+  .music-ledger > div { gap: var(--space-sm); }
+  .music-ledger > .music-wide-fact { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); }
+}

@@ -44,7 +44,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Events | /events; /events/:eventId | [Events](api/events.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
 | Application estimates | PATCH /events/:eventId/studio-registrations/:studioId/estimates; history in registration /review | [Planning estimates](api/registrations.md#planning-estimates) |
-| Private music model | No mounted transport yet; P8-MEDIA prerequisite | [Music model](api/music.md) |
+| Private music | Revisioned policy/preparation, multipart replacement, current-version private ranges and separate acceptance/correction | [Music](api/music.md) |
 | Studios | /studios; /:studioId; approval/representatives actions | [Studios](api/studios.md) |
 | Dancers | /studios/:studioId/dancers; /:dancerId | [Dancers](api/dancers.md) |
 | Performances | /events/:eventId/performances; /:performanceId; POST /:performanceId/restore | [Performances](api/performances.md) |
@@ -63,7 +63,7 @@ Frontend helpers decode unknown transport output through shared response schemas
 including session metadata. DTOs omit private persistence fields; explicit
 native auth/token operations remain exceptions by contract. Owner onboarding drafts
 exist under auth; entry drafts and opt-in studio data checkpoints are implemented
-through the contracts below. Music, score-sheet, live and results APIs are not
+through the contracts below. Score-sheet, live and results APIs are not
 implied by UI specifications.
 
 ## Resource contracts
