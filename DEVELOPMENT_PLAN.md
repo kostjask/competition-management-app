@@ -6,6 +6,18 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
+PR #12 CI repair (2026-11-21): the failed Workspace check was S20's delayed
+preview/document-switch browser case. Private preview results now retain their
+document/revision identity; request cleanup runs at the document commit. The
+regression waits for the intercepted request, committed destination and released
+response, covers late success/error, and requires a fresh destination preview
+before publishing. Local checks pass: 20 delayed-response stress cases, all 441
+browser cases, workspace tests/typecheck/lint/build and Prisma checks. The standard
+documentation check retains its pre-existing ignored scratch-link failure; all
+162 repository documents pass with that scratch directory excluded. PR #12 is
+already merged; hosted validation awaits publication of the repair. This focused
+correction does not change the queue below.
+
 **Next local task: P6-JUDGE/S15, beginning with its reconnect policy.**
 The user accepted the recommended [scoring policy](docs/SCORING_MODEL_DECISIONS.md)
 on 2026-11-21. [ADR-004](docs/adr/004-exact-scoring.md), additive migration 47 and

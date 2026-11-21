@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import { CmsPayloadSchema, CmsIndexSchema, cmsReadiness, type CmsDocument, type CmsLocale, type CmsPreviewSchema, type CmsReceiptSchema, type CmsRevisionSchema, type ErrorReason } from "@dance/schemas";
 import type { z } from "zod";
@@ -15,14 +15,15 @@ import { ContentFacts } from "./ContentFacts";
 import "./content.css";
 
 type Index = z.infer<typeof CmsIndexSchema>;
+type Preview = { documentId: string; revisionId: string; result: z.infer<typeof CmsPreviewSchema> };
 type Pending = { documentId: string; version: number; operationId: string; path: string; body: Record<string, unknown>; file?: File; conflict?: boolean };
 export default function ContentPage() {
   const { locale } = useTranslation(); const t = (key: ContentKey) => contentTranslations[key][locale]; const location = useLocation(); const { editionId } = useParams(); const [query, setQuery] = useSearchParams();
   const [index, setIndex] = useState<Index>(); const [base, setBase] = useState<CmsDocument>(); const [local, setLocal] = useState<unknown>();
   const [error, setError] = useState<ErrorReason>(); const [errors, setErrors] = useState<string[]>([]); const [busy, setBusy] = useState(false); const [pending, setPending] = useState<Pending>();
   const [compared, setCompared] = useState<CmsDocument>(); const [retryAllowed, setRetryAllowed] = useState(false); const [ack, setAck] = useState<z.infer<typeof CmsReceiptSchema>>();
-  const [preview, setPreview] = useState<z.infer<typeof CmsPreviewSchema>>(); const [history, setHistory] = useState<z.infer<typeof CmsRevisionSchema>[]>([]);
-  const [reviewRevision, setReviewRevision] = useState<string>(); const [confirmation, setConfirmation] = useState<{ path: string; body: Record<string, unknown>; text: string }>(); const [reviewed, setReviewed] = useState(false);
+  const [previewResult, setPreview] = useState<Preview>(); const [history, setHistory] = useState<z.infer<typeof CmsRevisionSchema>[]>([]);
+  const [confirmation, setConfirmation] = useState<{ path: string; body: Record<string, unknown>; text: string }>(); const [reviewed, setReviewed] = useState(false);
   const [file, setFile] = useState<File>(); const [name, setName] = useState(""); const [slug, setSlug] = useState(""); const [festival, setFestival] = useState(""); const [copy, setCopy] = useState(""); const [copySections, setCopySections] = useState<string[]>([]);
   const [eventId, setEventId] = useState(""); const [migrationReviewed, setMigrationReviewed] = useState(false);
   const [events, setEvents] = useState<Awaited<ReturnType<typeof getEvents>>>();
@@ -30,8 +31,12 @@ export default function ContentPage() {
   const previewRef = useRef<HTMLElement>(null); const previewTrigger = useRef<HTMLElement | null>(null);
   const selected = index?.documents.find(row => editionId ? row.editionId === editionId : row.kind === (location.pathname.endsWith("/studio") ? "STUDIO_SITE" : "FESTIVAL_PORTAL"));
   const activeId = selected?.id; const dirty = base !== undefined && JSON.stringify(local) !== JSON.stringify(base.draft.payload);
+  // Queued responses must stay bound to their document even during navigation commits.
+  const preview = previewResult?.documentId === activeId ? previewResult?.result : undefined;
+  const reviewRevision = preview ? previewResult?.revisionId : undefined;
   const previewScope = useRef({ active: true });
-  useEffect(() => {
+  // Invalidate the previous request at commit, before passive effects run.
+  useLayoutEffect(() => {
     const scope = { active: true }; previewScope.current = scope;
     return () => { scope.active = false; };
   }, [activeId]);
@@ -41,7 +46,7 @@ export default function ContentPage() {
   useEffect(() => { let active = true; void contentApi.index().then(value => { if (active) setIndex(value); }).catch(failure => { if (active) setError(toUiError(failure).reason); }); return () => { active = false; }; }, []);
   // Reset only when the selected identity changes. Locale and readbacks retain work.
   if (selected && base?.id !== selected.id) {
-    setBase(selected); setLocal(selected.draft.payload); setEventId(selected.facts?.eventId ?? ""); setHistory([]); setPreview(undefined); setReviewRevision(undefined); setErrors([]); setAck(undefined); setCompared(undefined); setPending(undefined);
+    setBase(selected); setLocal(selected.draft.payload); setEventId(selected.facts?.eventId ?? ""); setHistory([]); setPreview(undefined); setErrors([]); setAck(undefined); setCompared(undefined); setPending(undefined);
     setConfirmation(undefined); setReviewed(false); setRetryAllowed(false); setMigrationReviewed(false); setFile(undefined);
     setBusy(false);
   }
@@ -55,12 +60,12 @@ export default function ContentPage() {
     try {
       const result = operation.file ? await contentApi.upload(operation.documentId, operation.file, operation.operationId, operation.version) : await contentApi.command(operation.path, operation.body);
       const latest = await contentApi.index(); setIndex(latest); const doc = latest.documents.find(row => row.id === activeId);
-      setAck(result); setPending(undefined); setCompared(undefined); setRetryAllowed(false); setPreview(undefined); setReviewRevision(undefined); setConfirmation(undefined); setReviewed(false);
+      setAck(result); setPending(undefined); setCompared(undefined); setRetryAllowed(false); setPreview(undefined); setConfirmation(undefined); setReviewed(false);
       if (doc) { setBase(doc); if (operation.path.endsWith("/revisions")) setLocal(doc.draft.payload); }
       trigger.current?.focus();
     } catch (failure) {
       fail(failure);
-      setPreview(undefined); setReviewRevision(undefined); setConfirmation(undefined); setReviewed(false);
+      setPreview(undefined); setConfirmation(undefined); setReviewed(false);
       if (failure instanceof ApiError && failure.issues.length) setErrors(failure.issues.map(issue => issue.path.filter((part, index) => !(index === 0 && part === "payload")).join(".")));
       if (failure instanceof ApiError && [0, 401, 409, 500, 502, 503].includes(failure.statusCode)) setPending({ ...operation, conflict: failure.statusCode === 409 }); else setPending(undefined);
     } finally { setBusy(false); }
@@ -94,7 +99,7 @@ export default function ContentPage() {
     setBusy(true); setError(undefined); setPreview(undefined); setConfirmation(undefined); setReviewed(false);
     try {
       const result = await contentApi.preview(base.id, revision, previewLocale);
-      if (scope.active) { setPreview(result); setReviewRevision(revision); }
+      if (scope.active) setPreview({ documentId: base.id, revisionId: revision, result });
     } catch (failure) { if (scope.active) fail(failure); }
     finally { if (scope.active) setBusy(false); }
   };

@@ -447,6 +447,12 @@ The continuation adds reviewed-policy fingerprint/conflict/receipt checks and
 explicit publication-audit rollback to the CMS fixture. Browser coverage also
 checks document switching, late preview responses, selected edition copy, current
 canonical facts and keyboard focus/return after private preview.
+The delayed-preview cases synchronize on request interception, the destination's
+distinct editor value and completion of the released response. They cover both
+success and server failure, assert no transferred preview/error/publication
+readiness, and then preview the destination successfully. Use
+`pnpm exec playwright test tests/browser/content.spec.ts --grep "delayed preview" --repeat-each=10`
+to stress this CI regression; retain the full browser gate.
 The 17 CMS admin operations are covered separately from the 27 competition
 admin operations; public JSON/media have four anonymous read paths. Continue to cover:
 
