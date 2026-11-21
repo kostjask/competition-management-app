@@ -36,6 +36,17 @@ records completed full API/migration/workspace checks, 440 full browser cases,
 23 affected cases and Hallmark static/rendered acceptance. S14/S15, venue recovery,
 grouped/public P7 results and M5 remain open.
 
+PR #13 integration (2026-11-21): main's squash-merged schedule snapshot at
+`6515dfd` exactly matches prerequisite `f06194f`. Resolved the 24 overlapping
+files to the tested scoring/CI branch and merged target ancestry without rewriting
+history. The resolved source tree matches `171734b`; migrations 46/47 and their
+contracts/UI remain intact. Integration revalidation passes all 67
+CMS/schedule/scoring browser cases, workspace tests/typecheck/lint/build and Prisma
+validation/format checks. The prior full 441-case browser run remains
+source-identical, rather than a new full run. The user authorized completing and
+publishing the merge after automatic approval review requested explicit Git
+authorization. Hosted checks belong to PR #13. No release gate is closed.
+
 - [ ] P6-UI-LIVE: within P6-SCHEDULE/TEMPLATES/JUDGE/MODERATOR after the respective model/recovery decisions, implement S13 accessible schedule editor/conflicts, scoring-template setup, S14 current/next/completion/connection console and S15 rubric/exact inputs/autosave/explicit submission/lock/correction. UI exit requires F07–F09 touch/keyboard venue rehearsal, stale/repeated/reconnecting/removed-access/manual-fallback cases and full cross-phase language/accessibility/state/visual gates; current identity and local/server acknowledgement remain visible throughout.
 
 - [x] P6-LIVE-MODEL: ADR-003/030 and additive migration 46 supply lifecycle mapping, event-owned stages/sessions, stable queue slots, transactional moves/swaps/removal/reuse, moderator authority and immutable acknowledgements. Existing orders/history and unscheduled drafts remain intact. Scope/replay/concurrency/conflict/transition tests pass. START/ADVANCE, LIVE entry and finalization now enforce ADR-004 rubric/panel readiness and sheet completeness; S14/venue delivery remains downstream.

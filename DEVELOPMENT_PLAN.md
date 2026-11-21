@@ -15,8 +15,22 @@ before publishing. Local checks pass: 20 delayed-response stress cases, all 441
 browser cases, workspace tests/typecheck/lint/build and Prisma checks. The standard
 documentation check retains its pre-existing ignored scratch-link failure; all
 162 repository documents pass with that scratch directory excluded. PR #12 is
-already merged; hosted validation awaits publication of the repair. This focused
+already merged; the repair is included in PR #13, which owns hosted validation. This focused
 correction does not change the queue below.
+
+PR #13 target integration (2026-11-21): merged main at `6515dfd`
+into the existing scoring/CI-repair branch without rewriting history. The target tree is
+identical to the branch's earlier schedule commit `f06194f`; all 24 conflicts
+resolve to the current branch's source. The resolved tree before this status
+update exactly matches `171734b`, preserving migrations 46/47, scoring and the
+CMS fix. Integration revalidation passes: all 67 CMS/schedule/scoring browser
+cases, workspace tests/typecheck/lint/build and Prisma validation/format checks.
+The prior full 441-case browser run remains source-identical; it is not counted
+as a new full run. Repository documentation and whitespace checks pass with ignored
+scratch excluded; the standard checker still encounters the existing scratch link.
+The user authorized completing and publishing the merge after automatic approval
+review requested explicit Git authorization. Hosted validation belongs to PR #13;
+no phase or release gate changes.
 
 **Next local task: P6-JUDGE/S15, beginning with its reconnect policy.**
 The user accepted the recommended [scoring policy](docs/SCORING_MODEL_DECISIONS.md)
