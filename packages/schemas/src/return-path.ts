@@ -8,7 +8,8 @@ const CmsReturnPathSchema = z.string().max(240).regex(/^\/content\/(?:studio|fes
 const EntryReturnPathSchema = z.string().max(240).regex(/^\/(?:studios\/[A-Za-z0-9_-]+\/dancers|events\/[A-Za-z0-9_-]+\/studios\/[A-Za-z0-9_-]+\/performances(?:\/new|\/[A-Za-z0-9_-]+\/edit)?(?:\?entry=review(?:&checkpoint=(?:BASIC|FINAL))?)?)$/);
 const MusicReturnPathSchema = z.string().max(240).regex(/^\/events\/[A-Za-z0-9_-]+\/studios\/[A-Za-z0-9_-]+\/music(?:\?(?:performance=[A-Za-z0-9_-]+(?:&track=[0-9a-f-]{36})?|track=[0-9a-f-]{36}(?:&performance=[A-Za-z0-9_-]+)?))?$/);
 const ScheduleReturnPathSchema = z.string().max(240).regex(/^\/admin\/events\/[A-Za-z0-9_-]+\/schedule(?:\?(?:stage=[0-9a-f-]{36}(?:&session=[0-9a-f-]{36})?|session=[0-9a-f-]{36}))?$/);
-const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema).or(MusicReturnPathSchema).or(ScheduleReturnPathSchema);
+const ScoringReturnPathSchema = z.string().max(240).regex(/^\/admin\/events\/[A-Za-z0-9_-]+\/scoring$/);
+const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema).or(MusicReturnPathSchema).or(ScheduleReturnPathSchema).or(ScoringReturnPathSchema);
 export const WORKSPACE_BASE = "/app";
 /** Absolute browser/mail links. Router destinations use paths relative to its basename. */
 export function workspaceLink(path: string): string { return WORKSPACE_BASE + (path === "/" ? "" : path); }

@@ -8,6 +8,8 @@ export default async function setup() {
     root: fileURLToPath(new URL("..", import.meta.url)),
     configFile: fileURLToPath(new URL("../vite.config.ts", import.meta.url)),
     mode: "development",
+    // Workspace dist changes do not always invalidate Vite's dependency cache.
+    optimizeDeps: { force: true },
     // Keep synthetic browser tests independent of ignored local API settings.
     define: { "import.meta.env.VITE_API_URL": JSON.stringify("/api/v1") },
     plugins: [{ name: "synthetic-api-fallback", configureServer(vite) {

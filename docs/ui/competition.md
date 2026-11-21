@@ -24,6 +24,16 @@ uncertain command. All acknowledged sessions are printable. ET/EN/RU phone/deskt
 browser checks accompany delivery; human language/assistive and venue acceptance
 remain open. S14/S15 and full P6-UI-LIVE are not completed by this slice.
 
+Organizer scoring-template setup is implemented at
+`/app/admin/events/:eventId/scoring` under [ADR-004](../adr/004-exact-scoring.md)
+and [the scoring contract](../api/scoring.md). The Cobalt criterion ledger supports
+ordered exact ranges/steps/weights, ET/EN/RU labels/instructions, immutable version
+inspection/copy, category assignment and session panels. Source-bound preview,
+explicit confirmation, readiness blockers and exact-operation/stale/session/
+navigation recovery accompany it. Inactive panel members remain visible so an
+organizer can remove them from future panels without erasing frozen sheets.
+This delivers the setup portion of P6-UI-LIVE; S14/S15 remain their owning tasks.
+
 ## S14 — Moderator live console
 
 - **Purpose / roles / route:** operate assigned stage safely; scoped moderator; proposed `/moderator/events/:id/live`, `/moderator` landing.

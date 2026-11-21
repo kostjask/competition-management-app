@@ -20,6 +20,13 @@ constraints remain in [the design system](docs/DESIGN_SYSTEM.md).
 
 ## Tokens and controls
 
+P6-TEMPLATES extends this system to an ordered rubric ledger with immutable
+versions, exact range/step/weight inputs, native locale disclosures, category
+selection and session-panel controls. Saved configuration and the proposed preview
+have distinct readiness states; uncertain requests retain their UUID/body until
+receipt or explicit comparison. Inactive panel members remain removable without
+editing started sheets. No palette, shell, font or imagery change is introduced.
+
 [Scoped tokens](apps/web/src/features/events/design/tokens.css) own this slice.
 [Scoped foundations](apps/web/src/features/events/design/base.css) and
 [composition](apps/web/src/pages/events/event-setup.css) consume them.

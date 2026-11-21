@@ -69,9 +69,18 @@ retains current identity. SKIP requires reason, retains its slot and pauses befo
 selecting another performance. Admin REQUEUE requires reason and targetSlotId;
 only the named skipped eligible slot returns to the waiting tail. Admin REOPEN
 requires reason and FINISHED queue; it restores PAUSED, never scores. Reason is
-retained in immutable operation history. START/ADVANCE fail with 409
-invalidConfiguration until scoring readiness exists. All live commands require
-LIVE; the event cannot enter LIVE through the API before scoring readiness.
+retained in immutable operation history. START requires configured category rubrics
+and active session panels, freezes the selected template/panel into the performance
+and resumes/selects the current slot. ADVANCE requires every assigned sheet locked
+before marking the current slot DONE and selecting the next waiting slot (or
+finishing the queue). Global-admin ADVANCE_OVERRIDE also requires a nonblank reason;
+it records the exception but leaves missing sheets incomplete and blocks finalization.
+Current source eligibility is checked before selecting a new current slot. All
+live commands require LIVE; event LIVE entry rechecks current entry eligibility,
+queue conflicts and configuration readiness, and
+FINALIZED requires all active slots DONE with complete sheets under
+[ADR-004](../adr/004-exact-scoring.md). Missing prerequisites return 409
+invalidConfiguration.
 There is no automatic advancement, sheet unlock or publication.
 
 Success is 200 with operationId/revision/action/workspace. Exact actor/event/body
@@ -87,6 +96,7 @@ session filters stay in the URL. Draft, preview and acknowledgement are distinct
 Exact uncertain requests and forms survive session restoration; authoritative
 comparison never replaces local queues automatically. Browser reload does not
 persist unsaved drafts. Print uses all saved sessions and acknowledged revision,
-regardless of filter; it is a manual reference. S14, scoring completeness,
+regardless of filter; it is a manual reference. Backend scoring completeness is
+implemented under [the scoring contract](scoring.md). S14,
 venue/offline rehearsal and hosted/human release remain open under
 P6-MODERATOR/RECOVERY and M5.

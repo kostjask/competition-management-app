@@ -4,6 +4,7 @@ import { EntryManifestSchema, ScheduleWorkspaceSchema, SchedulePreviewSchema, Sc
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "../errors";
 import { appendAudit } from "./audit";
 import { currentEntryManifest, entryIssues, entrySettings } from "./entryWorkflow";
+import { freezeScoring, scoringReady, scoringComplete } from "./scoring";
 
 export type ScheduleActor = { id: string; sessionVersion: number };
 const conflict = () => new ConflictError("Compare the current schedule before retrying", undefined, "concurrentChange");
@@ -119,12 +120,12 @@ export async function previewSchedule(db: Prisma.TransactionClient, actor: Sched
 
 export async function scheduleTransition(db: Prisma.TransactionClient, eventId: string, from: string, to: string) {
   if (from === to) return;
-  if (["LIVE", "FINALIZED"].includes(to)) throw new ConflictError("Scoring readiness is not configured", undefined, "invalidConfiguration");
-  if (to === "SCHEDULED" || from === "SCHEDULED" && to === "DATA_REVIEW") {
+  if (["LIVE", "FINALIZED"].includes(to)) await scoringReady(db, eventId, to === "FINALIZED");
+  if (["SCHEDULED", "LIVE"].includes(to) || from === "SCHEDULED" && to === "DATA_REVIEW") {
     const data = await sources(db, eventId);
     if (!data.sessions.length || data.sessions.some(s => s.state !== "PAUSED" || s.slots.some(slot => !["WAITING", "REMOVED"].includes(slot.state)))) throw conflict();
     const queues = data.sessions.map(s => ({ sessionId: s.id, performanceIds: s.slots.filter(slot => slot.state !== "REMOVED").map(slot => slot.performanceId) }));
-    if (to === "SCHEDULED" && (!queues.some(q => q.performanceIds.length) || scheduleConflicts(data, queues).conflicts.length || data.entries.some(e => e.eligible && !queues.some(q => q.performanceIds.includes(e.id))))) throw new ConflictError("Complete and validate the schedule first", undefined, "invalidConfiguration");
+    if (["SCHEDULED", "LIVE"].includes(to) && (!queues.some(q => q.performanceIds.length) || scheduleConflicts(data, queues).conflicts.length || data.entries.some(e => e.eligible && !queues.some(q => q.performanceIds.includes(e.id))))) throw new ConflictError("Complete and validate the schedule first", undefined, "invalidConfiguration");
   }
 }
 
@@ -135,7 +136,7 @@ export async function commandSchedule(db: Prisma.TransactionClient, actor: Sched
   if (isLive) {
     const session = await db.competitionSession.findFirst({ where: { id: command.sessionId, eventId } });
     if (!session) throw new NotFoundError("Session");
-    if (!admin && (session.moderatorId !== actor.id || ["REQUEUE", "REOPEN"].includes(command.action))) throw new ForbiddenError();
+    if (!admin && (session.moderatorId !== actor.id || ["REQUEUE", "REOPEN", "ADVANCE_OVERRIDE"].includes(command.action))) throw new ForbiddenError();
   }
   const digest = hash([actor.id, eventId, command]);
   const replay = await db.scheduleOperation.findUnique({ where: { operationId: command.operationId } });
@@ -186,8 +187,21 @@ export async function commandSchedule(db: Prisma.TransactionClient, actor: Sched
     const session = data.sessions.find(s => s.id === command.sessionId)!;
     const current = session.slots.find(slot => slot.state === "CURRENT");
     if ((current?.id ?? null) !== command.expectedSlotId) throw conflict();
-    if (["START", "ADVANCE"].includes(command.action)) throw new ConflictError("Scoring readiness is not configured", undefined, "invalidConfiguration");
-    if (command.action === "PAUSE") {
+    if (["START", "ADVANCE", "ADVANCE_OVERRIDE"].includes(command.action)) {
+      await scoringReady(db, eventId);
+      if (command.action === "START" ? session.state !== "PAUSED" : session.state !== "RUNNING" || !current) throw conflict();
+      if (current && command.action !== "START") {
+        if (command.action !== "ADVANCE_OVERRIDE" && !await scoringComplete(db, eventId, current.performanceId)) throw new ConflictError("Assigned sheets are incomplete", undefined, "invalidConfiguration");
+        await db.scheduleSlot.update({ where: { id: current.id }, data: { state: "DONE", reason: "reason" in command ? command.reason : null } });
+      }
+      const next = command.action === "START" && current ? current : session.slots.filter(s => s.state === "WAITING").sort((a, b) => (a.position ?? 0) - (b.position ?? 0))[0];
+      if (next) {
+        if (!data.entries.some(e => e.id === next.performanceId && e.eligible)) throw conflict();
+        await freezeScoring(db, eventId, session.id, next.performanceId, actor.id);
+        await db.scheduleSlot.update({ where: { id: next.id }, data: { state: "CURRENT" } });
+      }
+      await db.competitionSession.update({ where: { id: session.id }, data: { state: next ? "RUNNING" : "FINISHED" } });
+    } else if (command.action === "PAUSE") {
       if (session.state !== "RUNNING") throw conflict();
       await db.competitionSession.update({ where: { id: session.id }, data: { state: "PAUSED" } });
     } else if (command.action === "SKIP") {

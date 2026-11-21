@@ -2,7 +2,7 @@ import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 
 export const AuditActionSchema = z.enum([
-  "SCHEDULE_CHANGED",
+  "SCORING_CHANGED", "SCHEDULE_CHANGED",
   "MUSIC_CONFIGURED", "MUSIC_CREATED", "MUSIC_REPLACED", "MUSIC_CONFIRMED", "MUSIC_ACCEPTED", "MUSIC_REOPENED", "MUSIC_ATTACHED",
   "DANCER_CREATED", "DANCER_UPDATED", "DANCER_ARCHIVED",
   "CONTENT_SAVED", "CONTENT_PUBLISHED", "CONTENT_UNPUBLISHED", "CONTENT_CREATED", "CONTENT_LINKED", "CONTENT_ASSET_UPLOADED", "CONTENT_ASSET_REVIEWED", "CONTENT_ASSET_RETIRED", "CONTENT_ARCHIVED",
@@ -31,7 +31,7 @@ export const AuditMetadataSchema = z.strictObject({
 });
 export const AuditRecordSchema = z.strictObject({
   action: AuditActionSchema, actor: AuditActorSchema,
-  targetType: z.enum(["SCHEDULE", "MUSIC_TRACK", "CONTENT_DOCUMENT", "EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
+  targetType: z.enum(["SCORING", "SCHEDULE", "MUSIC_TRACK", "CONTENT_DOCUMENT", "EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
   targetId: IdSchema, eventId: IdSchema.nullable().optional(), studioId: IdSchema.nullable().optional(),
   metadata: AuditMetadataSchema.default({}),
 });

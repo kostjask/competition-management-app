@@ -33,7 +33,8 @@ requires that past result or rollout limitation.
 | Audit / privacy / onboarding foundation | [Privacy](PRIVACY.md), ADR-012/013/014 | services/audit, onboarding, staffPolicy, emailQueue; schema/migrations |
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001/003/019 | registration/studio controllers, schema.prisma |
 | Application estimates / private music | [Estimate contract](api/registrations.md#planning-estimates), [music contract](api/music.md), ADR-027/028/029 | application estimates; MusicController, music policy/content/storage services, shared contracts and S11 workbench |
-| Schedule / live model | [Schedule contract](api/schedule.md), [ADR-030](adr/030-session-queues.md), [S13/S14](ui/competition.md), [F07](flows/F07.md) | ScheduleController, schedule service, explicit stage/session/slot models, S13; scoring/live readiness remains gated |
+| Schedule / live model | [Schedule contract](api/schedule.md), [ADR-030](adr/030-session-queues.md), [S13/S14](ui/competition.md), [F07](flows/F07.md) | ScheduleController, schedule service, explicit stage/session/slot models, S13; ADR-004 now supplies backend scoring readiness |
+| Scoring / rubric setup | [Scoring contract](api/scoring.md), [ADR-004](adr/004-exact-scoring.md), [decision context](SCORING_MODEL_DECISIONS.md) | ScoringController, exact scoring services/shared schemas, immutable scoring models and organizer rubric/panel editor; S14/S15 and P7 remain downstream |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
@@ -61,6 +62,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 
 | ADR | Accepted decision (delivery status is in roadmap/checkpoint) |
 | --- | --- |
+| [004](adr/004-exact-scoring.md) | Exact normalized/weighted scoring, frozen rubric/panels, submitted locks, reasoned corrections and independent private calculation/publication boundaries |
 | [001](adr/001-studio-identity-and-event-registration.md) | Reusable studio identity |
 | [002](adr/002-canonical-api-paths.md) | Canonical versioned API paths |
 | [003](adr/003-registration-lifecycle.md) | M2 registration lifecycle |
@@ -90,8 +92,10 @@ retains dated source/probe results; planning does not imply implementation fixes
 
 ADR-003/030 accept registration and session-queue lifecycle mappings; actual live
 operation remains gated on scoring and its rehearsal.
-ADR-004 scoring is reserved and unaccepted; its required scope is in
-[DOMAIN](DOMAIN.md#pending-model-decisions).
+ADR-004 scoring was accepted on 2026-11-21. [DOMAIN](DOMAIN.md#pending-model-decisions)
+and [the scoring contract](api/scoring.md) distinguish the implemented model/setup
+from downstream S14/S15 and P7. The [decision brief](SCORING_MODEL_DECISIONS.md)
+retains alternatives and the P6-SCORING-MODEL → P6-TEMPLATES organizer-UI boundary.
 
 ## History and compatibility
 

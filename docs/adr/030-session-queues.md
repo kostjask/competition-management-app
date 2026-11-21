@@ -69,6 +69,13 @@ No offline mutation, automatic advancement or real-time guarantee. Printable
 acknowledged schedule supplies a manual reference, not an offline writable queue.
 P6-RECOVERY still owns venue rehearsal with judging and the moderator console.
 
+Follow-through on 2026-11-21: [ADR-004](004-exact-scoring.md) and
+[the scoring contract](../api/scoring.md) now supply real backend rubric/panel
+readiness, frozen sheet assignments, completeness and reasoned admin advance
+override. The earlier constant START/ADVANCE/LIVE/finalization refusal has been
+replaced by these checks. An override never makes missing sheets complete. S14/S15,
+venue recovery and public result delivery remain their owning downstream tasks.
+
 Migration is additive: enum values, explicit queue tables, relational ownership,
 partial active-slot/current-slot indexes and immutable receipt triggers. No source
 history is rewritten. Rollback after use retains/export tables and receipts;
