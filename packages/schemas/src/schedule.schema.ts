@@ -16,6 +16,7 @@ export const ScheduleCommandSchema = z.discriminatedUnion("action", [
   z.strictObject({ ...base, action: z.literal("SAVE"), queues: ScheduleQueuesSchema, previewToken: z.string().regex(/^[a-f0-9]{64}$/) }),
   z.strictObject({ ...base, action: z.enum(["START", "PAUSE", "ADVANCE"]), sessionId: z.uuid(), expectedSlotId: z.uuid().nullable() }),
   z.strictObject({ ...base, action: z.enum(["SKIP", "REOPEN"]), sessionId: z.uuid(), expectedSlotId: z.uuid().nullable(), reason: z.string().trim().min(1).max(500) }),
+  z.strictObject({ ...base, action: z.literal("ADVANCE_OVERRIDE"), sessionId: z.uuid(), expectedSlotId: z.uuid().nullable(), reason: z.string().trim().min(1).max(500) }),
   z.strictObject({ ...base, action: z.literal("REQUEUE"), sessionId: z.uuid(), expectedSlotId: z.uuid().nullable(), targetSlotId: z.uuid(), reason: z.string().trim().min(1).max(500) }),
 ]);
 export const SchedulePerformanceSchema = z.strictObject({ id: IdSchema, title: z.string().nullable(), studioName: z.string(), revision: z.int().positive(), durationSec: z.int().positive().nullable(), legacyOrder: z.int().positive().nullable(), eligible: z.boolean() });

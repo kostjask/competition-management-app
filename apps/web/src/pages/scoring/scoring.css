@@ -1,0 +1,26 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: ordered rubric and panel ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V; shared organizer chrome is intentional, with an ordered rubric and explicit panel ledger as this screen's signature. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+@import "../events/event-setup.css";
+@import "../entries/entries.css";
+.scoring-workbench { max-width: var(--container); margin-inline: auto; padding: var(--space-lg); }
+.scoring-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-column); align-items: start; }
+.scoring-layout > *, .scoring-version, .scoring-editor { min-width: 0; }
+.scoring-workbench fieldset { border: 0; min-width: 0; padding: 0; margin-block: var(--space-md); }
+.scoring-workbench legend { margin-block-end: var(--space-sm); }
+.scoring-workbench summary { min-height: 44px; padding-block: var(--space-sm); cursor: pointer; }
+.scoring-workbench details .ui-field { margin-block: var(--space-sm); }
+.scoring-workbench .entry-actions { margin-block: var(--space-md); }
+.scoring-version, .scoring-criteria > li, .scoring-settings > section, .scoring-history { padding-block: var(--space-md); border-top: 1px solid var(--color-rule-2); }
+.scoring-version li { padding-block: var(--space-sm); overflow-wrap: anywhere; }
+.scoring-version li span { display: block; font-variant-numeric: tabular-nums; }
+.scoring-version ol { padding-inline-start: var(--space-lg); }
+.scoring-criteria { list-style: none; margin: 0; padding: 0; }
+.scoring-numbers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); margin-block: var(--space-md); }
+.scoring-preview { border-block: 2px solid var(--color-accent); margin-block: var(--space-lg); padding-block: var(--space-lg); }
+.scoring-preview dl > div { padding-block: var(--space-sm); }
+.scoring-preview dd { margin-inline-start: 0; }
+.scoring-history code, .scoring-id { display: block; font: inherit; font-size: var(--text-sm); overflow-wrap: anywhere; color: var(--color-ink-2); }
+.scoring-workbench :focus-visible, .scoring-workbench [tabindex="-1"]:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+@media (max-width: 52rem) { .scoring-layout { grid-template-columns: minmax(0, 1fr); } .scoring-workbench { padding: var(--space-md); } }

@@ -1,0 +1,138 @@
+const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+
+// Only called by the baseline in its verified random disposable database.
+module.exports = async function checkScoring({ client, baseUrl, adminToken, login }) {
+  const admin = await client.user.findUniqueOrThrow({ where: { email: 'admin@test.com' } });
+  const event = await client.event.create({ data: { name: 'Exact scoring fixture', startsAt: new Date('2026-12-05T08:00:00Z'), endsAt: new Date('2026-12-05T18:00:00Z'), stage: 'REGISTRATION_OPEN',
+    categories: { create: { name: 'Open' } }, ageGroups: { create: { name: 'All', minAge: 0 } }, formats: { create: { name: 'Solo', minParticipants: 1, maxParticipants: 1, maxDurationSeconds: 300 } } }, include: { categories: true, ageGroups: true, formats: true } });
+  const other = await client.event.create({ data: { name: 'Other scoring event', startsAt: event.startsAt, endsAt: event.endsAt } });
+  const judges = [];
+  for (let i = 0; i < 2; i++) {
+    const user = await client.user.create({ data: { email: `scoring-${i}@example.invalid`, name: `Synthetic judge ${i}`, emailVerified: true, password: admin.password } });
+    const role = await client.role.findUniqueOrThrow({ where: { key: 'judge' } });
+    const assignment = await client.userRole.create({ data: { userId: user.id, roleId: role.id, eventId: event.id } });
+    const judge = await client.judge.create({ data: { eventId: event.id, userId: user.id, name: user.name } });
+    judges.push({ ...judge, assignment, token: await login(baseUrl, user.email) });
+  }
+  const moderator = await client.user.create({ data: { email: 'scoring-moderator@example.invalid', name: 'Scoring moderator', emailVerified: true, password: admin.password } });
+  const moderatorRole = await client.role.findUniqueOrThrow({ where: { key: 'moderator' } });
+  await client.userRole.create({ data: { userId: moderator.id, roleId: moderatorRole.id, eventId: event.id } });
+  const modToken = await login(baseUrl, moderator.email);
+  const req = async (url, method = 'GET', body, token = adminToken) => { const r = await fetch(`${baseUrl}/api/v1${url}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) }); return { status: r.status, body: await r.json() }; };
+  const prefix = `/events/${event.id}`, url = prefix + '/scoring';
+  const read = async (token = adminToken) => { const r = await req(url, 'GET', undefined, token); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
+  const command = async (body, token = adminToken) => req(url + '/commands', 'POST', { operationId: randomUUID(), expectedRevision: (await read()).revision, ...body }, token);
+  const preview = async setup => { const r = await req(url + '/preview', 'POST', { expectedRevision: (await read()).revision, setup }); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
+  const config = async setup => { const p = await preview(setup); const body = { action: 'CONFIGURE', setup, previewToken: p.previewToken, expectedRevision: p.revision, operationId: randomUUID() }; return { result: await req(url + '/commands', 'POST', body), body }; };
+  const stageId = randomUUID(), sessionId = randomUUID();
+  await client.competitionStage.create({ data: { id: stageId, eventId: event.id, name: 'Stage' } });
+  await client.competitionSession.create({ data: { id: sessionId, eventId: event.id, stageId, name: 'Session', startsAt: new Date('2026-12-05T09:00:00Z'), moderatorId: moderator.id } });
+  assert.equal((await req(prefix + '/entry-configuration', 'PUT', { expectedRevision: 0, settings: { basic: { enabled: false, deadline: null }, final: { enabled: true, deadline: null }, allowYounger: true, olderPercent: 100, requireTeacher: false, requireAuthor: false, nominations: [] } })).status, 200);
+  const studio = await client.studio.create({ data: { eventId: event.id, name: 'Exact scoring studio', approvalStatus: 'APPROVED', registrations: { create: { eventId: event.id, status: 'APPROVED' } }, dancers: { create: { firstName: 'Private', lastName: 'Dancer', birthDate: new Date('2010-01-01') } } }, include: { dancers: true } });
+  const performances = [];
+  for (const title of ['First score', 'Second score']) {
+    const created = await req(prefix + '/performances', 'POST', { studioId: studio.id, title, durationSec: 60, categoryId: event.categories[0].id, ageGroupId: event.ageGroups[0].id, formatId: event.formats[0].id, dancerIds: [studio.dancers[0].id] });
+    assert.equal(created.status, 201, JSON.stringify(created.body)); performances.push(created.body.id);
+    await client.scheduleSlot.create({ data: { eventId: event.id, sessionId, performanceId: created.body.id, position: performances.length } });
+  }
+  const review = (await req(prefix + `/studios/${studio.id}/entry-review`)).body.checkpoints.find(c => c.kind === 'FINAL');
+  assert.equal((await req(prefix + `/studios/${studio.id}/entry-review/FINAL`, 'POST', { action: 'SUBMIT', operationId: randomUUID(), expectedRevision: review.revision, expectedReview: review.reviewToken })).status, 200);
+  await client.event.update({ where: { id: event.id }, data: { stage: 'DATA_REVIEW' } });
+  const templateId = randomUUID(), criterionId = randomUUID();
+  const setup = { templates: [{ id: templateId, name: 'Synthetic exact rubric', criteria: [{ id: criterionId, label: { et: 'Tehnika', en: 'Technique', ru: 'Техника' }, instructions: { et: '', en: '', ru: '' }, min: '0', max: '10', step: '0.001', weightBps: 10000 }] }], bindings: [{ categoryId: event.categories[0].id, templateId }], panels: [{ sessionId, judgeIds: judges.map(j => j.id) }] };
+  assert.equal((await req(url + '/preview', 'POST', { expectedRevision: 0, setup, extra: true })).status, 400);
+  assert.equal((await req(url + '/preview', 'POST', { expectedRevision: 0, setup }, judges[0].token)).status, 403);
+  assert.equal((await req(`/events/${other.id}/scoring`, 'GET', undefined, judges[0].token)).status, 403);
+  const wrong = structuredClone(setup); wrong.bindings[0].categoryId = 'foreign'; assert.equal((await req(url + '/preview', 'POST', { expectedRevision: 0, setup: wrong })).status, 404);
+  assert.equal((await read()).blockers.some(b => b.kind === 'PANEL'), true);
+  const configured = await config(setup);
+  assert.equal(configured.result.status, 200, JSON.stringify(configured.result.body));
+  assert.equal((await req(url + '/commands', 'POST', configured.body)).body.revision, 1);
+  assert.equal((await req(url + '/commands', 'POST', { ...configured.body, setup: { ...setup, bindings: [] } })).status, 409);
+  const canonical = (await read()).setup;
+  const stale = await preview(canonical); await client.userRole.update({ where: { id: judges[1].assignment.id }, data: { removedAt: new Date() } });
+  assert.equal((await read()).judges.find(j => j.id === judges[1].id).eligible, false, 'Unavailable assigned judges remain inspectable for panel repair');
+  assert.equal((await command({ action: 'CONFIGURE', setup: canonical, previewToken: stale.previewToken })).status, 403);
+  await client.userRole.update({ where: { id: judges[1].assignment.id }, data: { removedAt: null } });
+  const current = await preview(canonical);
+  const races = await Promise.all([1, 2].map(() => req(url + '/commands', 'POST', { action: 'CONFIGURE', setup: canonical, previewToken: current.previewToken, expectedRevision: current.revision, operationId: randomUUID() })));
+  assert.deepEqual(races.map(r => r.status).sort(), [200, 409]);
+  await assert.rejects(client.scoringTemplate.update({ where: { id: templateId }, data: { name: 'mutated' } }));
+  await assert.rejects(client.scoringCriterion.update({ where: { id: criterionId }, data: { max: 20000 } }));
+  await assert.rejects(client.scoringPanel.create({ data: { sessionId, eventId: other.id, judgeId: judges[0].id } }));
+  const stage = async next => { const e = await client.event.findUniqueOrThrow({ where: { id: event.id } }); return req(prefix, 'PATCH', { expectedRevision: e.revision, expectedStage: e.stage, stage: next }); };
+  assert.equal((await stage('SCHEDULED')).status, 200);
+  await client.studio.update({ where: { id: studio.id }, data: { approvalStatus: 'REJECTED' } });
+  assert.equal((await stage('LIVE')).status, 409, 'Live entry rechecks current source eligibility, not only rubric readiness');
+  await client.studio.update({ where: { id: studio.id }, data: { approvalStatus: 'APPROVED' } });
+  assert.equal((await stage('LIVE')).status, 200);
+  const schedule = async (action, token = adminToken, reason) => { const s = (await req(prefix + '/schedule')).body; const session = s.sessions.find(s => s.id === sessionId); return req(prefix + '/schedule/commands', 'POST', { action, operationId: randomUUID(), expectedRevision: s.revision, sessionId, expectedSlotId: session.slots.find(s => s.state === 'CURRENT')?.id ?? null, ...(reason && { reason }) }, token); };
+  assert.equal((await schedule('START', modToken)).status, 200);
+  assert.equal((await read()).sheets.length, 2);
+  const own = (await read(judges[0].token)).sheets[0]; assert.equal((await read(judges[0].token)).sheets.length, 1); assert.equal((await read(modToken)).sheets.length, 0);
+  assert.equal(JSON.stringify(await read(judges[0].token)).includes('Private'), false);
+  const submit = async (judge, value, overrides = {}) => { const s = (await read(judge.token)).sheets.find(s => s.performanceId === performances[0]); return command({ action: 'SUBMIT', sheetId: s.id, expectedRevision: s.revision, values: [{ criterionId, value, comment: null }], ...overrides }, judge.token); };
+  assert.equal((await command({ action: 'DRAFT', sheetId: own.id, expectedRevision: own.revision, values: [] }, judges[1].token)).status, 403);
+  assert.equal((await submit(judges[0], '1.0001')).status, 400);
+  assert.equal((await submit(judges[0], '11')).status, 409);
+  assert.equal((await submit(judges[0], '5', { values: [] })).status, 409);
+  assert.equal((await submit(judges[0], '5', { values: [{ criterionId: randomUUID(), value: '5', comment: null }] })).status, 409);
+  const drafts = await Promise.all([1, 2].map(() => req(url + '/commands', 'POST', { action: 'DRAFT', sheetId: own.id, expectedRevision: own.revision, values: [], operationId: randomUUID() }, judges[0].token)));
+  assert.deepEqual(drafts.map(r => r.status).sort(), [200, 409]);
+  const currentOwn = (await read(judges[0].token)).sheets.find(s => s.id === own.id); assert.deepEqual(currentOwn.values, []);
+  const firstBody = { operationId: randomUUID(), action: 'SUBMIT', sheetId: own.id, expectedRevision: currentOwn.revision, values: [{ criterionId, value: '0', comment: null }] };
+  const adminRole = await client.role.findUniqueOrThrow({ where: { key: 'admin' } });
+  const extraAdmin = await client.userRole.create({ data: { userId: judges[0].userId, roleId: adminRole.id } });
+  const submitted = await req(url + '/commands', 'POST', firstBody, judges[0].token); assert.equal(submitted.status, 200);
+  assert.equal(submitted.body.workspace.sheets.length, 1, 'A judge-write receipt never includes administrative peer data');
+  await client.userRole.update({ where: { id: extraAdmin.id }, data: { removedAt: new Date() } });
+  const replayed = await req(url + '/commands', 'POST', firstBody, judges[0].token); assert.equal(replayed.status, 200); assert.equal(replayed.body.workspace.sheets.length, 1);
+  await client.userRole.update({ where: { id: judges[0].assignment.id }, data: { removedAt: new Date() } });
+  assert.equal((await req(url + '/commands', 'POST', firstBody, judges[0].token)).status, 403);
+  await client.userRole.update({ where: { id: judges[0].assignment.id }, data: { removedAt: null } });
+  assert.equal((await submit(judges[0], '5')).status, 403);
+  await assert.rejects(client.scoringValue.update({ where: { sheetId_criterionId: { sheetId: own.id, criterionId } }, data: { value: 5000 } }));
+  const peerDraft = (await read(judges[1].token)).sheets[0];
+  await assert.rejects(client.scoringValue.update({ where: { sheetId_criterionId: { sheetId: own.id, criterionId } }, data: { sheetId: peerDraft.id } }), 'Locked values cannot be moved into another draft sheet');
+  assert.equal((await schedule('ADVANCE', modToken)).status, 409);
+  assert.equal((await submit(judges[1], '10')).status, 200);
+  const recordId = (await read()).completion[0].recordId;
+  const calculated = await command({ action: 'CALCULATE', recordId }); assert.equal(calculated.status, 200); assert.equal(calculated.body.calculation.total, '50.000');
+  assert.equal((await schedule('PAUSE', modToken)).status, 200);
+  assert.equal((await command({ action: 'ADJUST', recordId, penalty: '1.125', disqualified: false, reason: 'Synthetic timing deduction' })).status, 200);
+  assert.equal((await command({ action: 'CALCULATE', recordId })).body.calculation.total, '48.875');
+  const locked = (await read()).sheets.find(s => s.id === own.id);
+  assert.equal((await command({ action: 'REOPEN', sheetId: own.id, expectedRevision: locked.revision, reason: 'Synthetic correction' })).status, 200);
+  assert.equal((await command({ action: 'CALCULATE', recordId })).status, 409);
+  assert.equal((await submit(judges[0], '2')).status, 200);
+  assert.equal(await client.scoringCalculation.count({ where: { recordId } }), 2, 'Prior calculations survive correction');
+  const calculations = await client.scoringCalculation.findMany({ where: { recordId } });
+  const { exactTotal } = require('../apps/api/dist/services/scoringMath');
+  for (const calculation of calculations) assert.equal(exactTotal(calculation.inputs.criteria, calculation.inputs.sheets.map(s => s.values), calculation.inputs.penalty), calculation.result.total, 'Retained inputs reproduce prior totals after correction');
+  const adjustment = await client.scoringOperation.findFirstOrThrow({ where: { eventId: event.id, action: 'ADJUST' } });
+  assert.equal(adjustment.request.penalty, '1.125');
+  assert.equal((await schedule('START', modToken)).status, 200);
+  assert.equal((await schedule('ADVANCE', modToken)).status, 200);
+  assert.equal((await schedule('ADVANCE_OVERRIDE', modToken, 'Denied override')).status, 403);
+  assert.equal((await schedule('ADVANCE_OVERRIDE', adminToken, 'Synthetic manual continuation')).status, 200);
+  assert.equal((await stage('FINALIZED')).status, 409, 'Override never makes missing sheets complete');
+  assert.equal((await schedule('REOPEN', adminToken, 'Resolve the manual override')).status, 200);
+  for (const judge of judges) {
+    const pending = (await read(judge.token)).sheets.find(s => s.performanceId === performances[1]);
+    assert.equal((await command({ action: 'REOPEN', sheetId: pending.id, expectedRevision: pending.revision, reason: 'Complete the missing sheet after manual continuation' })).status, 200);
+    assert.equal((await command({ action: 'SUBMIT', sheetId: pending.id, expectedRevision: pending.revision + 1, values: [{ criterionId, value: '5', comment: null }] }, judge.token)).status, 200);
+  }
+  const receipt = await client.scoringOperation.findFirstOrThrow({ where: { eventId: event.id } });
+  await assert.rejects(client.scoringOperation.delete({ where: { operationId: receipt.operationId } }));
+  const version = await client.scoringSheetVersion.findFirstOrThrow({ where: { sheetId: own.id } });
+  await assert.rejects(client.scoringSheetVersion.update({ where: { id: version.id }, data: { reason: 'rewrite' } }));
+  await client.$executeRawUnsafe(`CREATE FUNCTION fail_scoring_fixture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'SCORING_CHANGED' THEN RAISE EXCEPTION 'fixture audit failure'; END IF; RETURN NEW; END $$`);
+  await client.$executeRawUnsafe('CREATE TRIGGER fail_scoring_fixture BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION fail_scoring_fixture()');
+  const before = (await read()).revision, operationId = randomUUID();
+  try { assert.equal((await command({ action: 'CALCULATE', recordId, operationId })).status, 500); }
+  finally { await client.$executeRawUnsafe('DROP TRIGGER fail_scoring_fixture ON "AuditLog"'); await client.$executeRawUnsafe('DROP FUNCTION fail_scoring_fixture()'); }
+  assert.equal((await read()).revision, before); assert.equal(await client.scoringOperation.count({ where: { operationId } }), 0);
+  assert.equal((await stage('FINALIZED')).status, 200, 'Only complete corrected sheets permit finalization');
+  console.log('Exact scoring API, source preview, assignment scope, locks/corrections, concurrency/replay, immutable history and audit rollback passed.');
+};

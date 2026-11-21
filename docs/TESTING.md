@@ -6,7 +6,7 @@ retry feedback, pending/error states, retained review/profile drafts and
 lost-response/session recovery in ET/EN/RU. `scripts/check-review-email.cjs`,
 invoked by the foundation baseline, checks recipient bindings, partial acceptance,
 rollback, serializable retry races and unchanged decision state. The privileged
-operation inventory has 26 competition operations, including music and checkpoint configuration
+operation inventory has 27 competition operations, including scoring preview, music and checkpoint configuration
 reads/writes. Image boundary/setup browser checks
 also verify event revision increments and authoritative readback before later
 configuration saves. Full workspace, browser, baseline and migration checks retain
@@ -47,6 +47,18 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 [official caching guidance](https://github.com/actions/setup-node/blob/main/docs/advanced-usage.md#caching-packages-data).
 
 ## Fast development loop
+
+P6-SCORING-MODEL/P6-TEMPLATES use `scoring.test.cjs` for exact arithmetic, range,
+step, precision, weights, zero/missing and tie/return-path fixtures, and
+`scoring.spec.ts` for ET/EN/RU rubric/panel setup and retained recovery at
+320/390/768/1440/1920px. `check-scoring.cjs`, invoked by entry-foundation and full
+baselines, checks real PostgreSQL/API preview sources, event/assignment scope,
+draft/submission/reopen, deductions, private calculations, retries/races,
+offboarding, immutable history, audit rollback and live completion/override gates.
+Migration 47 joins fresh/upgrade/catalog parity; legacy Float scores remain
+unchanged. Start with `pnpm test:focus api scoring.test.cjs`,
+`pnpm test:focus browser scoring.spec.ts` and `pnpm test:entry-foundations`;
+then run applicable full gates. S14/S15 and venue/human/hosted release stay open.
 
 P6-LIVE-MODEL/P6-SCHEDULE use `schedule.test.cjs` for strict commands and interval
 boundaries, `schedule.spec.ts` for ET/EN/RU S13 keyboard/phone/desktop and retained
@@ -105,7 +117,10 @@ Use a basename from the selected test directory; unknown files, path traversal
 and extra arguments fail before a build. Prisma generation is still required
 after schema/client changes. The browser command requires installed Chromium.
 Focused database commands build the API and use the same random disposable
-Compose database as the full baseline. They deploy all migrations and seed once,
+Compose database as the full baseline. Browser setup forces fresh dependency
+optimization so rebuilt shared contracts cannot reuse an older DTO bundle; change
+contracts between browser runs, not while a run is active. Focused database checks
+deploy all migrations and seed once,
 but omit seed rerun/production-refusal/redeployment and unrelated upgrade checks.
 Those assertions remain mandatory in the full baseline. Registration mode also
 runs event setup; event-setup mode runs only that workflow after common smoke checks.
@@ -432,7 +447,13 @@ The continuation adds reviewed-policy fingerprint/conflict/receipt checks and
 explicit publication-audit rollback to the CMS fixture. Browser coverage also
 checks document switching, late preview responses, selected edition copy, current
 canonical facts and keyboard focus/return after private preview.
-The 17 CMS admin operations are covered separately from the 26 competition
+The delayed-preview cases synchronize on request interception, the destination's
+distinct editor value and completion of the released response. They cover both
+success and server failure, assert no transferred preview/error/publication
+readiness, and then preview the destination successfully. Use
+`pnpm exec playwright test tests/browser/content.spec.ts --grep "delayed preview" --repeat-each=10`
+to stress this CI regression; retain the full browser gate.
+The 17 CMS admin operations are covered separately from the 27 competition
 admin operations; public JSON/media have four anonymous read paths. Continue to cover:
 
 - Anonymous published-only DTO/assets, private drafts/preview, ordinary-user/staff

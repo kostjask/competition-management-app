@@ -251,6 +251,8 @@ model Event {
   stages              CompetitionStage[]
   sessions            CompetitionSession[]
   scheduleSlots       ScheduleSlot[]
+  scoringSetup        ScoringSetup?
+  scoringTemplates    ScoringTemplate[]
 }
 
 model DanceCategory {
@@ -258,8 +260,9 @@ model DanceCategory {
   eventId String
   name    String
 
-  event        Event         @relation(fields: [eventId], references: [id])
-  performances Performance[]
+  event          Event           @relation(fields: [eventId], references: [id])
+  performances   Performance[]
+  scoringBinding ScoringBinding?
 
   @@unique([eventId, name])
   @@unique([id, eventId])
@@ -444,6 +447,7 @@ model Performance {
   operations    PerformanceOperation[]
   musicTrack    MusicTrack?
   scheduleSlots ScheduleSlot[]
+  scoringRecord ScoringRecord?
 
   @@unique([eventId, orderOnStage])
   @@unique([id, studioId])
@@ -621,19 +625,21 @@ model CompetitionStage {
 }
 
 model CompetitionSession {
-  id          String           @id @db.Uuid
-  eventId     String
-  stageId     String           @db.Uuid
-  name        String
-  startsAt    DateTime
-  bufferSec   Int              @default(0)
-  restSec     Int              @default(0)
-  moderatorId String?
-  state       String           @default("PAUSED")
-  event       Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  stage       CompetitionStage @relation(fields: [stageId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  moderator   User?            @relation(fields: [moderatorId], references: [id], onDelete: Restrict)
-  slots       ScheduleSlot[]
+  id             String           @id @db.Uuid
+  eventId        String
+  stageId        String           @db.Uuid
+  name           String
+  startsAt       DateTime
+  bufferSec      Int              @default(0)
+  restSec        Int              @default(0)
+  moderatorId    String?
+  state          String           @default("PAUSED")
+  event          Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  stage          CompetitionStage @relation(fields: [stageId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  moderator      User?            @relation(fields: [moderatorId], references: [id], onDelete: Restrict)
+  slots          ScheduleSlot[]
+  scoringPanel   ScoringPanel[]
+  scoringRecords ScoringRecord[]
 
   @@unique([id, eventId])
   @@index([moderatorId])
@@ -674,18 +680,172 @@ model ScheduleOperation {
 }
 
 model Judge {
-  id          String  @id @default(cuid())
-  eventId     String
-  userId      String
-  name        String
-  description String?
-  country     String?
-  city        String?
-  event       Event   @relation(fields: [eventId], references: [id])
-  user        User    @relation(fields: [userId], references: [id])
-  scores      Score[]
+  id            String         @id @default(cuid())
+  eventId       String
+  userId        String
+  name          String
+  description   String?
+  country       String?
+  city          String?
+  event         Event          @relation(fields: [eventId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+  scores        Score[]
+  scoringPanels ScoringPanel[]
+  scoringSheets ScoringSheet[]
 
   @@unique([userId, eventId])
+  @@unique([id, eventId])
+}
+
+model ScoringSetup {
+  eventId    String             @id
+  revision   Int                @default(0)
+  event      Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  operations ScoringOperation[]
+}
+
+model ScoringTemplate {
+  id       String             @id @db.Uuid
+  eventId  String
+  name     String
+  event    Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  criteria ScoringCriterion[]
+  bindings ScoringBinding[]
+  records  ScoringRecord[]
+
+  @@unique([id, eventId])
+}
+
+model ScoringCriterion {
+  id           String          @id @db.Uuid
+  templateId   String          @db.Uuid
+  eventId      String
+  position     Int
+  label        Json
+  instructions Json
+  min          Int
+  max          Int
+  step         Int
+  weightBps    Int
+  template     ScoringTemplate @relation(fields: [templateId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  values       ScoringValue[]
+
+  @@unique([id, templateId])
+  @@unique([templateId, position])
+}
+
+model ScoringBinding {
+  categoryId String          @id
+  eventId    String
+  templateId String          @db.Uuid
+  category   DanceCategory   @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  template   ScoringTemplate @relation(fields: [templateId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([categoryId, eventId])
+}
+
+model ScoringPanel {
+  sessionId String             @db.Uuid
+  judgeId   String
+  eventId   String
+  session   CompetitionSession @relation(fields: [sessionId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  judge     Judge              @relation(fields: [judgeId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([sessionId, judgeId])
+  @@index([judgeId, eventId])
+}
+
+model ScoringRecord {
+  id            String               @id @default(uuid()) @db.Uuid
+  eventId       String
+  performanceId String               @unique
+  sessionId     String               @db.Uuid
+  templateId    String               @db.Uuid
+  penalty       Int                  @default(0)
+  disqualified  Boolean              @default(false)
+  reason        String?
+  performance   Performance          @relation(fields: [performanceId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  session       CompetitionSession   @relation(fields: [sessionId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  template      ScoringTemplate      @relation(fields: [templateId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  sheets        ScoringSheet[]
+  calculations  ScoringCalculation[]
+
+  @@unique([id, templateId, eventId])
+  @@unique([performanceId, eventId])
+}
+
+model ScoringSheet {
+  id          String                @id @default(uuid()) @db.Uuid
+  recordId    String                @db.Uuid
+  templateId  String                @db.Uuid
+  eventId     String
+  judgeId     String
+  revision    Int                   @default(1)
+  state       String                @default("DRAFT")
+  submittedAt DateTime?
+  record      ScoringRecord         @relation(fields: [recordId, templateId, eventId], references: [id, templateId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  judge       Judge                 @relation(fields: [judgeId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  values      ScoringValue[]
+  versions    ScoringSheetVersion[]
+
+  @@unique([recordId, judgeId])
+  @@unique([id, templateId])
+}
+
+model ScoringValue {
+  sheetId     String           @db.Uuid
+  criterionId String           @db.Uuid
+  templateId  String           @db.Uuid
+  value       Int
+  comment     String?
+  sheet       ScoringSheet     @relation(fields: [sheetId, templateId], references: [id, templateId], onDelete: Restrict, onUpdate: Restrict)
+  criterion   ScoringCriterion @relation(fields: [criterionId, templateId], references: [id, templateId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([sheetId, criterionId])
+}
+
+model ScoringSheetVersion {
+  id        String       @id @default(uuid()) @db.Uuid
+  sheetId   String       @db.Uuid
+  revision  Int
+  actorId   String
+  reason    String?
+  snapshot  Json
+  createdAt DateTime     @default(now())
+  sheet     ScoringSheet @relation(fields: [sheetId], references: [id], onDelete: Restrict)
+  actor     User         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([sheetId, revision])
+}
+
+model ScoringCalculation {
+  id        String        @id @default(uuid()) @db.Uuid
+  recordId  String        @db.Uuid
+  source    String
+  inputs    Json
+  result    Json
+  createdAt DateTime      @default(now())
+  record    ScoringRecord @relation(fields: [recordId], references: [id], onDelete: Restrict)
+
+  @@unique([recordId, source])
+}
+
+model ScoringOperation {
+  operationId String       @id @db.Uuid
+  eventId     String
+  actorId     String
+  revision    Int
+  action      String
+  digest      String
+  request     Json
+  reason      String?
+  response    Json
+  createdAt   DateTime     @default(now())
+  setup       ScoringSetup @relation(fields: [eventId], references: [eventId], onDelete: Restrict)
+  actor       User         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, revision])
+  @@index([actorId])
 }
 
 model Score {
@@ -733,6 +893,8 @@ model User {
   preferredLocale       RecipientLocale?
   moderatedSessions     CompetitionSession[]
   scheduleOperations    ScheduleOperation[]
+  scoringOperations     ScoringOperation[]
+  scoringSheetVersions  ScoringSheetVersion[]
   onboardingDraft       OnboardingDraft?
 }
 

@@ -93,6 +93,7 @@ function EventSetup({ id }: { id: string }) {
           {t(stageAction(data.stage, stage))}</Button>; })}</div>
         {["SCHEDULED", "LIVE"].includes(data.stage) && <p>{t("Schedule.scoringNotReady")}</p>}
         <Link to={`/admin/events/${encodeURIComponent(id)}/schedule`}>{t("Schedule.title")}</Link>
+        <Link to={`/admin/events/${encodeURIComponent(id)}/scoring`}>{t("Scoring.title")}</Link>
       </section>
       </aside><div className="setup-editor"><EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
         submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}

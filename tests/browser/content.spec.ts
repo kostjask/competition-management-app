@@ -129,18 +129,36 @@ test("S20 changed policy requires a fresh preview and explicit publication revie
   expect(state.writes[1]?.policyDigest).toBe('b'.repeat(64));
 });
 
-test("S20 delayed preview cannot move into another document", async ({ page }) => {
-  await install(page);
+for (const outcome of ["success", "failure"] as const) test(`S20 delayed preview ${outcome} cannot move into another document`, async ({ page }) => {
+  const state = await install(page);
+  state.documents[1]!.draft.payload.title!.sourceText = "Festival portal";
   let release = () => {};
+  let started = () => {};
   const gate = new Promise<void>(resolve => { release = resolve; });
-  await page.route(`**/content/documents/${id}/preview?**`, async route => { await gate; await route.fallback(); });
+  const requested = new Promise<void>(resolve => { started = resolve; });
+  await page.route(`**/content/documents/${id}/preview?**`, async route => {
+    started(); await gate;
+    if (outcome === "failure") return route.fulfill({ status: 500, json: { code: "ERROR", reason: "unexpected", issues: [], params: {} } });
+    await route.fallback();
+  });
   await page.goto("/app/content/studio");
+  await expect(page.locator("#cms-title-sourceText")).toHaveValue("Stuudio");
   await page.getByRole("button", { name: label("preview"), exact: true }).click();
+  await requested;
   await page.getByRole("navigation", { name: getTranslation("Shell.navigation", "en") }).getByRole("link", { name: label("festivals"), exact: true }).click();
   await expect(page).toHaveURL(/\/content\/festivals$/);
+  await expect(page.locator("#cms-title-sourceText")).toHaveValue("Festival portal");
+  const response = page.waitForResponse(response => response.url().includes(`/content/documents/${id}/preview?`));
   release();
+  await (await response).finished();
   await expect(page.getByRole("button", { name: label("preview"), exact: true })).toBeEnabled();
   await expect(page.locator(".cms-preview-result")).toHaveCount(0);
+  await expect(page.locator(".cms-error-summary")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: label("publish"), exact: true })).toBeDisabled();
+  await page.getByRole("button", { name: label("preview"), exact: true }).click();
+  await expect(page.locator(".cms-preview h2")).toHaveText("Festival portal");
+  await expect(page.getByRole("button", { name: label("publish"), exact: true })).toBeEnabled();
+  expect(state.writes).toHaveLength(0);
 });
 
 test("S20 festival copy selection and canonical edition facts stay separate", async ({ page }, info) => {

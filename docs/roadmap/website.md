@@ -72,6 +72,15 @@ builder, microservices or organizer tenancy. Preserve all existing task IDs.
   clears confirmation/preview state across documents, focuses private previews and
   reduces phone ledger density. Publication-audit rollback, policy changes and
   festival-copy UI are covered by the fresh validation evidence.
+  CI follow-up (2026-11-21, PR #12): private previews retain document/revision
+  identity and invalidate outstanding requests at the document commit. S20's
+  synchronized late-success/error cases verify that switching documents cannot
+  carry preview/publication readiness or errors into the destination; its own
+  preview remains usable. Local validation passes: 20 delayed-response stress
+  cases, all 441 browser cases, workspace tests/typecheck/lint/build and Prisma
+  checks. Hosted checks await publication; the standard documentation check's
+  ignored scratch-link failure remains separately recorded in the checkpoint.
+  The public/human release gates remain open.
 - [x] P4-STUDIO-PAGES (2026-11-17, local consumer): after model/editor, create public home/about, teachers,
   classes/groups/styles/ages, timetable, joining information, location/contact,
   selected media and social links. Content comes from the director; no student

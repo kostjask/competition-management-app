@@ -43,13 +43,13 @@ Event scoping is not a claim of multi-organizer isolation.
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
 | Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration and representative S09/S10 are delivered; music/submission UI retain their P5 gates |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
-| Score | Free-text criterion and Float value | Versioned rubric, assignments, exact values and sheet lifecycle; not implemented |
+| Score | Legacy Float rows retained; ADR-004 exact integer values, immutable rubric/assignment/sheet versions and private calculations | P6 judge/moderator screens and P7 grouped results/publication remain downstream |
 | Public studio content | Structured singleton revisions, profiles/classes/timetable, explicit publication and document-owned assets | Public-page composition/release remains open; no enrolment or student registry |
 | Festival edition publication | Stable Festival/Edition identities, optional unique Event linkage, immutable revisions/receipts, private preview and published-only APIs | Public pages/Wix transition remain open; public profiles grant no assignments |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, SCHEDULED,
 LIVE, FINALIZED, ENDED, CANCELLED. ADR-003/030 enforce lifecycle and queue mappings;
-entry into LIVE/finalization still requires the future scoring readiness boundary.
+entry into LIVE/finalization requires ADR-004 readiness and submitted-sheet completeness.
 FINALIZED is not score-sheet lock, entry submission or public result publication.
 
 All new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
@@ -88,15 +88,22 @@ queue slots, admin scheduling, explicit moderator assignments, pause/skip/requeu
 reopen and source-bound transactional receipts. SCHEDULED/LIVE enum values and
 S13 scheduling are implemented locally. DATA_REVIEW → SCHEDULED requires complete
 eligible scheduling; SCHEDULED may return to review before a queue starts.
-START/ADVANCE and entry into LIVE/finalization remain blocked pending scoring.
+START/ADVANCE and entry into LIVE/finalization now enforce ADR-004 readiness and
+sheet completeness. Missing configuration/sheets fails closed; a reasoned admin
+advance override never makes incomplete results finalizable.
 DRAFT is not an event stage. Score corrections/publication remain separate.
 
-**ADR-004 scoring (not accepted/filed):** define event/category template, ordered
-criteria and min/max/step/weight, judge assignments, draft/submitted/locked sheets,
-values/comments, penalties/disqualification, dropped scores, rounding/ties,
-versioned aggregation and independent publication/correction states. Choose
-scaled integer or Decimal precision and explicit legacy conversion; no silent
-Float rounding or historical rewrite. P6-SCORING-MODEL precedes dependent UI.
+**[ADR-004 scoring](adr/004-exact-scoring.md), accepted 2026-11-21:** immutable
+event/category rubric versions, per-performance panel snapshots, exact integer
+thousandths, draft/submission lock and reasoned paused-queue corrections are
+implemented under [the scoring contract](api/scoring.md). Normalize criteria to
+0–100, weight in basis points, average all assigned sheets, deduct admin penalty
+and round once (half up, three decimals). No dropped scores; equal totals share
+competition rank. Disqualification retains evidence without ranking. Legacy Float
+rows remain unchanged outside new calculations. New calculations stay private;
+P7 owns grouped results, final/public versions, corrections and exports. The
+[decision brief](SCORING_MODEL_DECISIONS.md) retains alternatives. S14/S15 and
+venue/human/hosted acceptance still gate operational release.
 
 History/calendar decisions are accepted in [ADR-023](adr/023-entry-history-and-calendar-dates.md).
 Older domain findings and migration-safety evidence: [database review](DATABASE_REVIEW.md).
