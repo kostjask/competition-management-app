@@ -1,18 +1,23 @@
 # Development checkpoint
 
-Updated: 2026-11-19. This file owns current priority, state summary and release
+Updated: 2026-11-21. This file owns current priority, state summary and release
 gates. [Product scope](docs/PRODUCT_SCOPE.md) owns audiences/features; roadmaps own
 task checkboxes. [The map](docs/README.md) routes selected work to its docs/source.
 
 ## Next action
 
-**Next local task: P6-LIVE-MODEL — settle queue and live-operation policy.**
-P5-SUBMISSION/S12 is complete locally. Review the
-[live-model decision brief](docs/LIVE_MODEL_DECISIONS.md) and settle stage/session
-queues, moderator/admin authority and skip/advance/reopen behavior before its ADR,
-migration and owning organizer screens. The brief is a proposal, not a second
-completed implementation. Local M3/M4 technical prerequisites are available;
-human/hosted release gates and M3/M5 remain open.
+**Next local task: P6-SCORING-MODEL — settle ADR-004 and exact scoring policy.**
+The user accepted the recommended [live policy](docs/LIVE_MODEL_DECISIONS.md) on
+2026-11-21. [ADR-030](docs/adr/030-session-queues.md), migration 46 and the
+[schedule contract](docs/api/schedule.md) implement explicit stages/sessions,
+revisioned queues and organizer scheduling with source-bound preview/confirmation.
+[Validation](docs/SCHEDULE_VALIDATION.md) records completed local delivery of
+P6-LIVE-MODEL and P6-SCHEDULE/S13: full workspace/API/migration checks, 417 full
+browser checks and the final 20-case S13 recovery/filter rerun pass. START/ADVANCE,
+LIVE entry and finalization remain gated on scoring readiness. Settle rubric,
+precision/rounding/ties, assignments, submitted/locked sheets, completeness/override
+and correction semantics before dependent scoring templates or S14/S15 work.
+Local M3/M4 prerequisites are available; human/hosted release and M3/M5 remain open.
 
 [Submission evidence](docs/SUBMISSION_VALIDATION.md) records the field-linked
 checklist, independent music notices, source-pinned confirmations, durable receipts,
@@ -66,14 +71,14 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source and representative submission revalidated locally on 2026-11-19. Older reports retain
+Source and session scheduling reviewed locally on 2026-11-21. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
-- Integration base: main 6ee1bfa includes merged private-music PR #10, estimate/music-model PR #9,
+- Integration base: main cd5c7a5 includes submission PR #11, private-music PR #10, estimate/music-model PR #9,
   workspace/entry PR #8,
   public consumers and CMS PRs #6/#7. Initial and final fetched origin/main match
-  HEAD. No open PR overlaps this work; the old implementation branch is patch-
-  equivalent to PR #10 with an empty content diff, so no merge is needed.
+  HEAD. No open PR overlaps this work; the two old implementation
+  branches are patch-equivalent to PRs #10/#11, with no integration needed.
   No original CMS work is duplicated. Publication requires the canonical-policy fingerprint from
   private preview; document changes invalidate review/confirmation state. The
   validated follow-up is retained without a new branch/history/publication action.
@@ -84,6 +89,13 @@ their dates; no hosted or application-database state is inferred.
   setup and independent application/review workflows are delivered locally.
   [Review evidence](docs/APPLICATION_REVIEW_VALIDATION.md) and owning roadmaps
   retain exact scope; M1–M5 external release gates remain open.
+- P6-LIVE-MODEL and P6-SCHEDULE/S13 are complete locally under ADR-030. Explicit
+  session queues, eligible entry snapshots, dancer/stage timing checks, atomic
+  moves, immutable acknowledgements and current moderator authority are tested.
+  Organizer UI retains drafts through stale/uncertain/session recovery; print
+  references all acknowledged queues. Scoring readiness, S14/S15 and venue/human/
+  hosted release remain open. The canonical docs checker retains one pre-existing
+  ignored PR scratch-link failure; repository docs pass when that scratch is excluded.
 - P3-PERFORMANCE-OWNER/CONSTRAINTS/HISTORY/CALENDAR-DATES/ENTRIES and
   P4-ENTRY-CONFIG are complete locally. Explicit immutable ownership, nullable
   unscheduled drafts, saved revisions, studio-wide BASIC/FINAL checkpoints,
@@ -107,7 +119,8 @@ their dates; no hosted or application-database state is inferred.
   server availability, source-pinned commands, focused receipts and scoped
   correction/resubmission. [Evidence](docs/SUBMISSION_VALIDATION.md) records final
   validation and known check limits. Approval, entry review and music acceptance
-  stay separate. Live/scoring/results remain Phase 6–7 work after their decisions.
+  stay separate. Session scheduling is delivered locally; scoring/results
+  and venue operation retain their Phase 6–7 decision/release gates.
 - P4-PUBLIC-MODEL's design prerequisite and P4-PUBLIC-EDITOR implementation are
   locally complete and retained. The [CMS contract](docs/api/content.md) owns `/app/content` editing,
   immutable revisions/receipts, rights-gated normalized rasters/cleanup and explicit
@@ -118,13 +131,15 @@ their dates; no hosted or application-database state is inferred.
   Existing event/judge/image authentication remains required. Wix archive
   attribution, placeholder contact and owner/export/rights verification remain
   migration/release gates. Public raster cleanup is independent of private music.
-- The repository contains **45 migrations**. Migration 43 adds immutable
+- The repository contains **46 migrations**. Migration 46 adds explicit session
+  queues and immutable schedule acknowledgements; no legacy order/history is
+  rewritten. All 46 pass disposable fresh/upgrade/catalog parity and the full API
+  baseline. Browser/integration limits are in the schedule evidence above. Migration 43 adds immutable
   application estimates; migration 44 adds private music metadata, exact-owner
   relations and immutable version/operation history. Migration 45 adds explicit
   music policy, correction windows, staging and immutable audit extensions. Migration 42's dancer
   receipts and earlier CMS/audit corrections remain intact.
-  All 45 passed disposable fresh/upgrade/catalog parity
-  and full API baseline checks. Last application-database evidence remains
+  The full API baseline passes with all 46. Last application-database evidence remains
   2026-11-14 (1–39 applied, 40 pending); that database was not inspected or migrated
   here. No current hosted success is inferred.
 - The full Hallmark redesign direction remains active. Bounded Cobalt organizer
@@ -191,7 +206,7 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 — complete locally | Scoped roster and saved entry/participant drafts with recovery; S11/S12 are now complete locally in their owning slices |
 | 6 | P5-APPLICATION-ESTIMATES with S06/S08 — complete locally | Actual-day planning counts, revisioned owner adjustments and reasoned organizer correction; preserve M2 approvals |
 | 7 | P3-MUSIC-MODEL/P8-MEDIA/P5-MUSIC/P5-SUBMISSION — complete locally | Private music and S11/organizer review plus S12 checklist, receipts and scoped correction delivered; M3 release gates remain open |
-| 8 | Phase 6–7 model/consumer tasks — next | Resolve the P6-LIVE-MODEL decision brief, then its ADR/model and owning screens; consume local M3/M4 while retaining live/scoring/recovery and M5 gates |
+| 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 — complete locally; scoring model next | Accepted ADR-030, explicit queues and organizer scheduling validated; settle P6-SCORING-MODEL/ADR-004 before templates/judging/moderator completion; retain venue/recovery and M5 gates |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

@@ -33,6 +33,7 @@ requires that past result or rollout limitation.
 | Audit / privacy / onboarding foundation | [Privacy](PRIVACY.md), ADR-012/013/014 | services/audit, onboarding, staffPolicy, emailQueue; schema/migrations |
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001/003/019 | registration/studio controllers, schema.prisma |
 | Application estimates / private music | [Estimate contract](api/registrations.md#planning-estimates), [music contract](api/music.md), ADR-027/028/029 | application estimates; MusicController, music policy/content/storage services, shared contracts and S11 workbench |
+| Schedule / live model | [Schedule contract](api/schedule.md), [ADR-030](adr/030-session-queues.md), [S13/S14](ui/competition.md), [F07](flows/F07.md) | ScheduleController, schedule service, explicit stage/session/slot models, S13; scoring/live readiness remains gated |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
@@ -47,6 +48,10 @@ and protected hosted rollout checklist. P9-DEPLOY still owns hosting, ingress,
 deployment/rollback evidence; provider variables alone do not establish readiness.
 
 ## Audit corrections
+
+Session scheduling follows [ADR-030](adr/030-session-queues.md) and the
+[schedule contract](api/schedule.md). The [live brief](LIVE_MODEL_DECISIONS.md)
+records the accepted 2026-11-21 recommendation and original implementation context.
 
 The [correction map](AUDIT_FOLLOWUP.md) routes all 15 findings to their owning
 roadmap tasks, acceptance evidence and milestone gates. The [audit](REPOSITORY_AUDIT.md)
@@ -81,8 +86,10 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [024](adr/024-incomplete-entry-drafts.md) | Nullable unscheduled drafts, retained ownership/history and actor-bound creation retries |
 | [025](adr/025-entry-submission-lifecycle.md) | Accepted studio-wide checkpoints, any-older percentage, staged review/locks/reopening and event-adjustable rules; source questionnaire/images retained |
 | [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites and shared CMS; concrete revision/edition/asset/publication/locale/route design; no CRM/student system or runtime implementation |
+| [030](adr/030-session-queues.md) | Event-owned stages/sessions, stable slots, source-bound schedule revisions, moderator authority and scoring readiness gates |
 
-ADR-003 accepts the M2 application/review subset; live operation remains pending.
+ADR-003/030 accept registration and session-queue lifecycle mappings; actual live
+operation remains gated on scoring and its rehearsal.
 ADR-004 scoring is reserved and unaccepted; its required scope is in
 [DOMAIN](DOMAIN.md#pending-model-decisions).
 

@@ -5,11 +5,13 @@ import { applicationTranslations } from "./applicationTranslations";
 import { performanceTranslations } from "./performanceTranslations";
 import { entryTranslations } from "./entryTranslations";
 import { musicTranslations } from "./musicTranslations";
+import { scheduleTranslations } from "./scheduleTranslations";
 import { contentTranslations } from "./contentTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 import { rosterTranslations } from "./rosterTranslations";
 export const translations = {
+  Schedule: scheduleTranslations,
   Music: musicTranslations,
   Roster: rosterTranslations,
   Content: contentTranslations,

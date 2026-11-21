@@ -17,6 +17,7 @@ for present delivery. In particular, old “next task” statements are historic
 
 | Scope | Dated reports |
 | --- | --- |
+| 2026-11-21 session queues, S13 and lifecycle integration | [Schedule validation](SCHEDULE_VALIDATION.md) |
 | 2026-11-19 representative submission and shared correction/review | [Submission validation](SUBMISSION_VALIDATION.md) |
 | 2026-11-19 private music delivery and S11 | [Music delivery validation](MUSIC_DELIVERY_VALIDATION.md) |
 | 2026-11-18 application estimates and private music model | [Estimate/music validation](APPLICATION_ESTIMATES_MUSIC_VALIDATION.md) |

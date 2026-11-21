@@ -7,6 +7,7 @@ import { ConflictError, ForbiddenError, InternalServerError, NotFoundError } fro
 import { appendAudit } from "../services/audit";
 import { assertStageTransition } from "../services/registrationPolicy";
 import { requireMutableEntryRules } from "../services/entryWorkflow";
+import { scheduleTransition } from "../services/schedule";
 import { BaseController } from "./BaseController";
 
 const eventSelect = {
@@ -137,7 +138,12 @@ export class EventsController extends BaseController {
           registrationDeadline: body.registrationDeadline === undefined ? current.registrationDeadline?.toISOString() ?? null : body.registrationDeadline,
           startsAt: body.startsAt ?? current.startsAt.toISOString(), endsAt: body.endsAt ?? current.endsAt.toISOString(),
         });
-        if (body.stage !== undefined) assertStageTransition(current.stage, body.stage, body.expectedStage);
+        if (body.stage !== undefined) {
+          assertStageTransition(current.stage, body.stage, body.expectedStage);
+          await scheduleTransition(tx, eventId, current.stage, body.stage);
+        }
+        const scheduleTimingChanged = body.startsAt !== undefined && Date.parse(body.startsAt) !== current.startsAt.getTime() || body.endsAt !== undefined && Date.parse(body.endsAt) !== current.endsAt.getTime() || body.timeZone !== undefined && body.timeZone !== current.timeZone;
+        if (scheduleTimingChanged && await tx.competitionSession.count({ where: { eventId } })) throw new ConflictError("Event timing is fixed while sessions exist", undefined, "stageLocked");
         const { expectedRevision, startsAt, endsAt, registrationDeadline } = body;
         const updated = await tx.event.update({ where: { id: eventId, revision: expectedRevision }, data: {
           ...setupFields(body), revision: { increment: 1 },

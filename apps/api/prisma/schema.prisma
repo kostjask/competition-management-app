@@ -138,6 +138,8 @@ enum EventStage {
   FINALIZED
   ENDED
   CANCELLED
+  SCHEDULED
+  LIVE
 }
 
 enum EventRegistrationStatus {
@@ -245,6 +247,10 @@ model Event {
   entryConfiguration  EntryConfiguration?
   musicConfiguration  MusicConfiguration?
   publicEdition       FestivalEdition?
+  schedule            EventSchedule?
+  stages              CompetitionStage[]
+  sessions            CompetitionSession[]
+  scheduleSlots       ScheduleSlot[]
 }
 
 model DanceCategory {
@@ -426,20 +432,22 @@ model Performance {
   creationOperationId String? @unique @db.Uuid
   creationDigest      String?
 
-  studio       Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  registration StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
-  ageGroup     AgeGroup?                @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  category     DanceCategory?           @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  event        Event                    @relation(fields: [eventId], references: [id])
-  format       DanceFormat?             @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
-  participants PerformanceParticipant[]
-  scores       Score[]
-  revisions    PerformanceRevision[]
-  operations   PerformanceOperation[]
-  musicTrack   MusicTrack?
+  studio        Studio                   @relation(fields: [studioId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  registration  StudioEventRegistration  @relation(fields: [registrationId, studioId, eventId], references: [id, studioId, eventId], onDelete: Restrict, onUpdate: Restrict)
+  ageGroup      AgeGroup?                @relation(fields: [ageGroupId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  category      DanceCategory?           @relation(fields: [categoryId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  event         Event                    @relation(fields: [eventId], references: [id])
+  format        DanceFormat?             @relation(fields: [formatId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  participants  PerformanceParticipant[]
+  scores        Score[]
+  revisions     PerformanceRevision[]
+  operations    PerformanceOperation[]
+  musicTrack    MusicTrack?
+  scheduleSlots ScheduleSlot[]
 
   @@unique([eventId, orderOnStage])
   @@unique([id, studioId])
+  @@unique([id, eventId])
   @@unique([id, registrationId, studioId, eventId])
 }
 
@@ -595,6 +603,76 @@ model EntryReceipt {
   @@index([actorId])
 }
 
+model EventSchedule {
+  eventId    String              @id
+  revision   Int                 @default(0)
+  event      Event               @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  operations ScheduleOperation[]
+}
+
+model CompetitionStage {
+  id       String               @id @db.Uuid
+  eventId  String
+  name     String
+  event    Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  sessions CompetitionSession[]
+
+  @@unique([id, eventId])
+}
+
+model CompetitionSession {
+  id          String           @id @db.Uuid
+  eventId     String
+  stageId     String           @db.Uuid
+  name        String
+  startsAt    DateTime
+  bufferSec   Int              @default(0)
+  restSec     Int              @default(0)
+  moderatorId String?
+  state       String           @default("PAUSED")
+  event       Event            @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  stage       CompetitionStage @relation(fields: [stageId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  moderator   User?            @relation(fields: [moderatorId], references: [id], onDelete: Restrict)
+  slots       ScheduleSlot[]
+
+  @@unique([id, eventId])
+  @@index([moderatorId])
+  @@index([eventId, stageId, startsAt])
+}
+
+model ScheduleSlot {
+  id            String             @id @default(uuid()) @db.Uuid
+  eventId       String
+  sessionId     String             @db.Uuid
+  performanceId String
+  position      Int?
+  state         String             @default("WAITING")
+  reason        String?
+  event         Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  session       CompetitionSession @relation(fields: [sessionId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+  performance   Performance        @relation(fields: [performanceId, eventId], references: [id, eventId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([eventId, performanceId])
+  @@unique([sessionId, position])
+}
+
+model ScheduleOperation {
+  operationId String        @id @db.Uuid
+  eventId     String
+  actorId     String
+  revision    Int
+  action      String
+  digest      String
+  reason      String?
+  response    Json
+  createdAt   DateTime      @default(now())
+  schedule    EventSchedule @relation(fields: [eventId], references: [eventId], onDelete: Restrict)
+  actor       User          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, revision])
+  @@index([actorId])
+}
+
 model Judge {
   id          String  @id @default(cuid())
   eventId     String
@@ -653,6 +731,8 @@ model User {
   entryReceipts         EntryReceipt[]
   reviewDeliveries      EmailDelivery[]
   preferredLocale       RecipientLocale?
+  moderatedSessions     CompetitionSession[]
+  scheduleOperations    ScheduleOperation[]
   onboardingDraft       OnboardingDraft?
 }
 

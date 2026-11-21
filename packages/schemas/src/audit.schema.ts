@@ -2,6 +2,7 @@ import { z } from "zod";
 import { IdSchema } from "./common.schema.js";
 
 export const AuditActionSchema = z.enum([
+  "SCHEDULE_CHANGED",
   "MUSIC_CONFIGURED", "MUSIC_CREATED", "MUSIC_REPLACED", "MUSIC_CONFIRMED", "MUSIC_ACCEPTED", "MUSIC_REOPENED", "MUSIC_ATTACHED",
   "DANCER_CREATED", "DANCER_UPDATED", "DANCER_ARCHIVED",
   "CONTENT_SAVED", "CONTENT_PUBLISHED", "CONTENT_UNPUBLISHED", "CONTENT_CREATED", "CONTENT_LINKED", "CONTENT_ASSET_UPLOADED", "CONTENT_ASSET_REVIEWED", "CONTENT_ASSET_RETIRED", "CONTENT_ARCHIVED",
@@ -21,8 +22,8 @@ export const AuditMetadataSchema = z.strictObject({
   revision: z.int().positive().optional(),
   reasonCode: z.enum(["CONTACT_ORGANIZER", "INCOMPLETE_DETAILS", "INELIGIBLE", "CAPACITY"]).nullable().optional(),
   reviewAllowed: z.boolean().optional(),
-  fromStage: z.enum(["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW", "FINALIZED", "ENDED", "CANCELLED"]).optional(),
-  toStage: z.enum(["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW", "FINALIZED", "ENDED", "CANCELLED"]).optional(),
+  fromStage: z.enum(["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW", "SCHEDULED", "LIVE", "FINALIZED", "ENDED", "CANCELLED"]).optional(),
+  toStage: z.enum(["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW", "SCHEDULED", "LIVE", "FINALIZED", "ENDED", "CANCELLED"]).optional(),
   roleKey: z.enum(["admin", "representative", "judge", "moderator"]).optional(),
   purpose: z.enum(["VERIFY_EMAIL", "PASSWORD_RECOVERY"]).optional(),
   fromStatus: z.enum(["PENDING", "APPROVED", "REJECTED", "LOCKED", "CANCELLED"]).optional(),
@@ -30,7 +31,7 @@ export const AuditMetadataSchema = z.strictObject({
 });
 export const AuditRecordSchema = z.strictObject({
   action: AuditActionSchema, actor: AuditActorSchema,
-  targetType: z.enum(["MUSIC_TRACK", "CONTENT_DOCUMENT", "EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
+  targetType: z.enum(["SCHEDULE", "MUSIC_TRACK", "CONTENT_DOCUMENT", "EVENT", "DANCER", "USER", "INVITATION", "USER_ROLE", "STUDIO", "REGISTRATION", "PERFORMANCE", "ENTRY_CHECKPOINT"]),
   targetId: IdSchema, eventId: IdSchema.nullable().optional(), studioId: IdSchema.nullable().optional(),
   metadata: AuditMetadataSchema.default({}),
 });

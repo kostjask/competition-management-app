@@ -1,0 +1,135 @@
+const assert = require('node:assert/strict');
+const { randomUUID } = require('node:crypto');
+
+// Runs only inside the verified random database owned by test-baseline.cjs.
+module.exports = async function checkSchedule({ client, baseUrl, adminToken, login }) {
+  const template = await client.user.findUniqueOrThrow({ where: { email: 'admin@test.com' } });
+  const event = await client.event.create({ data: { name: 'Schedule fixture', startsAt: new Date('2026-12-05T08:00:00Z'), endsAt: new Date('2026-12-05T18:00:00Z'), stage: 'REGISTRATION_OPEN', timeZone: 'Europe/Tallinn',
+    categories: { create: { name: 'Open' } }, ageGroups: { create: { name: 'All ages', minAge: 0 } }, formats: { create: { name: 'Solo', minParticipants: 1, maxParticipants: 2, maxDurationSeconds: 300 } } }, include: { categories: true, ageGroups: true, formats: true } });
+  const other = await client.event.create({ data: { name: 'Other schedule', startsAt: event.startsAt, endsAt: event.endsAt, stage: 'DATA_REVIEW' } });
+  const moderator = await client.user.create({ data: { email: 'schedule-moderator@example.invalid', name: 'Queue moderator', emailVerified: true, password: template.password } });
+  const role = await client.role.findUniqueOrThrow({ where: { key: 'moderator' } });
+  const assignment = await client.userRole.create({ data: { userId: moderator.id, roleId: role.id, eventId: event.id } });
+  const modToken = await login(baseUrl, moderator.email); const judgeToken = await login(baseUrl, 'judge@test.com');
+  const request = async (path, method = 'GET', body, token = adminToken) => {
+    const response = await fetch(`${baseUrl}/api/v1${path}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) });
+    return { status: response.status, body: response.status === 204 ? null : await response.json() };
+  };
+  const prefix = `/events/${event.id}`, url = prefix + '/schedule';
+  const read = async () => { const response = await request(url); assert.equal(response.status, 200); return response.body; };
+  const cmd = async (fields, token = adminToken) => request(url + '/commands', 'POST', { operationId: randomUUID(), expectedRevision: (await read()).revision, ...fields }, token);
+  const settings = { basic: { enabled: false, deadline: null }, final: { enabled: true, deadline: null }, allowYounger: true, olderPercent: 100, requireTeacher: false, requireAuthor: false, nominations: [] };
+  assert.equal((await request(prefix + '/entry-configuration', 'PUT', { expectedRevision: 0, settings })).status, 200);
+  const studio = await client.studio.create({ data: { eventId: event.id, name: 'Schedule studio', approvalStatus: 'APPROVED', registrations: { create: { eventId: event.id, status: 'APPROVED' } }, dancers: { create: { firstName: 'Private', lastName: 'Dancer', birthDate: new Date('2010-01-01') } } }, include: { dancers: true } });
+  const ids = [];
+  for (const title of ['First', 'Second', 'Third']) {
+    const created = await request(prefix + '/performances', 'POST', { studioId: studio.id, title, durationSec: 60, categoryId: event.categories[0].id, ageGroupId: event.ageGroups[0].id, formatId: event.formats[0].id, dancerIds: [studio.dancers[0].id] });
+    assert.equal(created.status, 201, JSON.stringify(created.body)); ids.push(created.body.id);
+  }
+  const reviewUrl = prefix + `/studios/${studio.id}/entry-review`;
+  const review = (await request(reviewUrl)).body.checkpoints.find(c => c.kind === 'FINAL');
+  assert.equal((await request(reviewUrl + '/FINAL', 'POST', { action: 'SUBMIT', operationId: randomUUID(), expectedRevision: review.revision, expectedReview: review.reviewToken })).status, 200);
+  await client.event.update({ where: { id: event.id }, data: { stage: 'DATA_REVIEW' } });
+  assert.equal((await request(url, 'GET', undefined, judgeToken)).status, 403);
+  assert.equal((await request(`/events/${other.id}/schedule`, 'GET', undefined, modToken)).status, 403);
+  assert.equal((await request(url + '/commands', 'POST', { action: 'CREATE_STAGE', id: randomUUID(), name: 'Denied', operationId: randomUUID(), expectedRevision: 0 }, modToken)).status, 403);
+  assert.equal((await read()).performances.filter(p => p.eligible).length, 3);
+  const stage = randomUUID(), stage2 = randomUUID(), session = randomUUID(), session2 = randomUUID();
+  const firstCommand = { operationId: randomUUID(), expectedRevision: 0, action: 'CREATE_STAGE', id: stage, name: 'Main stage' };
+  assert.equal((await request(url + '/commands', 'POST', firstCommand)).status, 200);
+  assert.equal((await request(url + '/commands', 'POST', firstCommand)).body.revision, 1);
+  assert.equal((await request(url + '/commands', 'POST', { ...firstCommand, name: 'Changed body' })).status, 409);
+  assert.equal((await cmd({ action: 'CREATE_STAGE', id: stage2, name: 'Second stage' })).status, 200);
+  const sessionFields = { stageId: stage, name: 'Morning', startsAt: '2026-12-05T10:00:00+02:00', bufferSec: 120, restSec: 120, moderatorId: moderator.id };
+  assert.equal((await cmd({ action: 'CREATE_SESSION', id: session, ...sessionFields })).status, 200);
+  assert.equal((await cmd({ action: 'CREATE_SESSION', id: session2, ...sessionFields, stageId: stage2, name: 'Parallel', startsAt: '2026-12-05T12:00:00+02:00' })).status, 200);
+  const configuredEvent = await client.event.findUniqueOrThrow({ where: { id: event.id } });
+  assert.equal((await request(prefix, 'PATCH', { expectedRevision: configuredEvent.revision, name: 'Renamed schedule fixture', startsAt: configuredEvent.startsAt.toISOString(), endsAt: configuredEvent.endsAt.toISOString(), timeZone: configuredEvent.timeZone })).status, 200, 'Unchanged time values do not block unrelated setup edits');
+  const readEvent = await client.event.findUniqueOrThrow({ where: { id: event.id } });
+  assert.equal((await request(prefix, 'PATCH', { expectedRevision: readEvent.revision, endsAt: '2026-12-05T19:00:00Z' })).status, 409, 'Real timing changes are blocked while sessions exist');
+  assert.equal((await cmd({ action: 'CREATE_SESSION', id: randomUUID(), ...sessionFields, stageId: randomUUID() })).status, 404);
+  assert.equal((await cmd({ action: 'CREATE_SESSION', id: randomUUID(), ...sessionFields, startsAt: '2026-12-04T10:00:00Z' })).status, 409);
+  assert.equal((await request(url + '/preview', 'POST', { expectedRevision: 4, queues: [], extra: true })).status, 400);
+  const queues = [{ sessionId: session, performanceIds: ids }, { sessionId: session2, performanceIds: [] }];
+  const preview = async (q = queues) => { const r = await request(url + '/preview', 'POST', { expectedRevision: (await read()).revision, queues: q }); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
+  const initial = await preview(); assert.deepEqual(initial.conflicts, []);
+  await client.competitionSession.update({ where: { id: session2 }, data: { startsAt: new Date(sessionFields.startsAt) } });
+  const overlapQueues = [{ sessionId: session, performanceIds: [ids[0]] }, { sessionId: session2, performanceIds: [ids[1]] }];
+  const overlap = await preview(overlapQueues); assert.ok(overlap.conflicts.some(c => c.kind === 'DANCER'));
+  assert.equal((await cmd({ action: 'SAVE', queues: overlapQueues, previewToken: overlap.previewToken })).status, 409);
+  await client.competitionSession.update({ where: { id: session2 }, data: { startsAt: new Date('2026-12-05T12:00:00+02:00') } });
+  const duplicate = await preview([{ sessionId: session, performanceIds: [ids[0], ids[0]] }, { sessionId: session2, performanceIds: [] }]); assert.ok(duplicate.conflicts.some(c => c.kind === 'ENTRY'));
+  const save = { operationId: randomUUID(), expectedRevision: 4, action: 'SAVE', queues, previewToken: initial.previewToken };
+  assert.equal((await request(url + '/commands', 'POST', save)).status, 200);
+  assert.equal((await request(url + '/commands', 'POST', save)).body.revision, 5, 'Exact retry does not duplicate writes');
+  const slots = (await read()).sessions.find(s => s.id === session).slots;
+  const originalIds = new Map(slots.map(s => [s.performanceId, s.id]));
+  const swapped = [{ sessionId: session, performanceIds: [ids[1], ids[0]] }, { sessionId: session2, performanceIds: [ids[2]] }];
+  const reorder = await preview(swapped);
+  const stale = await preview();
+  assert.equal((await cmd({ action: 'SAVE', queues: swapped, previewToken: reorder.previewToken })).status, 200);
+  assert.equal((await request(url + '/commands', 'POST', { ...save, operationId: randomUUID(), previewToken: stale.previewToken })).status, 409);
+  for (const s of (await read()).sessions.flatMap(s => s.slots)) assert.equal(s.id, originalIds.get(s.performanceId));
+  const beforeSource = await preview(swapped);
+  await client.event.update({ where: { id: event.id }, data: { name: 'Changed event source' } });
+  assert.equal((await cmd({ action: 'SAVE', queues: swapped, previewToken: beforeSource.previewToken })).status, 409, 'Source changes invalidate preview without a schedule revision change');
+  // Concurrent commands cannot overwrite each other at one expected revision.
+  const fresh = await preview(swapped); const revision = (await read()).revision;
+  const races = await Promise.all([1, 2].map(() => request(url + '/commands', 'POST', { action: 'SAVE', operationId: randomUUID(), expectedRevision: revision, queues: swapped, previewToken: fresh.previewToken })));
+  assert.deepEqual(races.map(r => r.status).sort(), [200, 409]);
+  const receipt = await client.scheduleOperation.findFirstOrThrow({ where: { eventId: event.id }, orderBy: { revision: 'desc' } });
+  await assert.rejects(client.scheduleOperation.update({ where: { operationId: receipt.operationId }, data: { action: 'PAUSE' } }));
+  await assert.rejects(client.scheduleOperation.delete({ where: { operationId: receipt.operationId } }));
+  await assert.rejects(client.scheduleSlot.update({ where: { id: slots[0].id }, data: { eventId: other.id } }));
+  await assert.rejects(client.scheduleSlot.update({ where: { id: slots[0].id }, data: { position: 0 } }));
+  const publicState = await read(); assert.equal(JSON.stringify(publicState).includes('Private'), false);
+  await client.performance.update({ where: { id: ids[2] }, data: { deletedAt: new Date() } });
+  assert.ok((await preview(swapped)).conflicts.some(c => c.kind === 'ENTRY'), 'Withdrawal does not silently remove the saved slot');
+  await client.performance.update({ where: { id: ids[2] }, data: { deletedAt: null } });
+  assert.equal((await request(url, 'GET', undefined, modToken)).body.organizer, false);
+  await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: new Date() } });
+  assert.equal((await request(url, 'GET', undefined, modToken)).status, 403);
+  await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: null } });
+  // Audit failure rolls back state and acknowledgement together.
+  const rollbackOperation = randomUUID(); const beforeRollback = (await read()).revision;
+  await client.$executeRawUnsafe(`CREATE FUNCTION fail_schedule_fixture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'SCHEDULE_CHANGED' THEN RAISE EXCEPTION 'fixture audit failure'; END IF; RETURN NEW; END $$`);
+  await client.$executeRawUnsafe('CREATE TRIGGER fail_schedule_fixture BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION fail_schedule_fixture()');
+  try { assert.equal((await cmd({ action: 'CREATE_STAGE', id: randomUUID(), name: 'Rollback', operationId: rollbackOperation })).status, 500); }
+  finally { await client.$executeRawUnsafe('DROP TRIGGER fail_schedule_fixture ON "AuditLog"'); await client.$executeRawUnsafe('DROP FUNCTION fail_schedule_fixture()'); }
+  assert.equal((await read()).revision, beforeRollback); assert.equal(await client.scheduleOperation.count({ where: { operationId: rollbackOperation } }), 0);
+  const storedEvent = await client.event.findUniqueOrThrow({ where: { id: event.id } });
+  assert.equal((await request(prefix, 'PATCH', { expectedRevision: storedEvent.revision, expectedStage: 'DATA_REVIEW', stage: 'SCHEDULED' })).status, 200);
+  const lockedReview = (await request(reviewUrl)).body.checkpoints.find(c => c.kind === 'FINAL'); assert.equal(lockedReview.canSubmit, false); assert.equal(lockedReview.locked, true);
+  assert.equal((await request(prefix + '/performances/' + ids[0], 'PATCH', { expectedRevision: (await client.performance.findUniqueOrThrow({ where: { id: ids[0] } })).revision, title: 'Blocked schedule source' })).status, 403);
+  assert.equal((await cmd({ action: 'CREATE_STAGE', id: randomUUID(), name: 'Locked' })).status, 403);
+  const scheduled = await client.event.findUniqueOrThrow({ where: { id: event.id } });
+  assert.equal((await request(prefix, 'PATCH', { expectedRevision: scheduled.revision, expectedStage: 'SCHEDULED', stage: 'LIVE' })).status, 409, 'No live promise before scoring readiness');
+  assert.equal((await request(prefix, 'PATCH', { expectedRevision: scheduled.revision, expectedStage: 'SCHEDULED', stage: 'DATA_REVIEW' })).status, 200);
+  // Direct fixture setup models a future live event without claiming scoring readiness.
+  await client.event.update({ where: { id: event.id }, data: { stage: 'LIVE' } });
+  const liveSlot = await client.scheduleSlot.findUniqueOrThrow({ where: { eventId_performanceId: { eventId: event.id, performanceId: ids[1] } } });
+  await client.scheduleSlot.update({ where: { id: liveSlot.id }, data: { state: 'CURRENT' } });
+  await client.competitionSession.update({ where: { id: session }, data: { state: 'RUNNING' } });
+  assert.equal((await cmd({ action: 'PAUSE', sessionId: session, expectedSlotId: randomUUID() }, modToken)).status, 409);
+  const pause = { action: 'PAUSE', sessionId: session, expectedSlotId: liveSlot.id, expectedRevision: (await read()).revision, operationId: randomUUID() };
+  assert.equal((await request(url + '/commands', 'POST', pause, modToken)).status, 200);
+  await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: new Date() } });
+  assert.equal((await request(url + '/commands', 'POST', pause, modToken)).status, 403, 'Removed staff cannot replay a successful command');
+  await client.userRole.update({ where: { id: assignment.id }, data: { removedAt: null } });
+  await client.competitionSession.update({ where: { id: session }, data: { moderatorId: null } });
+  assert.equal((await request(url + '/commands', 'POST', pause, modToken)).status, 403, 'Replaced moderator cannot replay a successful command');
+  await client.competitionSession.update({ where: { id: session }, data: { moderatorId: moderator.id, state: 'RUNNING' } });
+  assert.equal((await cmd({ action: 'SKIP', sessionId: session, expectedSlotId: liveSlot.id, reason: 'Waiting for venue readiness' }, modToken)).status, 200);
+  const skipped = await client.scheduleSlot.findUniqueOrThrow({ where: { id: liveSlot.id } }); assert.equal(skipped.state, 'SKIPPED');
+  assert.equal((await cmd({ action: 'REQUEUE', sessionId: session, expectedSlotId: null, targetSlotId: liveSlot.id, reason: 'Ready again' }, modToken)).status, 403);
+  assert.equal((await cmd({ action: 'REQUEUE', sessionId: session, expectedSlotId: null, targetSlotId: liveSlot.id, reason: 'Ready again' })).status, 200);
+  assert.equal((await client.scheduleSlot.findUniqueOrThrow({ where: { id: liveSlot.id } })).state, 'WAITING');
+  assert.equal((await cmd({ action: 'START', sessionId: session, expectedSlotId: null }, modToken)).status, 409);
+  assert.equal((await cmd({ action: 'ADVANCE', sessionId: session, expectedSlotId: null }, modToken)).status, 409);
+  await client.competitionSession.update({ where: { id: session }, data: { state: 'FINISHED' } });
+  assert.equal((await cmd({ action: 'REOPEN', sessionId: session, expectedSlotId: null, reason: 'Rehearsal correction' })).status, 200);
+  const reopen = await client.scheduleOperation.findFirstOrThrow({ where: { eventId: event.id, action: 'REOPEN' } }); assert.equal(reopen.reason, 'Rehearsal correction');
+  await client.user.update({ where: { id: moderator.id }, data: { sessionVersion: { increment: 1 } } });
+  assert.equal((await request(url + '/commands', 'POST', pause, modToken)).status, 401);
+  console.log('PASS: schedule eligibility, atomic moves, source binding, retries, concurrency, authority, history, audit rollback and lifecycle gates.');
+};

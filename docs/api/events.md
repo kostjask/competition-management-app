@@ -37,8 +37,12 @@ application-window model. Null cutoff remains a valid explicit policy.
 
 PATCH requires positive expectedRevision and at least one mutable field. A stage
 write also supplies expectedStage. M2 permits PRE_REGISTRATION → REGISTRATION_OPEN
-→ DATA_REVIEW, or CANCELLED from those stages. Backward/skipped/live/final targets
-are refused. Existing terminal records remain readable. Writes use serializable
+→ DATA_REVIEW, or CANCELLED from those stages. [ADR-030](../adr/030-session-queues.md)
+adds DATA_REVIEW → SCHEDULED after complete eligible conflict-free scheduling,
+and return to DATA_REVIEW with paused, unstarted queues. Scheduled/live events may
+cancel; FINALIZED may end. LIVE/finalization still require the future scoring
+readiness boundary and return 409 invalidConfiguration. Event start/end/timezone
+cannot change while sessions exist. Existing terminal records remain readable. Writes use serializable
 transactions and immutable audit. The immediate matching retry at revision N+1
 returns the saved state without incrementing/auditing again; other stale writes
 conflict. A conditional-write/serialization race returns 409; an initially missing

@@ -25,6 +25,8 @@ export const useStageBadges = (
         label: getTranslation("Events.stageDataReview", locale),
         className: "bg-sky-100 text-sky-700 border border-sky-200",
       },
+      SCHEDULED: { label: getTranslation("Schedule.SCHEDULED", locale), className: "ui-badge ui-tone-info" },
+      LIVE: { label: getTranslation("Schedule.LIVE", locale), className: "ui-badge ui-tone-info" },
       FINALIZED: {
         label: getTranslation("Events.stageFinalized", locale),
         className: "bg-emerald-200 text-emerald-700 border border-emerald-300",

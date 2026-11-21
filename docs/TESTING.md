@@ -48,6 +48,17 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P6-LIVE-MODEL/P6-SCHEDULE use `schedule.test.cjs` for strict commands and interval
+boundaries, `schedule.spec.ts` for ET/EN/RU S13 keyboard/phone/desktop and retained
+operation/session/navigation recovery, and `check-schedule.cjs` in entry-foundation
+and full baselines. The latter validates real HTTP/PostgreSQL eligibility, preview
+source binding, atomic cross-session moves, races, immutable history, removed/
+replaced moderators, audit rollback and lifecycle gates in its random database.
+Migration 46 is covered by fresh/upgrade/catalog parity. Start with
+`pnpm test:focus api schedule.test.cjs`, `pnpm test:focus browser schedule.spec.ts`
+and `pnpm test:entry-foundations`, then run full workspace/browser/baseline gates.
+Scoring/live rehearsal and human release evidence remain separate.
+
 P5-SUBMISSION/S12 adds `submission.test.tsx` for strict review fingerprints and
 typed recovery destinations, and representative submission cases in
 `entries.spec.ts`. The existing `performances.spec.ts` owns shared organizer

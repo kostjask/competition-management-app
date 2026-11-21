@@ -42,6 +42,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | --- | --- | --- |
 | Auth | /auth; see contract for account/session/recovery/onboarding/preferences operations | [Auth](api/auth.md) |
 | Events | /events; /events/:eventId | [Events](api/events.md) |
+| Schedule | /events/:eventId/schedule; /preview and /commands | [Session queues](api/schedule.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
 | Application estimates | PATCH /events/:eventId/studio-registrations/:studioId/estimates; history in registration /review | [Planning estimates](api/registrations.md#planning-estimates) |
 | Private music | Revisioned policy/preparation, multipart replacement, current-version private ranges and separate acceptance/correction | [Music](api/music.md) |

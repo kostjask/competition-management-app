@@ -1,12 +1,14 @@
 # Live-operation decisions before P6 implementation
 
-Prepared 2026-11-19 for the next queued P6-LIVE-MODEL task. **Proposal, not an
-accepted architecture or implemented behavior.** Extend
-[ADR-003](adr/003-registration-lifecycle.md) after these choices are settled.
+Prepared 2026-11-19; the user accepted the recommended first implementation on
+2026-11-21. [ADR-030](adr/030-session-queues.md) extends
+[ADR-003](adr/003-registration-lifecycle.md) with the accepted model and scoring
+readiness boundary. [The schedule contract](api/schedule.md) owns implemented
+commands and S13; this brief retains the decision context, not a parallel status list.
 [The competition roadmap](roadmap/competition.md) retains ownership of model,
 scheduling, moderation, scoring and recovery work.
 
-## Current implementation
+## Implementation when proposed (2026-11-19)
 
 The database supports PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW,
 FINALIZED, ENDED and CANCELLED. The current lifecycle deliberately refuses
@@ -32,10 +34,11 @@ or imply that unimplemented scores are safely finalized.
 | Live editing | Pause the affected queue before order changes; use expected queue revision and immutable actor/body-bound receipts | Editing a running queue needs additional rules for current/next identity and judge drafts |
 | Reopen | Reasoned admin correction preserves prior slots/actions; score/result consequences must be defined with the scoring model | Implicitly unlocking submitted sheets would cross the unaccepted scoring/publication boundary |
 
-These choices materially change domain behavior and storage. Confirm queue
-topology, moderator authority and skip/advance policy before accepting the ADR
-and adding dependent migrations or S13/S14 controls. The recommendation uses
-transactional HTTP first, not real-time delivery or offline mutation promises.
+These choices materially change domain behavior and storage. The explicit user
+decision authorizes ADR-030 and its dependent model/S13 implementation. It uses
+transactional HTTP first. START/ADVANCE and entry into LIVE/finalization fail closed
+pending scoring readiness; skip pauses before another current slot is selected.
+No real-time or offline mutation promise is introduced.
 
 ## Implementation and acceptance after the decision
 
@@ -53,5 +56,5 @@ receipt. Define pause/current/next/reconnect behavior before the UI claims it.
 S13/S14 must show current identity, saved queue revision and acknowledged state,
 with accessible move controls alongside any drag interaction. Use the locked
 Cobalt system and ET/EN/RU; add concurrent/repeated/stale/cross-event/removed-staff
-and manual-recovery checks. This brief does not close P6-LIVE-MODEL,
-P6-RECOVERY, P6-UI-LIVE or any M5 gate.
+and manual-recovery checks. The roadmap owns completion. P6-RECOVERY, remaining
+S14/S15 UI and M5 gates require their own scoring/venue/release evidence.
