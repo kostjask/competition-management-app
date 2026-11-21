@@ -155,7 +155,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S12 | I `/admin/events/:eventId/performances`; P `/events/:id/studios/:studioId/review` | Organizer ownership/history/draft/details/configuration/checkpoint review/withdraw/restore delivered locally; representative checklist remains P5-SUBMISSION |
 | S13 | `/admin/events/:eventId/schedule` | Local P6-SCHEDULE ledger at the `/app` base; venue/human release gates remain open |
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
-| S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
+| S15 | `/app/judge`, `/app/judge/events/:eventId/score` | P6-JUDGE with local ADR-031 judge reconnect; venue rehearsal remains open |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 | S18 | I isolated studio public entry `/et`, `/en`, `/ru` and content suffixes; P target host | P4-STUDIO-PAGES local consumer; host/release remains gated |
@@ -270,8 +270,9 @@ visible interaction feedback within 100ms; a labeled wait state for operations
 exceeding 1s; longer waits expose recovery without false completion. Target LCP
 ≤2.5s, INP ≤200ms, CLS ≤0.1 at the 75th percentile for released pages. Proposed
 live draft acknowledgement target ≤1s and queue freshness ≤2s on the agreed venue
-network; P6-RECOVERY must decide transport, staleness threshold and fallback before
-release. These are targets, not measured guarantees or a timeout/retry policy.
+network. [ADR-031](adr/031-live-scoring-reconnect.md) defines local S15 polling,
+staleness and retry behavior. P6-RECOVERY still owns venue measurement and manual
+fallback before release.
 Lazy-load feature sections, reserve image dimensions, paginate large admin data,
 avoid fetching full rosters for public summaries, and keep live updates from
 reordering a control under a pointer. Record test device/network/data volume.
@@ -307,7 +308,7 @@ Record substantial decisions in their owning ADR before dependent schema/code.
 | UX-D06 Entries/history | ADR-023/024/025 implement immutable revisions, nullable drafts, studio checkpoints/receipts, corrections and retained withdrawal/restore/resubmission. Cross-event shared roster identity retains ADR-001 gates. | P3-HISTORY/ENTRIES locally complete; representative consumers remain P5-ENTRIES/SUBMISSION |
 | UX-D07 Eligibility/media | ADR-023 event-local completed age and ADR-025 any-older percentage/category limits are enforced by checkpoint backend. Public CMS assets and private music are separate consumers. | P3-ENTRIES/MUSIC-MODEL and P8-MEDIA/P5-MUSIC delivered locally; ADR-029 owns private music; ADR-026 owns public assets; external release gates remain |
 | UX-D08 Staff authority | ADR-013/017/018 select global-admin staff management with explicit event scope and retained offboarding. Studio inviter/member extension remains P5-MEMBERS; separate stage authority remains a live-model decision. | Staff model/UI delivered locally; member/live extensions retain their own gates |
-| UX-D09 Live/recovery | Single/multiple stages/sessions, transition authority, offline blocked versus durable queued drafts, freshness thresholds and manual fallback; recommend acknowledged online operations first, explicit read-only offline status until reconciled. | ADR-003 live portion/P6-RECOVERY before live UI promises |
+| UX-D09 Live/recovery | ADR-030 owns stage/session authority. ADR-031 selects acknowledged HTTP, in-tab drafts, read-only stale/offline state and exact-operation reconciliation for S15. | Judge behavior is local; P6-MODERATOR/RECOVERY own remaining console, fallback and rehearsal |
 | UX-D10 Scoring/publication | Rubric precision/rounding/ties/penalties, peer visibility, lock/reopen authority and correction publication; recommend exact versioned rules and explicit final submission/publication. | ADR-004/P6-SCORING-MODEL before score/results implementation |
 
 ## Slice acceptance and next implementation

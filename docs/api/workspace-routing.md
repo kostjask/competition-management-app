@@ -14,7 +14,8 @@ implemented legacy and canonical destinations and outputs one canonical `/app`
 path. `routerReturnPath` adapts those values at the router boundary. Unsupported
 destinations fall back to `/app`; absolute URLs, encoded separators, traversal,
 fragments, duplicate prefixes and unsupported queries fail validation. Existing
-bounded `studio` selections remain supported. Unsuitable view-filter queries are
+bounded `studio` selections remain supported. The assigned judge score route is
+allowlisted by exact pathname. Unsuitable view-filter queries are
 omitted when generating a sign-in return; the implemented editor path is retained.
 
 Onboarding returns and newly rendered transactional mail use canonical paths.

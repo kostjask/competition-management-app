@@ -19,9 +19,10 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   const moderatorRole = await client.role.findUniqueOrThrow({ where: { key: 'moderator' } });
   await client.userRole.create({ data: { userId: moderator.id, roleId: moderatorRole.id, eventId: event.id } });
   const modToken = await login(baseUrl, moderator.email);
-  const req = async (url, method = 'GET', body, token = adminToken) => { const r = await fetch(`${baseUrl}/api/v1${url}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) }); return { status: r.status, body: await r.json() }; };
+  const req = async (url, method = 'GET', body, token = adminToken) => { const r = await fetch(`${baseUrl}/api/v1${url}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) }); return { status: r.status, body: await r.json(), cacheControl: r.headers.get('cache-control') }; };
   const prefix = `/events/${event.id}`, url = prefix + '/scoring';
   const read = async (token = adminToken) => { const r = await req(url, 'GET', undefined, token); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
+  const judgeRead = (token, operationId) => req(url + '/judge' + (operationId ? '?operationId=' + operationId : ''), 'GET', undefined, token);
   const command = async (body, token = adminToken) => req(url + '/commands', 'POST', { operationId: randomUUID(), expectedRevision: (await read()).revision, ...body }, token);
   const preview = async setup => { const r = await req(url + '/preview', 'POST', { expectedRevision: (await read()).revision, setup }); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
   const config = async setup => { const p = await preview(setup); const body = { action: 'CONFIGURE', setup, previewToken: p.previewToken, expectedRevision: p.revision, operationId: randomUUID() }; return { result: await req(url + '/commands', 'POST', body), body }; };
@@ -67,10 +68,22 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   assert.equal((await stage('LIVE')).status, 409, 'Live entry rechecks current source eligibility, not only rubric readiness');
   await client.studio.update({ where: { id: studio.id }, data: { approvalStatus: 'APPROVED' } });
   assert.equal((await stage('LIVE')).status, 200);
+  assert.equal((await judgeRead(adminToken)).status, 403);
+  assert.equal((await judgeRead(modToken)).status, 403);
+  assert.equal((await judgeRead(judges[0].token, 'invalid')).status, 400);
+  assert.equal((await req(url + '/judge?operationId=' + randomUUID() + '&operationId=' + randomUUID(), 'GET', undefined, judges[0].token)).status, 400);
+  assert.equal((await req(`/events/${other.id}/scoring/judge`, 'GET', undefined, judges[0].token)).status, 403);
+  assert.deepEqual((await judgeRead(judges[0].token)).body.sheets, []);
   const schedule = async (action, token = adminToken, reason) => { const s = (await req(prefix + '/schedule')).body; const session = s.sessions.find(s => s.id === sessionId); return req(prefix + '/schedule/commands', 'POST', { action, operationId: randomUUID(), expectedRevision: s.revision, sessionId, expectedSlotId: session.slots.find(s => s.state === 'CURRENT')?.id ?? null, ...(reason && { reason }) }, token); };
   assert.equal((await schedule('START', modToken)).status, 200);
   assert.equal((await read()).sheets.length, 2);
   const own = (await read(judges[0].token)).sheets[0]; assert.equal((await read(judges[0].token)).sheets.length, 1); assert.equal((await read(modToken)).sheets.length, 0);
+  const liveView = await judgeRead(judges[0].token);
+  assert.equal(liveView.status, 200); assert.equal(liveView.cacheControl, 'no-store');
+  assert.deepEqual(liveView.body.sheets.map(s => s.id), [own.id]);
+  assert.equal(liveView.body.sheets[0].writable, true); assert.equal(liveView.body.sheets[0].current, true);
+  assert.equal(liveView.body.sheets[0].rubric.criteria[0].id, criterionId);
+  assert.equal(liveView.body.sheets[0].stageName, 'Stage');
   assert.equal(JSON.stringify(await read(judges[0].token)).includes('Private'), false);
   const submit = async (judge, value, overrides = {}) => { const s = (await read(judge.token)).sheets.find(s => s.performanceId === performances[0]); return command({ action: 'SUBMIT', sheetId: s.id, expectedRevision: s.revision, values: [{ criterionId, value, comment: null }], ...overrides }, judge.token); };
   assert.equal((await command({ action: 'DRAFT', sheetId: own.id, expectedRevision: own.revision, values: [] }, judges[1].token)).status, 403);
@@ -86,10 +99,17 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   const extraAdmin = await client.userRole.create({ data: { userId: judges[0].userId, roleId: adminRole.id } });
   const submitted = await req(url + '/commands', 'POST', firstBody, judges[0].token); assert.equal(submitted.status, 200);
   assert.equal(submitted.body.workspace.sheets.length, 1, 'A judge-write receipt never includes administrative peer data');
+  const submittedView = (await judgeRead(judges[0].token, firstBody.operationId)).body;
+  assert.deepEqual(submittedView.sheets.map(s => s.id), [own.id], 'An admin who judges reads only their own score sheet here');
+  assert.equal(submittedView.sheets[0].writable, false); assert.equal(submittedView.sheets[0].values[0].value, '0.000');
+  assert.equal(submittedView.acknowledgement.revision, currentOwn.revision + 1);
+  assert.equal(submittedView.acknowledgement.action, 'SUBMIT');
+  assert.equal((await judgeRead(judges[1].token, firstBody.operationId)).body.acknowledgement, null);
   await client.userRole.update({ where: { id: extraAdmin.id }, data: { removedAt: new Date() } });
   const replayed = await req(url + '/commands', 'POST', firstBody, judges[0].token); assert.equal(replayed.status, 200); assert.equal(replayed.body.workspace.sheets.length, 1);
   await client.userRole.update({ where: { id: judges[0].assignment.id }, data: { removedAt: new Date() } });
   assert.equal((await req(url + '/commands', 'POST', firstBody, judges[0].token)).status, 403);
+  assert.equal((await judgeRead(judges[0].token, firstBody.operationId)).status, 403);
   await client.userRole.update({ where: { id: judges[0].assignment.id }, data: { removedAt: null } });
   assert.equal((await submit(judges[0], '5')).status, 403);
   await assert.rejects(client.scoringValue.update({ where: { sheetId_criterionId: { sheetId: own.id, criterionId } }, data: { value: 5000 } }));
@@ -114,6 +134,10 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   assert.equal(adjustment.request.penalty, '1.125');
   assert.equal((await schedule('START', modToken)).status, 200);
   assert.equal((await schedule('ADVANCE', modToken)).status, 200);
+  const advancedView = (await judgeRead(judges[0].token, firstBody.operationId)).body;
+  assert.equal(advancedView.acknowledgement.revision, firstBody.expectedRevision + 1, 'Receipt lookup follows the original sheet after the queue advances');
+  assert.equal(advancedView.sheets.find(s => s.id === own.id).current, false);
+  assert.equal(advancedView.sheets.find(s => s.performanceId === performances[1]).writable, true);
   assert.equal((await schedule('ADVANCE_OVERRIDE', modToken, 'Denied override')).status, 403);
   assert.equal((await schedule('ADVANCE_OVERRIDE', adminToken, 'Synthetic manual continuation')).status, 200);
   assert.equal((await stage('FINALIZED')).status, 409, 'Override never makes missing sheets complete');
@@ -121,6 +145,9 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   for (const judge of judges) {
     const pending = (await read(judge.token)).sheets.find(s => s.performanceId === performances[1]);
     assert.equal((await command({ action: 'REOPEN', sheetId: pending.id, expectedRevision: pending.revision, reason: 'Complete the missing sheet after manual continuation' })).status, 200);
+    const view = (await judgeRead(judge.token)).body.sheets.find(s => s.id === pending.id);
+    assert.equal(view.current, false); assert.equal(view.writable, true);
+    assert.equal(view.reopenReason, 'Complete the missing sheet after manual continuation');
     assert.equal((await command({ action: 'SUBMIT', sheetId: pending.id, expectedRevision: pending.revision + 1, values: [{ criterionId, value: '5', comment: null }] }, judge.token)).status, 200);
   }
   const receipt = await client.scoringOperation.findFirstOrThrow({ where: { eventId: event.id } });

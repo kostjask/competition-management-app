@@ -47,13 +47,13 @@ This delivers the setup portion of P6-UI-LIVE; S14/S15 remain their owning tasks
 
 ## S15 — Judge scoring
 
-- **Purpose / roles / route:** accurately submit own assigned sheet; event judge with matching Judge/assignment; proposed `/judge/events/:id/score`, `/judge` landing.
+- **Purpose / roles / route:** accurately submit own assigned sheet; event judge with matching Judge/assignment; `/app/judge/events/:eventId/score` and `/app/judge` landing.
 - **Primary action:** score criteria and explicitly submit final sheet.
 - **Data:** assigned current performance, versioned rubric/ranges/steps, own draft/revision, save status and lock/correction authority.
 - **Sections / components:** stable performance identity, criterion labels/instructions and exact numeric inputs, progress, acknowledgement time, review/submit, lock and connection banners.
 - **States:** no assignment/waiting, loading rubric, incomplete/invalid, unsaved/saving/saved/failed, submitting/uncertain/submitted/locked, offline/reconnect, correction reopened.
 - **Responsive / accessibility:** touch-first one-column criteria, desktop optional summary; no slider-only scoring or forced orientation; label/range/error per criterion, numeric keypad where appropriate, deliberate focus when performance changes.
-- **API:** pending P6 scoring/assignment/draft/submit/lock/reopen contracts and ADR-004.
+- **API:** [own-sheet reads and acknowledged commands](../api/scoring.md) under [ADR-004](../adr/004-exact-scoring.md). [ADR-031](../adr/031-live-scoring-reconnect.md) owns stale reads, in-tab edits and exact retry decisions.
 - **Acceptance:** zero differs from missing; debounce alone never proves save; reconnect reconciles versions before advance; peers hidden under agreed policy; acknowledgement survives reload. F09.
 
 ## S16 — Results review and public results

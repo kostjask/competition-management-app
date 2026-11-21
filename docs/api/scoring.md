@@ -9,6 +9,7 @@ Float rows are unchanged and excluded from new calculations.
 | Operation | Endpoint | Authority |
 | --- | --- | --- |
 | Current scoring workspace | GET `/events/:eventId/scoring` | Global admin, current assigned event judge, or assigned moderator |
+| Own judge sheets and optional operation acknowledgement | GET `/events/:eventId/scoring/judge` | Active event judge with matching Judge identity and `score.submit` |
 | Validate proposed rubric/category/panel setup | POST `/events/:eventId/scoring/preview` | Global admin |
 | Acknowledged configuration/sheet/correction/calculation command | POST `/events/:eventId/scoring/commands` | Current operation-specific authority below |
 
@@ -32,6 +33,16 @@ endpoint or public result DTO is added.
 Judge-write receipts contain only the caller's assigned sheets even when that
 account also has administrator/moderator authority. Later loss of an additional
 role therefore cannot expose peer data through historical receipt replay.
+
+The judge-specific read is always own-sheet-only, including for accounts with
+an additional administrator/moderator role. It returns event name, own sheets
+with their session and stage names, current/editable flags, frozen rubric and
+values, latest saved revision time and any reason for reopening the draft. A
+strict optional `operationId` UUID query returns a matching DRAFT/SUBMIT
+acknowledgement with operation ID, sheet ID, action, sheet revision and receipt
+time, or `null`. This lookup is scoped to the event/actor and current judge
+identity. It does not return peer data or depend on the workspace's recent 20
+receipts. Unknown, foreign or uncommitted operations have the same empty lookup.
 
 ## Configuration and readiness
 
@@ -121,8 +132,15 @@ network errors, session restoration and canceled navigation; browser reload does
 not persist unsaved edits. Server comparison never replaces drafts automatically.
 Receipts acknowledge their historical revision; a later current read is separate.
 
-The backend now enforces START/ADVANCE readiness and finalization completeness
-under [the schedule contract](schedule.md). S14/S15 and the venue/reconnect/manual
-fallback rehearsal remain P6-MODERATOR/JUDGE/RECOVERY. Event setup keeps its live
+The judge consumer is `/app/judge/events/:eventId/score`, reached from the judge
+event list. [ADR-031](../adr/031-live-scoring-reconnect.md) owns polling, stale
+reads, in-tab drafts and server-first operation reconciliation. It uses the
+existing DRAFT/SUBMIT command path. An exact receipt and the latest sheet state
+are distinct, so a historical submission acknowledgement can coexist with a
+newly reopened server sheet.
+
+The backend enforces START/ADVANCE readiness and finalization completeness
+under [the schedule contract](schedule.md). S14 and the venue/manual fallback
+rehearsal remain P6-MODERATOR/RECOVERY. Event setup keeps its live
 start/finalization UI disabled pending those owning workflows. No result is
 published by submission, event finalization, CMS publication or this setup UI.

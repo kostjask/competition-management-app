@@ -1,0 +1,35 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: frozen rubric and acknowledged sheet · v2.0.0 */
+/* Hallmark · pre-emit critique: prioritize the stage and performance identity without pushing score inputs below connection controls. */
+/* Hallmark · finish review: in-thread. Moved performance identity ahead of connection controls on phones and kept one main landmark. Both recaptured. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+
+.judge-workbench { max-width: 54rem; margin-inline: auto; padding: var(--space-lg); }
+.judge-header { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-md) var(--space-column); }
+.judge-header p, .judge-progress, .judge-fact { margin-block: var(--space-2xs) var(--space-xs); }
+.judge-fact { color: var(--color-ink-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.judge-back { display: inline-flex; min-height: 44px; align-items: center; color: var(--color-accent-deep); text-decoration: underline; }
+.judge-sheet { margin-block: var(--space-md) var(--space-lg); padding-block-start: var(--space-md); border-block-start: 2px solid var(--color-ink); }
+.judge-performance { margin-block-start: var(--space-md); }
+.judge-ledger { list-style: none; padding: 0; margin-block: var(--space-sm); }
+.judge-ledger > * { border-block-start: 1px solid var(--color-rule-2); padding-block: var(--space-md); overflow-wrap: anywhere; }
+.judge-ledger > :last-child { border-block-end: 1px solid var(--color-rule-2); }
+.judge-ledger .ui-field + .ui-field { margin-block-start: var(--space-md); }
+.judge-ledger .ui-input[inputmode="decimal"] { max-width: 12rem; font-variant-numeric: tabular-nums; }
+.judge-ledger textarea { resize: vertical; }
+.judge-picker, .judge-rubric, .judge-review { margin-block-start: var(--space-lg); }
+.judge-rubric .ui-help { overflow-wrap: anywhere; }
+.judge-compare, .judge-confirm { margin-block: var(--space-lg); padding: var(--space-md); background: var(--color-paper-2); border-inline-start: 2px solid var(--color-accent); }
+.judge-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block-start: var(--space-sm); }
+.judge-workbench :is(button, input, select, textarea, a) { min-height: 44px; }
+.judge-workbench :focus-visible, .judge-workbench [tabindex="-1"]:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.judge-workbench .ui-button:active:not(:disabled) { transform: translateY(1px); }
+.judge-workbench :is(button, select):disabled { color: var(--color-ink-2); background: var(--color-paper-2); cursor: not-allowed; }
+@media (pointer: coarse) {
+  .judge-workbench :is(button, input, select, textarea, a) { min-height: 48px; }
+}
+@media (max-width: 40rem) {
+  .judge-workbench { padding: var(--space-md); }
+  .judge-header { grid-template-columns: minmax(0, 1fr); }
+  .judge-ledger .ui-input[inputmode="decimal"] { max-width: none; }
+}

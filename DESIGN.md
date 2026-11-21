@@ -46,6 +46,15 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+S15 extends Cobalt to a judge's assigned-sheet ledger. The current performance
+and stage sit ahead of the connection controls on phones. A ruled frozen rubric
+uses exact native inputs, stable text feedback and a separate lock confirmation.
+Local, acknowledged and changed revisions stay visible through read-only
+connection recovery. The sheet comparison retains the local values and comments
+as entered. There are no material slots. The existing shell supplies the main
+landmark and account navigation. Human language and assistive review remain
+release gates.
+
 P6-SCHEDULE/S13 extends Cobalt with a stage/session selector, paused queue ledger,
 explicit native moves/destinations and source-bound timing preview. Aligned desktop
 columns become labelled sequential phone rows. Confirmation, acknowledged revision,

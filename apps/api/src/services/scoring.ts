@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { Prisma } from "@prisma/client";
-import { ScoringSetupInputSchema, ScoringWorkspaceSchema, ScoringPreviewSchema, ScoringReceiptSchema, scoringUnits, scoringDecimal, type ScoringSetupInput, type ScoringCommand, type ScoringWorkspace } from "@dance/schemas";
+import { JudgeScoringCommandSchema, JudgeScoringWorkspaceSchema, ScoringSetupInputSchema, ScoringWorkspaceSchema, ScoringPreviewSchema, ScoringReceiptSchema, scoringUnits, scoringDecimal, scoreFitsRange, type ScoringSetupInput, type ScoringCommand, type ScoringWorkspace } from "@dance/schemas";
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "../errors";
 import { appendAudit } from "./audit";
 import { exactTotal } from "./scoringMath";
@@ -11,11 +11,16 @@ const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(valu
 const conflict = () => new ConflictError("Compare current scoring state before retrying", undefined, "concurrentChange");
 const invalid = () => new ConflictError("Scoring prerequisites are incomplete", undefined, "invalidConfiguration");
 const judgeEligible = (roles: Awaited<ReturnType<typeof roleSources>>, userId: string) => roles.some(r => r.userId === userId && r.role.key === "judge" && r.role.permissions.some(p => p.permission.key === "score.submit"));
-const roleSources = (db: DB, eventId: string) => db.userRole.findMany({ where: { eventId, removedAt: null, user: { active: true, emailVerified: true } }, include: { role: { include: { permissions: { include: { permission: true } } } } } });
+const roleSources = (db: DB, eventId: string, userId?: string) => db.userRole.findMany({ where: { eventId, ...(userId !== undefined && { userId }), removedAt: null, user: { active: true, emailVerified: true } }, include: { role: { include: { permissions: { include: { permission: true } } } } } });
+const serializeCriterion = (c: { id: string; label: Prisma.JsonValue; instructions: Prisma.JsonValue; min: number; max: number; step: number; weightBps: number }) => ({
+  id: c.id, label: c.label, instructions: c.instructions, min: scoringDecimal(c.min), max: scoringDecimal(c.max), step: scoringDecimal(c.step), weightBps: c.weightBps,
+});
+const serializeValue = (v: { criterionId: string; value: number; comment: string | null }) => ({ criterionId: v.criterionId, value: scoringDecimal(v.value), comment: v.comment });
+const judgeCanEdit = (current: boolean, sessionState: string, reopenReason: string | null) => current || (sessionState === "PAUSED" && reopenReason !== null);
 async function authority(db: DB, actor: ScoringActor, eventId: string) {
   if (!await db.user.findFirst({ where: { id: actor.id, sessionVersion: actor.sessionVersion, active: true, emailVerified: true }, select: { id: true } })) throw new UnauthorizedError();
   const admin = !!await db.userRole.findFirst({ where: { userId: actor.id, eventId: null, removedAt: null, role: { key: "admin" } } });
-  const roles = await roleSources(db, eventId);
+  const roles = await roleSources(db, eventId, actor.id);
   const judge = await db.judge.findUnique({ where: { userId_eventId: { userId: actor.id, eventId } } });
   const canJudge = !!judge && judgeEligible(roles, actor.id);
   const moderator = roles.some(r => r.userId === actor.id && r.role.key !== "admin" && r.role.permissions.some(p => p.permission.key === "stage.manage"));
@@ -36,7 +41,7 @@ async function sources(db: DB, eventId: string) {
     roleSources(db, eventId),
     db.scoringRecord.findMany({ where: { eventId }, include: { sheets: { include: { values: { orderBy: { criterionId: "asc" } } }, orderBy: { judgeId: "asc" } }, performance: { select: { title: true } } }, orderBy: { id: "asc" } }),
   ]);
-  const setup = ScoringSetupInputSchema.parse({ templates: templates.map(t => ({ id: t.id, name: t.name, criteria: t.criteria.map(c => ({ id: c.id, label: c.label, instructions: c.instructions, min: scoringDecimal(c.min), max: scoringDecimal(c.max), step: scoringDecimal(c.step), weightBps: c.weightBps })) })),
+  const setup = ScoringSetupInputSchema.parse({ templates: templates.map(t => ({ id: t.id, name: t.name, criteria: t.criteria.map(serializeCriterion) })),
     bindings: bindings.map(b => ({ categoryId: b.categoryId, templateId: b.templateId })),
     panels: sessions.filter(s => panels.some(p => p.sessionId === s.id)).map(s => ({ sessionId: s.id, judgeIds: panels.filter(p => p.sessionId === s.id).map(p => p.judgeId) })) });
   return { event, revision: head?.revision ?? 0, templates, setup, categories, sessions, judges, roles, records };
@@ -66,12 +71,49 @@ async function workspace(db: DB, data: Sources, actor: ScoringActor, access: Awa
     blockers: access.admin ? blockers(data) : [],
     sheets: records.flatMap(r => r.sheets.filter(s => access.admin || s.judgeId === access.judgeId).map(s => ({ id: s.id, recordId: r.id, performanceId: r.performanceId, title: r.performance.title,
       judgeId: s.judgeId, templateId: s.templateId, revision: s.revision, state: s.state, submittedAt: s.submittedAt?.toISOString() ?? null,
-      values: s.values.map(v => ({ criterionId: v.criterionId, value: scoringDecimal(v.value), comment: v.comment })) }))),
+      values: s.values.map(serializeValue) }))),
     completion: records.filter(r => access.admin || access.moderator && data.sessions.some(s => s.id === r.sessionId && s.moderatorId === actor.id)).map(r => ({ recordId: r.id, performanceId: r.performanceId, required: r.sheets.length, submitted: r.sheets.filter(s => s.state === "LOCKED").length })),
     receipts: receipts.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })) });
 }
 export async function readScoring(db: DB, actor: ScoringActor, eventId: string) {
   const access = await authority(db, actor, eventId); return workspace(db, await sources(db, eventId), actor, access);
+}
+export async function readJudgeScoring(db: DB, actor: ScoringActor, eventId: string, operationId?: string) {
+  const { judgeId } = await authority(db, actor, eventId);
+  if (!judgeId) throw new ForbiddenError();
+  const [event, sheets, currentSlots, operation] = await Promise.all([
+    db.event.findUniqueOrThrow({ where: { id: eventId }, select: { name: true, stage: true } }),
+    db.scoringSheet.findMany({ where: { eventId, judgeId, record: { performance: { deletedAt: null } } }, include: {
+      record: { select: { performanceId: true, sessionId: true, performance: { select: { title: true } },
+        session: { select: { name: true, state: true, stage: { select: { name: true } } } },
+        template: { select: { id: true, name: true, criteria: { orderBy: { position: "asc" } } } },
+      } },
+      values: { orderBy: { criterionId: "asc" } },
+      versions: { orderBy: { revision: "desc" }, take: 1, select: { createdAt: true } },
+    }, orderBy: { id: "asc" } }),
+    db.scheduleSlot.findMany({ where: { eventId, state: "CURRENT" }, select: { sessionId: true, performanceId: true } }),
+    operationId ? db.scoringOperation.findFirst({ where: { operationId, eventId, actorId: actor.id, action: { in: ["DRAFT", "SUBMIT"] } }, select: { operationId: true, request: true, createdAt: true } }) : null,
+  ]);
+  const reopenVersions = await db.scoringSheetVersion.findMany({
+    where: { reason: { not: null }, sheet: { judgeId, eventId, state: "DRAFT" } },
+    orderBy: { revision: "desc" }, distinct: ["sheetId"], select: { sheetId: true, reason: true },
+  });
+  const command = operation ? JudgeScoringCommandSchema.parse(operation.request) : null;
+  const acknowledgement = operation && command && sheets.some(s => s.id === command.sheetId) ? {
+    operationId: operation.operationId, action: command.action, sheetId: command.sheetId, revision: command.expectedRevision + 1, createdAt: operation.createdAt.toISOString(),
+  } : null;
+  return JudgeScoringWorkspaceSchema.parse({ eventId, eventName: event.name, acknowledgement, sheets: sheets.map(sheet => {
+    const { record } = sheet;
+    const { template } = record;
+    const current = currentSlots.some(slot => slot.sessionId === record.sessionId && slot.performanceId === record.performanceId);
+    const reopenReason = reopenVersions.find(version => version.sheetId === sheet.id)?.reason ?? null;
+    return { id: sheet.id, performanceId: record.performanceId, title: record.performance.title, revision: sheet.revision, state: sheet.state,
+      current, writable: event.stage === "LIVE" && sheet.state === "DRAFT" && judgeCanEdit(current, record.session.state, reopenReason),
+      sessionName: record.session.name, stageName: record.session.stage.name, reopenReason, submittedAt: sheet.submittedAt?.toISOString() ?? null,
+      savedAt: sheet.versions[0]?.createdAt.toISOString(), rubric: { id: template.id, name: template.name, criteria: template.criteria.map(serializeCriterion) },
+      values: sheet.values.map(serializeValue),
+    };
+  }) });
 }
 function validateSetup(data: Sources, setup: ScoringSetupInput) {
   if (!["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW", "SCHEDULED", "LIVE"].includes(data.event.stage) || data.sessions.some(s => s.state === "RUNNING")) throw new ForbiddenError("Pause queues before configuring scoring", "stageLocked");
@@ -116,9 +158,9 @@ export async function scoringComplete(db: DB, eventId: string, performanceId: st
 }
 export async function commandScoring(db: DB, actor: ScoringActor, eventId: string, command: ScoringCommand) {
   const access = await authority(db, actor, eventId);
-  const sheet = "sheetId" in command ? await db.scoringSheet.findFirst({ where: { id: command.sheetId, eventId }, include: { record: { include: { session: true } } } }) : null;
+  const sheet = "sheetId" in command ? await db.scoringSheet.findFirst({ where: { id: command.sheetId, eventId }, include: { record: { include: { session: true, performance: { select: { deletedAt: true } } } } } }) : null;
   if ("sheetId" in command && !sheet) throw new NotFoundError("Score sheet");
-  if (command.action === "DRAFT" || command.action === "SUBMIT") { if (!sheet || sheet.judgeId !== access.judgeId) throw new ForbiddenError(); }
+  if (command.action === "DRAFT" || command.action === "SUBMIT") { if (!sheet || sheet.judgeId !== access.judgeId || sheet.record.performance.deletedAt) throw new ForbiddenError(); }
   else if (!access.admin) throw new ForbiddenError();
   const digest = hash([actor.id, eventId, command]);
   const replay = await db.scoringOperation.findUnique({ where: { operationId: command.operationId } });
@@ -141,11 +183,11 @@ export async function commandScoring(db: DB, actor: ScoringActor, eventId: strin
     if (!sheet || sheet.state !== "DRAFT") throw new ForbiddenError("Submitted sheets are locked", "stageLocked");
     const current = await db.scheduleSlot.findFirst({ where: { eventId, sessionId: sheet.record.sessionId, performanceId: sheet.record.performanceId, state: "CURRENT" } });
     // A reopened historical sheet may be corrected while paused; ordinary drafts require current identity.
-    const reopened = await db.scoringSheetVersion.findFirst({ where: { sheetId: sheet.id, reason: { not: null } } });
-    if (!current && !(sheet.record.session.state === "PAUSED" && reopened)) throw new ForbiddenError();
+    const reopened = await db.scoringSheetVersion.findFirst({ where: { sheetId: sheet.id, reason: { not: null } }, select: { reason: true } });
+    if (!judgeCanEdit(!!current, sheet.record.session.state, reopened?.reason ?? null)) throw new ForbiddenError();
     const criteria = data.templates.find(t => t.id === sheet.templateId)?.criteria ?? [];
     if (new Set(command.values.map(v => v.criterionId)).size !== command.values.length || command.action === "SUBMIT" && command.values.length !== criteria.length) throw invalid();
-    for (const value of command.values) { const c = criteria.find(row => row.id === value.criterionId); const units = scoringUnits(value.value); if (!c || units < c.min || units > c.max || (units - c.min) % c.step) throw invalid(); }
+    for (const value of command.values) { const c = criteria.find(row => row.id === value.criterionId); if (!c || !scoreFitsRange(scoringUnits(value.value), c.min, c.max, c.step)) throw invalid(); }
     await db.scoringValue.deleteMany({ where: { sheetId: sheet.id } });
     for (const value of command.values) await db.scoringValue.create({ data: { sheetId: sheet.id, templateId: sheet.templateId, criterionId: value.criterionId, value: scoringUnits(value.value), comment: value.comment } });
     await db.scoringSheet.update({ where: { id: sheet.id }, data: { revision: { increment: 1 }, state: command.action === "SUBMIT" ? "LOCKED" : "DRAFT", submittedAt: command.action === "SUBMIT" ? new Date() : null } });

@@ -48,6 +48,16 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P6-JUDGE/S15 and the judge portion of P6-RECOVERY use `judge.spec.ts` for the
+localized touch/keyboard workflow, score precision and zero, draft/submission
+acknowledgement, exact retry after a lost response, offline queue changes,
+same-account session recovery, corrections and denied reads. Run
+`pnpm test:focus browser judge.spec.ts` first. `check-scoring.cjs` also verifies
+the own-sheet/receipt HTTP projection against PostgreSQL, including a dual-role
+account, revoked authority and foreign receipt IDs. Use `pnpm test:entry-foundations`
+while editing, then run the full workspace, browser and database gates. S14,
+judge/moderator venue rehearsal and the fallback export remain separate.
+
 P6-SCORING-MODEL/P6-TEMPLATES use `scoring.test.cjs` for exact arithmetic, range,
 step, precision, weights, zero/missing and tie/return-path fixtures, and
 `scoring.spec.ts` for ET/EN/RU rubric/panel setup and retained recovery at

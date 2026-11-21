@@ -7,6 +7,7 @@ import { entryTranslations } from "./entryTranslations";
 import { musicTranslations } from "./musicTranslations";
 import { scheduleTranslations } from "./scheduleTranslations";
 import { scoringTranslations } from "./scoringTranslations";
+import { judgeTranslations } from "./judgeTranslations";
 import { contentTranslations } from "./contentTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
@@ -211,6 +212,7 @@ export const translations = {
     }
   },
   Judge: {
+    ...judgeTranslations,
     scoreTechnique: {
       et: 'Tehnika',
       en: 'Technique',

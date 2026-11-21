@@ -167,6 +167,7 @@ export function AppRoutes() {
                     </LazyWrapper>
                   }
                 />
+                <Route path="events/:eventId/score" element={<LazyWrapper><JudgeInterface /></LazyWrapper>} />
                 <Route path="*" element={<NotFound />} />
               </Route>
 

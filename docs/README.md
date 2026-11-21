@@ -34,7 +34,8 @@ requires that past result or rollout limitation.
 | Registration / domain | [Domain](DOMAIN.md), [workflow](REGISTRATION_API.md), ADR-001/003/019 | registration/studio controllers, schema.prisma |
 | Application estimates / private music | [Estimate contract](api/registrations.md#planning-estimates), [music contract](api/music.md), ADR-027/028/029 | application estimates; MusicController, music policy/content/storage services, shared contracts and S11 workbench |
 | Schedule / live model | [Schedule contract](api/schedule.md), [ADR-030](adr/030-session-queues.md), [S13/S14](ui/competition.md), [F07](flows/F07.md) | ScheduleController, schedule service, explicit stage/session/slot models, S13; ADR-004 now supplies backend scoring readiness |
-| Scoring / rubric setup | [Scoring contract](api/scoring.md), [ADR-004](adr/004-exact-scoring.md), [decision context](SCORING_MODEL_DECISIONS.md) | ScoringController, exact scoring services/shared schemas, immutable scoring models and organizer rubric/panel editor; S14/S15 and P7 remain downstream |
+| Scoring / rubric setup | [Scoring contract](api/scoring.md), [ADR-004](adr/004-exact-scoring.md), [decision context](SCORING_MODEL_DECISIONS.md) | ScoringController, exact scoring services/shared schemas, immutable scoring models and organizer rubric/panel editor; S14 and P7 remain downstream |
+| Judge scoring / reconnect | [S15](ui/competition.md#s15--judge-scoring), [F09](flows/F09.md), [ADR-031](adr/031-live-scoring-reconnect.md), [scoring contract](api/scoring.md) | Own judge projection, existing scoring commands, judge event list and frozen rubric editor; moderator and venue rehearsal remain downstream |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
@@ -89,12 +90,13 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [025](adr/025-entry-submission-lifecycle.md) | Accepted studio-wide checkpoints, any-older percentage, staged review/locks/reopening and event-adjustable rules; source questionnaire/images retained |
 | [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites and shared CMS; concrete revision/edition/asset/publication/locale/route design; no CRM/student system or runtime implementation |
 | [030](adr/030-session-queues.md) | Event-owned stages/sessions, stable slots, source-bound schedule revisions, moderator authority and scoring readiness gates |
+| [031](adr/031-live-scoring-reconnect.md) | Acknowledged HTTP judge drafts, read-only stale/offline state and exact-operation reconciliation |
 
 ADR-003/030 accept registration and session-queue lifecycle mappings; actual live
 operation remains gated on scoring and its rehearsal.
 ADR-004 scoring was accepted on 2026-11-21. [DOMAIN](DOMAIN.md#pending-model-decisions)
 and [the scoring contract](api/scoring.md) distinguish the implemented model/setup
-from downstream S14/S15 and P7. The [decision brief](SCORING_MODEL_DECISIONS.md)
+from S15 scoring and the downstream S14/P7 work. The [decision brief](SCORING_MODEL_DECISIONS.md)
 retains alternatives and the P6-SCORING-MODEL → P6-TEMPLATES organizer-UI boundary.
 
 ## History and compatibility

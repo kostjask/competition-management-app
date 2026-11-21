@@ -6,6 +6,15 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
+**Next local task: P6-MODERATOR/S14.** Start with a scoped assigned-session read
+for current and next performance plus judge completion counts, then connect the
+existing acknowledged stage commands and reasoned exceptions. S15 and the judge
+side of [ADR-031 reconnect](docs/adr/031-live-scoring-reconnect.md) are complete
+locally. [Judge validation](docs/JUDGE_VALIDATION.md) records the 452-case browser
+run, 12 final judge cases, full disposable PostgreSQL/API baseline, migration
+parity, workspace and Hallmark checks. Moderator recovery, operational fallback
+and venue/human rehearsal stay open.
+
 PR #12 CI repair (2026-11-21): the failed Workspace check was S20's delayed
 preview/document-switch browser case. Private preview results now retain their
 document/revision identity; request cleanup runs at the document commit. The
@@ -32,7 +41,6 @@ The user authorized completing and publishing the merge after automatic approval
 review requested explicit Git authorization. Hosted validation belongs to PR #13;
 no phase or release gate changes.
 
-**Next local task: P6-JUDGE/S15, beginning with its reconnect policy.**
 The user accepted the recommended [scoring policy](docs/SCORING_MODEL_DECISIONS.md)
 on 2026-11-21. [ADR-004](docs/adr/004-exact-scoring.md), additive migration 47 and
 [the scoring contract](docs/api/scoring.md) implement exact rubric versions,
@@ -41,9 +49,8 @@ private reproducible calculations. The organizer rubric/category/panel workbench
 includes ET/EN/RU, source-bound preview and exact-operation recovery.
 [Evidence](docs/SCORING_VALIDATION.md) records local completion of
 P6-SCORING-MODEL/P6-TEMPLATES: full API/migration/workspace checks, 440 full browser
-cases, 23 affected cases and clean Hallmark static/rendered review. The next
-concrete task is P6-JUDGE/S15, starting with its P6-RECOVERY reconnect policy
-before autosave/offline promises. S14/S15, P7 and M5 are not completed by setup.
+cases, 23 affected cases and clean Hallmark static/rendered review. S14, P7 and
+the venue and M5 release gates remain open.
 The user accepted the recommended [live policy](docs/LIVE_MODEL_DECISIONS.md) on
 2026-11-21. [ADR-030](docs/adr/030-session-queues.md), migration 46 and the
 [schedule contract](docs/api/schedule.md) implement explicit stages/sessions,
@@ -112,6 +119,12 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 Source, session scheduling and scoring reviewed locally on 2026-11-21. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
+- S15 is complete locally. `/app/judge` links to a private own-sheet workspace
+  with frozen rubrics, localized exact input, server-confirmed lock and corrections.
+  ADR-031 keeps unsaved drafts in the tab, reads exact receipts before retry and
+  protects the selected performance during stage or connection changes. Main and
+  `origin/main` matched at `5ef6e75`, including merged PR #13. No open PR or older
+  branch needed integration for S15. [Validation](docs/JUDGE_VALIDATION.md).
 - Integration review on 2026-11-21: fetched origin/main 6515dfd includes schedule
   PR #12 and has an identical tree to current branch HEAD f06194f. There are no
   open PRs; the current schedule tip and two older implementation tips are
@@ -139,7 +152,7 @@ their dates; no hosted or application-database state is inferred.
   moves, immutable acknowledgements and current moderator authority are tested.
   Organizer UI retains drafts through stale/uncertain/session recovery; print
   references all acknowledged queues. ADR-004 now supplies backend scoring readiness;
-  S14/S15 and venue/human/
+  S14 and venue/human/
   hosted release remain open. The canonical docs checker retains one pre-existing
   ignored PR scratch-link failure; repository docs pass when that scratch is excluded.
 - P6-SCORING-MODEL/P6-TEMPLATES are complete locally under ADR-004. Rubric/category
@@ -148,7 +161,7 @@ their dates; no hosted or application-database state is inferred.
   the ET/EN/RU organizer workbench are validated. LIVE entry rechecks current queue
   eligibility; normal advance/finalization require complete sheets, and reasoned
   admin overrides never fabricate completeness. [Evidence](docs/SCORING_VALIDATION.md).
-  S14/S15, P6-RECOVERY venue work, P7 and release gates remain open.
+  S14, P6-RECOVERY venue work, P7 and release gates remain open.
 - P3-PERFORMANCE-OWNER/CONSTRAINTS/HISTORY/CALENDAR-DATES/ENTRIES and
   P4-ENTRY-CONFIG are complete locally. Explicit immutable ownership, nullable
   unscheduled drafts, saved revisions, studio-wide BASIC/FINAL checkpoints,
@@ -261,7 +274,9 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 5 | P5-ENTRIES with P5-UI-ENTRIES S09/S10 — complete locally | Scoped roster and saved entry/participant drafts with recovery; S11/S12 are now complete locally in their owning slices |
 | 6 | P5-APPLICATION-ESTIMATES with S06/S08 — complete locally | Actual-day planning counts, revisioned owner adjustments and reasoned organizer correction; preserve M2 approvals |
 | 7 | P3-MUSIC-MODEL/P8-MEDIA/P5-MUSIC/P5-SUBMISSION — complete locally | Private music and S11/organizer review plus S12 checklist, receipts and scoped correction delivered; M3 release gates remain open |
-| 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks; next P6-JUDGE/S15 with reconnect policy, then moderator/recovery delivery; retain venue and M5 gates |
+| 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks |
+| 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
+| 10 | P6-MODERATOR/S14 — next | Scoped current/next queue and judge completion, then acknowledged controls and the remaining P6-RECOVERY fallback/rehearsal |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

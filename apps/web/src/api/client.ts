@@ -149,7 +149,7 @@ export const apiClient = {
     return result;
   },
   get: (endpoint: string, options?: Omit<RequestInit, "method" | "body">): Promise<unknown> => request(endpoint, { ...options, method: "GET" }),
-  post: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "POST", ...(body !== undefined && { body: JSON.stringify(body) }) }),
+  post: <TBody = unknown>(endpoint: string, body?: TBody, options?: Pick<RequestInit, "signal">): Promise<unknown> => request(endpoint, { ...options, method: "POST", ...(body !== undefined && { body: JSON.stringify(body) }) }),
   put: <TBody = unknown>(endpoint: string, body: TBody): Promise<unknown> => request(endpoint, { method: "PUT", body: JSON.stringify(body) }),
   patch: <TBody = unknown>(endpoint: string, body?: TBody): Promise<unknown> => request(endpoint, { method: "PATCH", ...(body !== undefined && { body: JSON.stringify(body) }) }),
   upload: (endpoint: string, body: FormData, headers?: Record<string, string>): Promise<unknown> => request(endpoint, { method: "POST", body, ...(headers && { headers }) }),

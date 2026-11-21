@@ -1,8 +1,8 @@
 # Development history
 
-Current scoring/model and organizer setup evidence:
-[P6 scoring validation](SCORING_VALIDATION.md). This records local technical
-checks separately from the still-open judge/moderator, venue and publication gates.
+Current scoring evidence includes [the model and organizer setup](SCORING_VALIDATION.md)
+and [S15 judge scoring and reconnect](JUDGE_VALIDATION.md). The moderator, venue
+and publication gates remain open.
 
 > Historical evidence. Read only to investigate a past change. Current priority/status:
 > [DEVELOPMENT_PLAN](../DEVELOPMENT_PLAN.md); runnable checks: [TESTING](TESTING.md).

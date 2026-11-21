@@ -1,7 +1,7 @@
 {
   "date": "2026-11-21",
   "scope": "app",
-  "task": "P6-LIVE-MODEL/P6-SCHEDULE S13",
+  "task": "P6-JUDGE/S15 and judge reconnect",
   "preserved": [
     "DESIGN.md locked Cobalt",
     "docs/DESIGN_SYSTEM.md accessibility and ET/EN/RU",
@@ -9,19 +9,19 @@
     "existing /app routes and shell"
   ],
   "introduced": [
-    "apps/web/src/pages/schedule/SchedulePage.tsx session queue ledger",
-    "native move controls and source-bound preview",
-    "separate draft/acknowledgement/receipt recovery"
+    "apps/web/src/pages/judge/JudgeInterface.tsx assigned sheet and frozen rubric",
+    "localized exact score inputs with explicit lock confirmation",
+    "separate local draft, server revision and operation recovery"
   ],
   "material": "Actual product data; synthetic browser fixtures; no image slots",
-  "audience": "Global organizer admin",
-  "use": "Save a validated session schedule",
+  "audience": "Assigned event judge",
+  "use": "Score and submit an assigned performance",
   "tone": "Restrained utilitarian",
   "evidence": [
     "DESIGN.md:1",
     "docs/DESIGN_SYSTEM.md:10",
     "apps/web/src/features/events/design/tokens.css:1",
-    "apps/web/src/pages/schedule/SchedulePage.tsx:1"
+    "apps/web/src/pages/judge/JudgeInterface.tsx:1"
   ],
   "previous": {
     "date": "2026-11-19",
