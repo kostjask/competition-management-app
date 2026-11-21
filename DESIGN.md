@@ -46,6 +46,16 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+S14 uses the locked Cobalt system for an assigned-session queue ledger.
+Stage and session, current performance and frozen-panel completion are the
+primary operational facts. The next performance is visible on all widths and
+up to three further positions appear on wider screens. Live controls precede
+exceptions, whose inline review keeps the target and reason together. A
+separate connection region shows the last read and keeps writes disabled
+through uncertain outcomes. The print handoff carries the acknowledged
+session facts and read time. The design uses real product fields, synthetic
+fixtures for verification and no image slots.
+
 S15 extends Cobalt to a judge's assigned-sheet ledger. The current performance
 and stage sit ahead of the connection controls on phones. A ruled frozen rubric
 uses exact native inputs, stable text feedback and a separate lock confirmation.

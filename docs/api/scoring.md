@@ -140,7 +140,10 @@ are distinct, so a historical submission acknowledgement can coexist with a
 newly reopened server sheet.
 
 The backend enforces START/ADVANCE readiness and finalization completeness
-under [the schedule contract](schedule.md). S14 and the venue/manual fallback
-rehearsal remain P6-MODERATOR/RECOVERY. Event setup keeps its live
-start/finalization UI disabled pending those owning workflows. No result is
-published by submission, event finalization, CMS publication or this setup UI.
+under [the schedule contract](schedule.md). S14 reads frozen-panel completion
+without values. An admin uses the scoring REOPEN command from the live console
+for a named sheet in a paused session, including an outstanding historical sheet.
+Event setup initiates LIVE through its existing revisioned stage transition.
+Finalization UI belongs to the results workflow. Venue/manual fallback rehearsal
+remains P6-RECOVERY. Submission, event finalization and CMS publication leave
+public results to the separate results publication workflow.

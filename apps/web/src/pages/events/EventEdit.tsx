@@ -26,6 +26,8 @@ function StageConfirmation({ event, target, busy, onCancel, onConfirm }: { event
   const { t } = useTranslation(); const dialog = useRef<HTMLDialogElement>(null); const cancel = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => { const element = dialog.current; element?.showModal(); cancel.current?.focus(); return () => element?.close(); }, []);
   const variant = target === "CANCELLED" ? "danger" : "primary";
+  const effect = target === "SCHEDULED" ? "Schedule.scheduleEffect" : target === "LIVE" ? "Moderator.liveEffect" :
+    event.stage === "SCHEDULED" && target === "DATA_REVIEW" ? "Schedule.reviewEffect" : "Setup.stageEffect";
   return <dialog ref={dialog} className="setup-dialog" aria-labelledby="stage-confirm-title" aria-describedby="stage-confirm-effect" onCancel={value => { value.preventDefault(); if (!busy) onCancel(); }} onKeyDown={value => {
     if (value.key !== "Tab") return;
     const buttons = value.currentTarget.querySelectorAll<HTMLButtonElement>("button:not(:disabled)");
@@ -34,7 +36,7 @@ function StageConfirmation({ event, target, busy, onCancel, onConfirm }: { event
     else if (value.shiftKey && document.activeElement === first) { value.preventDefault(); last?.focus(); }
     else if (!value.shiftKey && document.activeElement === last) { value.preventDefault(); first.focus(); }
   }}>
-    <h2 id="stage-confirm-title">{t("Setup.confirm")}</h2><p>{event.name}</p><p>{t(stageKey[event.stage])} → {t(stageKey[target])}</p><p id="stage-confirm-effect">{t(target === "SCHEDULED" ? "Schedule.scheduleEffect" : event.stage === "SCHEDULED" && target === "DATA_REVIEW" ? "Schedule.reviewEffect" : "Setup.stageEffect")}</p>
+    <h2 id="stage-confirm-title">{t("Setup.confirm")}</h2><p>{event.name}</p><p>{t(stageKey[event.stage])} → {t(stageKey[target])}</p><p id="stage-confirm-effect">{t(effect)}</p>
     <div className="ui-actions"><button ref={cancel} type="button" className="ui-button ui-button-secondary" disabled={busy} onClick={onCancel}>{t("Common.cancel")}</button><Button variant={variant} pending={busy} onClick={onConfirm}>{t("Setup.confirm")}</Button></div>
   </dialog>;
 }
@@ -89,11 +91,12 @@ function EventSetup({ id }: { id: string }) {
       <section><h2 ref={stageHeading} id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2><p>{t(stageKey[data.stage])}</p>{["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW"].includes(data.stage) && <p>{t("Setup.preHelp")}</p>}
         {dirty && <p>{t("Setup.saveFirst")}</p>}
         <div className="ui-actions">{eventStageTargets(data.stage).filter(stage => stage !== data.stage).map(stage => { const variant = stage === "CANCELLED" ? "danger" : "secondary"; return <Button key={stage} variant={variant}
-          disabled={disabled || dirty || ["LIVE", "FINALIZED"].includes(stage) || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
+          disabled={disabled || dirty || stage === "FINALIZED" || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
           {t(stageAction(data.stage, stage))}</Button>; })}</div>
-        {["SCHEDULED", "LIVE"].includes(data.stage) && <p>{t("Schedule.scoringNotReady")}</p>}
+        {data.stage === "LIVE" && <p>{t("Moderator.finalizationPending")}</p>}
         <Link to={`/admin/events/${encodeURIComponent(id)}/schedule`}>{t("Schedule.title")}</Link>
         <Link to={`/admin/events/${encodeURIComponent(id)}/scoring`}>{t("Scoring.title")}</Link>
+        <Link to={`/admin/events/${encodeURIComponent(id)}/live`}>{t("Moderator.title")}</Link>
       </section>
       </aside><div className="setup-editor"><EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
         submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}

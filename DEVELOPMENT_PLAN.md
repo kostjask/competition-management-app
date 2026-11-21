@@ -6,14 +6,13 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next local task: P6-MODERATOR/S14.** Start with a scoped assigned-session read
-for current and next performance plus judge completion counts, then connect the
-existing acknowledged stage commands and reasoned exceptions. S15 and the judge
-side of [ADR-031 reconnect](docs/adr/031-live-scoring-reconnect.md) are complete
-locally. [Judge validation](docs/JUDGE_VALIDATION.md) records the 452-case browser
-run, 12 final judge cases, full disposable PostgreSQL/API baseline, migration
-parity, workspace and Hallmark checks. Moderator recovery, operational fallback
-and venue/human rehearsal stay open.
+**Next task: P6-RECOVERY venue rehearsal.** Name the stage lead and judge devices,
+verify venue connection health and latency, and approve the manual continuation
+record before a cross-device F08/F09 rehearsal. Rehearse a lost acknowledgement,
+connection interruption, reassignment and the pause-and-verify handoff. S14 and S15
+implement local acknowledged HTTP and exact-operation recovery under
+[ADR-031](docs/adr/031-live-scoring-reconnect.md). P6-RECOVERY, P6-UI-LIVE and
+M5 retain their venue and human acceptance gates.
 
 PR #12 CI repair (2026-11-21): the failed Workspace check was S20's delayed
 preview/document-switch browser case. Private preview results now retain their
@@ -60,8 +59,8 @@ P6-LIVE-MODEL and P6-SCHEDULE/S13: full workspace/API/migration checks, 417 full
 browser checks and the final 20-case S13 recovery/filter rerun pass. START/ADVANCE,
 LIVE entry and finalization now consume ADR-004 readiness/completeness rather
 than an unimplemented constant gate. A reasoned admin advance override never
-makes missing sheets complete; live controls remain withheld in event setup UI
-pending their owning judge/moderator workspaces and venue rehearsal.
+makes missing sheets complete. Event setup now initiates LIVE after explicit
+confirmation and server readiness checks. Its finalization UI belongs to P7.
 Local M3/M4 prerequisites are available; human/hosted release and M3/M5 remain open.
 
 [Submission evidence](docs/SUBMISSION_VALIDATION.md) records the field-linked
@@ -125,6 +124,12 @@ their dates; no hosted or application-database state is inferred.
   protects the selected performance during stage or connection changes. Main and
   `origin/main` matched at `5ef6e75`, including merged PR #13. No open PR or older
   branch needed integration for S15. [Validation](docs/JUDGE_VALIDATION.md).
+- S14 is complete locally with the moderator/organizer console, current/next queue and
+  frozen-panel acknowledgement counts, reasoned exceptions and a last-read
+  handoff. The moderator and judge share the live connection policy. The
+  moderator compares an exact receipt with current server state before retrying.
+  Venue measurement, approval of any manual continuation and human rehearsal
+  remain open under P6-RECOVERY. [Validation](docs/MODERATOR_VALIDATION.md).
 - Integration review on 2026-11-21: fetched origin/main 6515dfd includes schedule
   PR #12 and has an identical tree to current branch HEAD f06194f. There are no
   open PRs; the current schedule tip and two older implementation tips are
@@ -151,9 +156,8 @@ their dates; no hosted or application-database state is inferred.
   session queues, eligible entry snapshots, dancer/stage timing checks, atomic
   moves, immutable acknowledgements and current moderator authority are tested.
   Organizer UI retains drafts through stale/uncertain/session recovery; print
-  references all acknowledged queues. ADR-004 now supplies backend scoring readiness;
-  S14 and venue/human/
-  hosted release remain open. The canonical docs checker retains one pre-existing
+  references all acknowledged queues. ADR-004 supplies backend scoring readiness.
+  Venue, human and hosted release remain open. The canonical docs checker retains one pre-existing
   ignored PR scratch-link failure; repository docs pass when that scratch is excluded.
 - P6-SCORING-MODEL/P6-TEMPLATES are complete locally under ADR-004. Rubric/category
   versions, exact values, frozen panels/sheets, submission locks, reasoned
@@ -161,7 +165,7 @@ their dates; no hosted or application-database state is inferred.
   the ET/EN/RU organizer workbench are validated. LIVE entry rechecks current queue
   eligibility; normal advance/finalization require complete sheets, and reasoned
   admin overrides never fabricate completeness. [Evidence](docs/SCORING_VALIDATION.md).
-  S14, P6-RECOVERY venue work, P7 and release gates remain open.
+  P6-RECOVERY venue work, P7 and release gates remain open.
 - P3-PERFORMANCE-OWNER/CONSTRAINTS/HISTORY/CALENDAR-DATES/ENTRIES and
   P4-ENTRY-CONFIG are complete locally. Explicit immutable ownership, nullable
   unscheduled drafts, saved revisions, studio-wide BASIC/FINAL checkpoints,
@@ -276,7 +280,8 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 7 | P3-MUSIC-MODEL/P8-MEDIA/P5-MUSIC/P5-SUBMISSION — complete locally | Private music and S11/organizer review plus S12 checklist, receipts and scoped correction delivered; M3 release gates remain open |
 | 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks |
 | 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
-| 10 | P6-MODERATOR/S14 — next | Scoped current/next queue and judge completion, then acknowledged controls and the remaining P6-RECOVERY fallback/rehearsal |
+| 10 | P6-MODERATOR/S14 — complete locally | Scoped queue and frozen-panel counts, acknowledged controls and reasoned exceptions |
+| 11 | P6-RECOVERY — venue work next | Validate venue health, approve any manual continuation record and rehearse both roles using the handoff |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

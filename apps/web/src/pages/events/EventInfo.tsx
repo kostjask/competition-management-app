@@ -70,6 +70,7 @@ export default function EventInfo() {
                 <Link to={`/admin/events/${encodeURIComponent(data.id)}/performances`}>{t("Performance.title")}</Link>
                 <Link to={`/admin/events/${encodeURIComponent(data.id)}/schedule`}>{t("Schedule.title")}</Link>
                 <Link to={`/admin/events/${encodeURIComponent(data.id)}/scoring`}>{t("Scoring.title")}</Link>
+                <Link to={`/admin/events/${encodeURIComponent(data.id)}/live`}>{t("Moderator.title")}</Link>
               </div>
             </RoleGate>
           </header>

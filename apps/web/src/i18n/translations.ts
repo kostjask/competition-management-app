@@ -8,11 +8,13 @@ import { musicTranslations } from "./musicTranslations";
 import { scheduleTranslations } from "./scheduleTranslations";
 import { scoringTranslations } from "./scoringTranslations";
 import { judgeTranslations } from "./judgeTranslations";
+import { moderatorTranslations } from "./moderatorTranslations";
 import { contentTranslations } from "./contentTranslations";
 export type PluralText = { other: string } & Partial<Record<Intl.LDMLPluralRule, string>>;
 export type TranslationValue = Record<Locale, string | PluralText>;
 import { rosterTranslations } from "./rosterTranslations";
 export const translations = {
+  Moderator: moderatorTranslations,
   Schedule: scheduleTranslations,
   Scoring: scoringTranslations,
   Music: musicTranslations,

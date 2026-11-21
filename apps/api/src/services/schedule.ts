@@ -9,6 +9,7 @@ import { freezeScoring, scoringReady, scoringComplete } from "./scoring";
 export type ScheduleActor = { id: string; sessionVersion: number };
 const conflict = () => new ConflictError("Compare the current schedule before retrying", undefined, "concurrentChange");
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+export const moderatorCanRun = (action: string) => ["START", "PAUSE", "ADVANCE", "SKIP"].includes(action);
 
 // Current authority is read in the committing transaction, also before replay.
 export async function scheduleAuthority(db: Prisma.TransactionClient, actor: ScheduleActor, eventId: string) {
@@ -51,8 +52,8 @@ async function sources(db: Prisma.TransactionClient, eventId: string) {
 }
 type Sources = Awaited<ReturnType<typeof sources>>;
 
-function workspace(data: Sources, actor: ScheduleActor, organizer: boolean): ScheduleWorkspace {
-  const sessions = data.sessions.filter(row => organizer || row.moderatorId === actor.id);
+function workspace(data: Sources, actor: ScheduleActor, organizer: boolean, sessionId?: string): ScheduleWorkspace {
+  const sessions = data.sessions.filter(row => organizer || (row.moderatorId === actor.id && (!sessionId || sessionId === row.id)));
   const ids = new Set(sessions.flatMap(row => row.slots.map(slot => slot.performanceId)));
   return ScheduleWorkspaceSchema.parse({ eventId: data.event.id, eventName: data.event.name, eventStage: data.event.stage, timeZone: data.event.timeZone, revision: data.revision, organizer,
     stages: data.stages.filter(row => organizer || sessions.some(session => session.stageId === row.id)).map(row => ({ id: row.id, name: row.name })),
@@ -136,14 +137,23 @@ export async function commandSchedule(db: Prisma.TransactionClient, actor: Sched
   if (isLive) {
     const session = await db.competitionSession.findFirst({ where: { id: command.sessionId, eventId } });
     if (!session) throw new NotFoundError("Session");
-    if (!admin && (session.moderatorId !== actor.id || ["REQUEUE", "REOPEN", "ADVANCE_OVERRIDE"].includes(command.action))) throw new ForbiddenError();
+    if (!admin && (session.moderatorId !== actor.id || !moderatorCanRun(command.action))) throw new ForbiddenError();
   }
   const digest = hash([actor.id, eventId, command]);
   const replay = await db.scheduleOperation.findUnique({ where: { operationId: command.operationId } });
   if (replay) {
     if (replay.digest !== digest || replay.eventId !== eventId || replay.actorId !== actor.id) throw conflict();
     const receipt = ScheduleReceiptSchema.parse(replay.response);
-    if (receipt.workspace.organizer && !admin) throw new ForbiddenError();
+    if (!admin) {
+      if (receipt.workspace.organizer || !isLive) throw new ForbiddenError();
+      // Historical snapshots can contain other sessions assigned at the time.
+      const sessions = receipt.workspace.sessions.filter(row => row.id === command.sessionId);
+      const ids = new Set(sessions.flatMap(row => row.slots.map(slot => slot.performanceId)));
+      return { ...receipt, workspace: { ...receipt.workspace, sessions,
+        stages: receipt.workspace.stages.filter(stage => sessions.some(row => row.stageId === stage.id)),
+        performances: receipt.workspace.performances.filter(row => ids.has(row.id)),
+      } };
+    }
     return receipt;
   }
   const data = await sources(db, eventId);
@@ -223,10 +233,12 @@ export async function commandSchedule(db: Prisma.TransactionClient, actor: Sched
     }
   }
   const head = await db.eventSchedule.upsert({ where: { eventId }, create: { eventId, revision: 1 }, update: { revision: { increment: 1 } } });
-  const acknowledged = workspace(await sources(db, eventId), actor, admin);
+  const acknowledged = workspace(await sources(db, eventId), actor, admin, isLive ? command.sessionId : undefined);
   const createdAt = new Date();
   if (admin) acknowledged.receipts.unshift({ operationId: command.operationId, action: command.action, revision: head.revision, createdAt: createdAt.toISOString() });
-  const response = ScheduleReceiptSchema.parse({ operationId: command.operationId, action: command.action, revision: head.revision, workspace: acknowledged });
+  const live = isLive ? { sessionId: command.sessionId, expectedSlotId: command.expectedSlotId,
+    ...("targetSlotId" in command && { targetSlotId: command.targetSlotId }) } : undefined;
+  const response = ScheduleReceiptSchema.parse({ operationId: command.operationId, action: command.action, revision: head.revision, workspace: acknowledged, live });
   await db.scheduleOperation.create({ data: { operationId: command.operationId, eventId, actorId: actor.id, revision: head.revision, action: command.action, digest, reason: "reason" in command ? command.reason : null, response, createdAt } });
   await appendAudit(db, { action: "SCHEDULE_CHANGED", actor: { kind: "USER", userId: actor.id }, targetType: "SCHEDULE", targetId: eventId, eventId, metadata: { operationId: command.operationId, revision: head.revision } });
   return response;

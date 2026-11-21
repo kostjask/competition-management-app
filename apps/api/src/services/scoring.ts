@@ -10,7 +10,11 @@ export type ScoringActor = { id: string; sessionVersion: number };
 const hash = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const conflict = () => new ConflictError("Compare current scoring state before retrying", undefined, "concurrentChange");
 const invalid = () => new ConflictError("Scoring prerequisites are incomplete", undefined, "invalidConfiguration");
-const judgeEligible = (roles: Awaited<ReturnType<typeof roleSources>>, userId: string) => roles.some(r => r.userId === userId && r.role.key === "judge" && r.role.permissions.some(p => p.permission.key === "score.submit"));
+const judgeRole = { key: "judge", permissions: { some: { permission: { key: "score.submit" } } } } satisfies Prisma.RoleWhereInput;
+const judgeEligible = (roles: Awaited<ReturnType<typeof roleSources>>, userId: string) => roles.some(r => r.userId === userId && r.role.key === judgeRole.key && r.role.permissions.some(p => p.permission.key === judgeRole.permissions.some.permission.key));
+export const activeScoringJudge = (eventId: string) => ({
+  user: { active: true, emailVerified: true, roles: { some: { eventId, removedAt: null, role: judgeRole } } },
+}) satisfies Prisma.JudgeWhereInput;
 const roleSources = (db: DB, eventId: string, userId?: string) => db.userRole.findMany({ where: { eventId, ...(userId !== undefined && { userId }), removedAt: null, user: { active: true, emailVerified: true } }, include: { role: { include: { permissions: { include: { permission: true } } } } } });
 const serializeCriterion = (c: { id: string; label: Prisma.JsonValue; instructions: Prisma.JsonValue; min: number; max: number; step: number; weightBps: number }) => ({
   id: c.id, label: c.label, instructions: c.instructions, min: scoringDecimal(c.min), max: scoringDecimal(c.max), step: scoringDecimal(c.step), weightBps: c.weightBps,
@@ -131,30 +135,54 @@ export async function previewScoring(db: DB, actor: ScoringActor, eventId: strin
   const data = await sources(db, eventId); if (revision !== data.revision) throw conflict(); validateSetup(data, setup);
   return ScoringPreviewSchema.parse({ revision, setup, previewToken: hash([data, setup]), blockers: blockers(data, setup) });
 }
+export async function hasScoringReadiness(db: DB, eventId: string) {
+  // The live read and stage writes check the same saved configuration without reading score values.
+  const activeSlot = { state: { not: "REMOVED" } };
+  const [queue, blocked] = await Promise.all([
+    db.scheduleSlot.findFirst({ where: { eventId, ...activeSlot }, select: { id: true } }),
+    db.competitionSession.findFirst({
+      where: { eventId, slots: { some: activeSlot }, OR: [
+        { scoringPanel: { none: {} } },
+        { scoringPanel: { some: { judge: { isNot: activeScoringJudge(eventId) } } } },
+        { slots: { some: { ...activeSlot, performance: { OR: [
+          { category: null }, { category: { scoringBinding: null } },
+        ] } } } },
+      ] },
+      select: { id: true },
+    }),
+  ]);
+  return !!queue && !blocked;
+}
 export async function scoringReady(db: DB, eventId: string, final = false) {
-  const data = await sources(db, eventId); if (blockers(data).length) throw invalid();
-  if (final) for (const session of data.sessions) for (const slot of session.slots) {
+  if (!await hasScoringReadiness(db, eventId)) throw invalid();
+  if (!final) return;
+  const data = await sources(db, eventId);
+  for (const session of data.sessions) for (const slot of session.slots) {
     const record = data.records.find(r => r.performanceId === slot.performanceId);
     if (slot.state !== "DONE" || !record || !complete(record)) throw invalid();
   }
 }
 export async function freezeScoring(db: DB, eventId: string, sessionId: string, performanceId: string, actorId: string) {
-  const data = await sources(db, eventId); if (blockers(data).length) throw invalid();
-  const existing = data.records.find(r => r.performanceId === performanceId);
+  // The caller checks event-wide readiness in this transaction before selecting the slot.
+  const existing = await db.scoringRecord.findUnique({ where: { performanceId_eventId: { performanceId, eventId } }, select: { sessionId: true } });
   if (existing) { if (existing.sessionId !== sessionId) throw conflict(); return; }
-  const performance = await db.performance.findFirst({ where: { id: performanceId, eventId, deletedAt: null } });
-  const templateId = data.setup.bindings.find(b => b.categoryId === performance?.categoryId)?.templateId;
-  const panel = data.setup.panels.find(p => p.sessionId === sessionId);
-  if (!templateId || !panel?.judgeIds.length) throw invalid();
+  const [performance, panel] = await Promise.all([
+    db.performance.findFirst({ where: { id: performanceId, eventId, deletedAt: null },
+      select: { category: { select: { scoringBinding: { select: { templateId: true } } } } } }),
+    db.scoringPanel.findMany({ where: { eventId, sessionId }, select: { judgeId: true } }),
+  ]);
+  const templateId = performance?.category?.scoringBinding?.templateId;
+  if (!templateId || !panel.length) throw invalid();
   const record = await db.scoringRecord.create({ data: { eventId, performanceId, sessionId, templateId } });
-  for (const judgeId of panel.judgeIds) {
+  for (const { judgeId } of panel) {
     const sheet = await db.scoringSheet.create({ data: { recordId: record.id, eventId, templateId, judgeId } });
     await db.scoringSheetVersion.create({ data: { sheetId: sheet.id, revision: 1, actorId, snapshot: { state: "DRAFT", submittedAt: null, values: [] } } });
   }
 }
 export async function scoringComplete(db: DB, eventId: string, performanceId: string) {
-  const record = await db.scoringRecord.findFirst({ where: { eventId, performanceId }, include: { sheets: true } });
-  return !!record && record.sheets.length > 0 && record.sheets.every(s => s.state === "LOCKED");
+  return !!await db.scoringRecord.findFirst({
+    where: { eventId, performanceId, sheets: { some: {}, every: { state: "LOCKED" } } }, select: { id: true },
+  });
 }
 export async function commandScoring(db: DB, actor: ScoringActor, eventId: string, command: ScoringCommand) {
   const access = await authority(db, actor, eventId);
@@ -192,7 +220,7 @@ export async function commandScoring(db: DB, actor: ScoringActor, eventId: strin
     for (const value of command.values) await db.scoringValue.create({ data: { sheetId: sheet.id, templateId: sheet.templateId, criterionId: value.criterionId, value: scoringUnits(value.value), comment: value.comment } });
     await db.scoringSheet.update({ where: { id: sheet.id }, data: { revision: { increment: 1 }, state: command.action === "SUBMIT" ? "LOCKED" : "DRAFT", submittedAt: command.action === "SUBMIT" ? new Date() : null } });
   } else if (command.action === "REOPEN") {
-    if (!sheet || sheet.record.session.state !== "PAUSED") throw conflict();
+    if (!sheet || sheet.record.performance.deletedAt || sheet.record.session.state !== "PAUSED") throw conflict();
     await db.scoringSheet.update({ where: { id: sheet.id }, data: { revision: { increment: 1 }, state: "DRAFT", submittedAt: null } });
   } else if ("recordId" in command) {
     const record = data.records.find(r => r.id === command.recordId); if (!record) throw new NotFoundError("Scoring record");

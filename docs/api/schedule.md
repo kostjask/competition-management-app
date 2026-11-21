@@ -7,6 +7,7 @@ Shared strict Zod schemas own exact payloads; no public or unversioned aliases.
 | Operation | Endpoint | Authority |
 | --- | --- | --- |
 | Current schedule | GET `/events/:eventId/schedule` | Global admin; current event `stage.manage` staff see assigned sessions only |
+| Assigned live console and receipt check | GET `/events/:eventId/schedule/live` | Global admin or current event `stage.manage` staff with access limited to their assigned sessions |
 | Validate proposed queues | POST `/events/:eventId/schedule/preview` | Global admin |
 | Save setup/queue or acknowledged operation | POST `/events/:eventId/schedule/commands` | Global admin for setup/save; current assigned staff for bounded live actions |
 
@@ -83,7 +84,9 @@ FINALIZED requires all active slots DONE with complete sheets under
 invalidConfiguration.
 There is no automatic advancement, sheet unlock or publication.
 
-Success is 200 with operationId/revision/action/workspace. Exact actor/event/body
+Success is 200 with operationId/revision/action/workspace. Live command receipts
+also store sessionId, expectedSlotId and targetSlotId when supplied. Staff command
+responses and replays contain only the requested session. Exact actor/event/body
 replay returns the historical receipt after current account/session/role/assignment
 checks. Removed/replaced staff cannot replay. A changed body under an old UUID,
 stale revision/fingerprint or transaction race cannot silently overwrite data.
@@ -91,12 +94,40 @@ Validation is 400, denied 403, missing parent 404, conflicts/configuration 409.
 Audit and immutable receipt commit atomically. Audit metadata is limited to
 revision and operationId.
 
+## Assigned live console
+
+The private `/live` read accepts optional UUID query parameters `sessionId` and
+`operationId`. Omitted session selects the first available session by start time
+and ID. An explicit unassigned or foreign session gets 403. The response returns
+choices with stage/session names and scheduled starts, event timezone and stage,
+the event schedule revision and the selected session's state. The current and
+first four waiting slots include position, title and studio. The current slot uses the
+frozen panel's required, locked and unavailable-outstanding counts. A missing
+frozen panel is explicit. The event-wide scoring-readiness boolean shares the
+command gate. Participant details, score values, comments and private totals
+are excluded. Only global admins receive skipped-slot and sheet-correction
+choices for a paused live session. Correction choices carry sheet identity,
+revision, performance position/title/studio, judge name and state.
+
+An optional acknowledgement answers only for the exact operation UUID, actor,
+event and currently permitted selected session. It returns its historical
+revision, action, target and timestamp beside a fresh queue projection. Earlier
+schedule operations without saved live target metadata remain replayable through
+the command path. Score-sheet correction uses the existing scoring REOPEN command
+and returns a sheet-specific acknowledgement through this read for global admins.
+No new command or migration is required.
+
 S13 is `/app/admin/events/:eventId/schedule`, linked from event details. Stage and
 session filters stay in the URL. Draft, preview and acknowledgement are distinct.
 Exact uncertain requests and forms survive session restoration; authoritative
 comparison never replaces local queues automatically. Browser reload does not
 persist unsaved drafts. Print uses all saved sessions and acknowledged revision,
-regardless of filter; it is a manual reference. Backend scoring completeness is
-implemented under [the scoring contract](scoring.md). S14,
-venue/offline rehearsal and hosted/human release remain open under
-P6-MODERATOR/RECOVERY and M5.
+regardless of filter; it is a manual reference.
+
+S14 is available at `/app/moderator/events/:eventId/live` from the moderator's
+event list, and at `/app/admin/events/:eventId/live` from organizer event setup
+and details. The selected session is in the URL. The console gates actions by
+the current snapshot, sends pinned revisions, and reconciles receipts before
+resending. A print handoff labels the last acknowledged read and its stage,
+queue and sheet counts. See [ADR-031](../adr/031-live-scoring-reconnect.md) for
+polling, read-only fallback and the open venue rehearsal.

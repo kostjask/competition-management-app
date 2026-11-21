@@ -42,7 +42,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | --- | --- | --- |
 | Auth | /auth; see contract for account/session/recovery/onboarding/preferences operations | [Auth](api/auth.md) |
 | Events | /events; /events/:eventId | [Events](api/events.md) |
-| Schedule | /events/:eventId/schedule; /preview and /commands | [Session queues](api/schedule.md) |
+| Schedule | /events/:eventId/schedule; /live, /preview and /commands | [Session queues and live operations](api/schedule.md) |
 | Scoring | /events/:eventId/scoring; /judge, /preview and /commands | [Exact scoring, judge sheets and rubric setup](api/scoring.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
 | Application estimates | PATCH /events/:eventId/studio-registrations/:studioId/estimates; history in registration /review | [Planning estimates](api/registrations.md#planning-estimates) |

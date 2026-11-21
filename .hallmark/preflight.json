@@ -1,7 +1,7 @@
 {
   "date": "2026-11-21",
   "scope": "app",
-  "task": "P6-JUDGE/S15 and judge reconnect",
+  "task": "P6-MODERATOR/S14 and moderator reconnect",
   "preserved": [
     "DESIGN.md locked Cobalt",
     "docs/DESIGN_SYSTEM.md accessibility and ET/EN/RU",
@@ -9,19 +9,19 @@
     "existing /app routes and shell"
   ],
   "introduced": [
-    "apps/web/src/pages/judge/JudgeInterface.tsx assigned sheet and frozen rubric",
-    "localized exact score inputs with explicit lock confirmation",
-    "separate local draft, server revision and operation recovery"
+    "apps/web/src/pages/moderator/ModeratorControls.tsx current and next performance ledger",
+    "reasoned queue and judge sheet exceptions with separate review",
+    "connection state, exact receipt reconciliation and last-read print handoff"
   ],
   "material": "Actual product data; synthetic browser fixtures; no image slots",
-  "audience": "Assigned event judge",
-  "use": "Score and submit an assigned performance",
+  "audience": "Assigned event moderator and organizer",
+  "use": "Operate an assigned queue and recover from interrupted actions",
   "tone": "Restrained utilitarian",
   "evidence": [
     "DESIGN.md:1",
     "docs/DESIGN_SYSTEM.md:10",
     "apps/web/src/features/events/design/tokens.css:1",
-    "apps/web/src/pages/judge/JudgeInterface.tsx:1"
+    "apps/web/src/pages/moderator/ModeratorControls.tsx:1"
   ],
   "previous": {
     "date": "2026-11-19",

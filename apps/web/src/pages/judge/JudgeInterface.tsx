@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { JudgeScoringAck, JudgeScoringCommand, JudgeScoringSheet, JudgeScoringWorkspace } from "@dance/schemas";
-import { commandScoring } from "../../api/scoring";
+import { commandScoring, getJudgeScoring } from "../../api/scoring";
 import { ApiError, toUiError, type UiError } from "../../api/error";
 import { useAuth } from "../../auth/useAuth";
 import { ErrorFeedback } from "../../components/ErrorFeedback";
@@ -10,7 +10,7 @@ import { formatInstant, formatNumber } from "../../i18n/format";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useUnsaved } from "../entries/useUnsaved";
 import { emptyField, readJudgeValues, savedFields, type JudgeFields } from "./judgeValues";
-import { JUDGE_REQUEST_MS, useJudgeConnection } from "./useJudgeConnection";
+import { LIVE_REQUEST_MS, useLiveConnection } from "../live/useLiveConnection";
 import "./judge.css";
 
 type Draft = { sheet: JudgeScoringSheet; fields: JudgeFields };
@@ -64,7 +64,9 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
     setWriteError(null);
     setComparing(false);
   }, [pending]);
-  const { snapshot, failure, loading, online, connected, fresh, invalidate, refresh } = useJudgeConnection(eventId, pending?.operationId, sending || sessionExpired, reconcile);
+  const operationId = pending?.operationId;
+  const read = useCallback((signal: AbortSignal) => getJudgeScoring(eventId, operationId, signal), [eventId, operationId]);
+  const { snapshot, failure, loading, online, connected, fresh, invalidate, refresh } = useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
   useUnsaved(!!draft || !!pending, false, t("Judge.discard"));
   useEffect(() => () => { writing.current?.abort(); }, []);
 
@@ -78,7 +80,7 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
     setWriteError(null);
     setReviewing(null);
     try {
-      const receipt = await commandScoring(eventId, command, AbortSignal.any([request.signal, AbortSignal.timeout(JUDGE_REQUEST_MS)]));
+      const receipt = await commandScoring(eventId, command, AbortSignal.any([request.signal, AbortSignal.timeout(LIVE_REQUEST_MS)]));
       const saved = receipt.workspace.sheets.find(sheet => sheet.id === command.sheetId);
       if (receipt.operationId !== command.operationId || receipt.action !== command.action || receipt.workspace.eventId !== eventId || saved?.revision !== command.expectedRevision + 1) {
         throw new ApiError(502, "Unexpected scoring receipt", undefined, "INVALID_RESPONSE", "invalidResponse");

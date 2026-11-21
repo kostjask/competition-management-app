@@ -36,14 +36,14 @@ This delivers the setup portion of P6-UI-LIVE; S14/S15 remain their owning tasks
 
 ## S14 — Moderator live console
 
-- **Purpose / roles / route:** operate assigned stage safely; scoped moderator; proposed `/moderator/events/:id/live`, `/moderator` landing.
+- **Purpose / roles / route:** operate an assigned stage. The `/app/moderator` event list opens `/app/moderator/events/:eventId/live`. The organizer opens `/app/admin/events/:eventId/live` from setup or event details.
 - **Primary action:** authorized advance/pause/skip after checking completion/prerequisites.
 - **Data:** current/next queue, selected stage/session, revision, judge acknowledgement counts, connection and last-sync status.
 - **Sections / components:** persistent stage/current identity, completion blockers, next list, separated main operation controls, connection/recovery panel and audited exception controls.
-- **States:** waiting/no queue, in-progress, paused/skipped/reopened per future model, missing judges, stage conflict, offline/reconnecting, expired permission; uncertain operation reconciled before retry.
+- **States:** waiting/no queue, running, paused and finished, skipped/requeued performance and reopened sheet, unavailable judges, stage conflict, offline/reconnecting and removed permission. An uncertain operation is reconciled before retry.
 - **Responsive / accessibility:** tablet touch-first, mobile critical controls/current performance visible, desktop extra queue; confirm significant exceptions, announce queue change without stealing focus.
-- **API:** pending live/completion commands, permission model and delivery/recovery contracts; no direct score.submit substitute.
-- **Acceptance:** double tap causes one transition; cannot advance wrong stage/revision; completion display exposes no unauthorized peer score values. F08.
+- **API:** [Assigned schedule live projection](../api/schedule.md#assigned-live-console), existing schedule commands and admin-only reasoned sheet correction. Receipt reconciliation follows [ADR-031](../adr/031-live-scoring-reconnect.md).
+- **Acceptance:** repeated activation causes one transition; the server rejects the wrong session, slot or revision; completion exposes counts only. Print identifies its last acknowledged revision and read time. Venue and human acceptance remain in [F08](../flows/F08.md).
 
 ## S15 — Judge scoring
 

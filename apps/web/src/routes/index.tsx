@@ -139,6 +139,7 @@ export function AppRoutes() {
                 <Route path="events/:eventId/performances" element={<LazyWrapper><PerformanceRegister /></LazyWrapper>} />
                 <Route path="events/:eventId/schedule" element={<LazyWrapper><SchedulePage /></LazyWrapper>} />
                 <Route path="events/:eventId/scoring" element={<LazyWrapper><ScoringPage /></LazyWrapper>} />
+                <Route path="events/:eventId/live" element={<LazyWrapper><ModeratorControls organizer /></LazyWrapper>} />
                 <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
                 <Route
                   index
@@ -209,6 +210,7 @@ export function AppRoutes() {
                     </LazyWrapper>
                   }
                 />
+                <Route path="events/:eventId/live" element={<LazyWrapper><ModeratorControls /></LazyWrapper>} />
                 <Route
                   path="*"
                   element={<Navigate to="/moderator" replace />}

@@ -1,7 +1,7 @@
 # ADR-031 — Live scoring reconnect
 
-Date: 2026-11-21. Implemented for the local judge workspace. The moderator and
-venue rehearsal remain in [Phase 6](../roadmap/competition.md#phase-6--scheduling-live-operations-and-judging).
+Date: 2026-11-21. Implemented for the local judge and moderator workspaces.
+Venue rehearsal remains in [Phase 6](../roadmap/competition.md#phase-6--scheduling-live-operations-and-judging).
 
 ## Decision
 
@@ -42,6 +42,22 @@ server values. Reapplying the whole draft is explicit and may create a new
 operation only for the same writable sheet based on its new revision. A pending
 score is never moved to another performance automatically.
 
+The moderator console uses the same visible-tab polling, timeout and freshness
+limits. A stage action is pinned to the URL-selected session, current slot and
+schedule revision. A sheet correction pins its own revision and target. One
+in-tab operation can be outstanding. A fresh private read looks up its receipt
+before offering the same UUID and body for retry. If the session, slot, revision
+or action eligibility changed, the operator explicitly accepts the current state
+before acting again. Access denial removes the cached session projection.
+
+For an interruption, retain the console tab and stop stage operations. If
+connected, use Pause and verify the acknowledged state. If unavailable, tell the
+stage lead the queue state is unverified. The selected-session print handoff shows
+the last read time and revision, current/next performance and acknowledged sheet
+counts. The printed state is a reference to that read. Once connected, compare
+the queue and judge acknowledgements and reconcile any uncertain command before
+resuming. The handoff carries no scores and authorizes no manual continuation.
+
 ## Alternatives and follow-up
 
 Durable offline scoring would require device/account isolation, recovery across
@@ -50,8 +66,7 @@ Push transport requires reconnect and ordering guarantees of its own. Both can
 be evaluated after the acknowledged workflow is exercised under venue conditions.
 
 When a judge sees a prolonged outage, retain the tab and contact the stage lead.
-The stage lead should stop the queue and verify the acknowledged sheet before
-continuing. Any manual continuation or historical reopen must use the authorized
-reasoned actions under ADR-004/030. P6-MODERATOR owns the console, and the remaining
-P6-RECOVERY work owns operational health, approved fallback record/export and a
-rehearsal with judge and moderator devices on the intended venue network.
+Any approved manual continuation or historical reopen must use the authorized
+reasoned actions under ADR-004/030. Remaining P6-RECOVERY work is the venue health
+and latency check, approval of any manual continuation record/export and a
+cross-device rehearsal on the intended venue network.

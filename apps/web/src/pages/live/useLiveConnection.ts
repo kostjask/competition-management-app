@@ -1,15 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { JudgeScoringWorkspace } from "@dance/schemas";
-import { getJudgeScoring } from "../../api/scoring";
 import { ApiError, toUiError, type UiError } from "../../api/error";
 
 const POLL_MS = 5000;
 const STALE_MS = 15000;
-export const JUDGE_REQUEST_MS = 8000;
+export const LIVE_REQUEST_MS = 8000;
 
-export function useJudgeConnection(eventId: string, operationId: string | undefined, paused: boolean,
-  onRead: (workspace: JudgeScoringWorkspace) => void) {
-  const [snapshot, setSnapshot] = useState<{ workspace: JudgeScoringWorkspace; receivedAt: number } | null>(null);
+export function useLiveConnection<T extends { eventId: string }>(eventId: string, paused: boolean,
+  read: (signal: AbortSignal) => Promise<T>, onRead: (workspace: T) => void) {
+  const [snapshot, setSnapshot] = useState<{ workspace: T; receivedAt: number } | null>(null);
   const [failure, setFailure] = useState<{ ui: UiError; denied: boolean } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
   const [stale, setStale] = useState(false);
@@ -29,9 +27,9 @@ export function useJudgeConnection(eventId: string, operationId: string | undefi
     active.current = request;
     setLoading(true);
     try {
-      const workspace = await getJudgeScoring(eventId, operationId, AbortSignal.any([request.signal, AbortSignal.timeout(JUDGE_REQUEST_MS)]));
+      const workspace = await read(AbortSignal.any([request.signal, AbortSignal.timeout(LIVE_REQUEST_MS)]));
       if (request.signal.aborted) return;
-      if (workspace.eventId !== eventId) throw new ApiError(502, "Wrong scoring event", undefined, "INVALID_RESPONSE", "invalidResponse");
+      if (workspace.eventId !== eventId) throw new ApiError(502, "Wrong live event", undefined, "INVALID_RESPONSE", "invalidResponse");
       onRead(workspace);
       setSnapshot({ workspace, receivedAt: Date.now() });
       setFailure(null);
@@ -48,7 +46,7 @@ export function useJudgeConnection(eventId: string, operationId: string | undefi
         setLoading(false);
       }
     }
-  }, [eventId, onRead, operationId, paused]);
+  }, [eventId, onRead, paused, read]);
 
   useEffect(() => {
     const connectivity = () => {
@@ -84,5 +82,5 @@ export function useJudgeConnection(eventId: string, operationId: string | undefi
   const receivedAt = snapshot?.receivedAt;
   const fresh = useCallback(() => receivedAt !== undefined && online && navigator.onLine && !stale && !paused && Date.now() - receivedAt < STALE_MS,
     [receivedAt, online, stale, paused]);
-  return { snapshot, failure, loading, online, connected: !!snapshot && online && !stale, fresh, invalidate, refresh };
+  return { snapshot, failure, loading, online, connected: !!snapshot && online && !stale && !paused, fresh, invalidate, refresh };
 }

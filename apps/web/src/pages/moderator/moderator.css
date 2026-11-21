@@ -1,0 +1,58 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: current and next performance ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: keep the current performance and completion ahead of controls, with exceptions on their own line. */
+/* Hallmark · finish review: in-thread. Recapture verified compact phone controls, a focused correction form, and the full selected target. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+
+.moderator-workbench { max-width: 66rem; margin-inline: auto; padding: var(--space-lg); }
+.moderator-header { display: grid; gap: var(--space-xs); }
+.moderator-header p, .moderator-ledger p, .moderator-operating p, .moderator-review p { margin: 0; overflow-wrap: anywhere; }
+.moderator-link { display: inline-flex; align-items: center; justify-self: start; color: var(--color-accent-deep); text-decoration: underline; }
+.moderator-selector { margin-block: var(--space-sm) var(--space-md); max-width: 28rem; }
+.moderator-selector .ui-help { margin-block-start: var(--space-xs); }
+.moderator-ledger, .moderator-operating { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-column); padding-block: var(--space-md); border-block-start: 1px solid var(--color-rule-2); }
+.moderator-ledger { border-block-start: 2px solid var(--color-ink); }
+.moderator-ledger section, .moderator-operating section { display: grid; align-content: start; gap: var(--space-xs); min-width: 0; }
+.moderator-ledger h2 { font-size: var(--text-lg); }
+.moderator-performance-title { font-size: var(--text-xl); font-weight: 600; }
+.moderator-completion { font-variant-numeric: tabular-nums; }
+.moderator-completion p + p { color: var(--color-ink-2); }
+.moderator-loading { margin-block-start: var(--space-md); }
+.moderator-loading span { min-height: 5rem; background: var(--color-paper-2); }
+.moderator-upcoming { border-block-start: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+.moderator-upcoming ol { list-style: decimal; padding-inline-start: var(--space-lg); margin-block: var(--space-xs) 0; }
+.moderator-upcoming li { padding-block: var(--space-2xs); overflow-wrap: anywhere; }
+.moderator-upcoming li span + span { margin-inline-start: var(--space-sm); }
+.moderator-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); margin-block-start: var(--space-xs); }
+.moderator-exceptions, .moderator-event-list { border-block-start: 1px solid var(--color-rule-2); padding-block: var(--space-md); margin-block-start: var(--space-sm); }
+.moderator-event-list { display: grid; gap: var(--space-sm); padding-inline-start: 0; list-style: none; }
+.moderator-review { display: grid; gap: var(--space-sm); max-width: 44rem; margin-block-start: var(--space-sm); padding: var(--space-md); background: var(--color-paper-2); border-inline-start: 2px solid var(--color-accent); }
+.moderator-review textarea { resize: vertical; }
+.moderator-review .moderator-target-detail { display: none; }
+.moderator-workbench .ui-alert { margin-block: var(--space-sm); }
+.moderator-workbench :is(a, button, select, textarea) { min-height: 48px; }
+.moderator-workbench :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.moderator-workbench .ui-button:active:not(:disabled) { transform: translateY(1px); }
+.moderator-workbench :is(button, select):disabled { color: var(--color-ink-2); background: var(--color-paper-2); cursor: not-allowed; }
+.moderator-print { display: none; }
+
+@media (max-width: 42rem) {
+  .moderator-workbench, .moderator-review { padding: var(--space-sm); }
+  .moderator-header { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-2xs); }
+  .moderator-header > p { grid-row: 1; grid-column: 2; align-self: center; text-align: end; }
+  .moderator-header h1, .moderator-selector { grid-column: 1 / -1; }
+  .moderator-selector { margin-block: 0 var(--space-xs); }
+  .moderator-ledger, .moderator-operating { grid-template-columns: minmax(0, 1fr); gap: var(--space-sm); padding-block: var(--space-sm); }
+  .moderator-command-area { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .moderator-command-area > :nth-child(n+3) { grid-column: 1 / -1; }
+  .moderator-upcoming { display: none; }
+  .moderator-review .moderator-target-detail { display: block; color: var(--color-ink-2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .moderator-workbench .ui-button:active:not(:disabled) { transform: none; }
+}
+@media print {
+  #root .min-h-screen:has(.moderator-print) > header { display: none; }
+  .moderator-workbench > :not(.moderator-print) { display: none; }
+  .moderator-print { display: block; }
+}

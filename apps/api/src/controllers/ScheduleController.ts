@@ -1,9 +1,10 @@
 import type { Request, Response } from "express";
-import { EventIdParamsSchema, ScheduleCommandSchema, SchedulePreviewBodySchema } from "@dance/schemas";
+import { EventIdParamsSchema, LiveScheduleQuerySchema, ScheduleCommandSchema, SchedulePreviewBodySchema } from "@dance/schemas";
 import { BaseController } from "./BaseController";
 import { UnauthorizedError } from "../errors";
 import { entryTransaction } from "../services/entryWorkflow";
 import { commandSchedule, previewSchedule, readSchedule } from "../services/schedule";
+import { readLiveSchedule } from "../services/liveSchedule";
 
 export class ScheduleController extends BaseController {
   private actor(req: Request) {
@@ -13,6 +14,11 @@ export class ScheduleController extends BaseController {
   async read(req: Request, res: Response) {
     const { eventId } = EventIdParamsSchema.parse(req.params);
     res.set("Cache-Control", "no-store").json(await entryTransaction(this.prisma, db => readSchedule(db, this.actor(req), eventId)));
+  }
+  async live(req: Request, res: Response) {
+    const { eventId } = EventIdParamsSchema.parse(req.params);
+    const query = LiveScheduleQuerySchema.parse(req.query);
+    res.set("Cache-Control", "no-store").json(await entryTransaction(this.prisma, db => readLiveSchedule(db, this.actor(req), eventId, query)));
   }
   async preview(req: Request, res: Response) {
     const { eventId } = EventIdParamsSchema.parse(req.params);

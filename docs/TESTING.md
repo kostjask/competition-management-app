@@ -48,6 +48,18 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P6-MODERATOR/S14 uses `moderator.spec.ts` for ET/EN/RU at 320–1920px,
+keyboard and touch target checks, URL-selected sessions, reasoned exceptions,
+double activation, dropped responses, competing changes, session restoration,
+revoked access and print handoff. Run `pnpm test:focus browser moderator.spec.ts`
+while editing. Recheck `judge.spec.ts` when changing the shared live connection
+and `event-setup.spec.ts` when changing confirmed LIVE entry. The
+`check-scoring.cjs` PostgreSQL suite covers assigned-session privacy, unavailable
+judges, actor/session-bound acknowledgements and reasoned corrections.
+Run `pnpm test:entry-foundations` before the full local gates. Venue latency,
+manual continuation approval and human language/assistive checks have separate
+acceptance.
+
 P6-JUDGE/S15 and the judge portion of P6-RECOVERY use `judge.spec.ts` for the
 localized touch/keyboard workflow, score precision and zero, draft/submission
 acknowledgement, exact retry after a lost response, offline queue changes,
@@ -55,8 +67,8 @@ same-account session recovery, corrections and denied reads. Run
 `pnpm test:focus browser judge.spec.ts` first. `check-scoring.cjs` also verifies
 the own-sheet/receipt HTTP projection against PostgreSQL, including a dual-role
 account, revoked authority and foreign receipt IDs. Use `pnpm test:entry-foundations`
-while editing, then run the full workspace, browser and database gates. S14,
-judge/moderator venue rehearsal and the fallback export remain separate.
+while editing, then run the full workspace, browser and database gates.
+Judge/moderator venue rehearsal and approval of a manual fallback remain separate.
 
 P6-SCORING-MODEL/P6-TEMPLATES use `scoring.test.cjs` for exact arithmetic, range,
 step, precision, weights, zero/missing and tie/return-path fixtures, and
