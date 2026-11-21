@@ -6,6 +6,8 @@ export const EventStageSchema = z.enum([
   "PRE_REGISTRATION",
   "REGISTRATION_OPEN",
   "DATA_REVIEW",
+  "SCHEDULED",
+  "LIVE",
   "FINALIZED",
   "ENDED",
   "CANCELLED"
@@ -50,7 +52,10 @@ export function eventStageTargets(stage?: z.infer<typeof EventStageSchema>): z.i
   if (!stage) return ["PRE_REGISTRATION", "REGISTRATION_OPEN"];
   if (stage === "PRE_REGISTRATION") return [stage, "REGISTRATION_OPEN", "CANCELLED"];
   if (stage === "REGISTRATION_OPEN") return [stage, "DATA_REVIEW", "CANCELLED"];
-  if (stage === "DATA_REVIEW") return [stage, "CANCELLED"];
+  if (stage === "DATA_REVIEW") return [stage, "SCHEDULED", "CANCELLED"];
+  if (stage === "SCHEDULED") return [stage, "DATA_REVIEW", "LIVE", "CANCELLED"];
+  if (stage === "LIVE") return [stage, "FINALIZED", "CANCELLED"];
+  if (stage === "FINALIZED") return [stage, "ENDED"];
   return [stage];
 }
 

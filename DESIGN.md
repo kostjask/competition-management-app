@@ -39,6 +39,15 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+P6-SCHEDULE/S13 extends Cobalt with a stage/session selector, paused queue ledger,
+explicit native moves/destinations and source-bound timing preview. Aligned desktop
+columns become labelled sequential phone rows. Confirmation, acknowledged revision,
+current-server comparison and retained exact-operation recovery carry the state;
+all saved sessions have a print reference. No imagery/material slots, new font,
+palette or shell are introduced. The independent Hallmark finish review corrected
+preview alignment, the destination prompt and inconsistent synthetic fixture times.
+Human language, assistive review and venue rehearsal remain separate release gates.
+
 P5-SUBMISSION/S12 extends the same Cobalt system to the representative checkpoint
 review. The studio-wide basic/final ledger separates field-linked blockers from
 independent music notices. Actual server availability, named correction scope,

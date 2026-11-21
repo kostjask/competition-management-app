@@ -4,6 +4,7 @@ eventFieldIds.description = "event-description-language";
 eventFieldIds.registrationDeadline = "event-cutoff";
 export const stageKey = {
   PRE_REGISTRATION: "Events.stagePreRegistration", REGISTRATION_OPEN: "Events.stageRegistrationOpen", DATA_REVIEW: "Events.stageDataReview",
+  SCHEDULED: "Schedule.SCHEDULED", LIVE: "Schedule.LIVE",
   FINALIZED: "Events.stageFinalized", ENDED: "Events.stageEnded", CANCELLED: "Events.stageCancelled",
 } as const satisfies Record<EventStage, string>;
 export function eventInput(event: Event): CreateEventInput {

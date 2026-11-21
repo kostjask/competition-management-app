@@ -139,14 +139,14 @@ export class EntryWorkflowController extends BaseController {
         const activeGrant = grant.success && Date.parse(grant.data.until) > Date.now() ? grant.data : null;
         const inheritedGrant = kind === "BASIC" && finalGrant && finalGrant.fields.some(field => BASIC_ENTRY_FIELDS.includes(field)) ? { ...finalGrant, fields: finalGrant.fields.filter(field => BASIC_ENTRY_FIELDS.includes(field)) } : null;
         const blockedByFinal = kind === "BASIC" && finalLocksBasic && inheritedGrant === null;
-        let canSubmit = this.isAdmin(req) && window.enabled;
+        let canSubmit = this.isAdmin(req) && window.enabled && !["SCHEDULED", "LIVE"].includes(event.stage);
         if (!this.isAdmin(req)) {
           try { await guardEntrySubmission(db, eventId, studioId, kind); canSubmit = true; }
           catch (error) { if (!(error instanceof ForbiddenError)) throw error; }
         }
         return { kind, reviewToken: entryReviewToken(manifest, kind, config.revision), revision: row?.revision ?? 0, status: row?.status ?? "DRAFT", enabled: window.enabled,
           canSubmit,
-          locked: ["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage) || blockedByFinal || ((row?.earlyLocked === true || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) && activeGrant === null && inheritedGrant === null),
+          locked: ["SCHEDULED", "LIVE", "FINALIZED", "ENDED", "CANCELLED"].includes(event.stage) || blockedByFinal || ((row?.earlyLocked === true || (window.deadline !== null && Date.parse(window.deadline) <= Date.now())) && activeGrant === null && inheritedGrant === null),
           deadline: window.deadline, grant: blockedByFinal ? null : activeGrant ?? inheritedGrant, issues: entryIssues(manifest, kind),
           receipts: (row?.receipts ?? []).filter(receipt => this.isAdmin(req) || receipt.action !== "REOPEN" || receipt.visible)
             .map(receipt => this.receipt(receipt, kind, this.isAdmin(req))) };
@@ -175,6 +175,8 @@ export class EntryWorkflowController extends BaseController {
       }
       const config = await entrySettings(db, eventId);
       if (!config) throw new ConflictError("Configure entry checkpoints first", undefined, "invalidConfiguration");
+      const lifecycle = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
+      if (["SCHEDULED", "LIVE"].includes(lifecycle.stage)) throw new ForbiddenError("Return to data review before changing checkpoint sources", "stageLocked");
       if (!config.settings[kind === "BASIC" ? "basic" : "final"].enabled) throw new ConflictError("This checkpoint is disabled", undefined, "stageLocked");
       const head = await db.entryCheckpoint.findUnique({ where: { registrationId_kind: { registrationId: registration.id, kind } } });
       if ((head?.revision ?? 0) !== body.expectedRevision) throw new ConflictError("Studio form changed; refresh and compare", undefined, "concurrentChange");

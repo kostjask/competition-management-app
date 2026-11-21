@@ -1,7 +1,8 @@
 # ADR-003: M2 registration lifecycle
 
-Accepted 2026-11-09 for the M2 application/review scope. Live operation remains
-P6-LIVE-MODEL. This decision does not add DRAFT, SCHEDULED or LIVE stages.
+Accepted 2026-11-09 for M2 application/review. Extended 2026-11-21 by
+[ADR-030](030-session-queues.md) for SCHEDULED/LIVE mapping and explicit session
+queues. DRAFT is not an event stage. Scoring readiness still gates actual live use.
 
 Organization and event decisions are independent. An administrator may record
 either decision first; representative access requires both APPROVED, an active
@@ -10,7 +11,10 @@ assignment history and any other approved studio in the same event.
 
 M2 stage changes are PRE_REGISTRATION → REGISTRATION_OPEN → DATA_REVIEW.
 Cancellation is allowed from these three stages. Backward/skipped changes and
-transitions into live/final states are refused until their owning lifecycle task.
+DATA_REVIEW → SCHEDULED requires a complete eligible conflict-free schedule;
+SCHEDULED → DATA_REVIEW requires paused, unstarted queues. Scheduled/live
+cancellation is supported. SCHEDULED → LIVE and LIVE → FINALIZED fail closed until
+scoring readiness/completeness exists. FINALIZED → ENDED is an admin transition.
 Existing terminal/live records remain readable. An unchanged stage is a no-op.
 Stage PATCH supplies expectedStage; stale stages conflict. P4-CORE adds mandatory expectedRevision for all event edits and setup readiness before opening, as recorded in [ADR-020](020-organizer-event-setup.md). All actors, including
 global administrators, obey application deadlines and stage locks.

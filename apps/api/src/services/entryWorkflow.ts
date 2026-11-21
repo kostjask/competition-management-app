@@ -25,6 +25,8 @@ const relevant = (kind: EntryKind, fields: readonly EntryField[]) => fields.filt
 /** The same studio-wide guard applies to entry and roster writes, including indirect edits. */
 export async function guardEntryWrite(db: Prisma.TransactionClient, eventId: string, studioId: string,
   fields: readonly EntryField[], admin: boolean, performanceId?: string) {
+  const lifecycle = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
+  if (["SCHEDULED", "LIVE"].includes(lifecycle.stage)) throw new ForbiddenError("Return to review before changing schedule sources", "stageLocked");
   const config = await entrySettings(db, eventId);
   if (!config || admin) return;
   const registration = await db.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId, eventId } } });
@@ -55,7 +57,7 @@ export async function guardEntrySubmission(db: Prisma.TransactionClient, eventId
   const config = await entrySettings(db, eventId);
   if (!config) throw new ForbiddenError("Configure checkpoints first", "stageLocked");
   const event = await db.event.findUniqueOrThrow({ where: { id: eventId }, select: { stage: true } });
-  if (["FINALIZED", "ENDED", "CANCELLED"].includes(event.stage)) throw new ForbiddenError("This event is closed", "stageLocked");
+  if (["SCHEDULED", "LIVE", "FINALIZED", "ENDED", "CANCELLED"].includes(event.stage)) throw new ForbiddenError("This event is closed", "stageLocked");
   const registration = await db.studioEventRegistration.findUniqueOrThrow({ where: { studioId_eventId: { studioId, eventId } } });
   const head = await db.entryCheckpoint.findUnique({ where: { registrationId_kind: { registrationId: registration.id, kind } } });
   const window = config.settings[kind === "BASIC" ? "basic" : "final"];

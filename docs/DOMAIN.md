@@ -47,8 +47,9 @@ Event scoping is not a claim of multi-organizer isolation.
 | Public studio content | Structured singleton revisions, profiles/classes/timetable, explicit publication and document-owned assets | Public-page composition/release remains open; no enrolment or student registry |
 | Festival edition publication | Stable Festival/Edition identities, optional unique Event linkage, immutable revisions/receipts, private preview and published-only APIs | Public pages/Wix transition remain open; public profiles grant no assignments |
 
-Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, FINALIZED,
-ENDED, CANCELLED. M2 transitions are enforced by ADR-003; live/final transitions remain P6-LIVE-MODEL.
+Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, SCHEDULED,
+LIVE, FINALIZED, ENDED, CANCELLED. ADR-003/030 enforce lifecycle and queue mappings;
+entry into LIVE/finalization still requires the future scoring readiness boundary.
 FINALIZED is not score-sheet lock, entry submission or public result publication.
 
 All new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
@@ -82,11 +83,13 @@ ADR-025 checkpoint receipts identify exact submitted snapshots.
 ## Pending model decisions
 
 **ADR-003 lifecycle:** [M2 application/review policy accepted and implemented](adr/003-registration-lifecycle.md).
-Live rules remain P6-LIVE-MODEL.
-Candidate sequence: DRAFT → PRE_REGISTRATION → REGISTRATION_OPEN → DATA_REVIEW →
-SCHEDULED → LIVE → FINALIZED → ENDED, with CANCELLED from pre-ended states.
-DRAFT/SCHEDULED/LIVE are proposals, not current enum values. Decide correction
-after finalization and audit behavior before implementation.
+[ADR-030](adr/030-session-queues.md) accepts event-owned stages/sessions, stable
+queue slots, admin scheduling, explicit moderator assignments, pause/skip/requeue/
+reopen and source-bound transactional receipts. SCHEDULED/LIVE enum values and
+S13 scheduling are implemented locally. DATA_REVIEW → SCHEDULED requires complete
+eligible scheduling; SCHEDULED may return to review before a queue starts.
+START/ADVANCE and entry into LIVE/finalization remain blocked pending scoring.
+DRAFT is not an event stage. Score corrections/publication remain separate.
 
 **ADR-004 scoring (not accepted/filed):** define event/category template, ordered
 criteria and min/max/step/weight, judge assignments, draft/submitted/locked sheets,

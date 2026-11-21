@@ -1,0 +1,35 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: session queue and timing ledger · v2.0.0 */
+/* Critique: native queue moves and a separate confirmed preview retain identity through errors. */
+/* Finish review: independent subagent, 3 findings resolved in confirming phone/desktop captures; no material slots. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+@import "../events/event-setup.css";
+@import "../entries/entries.css";
+.schedule-workbench { max-width: var(--container); margin-inline: auto; padding: var(--space-lg); }
+.schedule-layout { display: grid; grid-template-columns: minmax(14rem, 1fr) minmax(0, 3fr); gap: var(--space-column); align-items: start; }
+.schedule-facts { display: flex; flex-wrap: wrap; gap: var(--space-lg); padding-block: var(--space-md); border-block: 1px solid var(--color-rule-2); }
+.schedule-facts dt { font-size: var(--text-sm); color: var(--color-ink-2); }
+.schedule-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.schedule-settings-column { display: grid; gap: var(--space-md); }
+.schedule-settings, .schedule-history { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
+.schedule-workbench summary { cursor: pointer; padding-block: var(--space-sm); min-height: 44px; }
+.schedule-workbench fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.schedule-workbench form { display: grid; gap: var(--space-md); padding-block: var(--space-md); }
+.schedule-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); }
+.schedule-ledger { padding: 0; margin: 0; list-style: none; }
+.schedule-ledger li { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-md); min-width: 0; overflow-wrap: anywhere; }
+.schedule-row-heading { display: flex; flex-wrap: wrap; gap: var(--space-sm); align-items: baseline; }
+.schedule-row-heading h3 { flex: 1 1 100%; margin: 0; }
+.schedule-row-heading span { font-size: var(--text-sm); color: var(--color-ink-2); }
+.schedule-row-actions { margin-block-start: var(--space-md); align-items: end; }
+.schedule-row-actions .ui-field { flex: 1 1 12rem; max-width: 20rem; }
+.schedule-unscheduled { margin-block: var(--space-lg); }
+.schedule-preview, .schedule-comparison { border-block: 2px solid var(--color-accent); padding-block: var(--space-lg); margin-block: var(--space-lg); }
+.schedule-preview .schedule-ledger li { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); align-items: baseline; }
+.schedule-mobile-label { display: none; }
+.schedule-history code { display: block; overflow-wrap: anywhere; font-family: inherit; font-size: var(--text-sm); }
+.schedule-workbench button:focus-visible, .schedule-workbench select:focus-visible, .schedule-workbench summary:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.schedule-print { display: none; }
+@media (max-width: 52rem) { .schedule-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); } .schedule-workbench { padding: var(--space-md); } }
+@media (max-width: 38rem) { .schedule-preview .schedule-ledger li { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); } .schedule-mobile-label { display: inline; color: var(--color-ink-2); } }
+@media print { .schedule-workbench > :not(.schedule-print) { display: none; } .schedule-print { display: block; } }

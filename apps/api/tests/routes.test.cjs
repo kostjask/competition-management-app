@@ -34,7 +34,8 @@ async function fixture(t) {
     },
     user: { findUnique: record('user', null), findFirst: async ({ where }) => ({ id: where.id }) },
     accountToken: { findUnique: record('account-token', null) },
-    event: { findMany: record('events', []), findUnique: record('event', null) },
+    event: { findMany: record('events', []), findUnique: record('event', null), findUniqueOrThrow: async () => ({ stage: 'REGISTRATION_OPEN' }) },
+    competitionSession: { count: async () => 0 },
     judge: { findUnique: async () => null, create: async ({ data }) => ({ id: "reconciled-judge", ...data }), findMany: record('judges', []) },
     danceCategory: { findMany: record('categories', []) },
     danceFormat: { findMany: record('formats', []) },
@@ -1045,7 +1046,7 @@ test('event strict mutation validation and partial date ordering reject invalid 
   assert.equal((await send(eventInput, 'POST')).status, 201);
   const before = { ...stored() };
   for (const body of [{}, { name: ' ' }, { name: null }, { venue: '' }, { maxStudios: 0 },
-    { maxPerformances: 1.5 }, { maxStudios: 2147483648 }, { stage: 'LIVE' },
+    { maxPerformances: 1.5 }, { maxStudios: 2147483648 }, { stage: 'UNKNOWN' },
     { startsAt: '2026-11-01' }, { endsAt: '2026-02-30T12:00:00Z' },
     { startsAt: '2026-11-01T10:00:00Z' }, { endsAt: '2026-11-01T08:00:00Z' },
     { id: 'other' }, { imageUrl: 'url' }, { imagePath: 'path' }, { updatedAt: 'now' }, { createdAt: 'now' }]) {

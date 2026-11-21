@@ -7,14 +7,22 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 ## S13 — Schedule editor
 
-- **Purpose / roles / route:** create a safe runnable schedule; admins/explicit authorized organizers only after permission decision; proposed `/admin/events/:id/schedule`.
+- **Purpose / roles / route:** locally implemented global-admin schedule editor at `/app/admin/events/:eventId/schedule` under ADR-030; venue release remains gated.
 - **Primary action:** generate/reorder and validate schedule revision.
 - **Data:** submitted entries, stages/sessions, duration/buffers, participant conflicts, queue/schedule revision and locks.
 - **Sections / components:** stage/session filters, unscheduled list, schedule table/timeline, conflict panel, move up/down or destination controls, preview/confirm.
 - **States:** no entries, generating, conflicts, stale revision, live-locked changes, denied; cancel preview leaves saved schedule intact.
 - **Responsive / accessibility:** mobile list with explicit move controls, desktop optional timeline/table; drag has keyboard and single-pointer alternatives, preserve focused item after move.
-- **API:** pending P6-LIVE-MODEL/SCHEDULE; current performance order alone is insufficient.
+- **API:** [schedule preview/commands](../api/schedule.md), shared strict contracts and migration 46; legacy performance order remains independent.
 - **Acceptance:** atomic swaps avoid duplicate slots; same-dancer conflict visible; retries/stale edits cannot silently overwrite schedule. F07.
+
+The implemented Cobalt ledger uses stage/session URL filters, explicit session
+setup, append-generation, keyboard moves, cross-session destinations and projected
+times. Conflicting previews cannot save; confirmation names the proposed revision.
+Current server comparison is separate from the retained local draft and exact
+uncertain command. All acknowledged sessions are printable. ET/EN/RU phone/desktop
+browser checks accompany delivery; human language/assistive and venue acceptance
+remain open. S14/S15 and full P6-UI-LIVE are not completed by this slice.
 
 ## S14 — Moderator live console
 

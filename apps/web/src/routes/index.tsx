@@ -27,6 +27,7 @@ const InvitationsPage = lazy(() => import("../pages/admin/InvitationsPage.tsx"))
 const StaffPage = lazy(() => import("../pages/admin/StaffPage.tsx"));
 const ReviewPage = lazy(() => import("../pages/applications/ReviewPage.tsx"));
 const PerformanceRegister = lazy(() => import("../pages/performances/PerformanceRegister.tsx"));
+const SchedulePage = lazy(() => import("../pages/schedule/SchedulePage.tsx"));
 const DancerRoster = lazy(() => import("../pages/entries/DancerRoster.tsx"));
 const EntryWorkspace = lazy(() => import("../pages/entries/EntryWorkspace.tsx"));
 const MusicPage = lazy(() => import("../pages/music/MusicPage.tsx"));
@@ -135,6 +136,7 @@ export function AppRoutes() {
                 <Route path="events/:eventId/staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
                 <Route path="events/:eventId/applications" element={<LazyWrapper><ReviewPage /></LazyWrapper>} />
                 <Route path="events/:eventId/performances" element={<LazyWrapper><PerformanceRegister /></LazyWrapper>} />
+                <Route path="events/:eventId/schedule" element={<LazyWrapper><SchedulePage /></LazyWrapper>} />
                 <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
                 <Route
                   index

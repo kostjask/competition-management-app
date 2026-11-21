@@ -153,7 +153,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S10 | `/events/:eventId/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | Local nullable unscheduled draft/participant editor, P5-ENTRIES |
 | S11 | `/app/events/:eventId/studios/:studioId/music` | P5-MUSIC; S08 preparation and S10 `?performance=` child |
 | S12 | I `/admin/events/:eventId/performances`; P `/events/:id/studios/:studioId/review` | Organizer ownership/history/draft/details/configuration/checkpoint review/withdraw/restore delivered locally; representative checklist remains P5-SUBMISSION |
-| S13 | P `/admin/events/:id/schedule` | P6-SCHEDULE |
+| S13 | `/admin/events/:eventId/schedule` | Local P6-SCHEDULE ledger at the `/app` base; venue/human release gates remain open |
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
 | S15 | `/judge`; P `/judge/events/:id/score` | Placeholder; P6-JUDGE |
 | S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |

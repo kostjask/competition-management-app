@@ -162,6 +162,21 @@ test("S05 confirmed close and cancellation retain history and restore logical ke
   await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(0);
   await page.goto("/app/events/e"); await expect(page.getByText(label("Setup.windowClosed"), { exact: true })).toBeVisible();
 });
+test("S05 schedule transitions have distinct names and keep live readiness gated", async ({ page }) => {
+  const state = await install(page); state.current.stage = "DATA_REVIEW";
+  await page.goto("/app/admin/events/e/setup");
+  await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(1);
+  await page.getByRole("button", { name: label("Schedule.confirmSchedule"), exact: true }).click();
+  await expect(page.getByText(label("Schedule.scheduleEffect"), { exact: true })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
+  await expect(page.getByRole("button", { name: label("Schedule.startLive"), exact: true })).toBeDisabled();
+  await expect(page.getByText(label("Schedule.scoringNotReady"), { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: label("Schedule.returnReview"), exact: true }).click();
+  await expect(page.getByText(label("Schedule.reviewEffect"), { exact: true })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
+  await expect(page.locator("#event-stage-heading")).toBeFocused(); expect(state.current.stage).toBe("DATA_REVIEW");
+});
+
 test("S05 pending save disables mutations and never claims success before acknowledgement", async ({ page }) => {
   const state = await install(page); let release: (() => void) | undefined;
   const wait = new Promise<void>(resolve => { release = resolve; });

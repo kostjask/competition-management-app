@@ -5,6 +5,39 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "session queue ledger",
+   "source-bound timing preview",
+   "explicit keyboard moves",
+   "separate server comparison",
+   "acknowledged revision"
+  ],
+  "hero": "none",
+  "nav": "existing workspace shell",
+  "footer": "none",
+  "imagery": "actual operational data; synthetic browser fixtures",
+  "photos": [],
+  "entry": "apps/web/src/pages/schedule/schedule.css",
+  "fingerprint": "event stages and session queues with immutable receipts and explicit source-pinned preview",
+  "sections": [
+   "stage/session setup",
+   "queue ledger",
+   "unscheduled entries",
+   "timing preview",
+   "acknowledgement history"
+  ],
+  "signature": "session queue and timing ledger",
+  "waived": [],
+  "prompt": "P6-LIVE-MODEL/P6-SCHEDULE S13 with existing Cobalt, ET/EN/RU and accessibility",
+  "sweep": "0 FAIL 0 REFLEX 0 WARN static; independent finish review 3 findings 3 resolved in phone/desktop Playwright captures; render tier not run",
+  "date": "2026-11-20",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "studio-wide checklist",
    "field-linked blockers",
    "independent music notices",
