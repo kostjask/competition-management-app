@@ -72,6 +72,12 @@ as entered. There are no material slots. The existing shell supplies the main
 landmark and account navigation. Human language and assistive review remain
 release gates.
 
+S14 and S15 surface the localized pause-and-verify instructions inside their
+connection status regions. A bold status line and the shared warning treatment
+give the interruption priority while the queue and score sheet retain their
+focus order. The instructions stay visible during a reconnect until an
+authorized server read confirms the current state.
+
 P6-SCHEDULE/S13 extends Cobalt with a stage/session selector, paused queue ledger,
 explicit native moves/destinations and source-bound timing preview. Aligned desktop
 columns become labelled sequential phone rows. Confirmation, acknowledged revision,

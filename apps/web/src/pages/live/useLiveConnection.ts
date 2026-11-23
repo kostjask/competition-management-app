@@ -10,7 +10,7 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
   const [snapshot, setSnapshot] = useState<{ workspace: T; receivedAt: number } | null>(null);
   const [failure, setFailure] = useState<{ ui: UiError; denied: boolean } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
-  const [stale, setStale] = useState(false);
+  const [stale, setStale] = useState<"awaiting" | "interrupted" | null>(() => navigator.onLine ? null : "interrupted");
   const [loading, setLoading] = useState(false);
   const active = useRef<AbortController | null>(null);
 
@@ -18,7 +18,7 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
     active.current?.abort();
     active.current = null;
     setLoading(false);
-    setStale(true);
+    setStale(current => current ?? "awaiting");
   }, []);
 
   const refresh = useCallback(async () => {
@@ -33,13 +33,13 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
       onRead(workspace);
       setSnapshot({ workspace, receivedAt: Date.now() });
       setFailure(null);
-      setStale(false);
+      setStale(null);
     } catch (error) {
       if (request.signal.aborted) return;
       const denied = error instanceof ApiError && [401, 403, 404].includes(error.statusCode);
       if (denied) setSnapshot(null);
       setFailure({ ui: toUiError(error), denied });
-      setStale(true);
+      setStale(denied ? "awaiting" : "interrupted");
     } finally {
       if (active.current === request) {
         active.current = null;
@@ -50,8 +50,10 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
 
   useEffect(() => {
     const connectivity = () => {
-      setOnline(navigator.onLine);
+      const isOnline = navigator.onLine;
+      setOnline(isOnline);
       invalidate();
+      if (!isOnline) setStale("interrupted");
       void refresh();
     };
     const resume = () => { if (document.visibilityState === "visible") connectivity(); };
@@ -75,12 +77,13 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
 
   useEffect(() => {
     if (!snapshot) return;
-    const timer = window.setTimeout(() => setStale(true), STALE_MS);
+    const timer = window.setTimeout(() => setStale("interrupted"), STALE_MS);
     return () => window.clearTimeout(timer);
   }, [snapshot]);
 
   const receivedAt = snapshot?.receivedAt;
   const fresh = useCallback(() => receivedAt !== undefined && online && navigator.onLine && !stale && !paused && Date.now() - receivedAt < STALE_MS,
     [receivedAt, online, stale, paused]);
-  return { snapshot, failure, loading, online, connected: !!snapshot && online && !stale && !paused, fresh, invalidate, refresh };
+  return { snapshot, failure, loading, online, connected: !!snapshot && online && !stale && !paused,
+    interrupted: stale === "interrupted" && !failure?.denied, fresh, invalidate, refresh };
 }

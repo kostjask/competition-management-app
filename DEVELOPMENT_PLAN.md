@@ -6,13 +6,25 @@ task checkboxes. [The map](docs/README.md) routes selected work to its docs/sour
 
 ## Next action
 
-**Next task: P6-RECOVERY venue rehearsal.** Name the stage lead and judge devices,
-verify venue connection health and latency, and approve the manual continuation
-record before a cross-device F08/F09 rehearsal. Rehearse a lost acknowledgement,
-connection interruption, reassignment and the pause-and-verify handoff. S14 and S15
-implement local acknowledged HTTP and exact-operation recovery under
-[ADR-031](docs/adr/031-live-scoring-reconnect.md). P6-RECOVERY, P6-UI-LIVE and
-M5 retain their venue and human acceptance gates.
+**Next task: P6-RECOVERY venue rehearsal.** Use the [live rehearsal runbook](docs/LIVE_REHEARSAL.md)
+to name the stage lead and devices, confirm the rehearsal environment and contact
+method, and decide whether to approve a manual continuation procedure. Measure
+venue health and score/queue propagation, then rehearse F07–F09 with the intended
+devices. S14 and S15 now show localized interruption instructions through the
+next verified server read under [ADR-031](docs/adr/031-live-scoring-reconnect.md).
+P6-RECOVERY, P6-UI-LIVE and M5 retain their venue and human acceptance gates.
+
+Rehearsal preparation on 2026-11-23 passed all 25 affected moderator and judge
+Chromium cases in ET/EN/RU at 320–1920 px. The finish review elevated the outage
+status with the shared warning treatment. Hallmark static and rendered checks
+passed after recapture. The full browser run passed 478 cases, and the seven
+organizer discovery and role-navigation timeouts all passed in a one-worker rerun.
+Workspace tests, typecheck, lint, build and Prisma generation, validation and
+format checks passed. The standard disposable `test:entry-foundations` run
+passed, including live schedule scope and exact scoring recovery, after earlier
+startup and migration timeouts under concurrent validation. The Markdown checker
+has the existing ignored `.hallmark/pr-body.md` link failure. All repository
+documents pass with that file excluded.
 
 The user directed results to stay private on 2026-11-23.
 [ADR-032](docs/adr/032-private-results.md) and migration 48 complete P7-CALCULATE
@@ -303,7 +315,7 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks |
 | 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
 | 10 | P6-MODERATOR/S14 — complete locally | Scoped queue and frozen-panel counts, acknowledged controls and reasoned exceptions |
-| 11 | P6-RECOVERY — venue work next | Validate venue health, approve any manual continuation record and rehearse both roles using the handoff |
+| 11 | P6-RECOVERY — local preparation delivered, venue work next | Run the F07–F09 rehearsal, measure venue health and propagation, and record the procedure and human acceptance |
 | 12 | P7-CALCULATE and private S16 finalization — complete locally | ADR-032 consumes frozen submitted sheets and finalizes one reviewed revision with atomic event state. |
 | 13 | P7-PUBLISH / P7-EXPORT — deferred | The user requested private results. Confirm a public projection, correction policy and release scope before resuming. |
 

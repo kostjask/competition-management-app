@@ -74,7 +74,7 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
     return result;
   }, [eventId, sessionId, operationId, organizer]);
   const connection = useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
-  const { snapshot, failure, loading, online, connected, fresh, invalidate, refresh } = connection;
+  const { snapshot, failure, loading, online, connected, interrupted, fresh, invalidate, refresh } = connection;
   const workspace = snapshot?.workspace;
   const session = workspace?.session;
 
@@ -124,6 +124,9 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
   const proposalChanged = !!proposal && (workspace?.revision !== proposal.workspace.revision ||
     workspace.session?.id !== proposal.session.id || workspace.eventStage !== proposal.workspace.eventStage);
   const showPrint = !!session && !sessionExpired && !failure?.denied;
+  const showInterruption = interrupted && !sessionExpired;
+  const interruptionHelp = showInterruption && <p>{t("Moderator.interruptionHelp")}</p>;
+  const connectionStatus = t(!online ? "Moderator.offline" : connected ? "Moderator.connected" : "Moderator.stale");
   const time = (date: Date, zone = workspace?.timeZone) => new Intl.DateTimeFormat(locale, {
     dateStyle: "short", timeStyle: "medium", timeZone: zone,
   }).format(date);
@@ -167,7 +170,10 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
           </>}
         </section>
         <section aria-labelledby="live-connection"><h2 id="live-connection">{t("Moderator.connection")}</h2>
-          <p role="status">{t(!online ? "Moderator.offline" : connected ? "Moderator.connected" : "Moderator.stale")}</p>
+          <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : undefined}>
+            <p>{showInterruption ? <strong>{connectionStatus}</strong> : connectionStatus}</p>
+            {interruptionHelp}
+          </div>
           {snapshot && <p className="ui-help">{t("Moderator.sync", { revision: revision(workspace.revision), time: time(new Date(snapshot.receivedAt)) })}</p>}
           <div className="moderator-actions">
             <Button variant="secondary" disabled={!online || loading || sending} onClick={() => void refresh()}>{t("Moderator.refresh")}</Button>
@@ -192,7 +198,11 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
     </> : online ? <>
       <div className="moderator-ledger moderator-loading" aria-hidden="true"><span /><span /></div>
       <LoadingState label={t("Access.loading")} />
-    </> : <Alert tone="warning">{t("Moderator.offline")}</Alert>)}
+    </> : null)}
+    {!session && <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : undefined}>
+      {!online && !failure && <p><strong>{connectionStatus}</strong></p>}
+      {interruptionHelp}
+    </div>}
     {workspace && !session && <EmptyState title={t("Moderator.noSessions")} description={t(workspace.organizer ? "Moderator.configure" : "Moderator.contact")} />}
     {workspace && failure && <Alert tone="warning"><ErrorFeedback error={failure.ui} /></Alert>}
 

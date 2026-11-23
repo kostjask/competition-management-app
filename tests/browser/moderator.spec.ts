@@ -173,6 +173,15 @@ for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 144
     await resume.click();
     await expect(pause).toBeEnabled();
     expect(state.commands.map(command => command.action)).toEqual(["PAUSE", "START"]);
+    const handoff = page.getByRole("status").getByText(getTranslation("Moderator.interruptionHelp", locale), { exact: true });
+    await expect(handoff).toHaveCount(0);
+    await page.context().setOffline(true);
+    await expect(handoff).toBeVisible();
+    await expect(pause).toBeDisabled();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (process.env.LIVE_INTERRUPTION_CAPTURE === "1" && locale === "en" && width === 390) {
+      await capture(page, ".hallmark/moderator-interruption.html");
+    }
   });
 }
 
@@ -225,24 +234,40 @@ test("offline and failed reads disable controls, and reassignment clears private
   const state = await fixture(page);
   await page.goto(livePath);
   const pause = page.getByRole("button", { name: "Pause", exact: true });
+  const help = page.getByRole("status").getByText(getTranslation("Moderator.interruptionHelp", "en"), { exact: true });
   await expect(pause).toBeEnabled();
   await context.setOffline(true);
   await expect(page.getByText("Offline. Controls are disabled.")).toBeVisible();
+  await expect(help).toBeVisible();
   await expect(pause).toBeDisabled();
   await page.emulateMedia({ media: "print" });
   await expect(page.getByRole("heading", { name: "Stage handoff" })).toBeVisible();
   await expect(page.getByText(/^Last read of revision 4/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Skip performance" })).toHaveCount(0);
   await page.emulateMedia({ media: "screen" });
-  state.readFailure = true;
+  let releaseRead = () => {};
+  const holdRead = new Promise<void>(resolve => { releaseRead = resolve; });
+  await page.route("**/schedule/live?*", async route => {
+    await holdRead;
+    await route.fallback();
+  }, { times: 1 });
   await context.setOffline(false);
   await expect(page.getByText("Live data may be stale. Controls are disabled.")).toBeVisible();
+  await expect(help).toBeVisible();
+  await expect(pause).toBeDisabled();
+  releaseRead();
+  await expect(pause).toBeEnabled();
+  await expect(help).toHaveCount(0);
+  state.readFailure = true;
+  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await expect(help).toBeVisible();
   await expect(pause).toBeDisabled();
   state.readFailure = false; state.denied = true;
   await page.getByRole("button", { name: "Refresh", exact: true }).click();
   await expect(page.getByRole("button", { name: "Choose an available session" })).toBeVisible();
   await expect(page.getByText("First performance")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Print handoff" })).toHaveCount(0);
+  await expect(help).toHaveCount(0);
   expect(state.commands).toHaveLength(0);
 });
 

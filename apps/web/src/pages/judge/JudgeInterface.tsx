@@ -66,7 +66,8 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
   }, [pending]);
   const operationId = pending?.operationId;
   const read = useCallback((signal: AbortSignal) => getJudgeScoring(eventId, operationId, signal), [eventId, operationId]);
-  const { snapshot, failure, loading, online, connected, fresh, invalidate, refresh } = useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
+  const { snapshot, failure, loading, online, connected, interrupted, fresh, invalidate, refresh } =
+    useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
   useUnsaved(!!draft || !!pending, false, t("Judge.discard"));
   useEffect(() => () => { writing.current?.abort(); }, []);
 
@@ -140,6 +141,8 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
   const shownAck = lastAck?.sheetId === sheetId ? lastAck : null;
   const retryable = !!pending && !sending && !changed && connected && acknowledgement === null;
   const compare = connected && changed && !sending && (!!draft || !!pending);
+  const showInterruption = interrupted && !sessionExpired;
+  const connectionStatus = t(!online ? "Judge.offline" : connected ? "Judge.connected" : "Judge.checking");
 
   return <div className="event-workbench judge-workbench">
     <header className="judge-header">
@@ -151,7 +154,10 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
         </div>}
       </div>
       <div>
-        <p role="status">{!online ? t("Judge.offline") : connected ? t("Judge.connected") : t("Judge.checking")}</p>
+        <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : undefined}>
+          <p>{showInterruption ? <strong>{connectionStatus}</strong> : connectionStatus}</p>
+          {showInterruption && <p>{t("Judge.interruptionHelp")}</p>}
+        </div>
         {snapshot && <p className="judge-fact">{t("Judge.lastCheck", { time: formatTime(new Date(snapshot.receivedAt).toISOString()) })}</p>}
         <Button variant="secondary" disabled={!online || loading || sending} onClick={() => void refresh()}>{t("Judge.refresh")}</Button>
       </div>

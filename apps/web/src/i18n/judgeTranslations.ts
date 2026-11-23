@@ -7,6 +7,11 @@ export const judgeTranslations = {
   waitingHelp: { et: "Hindamisleht ilmub, kui sinu hindamiskomisjonile määratud etteaste algab.", en: "Your sheet appears when a performance assigned to your panel starts.", ru: "Лист появится, когда начнётся выступление, назначенное вашей судейской коллегии." },
   loading: { et: "Hindamislehed laaditakse", en: "Loading score sheets", ru: "Загрузка оценочных листов" },
   offline: { et: "Võrguühendus puudub. Hindamine on peatatud.", en: "Offline. Editing and submission are paused.", ru: "Нет сети. Редактирование и отправка приостановлены." },
+  interruptionHelp: {
+    et: "Hoia see vahekaart avatuna ja teavita lavavastutajat, kui katkestus kestab. Enne jätkamist kontrolli oma hindamislehe olekut serveris.",
+    en: "Keep this tab open. If the interruption continues, contact the stage lead. Verify your sheet’s server status before continuing.",
+    ru: "Оставьте эту вкладку открытой. Если связь не восстановится, сообщите ответственному за сцену. Перед продолжением проверьте состояние своего листа на сервере.",
+  },
   connected: { et: "Ühendus serveriga on olemas", en: "Connected to the scoring server", ru: "Есть связь с сервером оценивания" },
   checking: { et: "Serveri olek vajab kontrollimist", en: "Checking server state", ru: "Проверка состояния на сервере" },
   refresh: { et: "Kontrolli serveri olekut", en: "Check server state", ru: "Проверить состояние на сервере" },

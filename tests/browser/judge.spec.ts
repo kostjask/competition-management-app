@@ -10,6 +10,13 @@ const labels = { et: "Tehnika", en: "Technique", ru: "Техника" };
 const scorePath = "/app/judge/events/e/score";
 const error = (reason: string) => ({ reason, params: {}, issues: [] });
 
+async function capture(page: Page, file: string) {
+  const { html, styles } = await page.evaluate(() => ({ html: document.body.innerHTML, styles: [...document.styleSheets].flatMap(sheet => {
+    try { return [...sheet.cssRules].map(rule => rule.cssText); } catch { return []; }
+  }).join("\n") }));
+  await writeFile(file, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Judge score sheet</title><style>${styles}</style></head><body>${html}</body></html>`, "utf8");
+}
+
 async function fixture(page: Page, locale: Locale = "en") {
   await page.addInitScript(value => localStorage.setItem("app-language", value), locale);
   const workspace = JudgeScoringWorkspaceSchema.parse({ eventId: "e", eventName: "Winter competition", acknowledgement: null, sheets: [{
@@ -77,10 +84,7 @@ for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 144
     expect(state.commands[0]?.values[0]?.value).toBe("0.000");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (process.env.JUDGE_HALLMARK_CAPTURE === "1" && locale === "en" && width === 1440) {
-      const { html, styles } = await page.evaluate(() => ({ html: document.body.innerHTML, styles: [...document.styleSheets].flatMap(sheet => {
-        try { return [...sheet.cssRules].map(rule => rule.cssText); } catch { return []; }
-      }).join("\n") }));
-      await writeFile(".hallmark/judge-render.html", `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Judge score sheet</title><style>${styles}</style></head><body>${html}</body></html>`, "utf8");
+      await capture(page, ".hallmark/judge-render.html");
     }
     await review.focus(); await page.keyboard.press("Enter");
     await expect(page.getByRole("heading", { name: getTranslation("Judge.confirmTitle", locale) })).toBeFocused();
@@ -90,6 +94,14 @@ for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 144
     await expect(page.getByText(getTranslation("Judge.locked", locale), { exact: true })).toBeVisible();
     expect(state.commands.map(command => command.action)).toEqual(["DRAFT", "SUBMIT"]);
     await page.reload(); await expect(score).toHaveValue("0"); await expect(score).not.toBeEditable();
+    const handoff = page.getByRole("status").getByText(getTranslation("Judge.interruptionHelp", locale), { exact: true });
+    await expect(handoff).toHaveCount(0);
+    await page.context().setOffline(true);
+    await expect(handoff).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (process.env.LIVE_INTERRUPTION_CAPTURE === "1" && locale === "en" && width === 390) {
+      await capture(page, ".hallmark/judge-interruption.html");
+    }
   });
 }
 
@@ -130,6 +142,8 @@ test("offline drafts stay pinned when the stage advances and must be resolved be
   await score.fill("1,1");
   await context.setOffline(true);
   await expect(page.getByText("Offline. Editing and submission are paused.")).toBeVisible();
+  const help = page.getByRole("status").getByText(getTranslation("Judge.interruptionHelp", "en"), { exact: true });
+  await expect(help).toBeVisible();
   await expect(score).not.toBeEditable();
   const first = state.workspace.sheets[0];
   first.writable = false; first.current = false;
@@ -138,6 +152,7 @@ test("offline drafts stay pinned when the stage advances and must be resolved be
   await expect(page.getByRole("heading", { name: "First performance" })).toBeVisible();
   await expect(score).toHaveValue("1,1");
   await page.getByRole("button", { name: "Compare with the server" }).click();
+  await expect(help).toHaveCount(0);
   await expect(page.getByText("Server score blank, my score 1,1")).toBeVisible();
   page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Use the server version" }).click();

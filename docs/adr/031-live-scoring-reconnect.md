@@ -66,7 +66,10 @@ Push transport requires reconnect and ordering guarantees of its own. Both can
 be evaluated after the acknowledged workflow is exercised under venue conditions.
 
 When a judge sees a prolonged outage, retain the tab and contact the stage lead.
+The moderator and judge connection status surfaces the role-specific next steps
+on an outage, read failure or expired freshness. The instruction stays visible
+through a reconnect until a successful read or an access/session failure.
 Any approved manual continuation or historical reopen must use the authorized
 reasoned actions under ADR-004/030. Remaining P6-RECOVERY work is the venue health
 and latency check, approval of any manual continuation record/export and a
-cross-device rehearsal on the intended venue network.
+cross-device rehearsal on the intended venue network. Use the [rehearsal runbook](../LIVE_REHEARSAL.md).

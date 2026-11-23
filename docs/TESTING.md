@@ -66,8 +66,11 @@ and `event-setup.spec.ts` when changing confirmed LIVE entry. The
 `check-scoring.cjs` PostgreSQL suite covers assigned-session privacy, unavailable
 judges, actor/session-bound acknowledgements and reasoned corrections.
 Run `pnpm test:entry-foundations` before the full local gates. Venue latency,
-manual continuation approval and human language/assistive checks have separate
-acceptance.
+manual continuation approval and human language/assistive checks follow the
+[venue runbook](LIVE_REHEARSAL.md). Both browser specs cover localized interruption
+guidance at 320–1920px. The moderator spec holds a reconnect read to verify that
+guidance persists and writes remain disabled until the read completes, and
+checks guidance and print removal after denied access.
 
 P6-JUDGE/S15 and the judge portion of P6-RECOVERY use `judge.spec.ts` for the
 localized touch/keyboard workflow, score precision and zero, draft/submission

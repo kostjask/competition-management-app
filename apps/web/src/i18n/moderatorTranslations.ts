@@ -24,6 +24,11 @@ export const moderatorTranslations = {
   connected: { et: "Ühendatud", en: "Connected", ru: "Подключено" },
   stale: { et: "Andmed võivad olla aegunud. Juhtimine on peatatud.", en: "Live data may be stale. Controls are disabled.", ru: "Данные могли устареть. Управление недоступно." },
   offline: { et: "Ühendus puudub. Juhtimine on peatatud.", en: "Offline. Controls are disabled.", ru: "Нет подключения. Управление недоступно." },
+  interruptionHelp: {
+    et: "Peata lava töö ja teavita lavavastutajat. Enne jätkamist kontrolli serveris järjekorda ja kinnitatud hindamislehti.",
+    en: "Stop stage operations and tell the stage lead. Verify the queue and acknowledged sheets on the server before resuming.",
+    ru: "Остановите работу сцены и сообщите ответственному. Перед возобновлением сверьте очередь и подтверждённые судейские листы с данными сервера.",
+  },
   sync: { et: "Ajakava versioon {revision}, loetud {time}", en: "Schedule revision {revision}, synced {time}", ru: "Версия расписания {revision}, обновлено {time}" },
   sending: { et: "Ootan serveri kinnitust…", en: "Waiting for server acknowledgement…", ru: "Ожидание подтверждения сервера…" },
   refresh: { et: "Värskenda", en: "Refresh", ru: "Обновить" },
