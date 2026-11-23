@@ -7,6 +7,7 @@ import { entryTranslations } from "./entryTranslations";
 import { musicTranslations } from "./musicTranslations";
 import { scheduleTranslations } from "./scheduleTranslations";
 import { scoringTranslations } from "./scoringTranslations";
+import { resultsTranslations } from "./resultsTranslations";
 import { judgeTranslations } from "./judgeTranslations";
 import { moderatorTranslations } from "./moderatorTranslations";
 import { contentTranslations } from "./contentTranslations";
@@ -17,6 +18,7 @@ export const translations = {
   Moderator: moderatorTranslations,
   Schedule: scheduleTranslations,
   Scoring: scoringTranslations,
+  Results: resultsTranslations,
   Music: musicTranslations,
   Roster: rosterTranslations,
   Content: contentTranslations,

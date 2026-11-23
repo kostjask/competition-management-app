@@ -67,10 +67,21 @@ remain optional deferred scope, not a live-operation release gate.
 Entry: P6-SCORING-MODEL and validated submitted score sheets. Public release needs
 an explicit ADR-002 public DTO/publication decision; spectators need no account.
 
-- [ ] P7-UI-RESULTS: within P7-PUBLISH/EXPORT, implement S16 private completeness/results review, revision finalization/publication preview/confirmation, public group filters/ranking tables, correction version/time notices and privacy-safe localized exports. F10 UI exit includes missing sheets, zero/ties, unpublished access denial, stale/repeated publish, public empty/export-error states, accessible tables and responsive ET/EN/RU visual acceptance.
+The user directed results to stay private on 2026-11-23.
+[ADR-032](../adr/032-private-results.md) and
+[the results contract](../api/results.md) own private review and finalization,
+including the atomic LIVE → FINALIZED transition for a reviewed revision.
+Public projection, publishing, post-finalization corrections and exports remain
+open. The Phase 6 venue rehearsal and M5 release gates still apply.
 
-- [ ] P7-CALCULATE: consume ADR-004's exact per-performance calculations and frozen inputs to build grouped category/age/format ranking revisions, withdrawal/disqualification handling and result completeness/reproducibility. Reuse the accepted no-drop/rounding/shared-tie policy rather than duplicating its math. Golden grouped fixtures reproduce historical and edge cases; existing P6 private totals do not complete this task.
-- [ ] P7-PUBLISH: separate admin provisional/finalized/public states; public result pages expose only approved DTOs. Audit corrections with reasons/version/time; block unpublished results for unauthorized users.
+- [ ] P7-UI-RESULTS: S16 private completeness, grouped review, saved revision inspection and explicit finalization are implemented in ET/EN/RU. The rest of F10 still requires publication preview/confirmation, public grouping/ranking/empty states, correction version/time notices, localized exports, public access checks and human accessibility acceptance.
+
+- [x] P7-CALCULATE: ADR-032 and migration 48 retain category/age/format ranking
+  revisions from ADR-004's exact frozen sheets. Grouped golden fixtures cover
+  shared ranks, zero, missing sheets, withdrawals, disqualification and historical
+  reproducibility. The full disposable baseline and migration parity passed.
+  [Checkpoint evidence](../../DEVELOPMENT_PLAN.md#next-action).
+- [ ] P7-PUBLISH: provisional and finalized private revisions are implemented under ADR-032. A public projection, explicit publication, reasoned correction/version/time and public result pages remain deferred. Keep results private until a release policy is approved.
 - [ ] P7-EXPORT: CSV/PDF result/protocol exports and reproducibility checks, applying privacy rules and correct ET/EN/RU labels.
 
 Exit: calculations match golden fixtures and published results can be reproduced;

@@ -5,7 +5,8 @@ const { randomUUID } = require('node:crypto');
 module.exports = async function checkScoring({ client, baseUrl, adminToken, login }) {
   const admin = await client.user.findUniqueOrThrow({ where: { email: 'admin@test.com' } });
   const event = await client.event.create({ data: { name: 'Exact scoring fixture', startsAt: new Date('2026-12-05T08:00:00Z'), endsAt: new Date('2026-12-05T18:00:00Z'), stage: 'REGISTRATION_OPEN',
-    categories: { create: { name: 'Open' } }, ageGroups: { create: { name: 'All', minAge: 0 } }, formats: { create: { name: 'Solo', minParticipants: 1, maxParticipants: 1, maxDurationSeconds: 300 } } }, include: { categories: true, ageGroups: true, formats: true } });
+    categories: { create: [{ name: 'Open' }, { name: 'Novice' }] }, ageGroups: { create: { name: 'All', minAge: 0 } }, formats: { create: { name: 'Solo', minParticipants: 1, maxParticipants: 1, maxDurationSeconds: 300 } } }, include: { categories: true, ageGroups: true, formats: true } });
+  const open = event.categories.find(category => category.name === 'Open');
   const other = await client.event.create({ data: { name: 'Other scoring event', startsAt: event.startsAt, endsAt: event.endsAt } });
   const judges = [];
   for (let i = 0; i < 2; i++) {
@@ -21,6 +22,17 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   const modToken = await login(baseUrl, moderator.email);
   const req = async (url, method = 'GET', body, token = adminToken) => { const r = await fetch(`${baseUrl}/api/v1${url}`, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body !== undefined && { body: JSON.stringify(body) }) }); return { status: r.status, body: await r.json(), cacheControl: r.headers.get('cache-control') }; };
   const prefix = `/events/${event.id}`, url = prefix + '/scoring';
+  const resultPath = prefix + '/results';
+  const results = async (query = {}) => {
+    const response = await req(resultPath + '?' + new URLSearchParams(query));
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    assert.equal(response.cacheControl, 'no-store');
+    return response.body;
+  };
+  const resultCommand = body => req(resultPath + '/commands', 'POST', body);
+  const resultBody = (current, action = 'CALCULATE') => ({
+    action, expectedRevision: current.revisions[0]?.revision ?? 0, source: current.current.source, operationId: randomUUID(),
+  });
   const read = async (token = adminToken) => { const r = await req(url, 'GET', undefined, token); assert.equal(r.status, 200, JSON.stringify(r.body)); return r.body; };
   const judgeRead = (token, operationId) => req(url + '/judge' + (operationId ? '?operationId=' + operationId : ''), 'GET', undefined, token);
   const moderatorRead = (token, query = {}) => req(prefix + '/schedule/live?' + new URLSearchParams(query), 'GET', undefined, token);
@@ -35,7 +47,7 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   const studio = await client.studio.create({ data: { eventId: event.id, name: 'Exact scoring studio', approvalStatus: 'APPROVED', registrations: { create: { eventId: event.id, status: 'APPROVED' } }, dancers: { create: { firstName: 'Private', lastName: 'Dancer', birthDate: new Date('2010-01-01') } } }, include: { dancers: true } });
   const performances = [];
   for (const title of ['First score', 'Second score']) {
-    const created = await req(prefix + '/performances', 'POST', { studioId: studio.id, title, durationSec: 60, categoryId: event.categories[0].id, ageGroupId: event.ageGroups[0].id, formatId: event.formats[0].id, dancerIds: [studio.dancers[0].id] });
+    const created = await req(prefix + '/performances', 'POST', { studioId: studio.id, title, durationSec: 60, categoryId: open.id, ageGroupId: event.ageGroups[0].id, formatId: event.formats[0].id, dancerIds: [studio.dancers[0].id] });
     assert.equal(created.status, 201, JSON.stringify(created.body)); performances.push(created.body.id);
     await client.scheduleSlot.create({ data: { eventId: event.id, sessionId, performanceId: created.body.id, position: performances.length } });
   }
@@ -43,7 +55,7 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   assert.equal((await req(prefix + `/studios/${studio.id}/entry-review/FINAL`, 'POST', { action: 'SUBMIT', operationId: randomUUID(), expectedRevision: review.revision, expectedReview: review.reviewToken })).status, 200);
   await client.event.update({ where: { id: event.id }, data: { stage: 'DATA_REVIEW' } });
   const templateId = randomUUID(), criterionId = randomUUID();
-  const setup = { templates: [{ id: templateId, name: 'Synthetic exact rubric', criteria: [{ id: criterionId, label: { et: 'Tehnika', en: 'Technique', ru: 'Техника' }, instructions: { et: '', en: '', ru: '' }, min: '0', max: '10', step: '0.001', weightBps: 10000 }] }], bindings: [{ categoryId: event.categories[0].id, templateId }], panels: [{ sessionId, judgeIds: judges.map(j => j.id) }] };
+  const setup = { templates: [{ id: templateId, name: 'Synthetic exact rubric', criteria: [{ id: criterionId, label: { et: 'Tehnika', en: 'Technique', ru: 'Техника' }, instructions: { et: '', en: '', ru: '' }, min: '0', max: '10', step: '0.001', weightBps: 10000 }] }], bindings: [{ categoryId: open.id, templateId }], panels: [{ sessionId, judgeIds: judges.map(j => j.id) }] };
   assert.equal((await req(url + '/preview', 'POST', { expectedRevision: 0, setup, extra: true })).status, 400);
   assert.equal((await req(url + '/preview', 'POST', { expectedRevision: 0, setup }, judges[0].token)).status, 403);
   assert.equal((await req(`/events/${other.id}/scoring`, 'GET', undefined, judges[0].token)).status, 403);
@@ -190,7 +202,10 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   assert.equal(advancedView.sheets.find(s => s.performanceId === performances[1]).writable, true);
   assert.equal((await schedule('ADVANCE_OVERRIDE', modToken, 'Denied override')).status, 403);
   assert.equal((await schedule('ADVANCE_OVERRIDE', adminToken, 'Synthetic manual continuation')).status, 200);
-  assert.equal((await stage('FINALIZED')).status, 409, 'Override never makes missing sheets complete');
+  const incomplete = await results();
+  assert.ok(incomplete.current.snapshot.blockers.some(b => b.kind === 'SHEETS' && b.performanceId === performances[1]));
+  assert.ok(incomplete.current.snapshot.groups[0].entries.every(entry => entry.rank === null), 'Incomplete group ranks are withheld');
+  assert.equal((await resultCommand(resultBody(incomplete))).status, 409, 'Override never makes missing sheets complete');
   assert.equal((await schedule('REOPEN', adminToken, 'Resolve the manual override')).status, 200);
   for (const judge of judges) {
     const pending = (await read(judge.token)).sheets.find(s => s.performanceId === performances[1]);
@@ -210,6 +225,120 @@ module.exports = async function checkScoring({ client, baseUrl, adminToken, logi
   try { assert.equal((await command({ action: 'CALCULATE', recordId, operationId })).status, 500); }
   finally { await client.$executeRawUnsafe('DROP TRIGGER fail_scoring_fixture ON "AuditLog"'); await client.$executeRawUnsafe('DROP FUNCTION fail_scoring_fixture()'); }
   assert.equal((await read()).revision, before); assert.equal(await client.scoringOperation.count({ where: { operationId } }), 0);
-  assert.equal((await stage('FINALIZED')).status, 200, 'Only complete corrected sheets permit finalization');
+  assert.equal((await stage('FINALIZED')).status, 409, 'Generic event editing cannot bypass revision finalization');
+  const novice = event.categories.find(category => category.name === 'Novice');
+  const seedEntry = await client.performance.findUniqueOrThrow({ where: { id: performances[0] } });
+  async function resultFixture(title, position, options = {}) {
+    const { categoryId = seedEntry.categoryId, state = 'DONE', withdrawn = false, disqualified = false, values = [0, 0] } = options;
+    const entry = await client.performance.create({ data: {
+      title, eventId: event.id, studioId: studio.id, registrationId: seedEntry.registrationId, categoryId, ageGroupId: seedEntry.ageGroupId,
+      formatId: seedEntry.formatId, durationSec: 60, deletedAt: withdrawn ? new Date() : null, deletedBy: withdrawn ? admin.id : null,
+    } });
+    await client.scheduleSlot.create({ data: {
+      eventId: event.id, sessionId: otherSession, performanceId: entry.id, position: state === 'REMOVED' ? null : position,
+      state, reason: state === 'SKIPPED' ? 'Synthetic skip' : null,
+    } });
+    if (state !== 'DONE') return entry;
+    const record = await client.scoringRecord.create({ data: {
+      eventId: event.id, performanceId: entry.id, sessionId: otherSession, templateId, disqualified, reason: disqualified ? 'Fixture decision' : null,
+    } });
+    for (const [index, judge] of judges.entries()) {
+      const sheet = await client.scoringSheet.create({ data: { eventId: event.id, recordId: record.id, templateId, judgeId: judge.id } });
+      await client.scoringValue.create({ data: { sheetId: sheet.id, templateId, criterionId, value: values[index], comment: 'Private worksheet comment' } });
+      await client.scoringSheet.update({ where: { id: sheet.id }, data: { state: 'LOCKED', submittedAt: new Date() } });
+    }
+    return entry;
+  }
+  await resultFixture('Tied score', 1, { values: [5887, 5888] });
+  await resultFixture('Zero score', 2);
+  await resultFixture('Disqualified score', 3, { disqualified: true });
+  const withdrawn = await resultFixture('Withdrawn score', 4, { state: 'CURRENT' });
+  await resultFixture('Removed score', 5, { state: 'REMOVED' });
+  await resultFixture('Independent group', 5, { categoryId: novice.id, values: [10000, 10000] });
+  const queueItem = { eventId_performanceId: { eventId: event.id, performanceId: withdrawn.id } };
+  await client.scheduleSlot.update({ where: queueItem, data: { state: 'SKIPPED', reason: 'Synthetic skip' } });
+  const skipped = await results();
+  assert.ok(skipped.current.snapshot.blockers.some(b => b.kind === 'QUEUE' && b.performanceId === withdrawn.id), 'A skip does not constitute a withdrawal');
+  assert.equal((await req(prefix + '/performances/' + withdrawn.id, 'DELETE', {
+    action: 'WITHDRAW', expectedRevision: withdrawn.revision, operationId: randomUUID(), reason: 'Synthetic withdrawal',
+  })).status, 200);
+  await client.scheduleSlot.update({ where: queueItem, data: { state: 'CURRENT', reason: null } });
+  const onStage = await results();
+  assert.ok(onStage.current.snapshot.blockers.some(b => b.kind === 'QUEUE' && b.performanceId === withdrawn.id), 'Withdrawal cannot finalize a performance still marked current');
+  await client.scheduleSlot.update({ where: queueItem, data: { state: 'SKIPPED', reason: 'Clear current withdrawn slot' } });
+
+  const ready = await results();
+  assert.deepEqual(ready.current.snapshot.blockers, []);
+  const groups = ready.current.snapshot.groups;
+  const rows = groups.find(g => g.category.name === 'Open').entries;
+  const golden = Object.fromEntries(rows.map(row => [row.title, [row.state, row.total, row.rank]]));
+  assert.deepEqual(golden, {
+    'First score': ['RANKABLE', '58.875', 1], 'Tied score': ['RANKABLE', '58.875', 1],
+    'Second score': ['RANKABLE', '50.000', 3], 'Zero score': ['RANKABLE', '0.000', 4],
+    'Disqualified score': ['DISQUALIFIED', null, null], 'Withdrawn score': ['WITHDRAWN', null, null],
+  });
+  assert.deepEqual(groups.find(g => g.category.name === 'Novice').entries.map(row => [row.total, row.rank]), [['100.000', 1]]);
+  assert.doesNotMatch(JSON.stringify(ready), /Private worksheet comment|Synthetic judge|Private Dancer|Fixture decision/);
+  assert.equal((await req(resultPath, 'GET', undefined, judges[0].token)).status, 403);
+  assert.equal((await req(resultPath, 'GET', undefined, modToken)).status, 403);
+  assert.equal((await req(resultPath + '?revision=1&revision=2')).status, 400);
+  assert.equal((await req(resultPath + '?revision=999')).status, 404);
+  assert.equal((await resultCommand({ ...resultBody(ready), unpublished: true })).status, 400);
+  assert.equal((await resultCommand(resultBody(ready, 'FINALIZE'))).status, 409, 'Finalization requires a saved revision');
+
+  const calculate = resultBody(ready);
+  const resultsRace = await Promise.all([calculate, { ...calculate, operationId: randomUUID() }].map(resultCommand));
+  assert.deepEqual(resultsRace.map(r => r.status).sort(), [200, 409]);
+  const acknowledged = resultsRace.find(r => r.status === 200).body;
+  const winning = { ...calculate, operationId: acknowledged.operationId };
+  assert.deepEqual((await resultCommand(winning)).body, acknowledged);
+  assert.equal((await req(`/events/${other.id}/results?operationId=${winning.operationId}`)).body.receipt, null);
+  assert.equal((await req(`/events/${other.id}/results/commands`, 'POST', winning)).status, 409);
+  assert.equal((await req(resultPath + '/commands', 'POST', winning, modToken)).status, 403);
+  await client.userRole.update({ where: { id: extraAdmin.id }, data: { removedAt: null } });
+  assert.equal((await req(resultPath + '?operationId=' + winning.operationId, 'GET', undefined, judges[0].token)).body.receipt, null);
+  assert.equal((await req(resultPath + '/commands', 'POST', winning, judges[0].token)).status, 409);
+  await client.userRole.update({ where: { id: extraAdmin.id }, data: { removedAt: new Date() } });
+  assert.deepEqual((await results({ operationId: winning.operationId })).receipt, acknowledged);
+
+  const saved = await results();
+  assert.equal(saved.stage, 'LIVE');
+  assert.deepEqual(saved.saved.snapshot, ready.current.snapshot);
+  for (const row of saved.saved.snapshot.groups.flatMap(group => group.entries).filter(row => row.calculationSource)) {
+    const record = await client.scoringRecord.findUniqueOrThrow({ where: { performanceId: row.performanceId } });
+    const retained = await client.scoringCalculation.findUniqueOrThrow({ where: { recordId_source: { recordId: record.id, source: row.calculationSource } } });
+    const total = exactTotal(retained.inputs.criteria, retained.inputs.sheets.map(sheet => sheet.values), retained.inputs.penalty);
+    assert.equal(row.total, record.disqualified ? null : total);
+  }
+  const staleFinalize = resultBody(saved, 'FINALIZE');
+  assert.equal((await command({ action: 'ADJUST', recordId, penalty: '1', disqualified: false, reason: 'Fixture recalculation' })).status, 200);
+  assert.equal((await resultCommand(staleFinalize)).status, 409, 'Correction invalidates the reviewed finalization source');
+  await client.userRole.update({ where: { id: judges[1].assignment.id }, data: { removedAt: new Date() } });
+  const changed = await results();
+  assert.deepEqual(changed.current.snapshot.blockers, [], 'Frozen submitted sheets survive offboarding');
+  assert.equal((await resultCommand(resultBody(changed))).status, 200);
+  assert.deepEqual((await results({ revision: '1' })).saved.snapshot, saved.saved.snapshot);
+  const finalize = resultBody(await results(), 'FINALIZE');
+  await assert.rejects(client.resultFinalization.create({ data: { eventId: other.id, revision: 2, actorId: admin.id, operationId: randomUUID(), digest: finalize.source } }));
+  await client.$executeRawUnsafe(`CREATE FUNCTION fail_results_fixture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'RESULTS_FINALIZED' THEN RAISE EXCEPTION 'fixture audit failure'; END IF; RETURN NEW; END $$`);
+  await client.$executeRawUnsafe('CREATE TRIGGER fail_results_fixture BEFORE INSERT ON "AuditLog" FOR EACH ROW EXECUTE FUNCTION fail_results_fixture()');
+  try { assert.equal((await resultCommand(finalize)).status, 500); }
+  finally { await client.$executeRawUnsafe('DROP TRIGGER fail_results_fixture ON "AuditLog"'); await client.$executeRawUnsafe('DROP FUNCTION fail_results_fixture()'); }
+  assert.equal((await results()).stage, 'LIVE');
+  assert.equal(await client.resultFinalization.count({ where: { eventId: event.id } }), 0);
+  const final = await resultCommand(finalize);
+  assert.equal(final.status, 200, JSON.stringify(final.body));
+  assert.equal((await results()).stage, 'FINALIZED');
+  assert.deepEqual((await results()).finalized, { revision: final.body.revision, createdAt: final.body.createdAt });
+  assert.equal((await stage('ENDED')).status, 200);
+  assert.deepEqual((await resultCommand(finalize)).body, final.body);
+  assert.equal((await resultCommand({ ...finalize, operationId: randomUUID() })).status, 403);
+  await assert.rejects(client.resultRevision.update({ where: { eventId_revision: { eventId: event.id, revision: 1 } }, data: { source: 'a'.repeat(64) } }));
+  await assert.rejects(client.resultFinalization.delete({ where: { eventId: event.id } }));
+  assert.equal((await req('/public' + resultPath)).status, 404);
+  const anonymous = await fetch(`${baseUrl}/api/v1${resultPath}`);
+  assert.equal(anonymous.status, 401);
+  assert.doesNotMatch(await anonymous.text(), /First score|58\.875/);
+  console.log('Private grouped results, frozen-source reproducibility, scope, recovery, immutable revisions and atomic finalization passed.');
   console.log('Exact scoring API, source preview, assignment scope, locks/corrections, concurrency/replay, immutable history and audit rollback passed.');
 };

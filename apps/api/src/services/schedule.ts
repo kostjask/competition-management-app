@@ -121,7 +121,7 @@ export async function previewSchedule(db: Prisma.TransactionClient, actor: Sched
 
 export async function scheduleTransition(db: Prisma.TransactionClient, eventId: string, from: string, to: string) {
   if (from === to) return;
-  if (["LIVE", "FINALIZED"].includes(to)) await scoringReady(db, eventId, to === "FINALIZED");
+  if (to === "LIVE") await scoringReady(db, eventId);
   if (["SCHEDULED", "LIVE"].includes(to) || from === "SCHEDULED" && to === "DATA_REVIEW") {
     const data = await sources(db, eventId);
     if (!data.sessions.length || data.sessions.some(s => s.state !== "PAUSED" || s.slots.some(slot => !["WAITING", "REMOVED"].includes(slot.state)))) throw conflict();

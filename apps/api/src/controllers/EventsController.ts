@@ -140,6 +140,9 @@ export class EventsController extends BaseController {
         });
         if (body.stage !== undefined) {
           assertStageTransition(current.stage, body.stage, body.expectedStage);
+          if (current.stage === "LIVE" && body.stage === "FINALIZED") {
+            throw new ConflictError("Finalize the reviewed revision from results", undefined, "stageLocked");
+          }
           await scheduleTransition(tx, eventId, current.stage, body.stage);
         }
         const scheduleTimingChanged = body.startsAt !== undefined && Date.parse(body.startsAt) !== current.startsAt.getTime() || body.endsAt !== undefined && Date.parse(body.endsAt) !== current.endsAt.getTime() || body.timeZone !== undefined && body.timeZone !== current.timeZone;

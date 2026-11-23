@@ -17,7 +17,6 @@ function stageAction(from: EventStage, target: EventStage): TranslationKey {
     case "DATA_REVIEW": return from === "SCHEDULED" ? "Schedule.returnReview" : "Setup.close";
     case "SCHEDULED": return "Schedule.confirmSchedule";
     case "LIVE": return "Schedule.startLive";
-    case "FINALIZED": return "Schedule.finalize";
     case "ENDED": return "Schedule.endEvent";
     default: return "Setup.cancelEvent";
   }
@@ -90,13 +89,14 @@ function EventSetup({ id }: { id: string }) {
       </section>
       <section><h2 ref={stageHeading} id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2><p>{t(stageKey[data.stage])}</p>{["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW"].includes(data.stage) && <p>{t("Setup.preHelp")}</p>}
         {dirty && <p>{t("Setup.saveFirst")}</p>}
-        <div className="ui-actions">{eventStageTargets(data.stage).filter(stage => stage !== data.stage).map(stage => { const variant = stage === "CANCELLED" ? "danger" : "secondary"; return <Button key={stage} variant={variant}
-          disabled={disabled || dirty || stage === "FINALIZED" || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
+        <div className="ui-actions">{eventStageTargets(data.stage).filter(stage => stage !== data.stage && stage !== "FINALIZED").map(stage => { const variant = stage === "CANCELLED" ? "danger" : "secondary"; return <Button key={stage} variant={variant}
+          disabled={disabled || dirty || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
           {t(stageAction(data.stage, stage))}</Button>; })}</div>
         {data.stage === "LIVE" && <p>{t("Moderator.finalizationPending")}</p>}
         <Link to={`/admin/events/${encodeURIComponent(id)}/schedule`}>{t("Schedule.title")}</Link>
         <Link to={`/admin/events/${encodeURIComponent(id)}/scoring`}>{t("Scoring.title")}</Link>
         <Link to={`/admin/events/${encodeURIComponent(id)}/live`}>{t("Moderator.title")}</Link>
+        <Link to={`/admin/events/${encodeURIComponent(id)}/results`}>{t("Results.title")}</Link>
       </section>
       </aside><div className="setup-editor"><EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
         submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}

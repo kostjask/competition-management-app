@@ -8,6 +8,7 @@ export * from "./format.schema.js";
 export * from "./invitation.schema.js";
 export * from "./judge.schema.js";
 export * from "./scoring.schema.js";
+export * from "./results.schema.js";
 export * from "./performance.schema.js";
 export * from "./studio.schema.js";
 export * from "./studio-registration.schema.js";

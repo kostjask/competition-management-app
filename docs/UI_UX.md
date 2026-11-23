@@ -156,7 +156,7 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S13 | `/admin/events/:eventId/schedule` | Local P6-SCHEDULE ledger at the `/app` base; venue/human release gates remain open |
 | S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
 | S15 | `/app/judge`, `/app/judge/events/:eventId/score` | P6-JUDGE with local ADR-031 judge reconnect; venue rehearsal remains open |
-| S16 | P `/admin/events/:id/results`, `/events/:id/results` | P7-PUBLISH; public route gated by approved DTOs |
+| S16 | `/app/admin/events/:eventId/results` organizer review; public route pending | P7-CALCULATE and private finalization; P7-PUBLISH retains the public gate |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |
 | S18 | I isolated studio public entry `/et`, `/en`, `/ru` and content suffixes; P target host | P4-STUDIO-PAGES local consumer; host/release remains gated |
 | S19 | I isolated festival public entry `/` and edition/archive pages; P target host | P4-PUBLIC-PAGES local consumer; explicit loopback festival/workspace cohosting available; hosted release remains gated |

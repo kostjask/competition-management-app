@@ -58,11 +58,21 @@ This delivers the setup portion of P6-UI-LIVE; S14/S15 remain their owning tasks
 
 ## S16 — Results review and public results
 
-- **Purpose / roles / routes:** verify, finalize/publish and inspect official output; authorized admins versus public spectators; proposed routes in inventory.
-- **Primary action:** admin validates/finalizes/publishes a specific revision; visitor filters published groups.
-- **Data:** calculation/rubric version, completeness/blockers, ranking groups/ties/penalties, publication state/time and correction history; public-minimal DTO.
-- **Sections / components:** status/version notice, completeness summary before publish action, category/age/format filters, accessible ranking table/list, correction note and supported export links.
-- **States:** calculating, incomplete/missing sheets, provisional/finalized/published/corrected per future model, no published groups, stale calculation, denied private version, export failure.
-- **Responsive / accessibility:** mobile rank/name/result first with accessible detail; desktop comparison table, headers/captions, ties explicit; no private identity data in exports or hidden HTML.
-- **API:** pending P7 calculation/publication/export contracts plus approved public access policy.
-- **Acceptance:** public URL cannot reveal provisional results; confirmed publication names revision/scope; corrected publication preserves history and reproducibility. F10.
+- **Organizer route** Global admins open `/app/admin/events/:eventId/results`
+  from event setup. Review current completeness, choose a category/age/format
+  group and compare saved revisions.
+- **Actions** Save a complete calculation and separately confirm the selected
+  revision. A changed source returns to review. A lost response checks the server
+  for the exact operation and offers the original retry if needed.
+- **States** Private review, missing data, tied rank, zero, disqualification,
+  withdrawal, saved history, finalization acknowledgement, read failure,
+  denied access and session restoration.
+- **Responsive and accessible UI** One native group selector, a captioned
+  ranking table with row and column headers, visible tie labels, and inline
+  finalization confirmation with keyboard focus. ET/EN/RU localizes actions and
+  formatting. Event and group names remain authored text.
+- **API** [Private results](../api/results.md) and [ADR-032](../adr/032-private-results.md).
+  Review and versions stay organizer-only.
+- **Future acceptance** P7-PUBLISH/EXPORT retain public filters, a minimal
+  projection, release preview, version/time and correction notices, localized
+  exports, public empty and export-error states, and F10 public access checks.

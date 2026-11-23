@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { JudgeScoringCommandSchema, JudgeScoringWorkspaceSchema, ScoringSetupInputSchema, ScoringWorkspaceSchema, ScoringPreviewSchema, ScoringReceiptSchema, scoringUnits, scoringDecimal, scoreFitsRange, type ScoringSetupInput, type ScoringCommand, type ScoringWorkspace } from "@dance/schemas";
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from "../errors";
 import { appendAudit } from "./audit";
-import { exactTotal } from "./scoringMath";
+import { calculateScoringRecord, completeScoringRecord, retainScoringCalculations } from "./scoringCalculation";
 
 type DB = Prisma.TransactionClient;
 export type ScoringActor = { id: string; sessionVersion: number };
@@ -62,7 +62,6 @@ function blockers(data: Sources, setup = data.setup): ScoringWorkspace["blockers
   }
   return issues.filter((issue, i) => issues.findIndex(row => row.kind === issue.kind && row.targetId === issue.targetId) === i);
 }
-const complete = (r: Sources["records"][number]) => r.sheets.length > 0 && r.sheets.every(s => s.state === "LOCKED");
 async function workspace(db: DB, data: Sources, actor: ScoringActor, access: Awaited<ReturnType<typeof authority>>): Promise<ScoringWorkspace> {
   const sessions = access.admin ? data.sessions : data.sessions.filter(s => access.moderator && s.moderatorId === actor.id || data.records.some(r => r.sessionId === s.id && r.sheets.some(sheet => sheet.judgeId === access.judgeId)));
   const records = data.records.filter(r => access.admin || sessions.some(s => s.id === r.sessionId));
@@ -153,14 +152,8 @@ export async function hasScoringReadiness(db: DB, eventId: string) {
   ]);
   return !!queue && !blocked;
 }
-export async function scoringReady(db: DB, eventId: string, final = false) {
+export async function scoringReady(db: DB, eventId: string) {
   if (!await hasScoringReadiness(db, eventId)) throw invalid();
-  if (!final) return;
-  const data = await sources(db, eventId);
-  for (const session of data.sessions) for (const slot of session.slots) {
-    const record = data.records.find(r => r.performanceId === slot.performanceId);
-    if (slot.state !== "DONE" || !record || !complete(record)) throw invalid();
-  }
 }
 export async function freezeScoring(db: DB, eventId: string, sessionId: string, performanceId: string, actorId: string) {
   // The caller checks event-wide readiness in this transaction before selecting the slot.
@@ -228,15 +221,11 @@ export async function commandScoring(db: DB, actor: ScoringActor, eventId: strin
       if (!data.sessions.some(s => s.id === record.sessionId && s.state === "PAUSED")) throw conflict();
       await db.scoringRecord.update({ where: { id: record.id }, data: { penalty: scoringUnits(command.penalty), disqualified: command.disqualified, reason: command.reason } });
     } else {
-      if (!complete(record)) throw invalid();
+      if (!completeScoringRecord(record)) throw invalid();
       const criteria = data.templates.find(t => t.id === record.templateId)!.criteria;
-      const inputs = { policy: "normalized-v1", recordId: record.id, performanceId: record.performanceId, templateId: record.templateId,
-        penalty: record.penalty, disqualified: record.disqualified, reason: record.reason,
-        sheets: record.sheets.map(s => ({ id: s.id, judgeId: s.judgeId, revision: s.revision, values: s.values.map(v => ({ criterionId: v.criterionId, value: v.value })) })),
-        criteria: criteria.map(c => ({ id: c.id, min: c.min, max: c.max, step: c.step, weightBps: c.weightBps })) };
-      const source = hash(inputs);
-      calculation = { policy: "normalized-v1", source, total: record.disqualified ? null : exactTotal(criteria, record.sheets.map(s => s.values), record.penalty), disqualified: record.disqualified };
-      if (!await db.scoringCalculation.findUnique({ where: { recordId_source: { recordId: record.id, source } } })) await db.scoringCalculation.create({ data: { recordId: record.id, source, inputs, result: calculation } });
+      const result = calculateScoringRecord(record, criteria);
+      await retainScoringCalculations(db, [result]);
+      calculation = result.calculation;
     }
   }
   if (sheet) {

@@ -162,7 +162,7 @@ test("S05 confirmed close and cancellation retain history and restore logical ke
   await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(0);
   await page.goto("/app/events/e"); await expect(page.getByText(label("Setup.windowClosed"), { exact: true })).toBeVisible();
 });
-test("S05 confirms distinct schedule and live transitions and links to S14", async ({ page }) => {
+test("S05 confirms schedule and live transitions and links to the moderator console and results", async ({ page }) => {
   const state = await install(page); state.current.stage = "DATA_REVIEW";
   await page.goto("/app/admin/events/e/setup");
   await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(1);
@@ -178,7 +178,8 @@ test("S05 confirms distinct schedule and live transitions and links to S14", asy
   await page.getByRole("button", { name: label("Schedule.startLive"), exact: true }).click();
   await expect(page.getByText(label("Moderator.liveEffect"), { exact: true })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
-  await expect(page.getByRole("button", { name: label("Schedule.finalize"), exact: true })).toBeDisabled();
+  await expect(page.getByRole("link", { name: label("Results.title"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/results");
+  await expect(page.getByRole("button", { name: label("Schedule.finalize"), exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: label("Moderator.title"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/live");
   expect(state.writes.at(-1)).toMatchObject({ stage: "LIVE", expectedStage: "SCHEDULED" });
 });

@@ -43,14 +43,15 @@ Event scoping is not a claim of multi-organizer isolation.
 | Representative | Active membership grants studio relationship; both approvals derive event access | Additional members need studio-bound invitations; contact email never grants ownership |
 | Performance | Durable incomplete drafts, immutable owners/revisions and same-identity withdrawal/restore; opt-in checkpoints retain exact submission/review/correction receipts (ADR-022/023/024/025) | Organizer recovery/configuration and representative S09/S10 are delivered; music/submission UI retain their P5 gates |
 | Judge | Event-specific record separate from UserRole; invitation acceptance reconciles both atomically; offboarding retains Judge/Score history | Scoring assignment/readiness remains separate; staff management implemented locally (ADR-018) |
-| Score | Legacy Float rows retained; ADR-004 exact integer values, immutable rubric/assignment/sheet versions and private calculations | P6 judge/moderator screens and P7 grouped results/publication remain downstream |
+| Score | Legacy Float rows retained; ADR-004 exact integer values, immutable rubric/assignment/sheet versions and private calculations | S14/S15 use frozen sheets; S16 uses ADR-032 grouped results; public publication remains downstream |
 | Public studio content | Structured singleton revisions, profiles/classes/timetable, explicit publication and document-owned assets | Public-page composition/release remains open; no enrolment or student registry |
 | Festival edition publication | Stable Festival/Edition identities, optional unique Event linkage, immutable revisions/receipts, private preview and published-only APIs | Public pages/Wix transition remain open; public profiles grant no assignments |
 
 Current event stages: PRE_REGISTRATION, REGISTRATION_OPEN, DATA_REVIEW, SCHEDULED,
 LIVE, FINALIZED, ENDED, CANCELLED. ADR-003/030 enforce lifecycle and queue mappings;
-entry into LIVE/finalization requires ADR-004 readiness and submitted-sheet completeness.
-FINALIZED is not score-sheet lock, entry submission or public result publication.
+entry into LIVE requires ADR-004 readiness. ADR-032 finalizes a complete
+reviewed private revision and changes the event to FINALIZED. Score-sheet lock,
+entry submission and public result publication are independent operations.
 
 All new applications are allowed in PRE_REGISTRATION/REGISTRATION_OPEN.
 A configured deadline closes new applications and pending-owner corrections.
@@ -100,10 +101,11 @@ implemented under [the scoring contract](api/scoring.md). Normalize criteria to
 0–100, weight in basis points, average all assigned sheets, deduct admin penalty
 and round once (half up, three decimals). No dropped scores; equal totals share
 competition rank. Disqualification retains evidence without ranking. Legacy Float
-rows remain unchanged outside new calculations. New calculations stay private;
-P7 owns grouped results, final/public versions, corrections and exports. The
-[decision brief](SCORING_MODEL_DECISIONS.md) retains alternatives. S14/S15 and
-venue/human/hosted acceptance still gate operational release.
+rows remain unchanged outside new calculations. [ADR-032](adr/032-private-results.md)
+uses frozen sources for grouped review and private final versions. Publication,
+post-finalization corrections and exports remain P7 work. The
+[decision brief](SCORING_MODEL_DECISIONS.md) retains scoring alternatives.
+Venue, human and hosted acceptance still gate operational release.
 
 History/calendar decisions are accepted in [ADR-023](adr/023-entry-history-and-calendar-dates.md).
 Older domain findings and migration-safety evidence: [database review](DATABASE_REVIEW.md).

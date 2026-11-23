@@ -48,6 +48,15 @@ It does not restore node_modules, build outputs or a Turbo cache. See the
 
 ## Fast development loop
 
+P7-CALCULATE and private S16 finalization use `results.spec.ts` for localized
+rank/tie/zero rendering, URL group and history filters, keyboard confirmation,
+scope, stale source, lost receipts and restored sessions. Start with
+`pnpm test:focus browser results.spec.ts` and `pnpm test:entry-foundations`.
+`check-scoring.cjs` covers grouped golden fixtures, persisted frozen inputs,
+withdrawal/disqualification, replay/conflict, atomic finalization and rollback.
+Migration 48 joins the fresh/upgrade catalog suite. Run the full local gates
+before handoff. Venue, public results and human review have their own acceptance.
+
 P6-MODERATOR/S14 uses `moderator.spec.ts` for ET/EN/RU at 320–1920px,
 keyboard and touch target checks, URL-selected sessions, reasoned exceptions,
 double activation, dropped responses, competing changes, session restoration,

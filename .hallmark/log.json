@@ -5,6 +5,38 @@
   "theme": "cobalt",
   "genre": "modern-minimal",
   "axes": [
+   "bounded organizer workspace",
+   "outstanding checks",
+   "captioned ranking table",
+   "revision review",
+   "exact-operation recovery"
+  ],
+  "hero": "none",
+  "nav": "existing workspace shell",
+  "footer": "none",
+  "photos": [],
+  "imagery": "rendered organizer page with synthetic competition entries",
+  "entry": "apps/web/src/pages/results/results.css",
+  "fingerprint": "one capped ranking ledger with native group and revision selectors and inline confirmation",
+  "sections": [
+   "event identity",
+   "completeness checks",
+   "ranking table",
+   "private finalization"
+  ],
+  "signature": "reviewable ranking ledger",
+  "waived": [],
+  "prompt": "P7-CALCULATE and private S16 finalization with the repository Cobalt system",
+  "sweep": "0 FAIL, 0 REFLEX, 0 WARN. In-thread desktop measure, phone tie wrapping and completeness hierarchy resolved in recapture.",
+  "date": "2026-11-23",
+  "mode": "build"
+ },
+ {
+  "scope": "app",
+  "shape": "app screen",
+  "theme": "cobalt",
+  "genre": "modern-minimal",
+  "axes": [
    "stage and session identity",
    "current and next performance",
    "frozen panel counts",

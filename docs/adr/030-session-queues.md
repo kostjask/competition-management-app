@@ -75,7 +75,9 @@ readiness, frozen sheet assignments, completeness and reasoned admin advance
 override. The earlier constant START/ADVANCE/LIVE/finalization refusal has been
 replaced by these checks. An override never makes missing sheets complete.
 [ADR-031](031-live-scoring-reconnect.md) records the S14/S15 console and recovery
-policies. Venue recovery and public result delivery remain downstream.
+policies. [ADR-032](032-private-results.md) moves LIVE → FINALIZED to the reviewed
+private results command with a frozen-sheet completeness check. Venue recovery
+and public result delivery remain downstream.
 
 Migration is additive: enum values, explicit queue tables, relational ownership,
 partial active-slot/current-slot indexes and immutable receipt triggers. No source

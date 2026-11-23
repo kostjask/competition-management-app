@@ -40,8 +40,9 @@ write also supplies expectedStage. M2 permits PRE_REGISTRATION → REGISTRATION_
 → DATA_REVIEW, or CANCELLED from those stages. [ADR-030](../adr/030-session-queues.md)
 adds DATA_REVIEW → SCHEDULED after complete eligible conflict-free scheduling,
 and return to DATA_REVIEW with paused, unstarted queues. Scheduled/live events may
-cancel; FINALIZED may end. LIVE/finalization still require the future scoring
-readiness boundary and return 409 invalidConfiguration. Event start/end/timezone
+cancel; FINALIZED may end. Entering LIVE requires saved scoring readiness.
+[Private results finalization](results.md) owns LIVE → FINALIZED. Event PATCH
+returns 409 for that transition. Event start/end/timezone
 cannot change while sessions exist. Existing terminal records remain readable. Writes use serializable
 transactions and immutable audit. The immediate matching retry at revision N+1
 returns the saved state without incrementing/auditing again; other stale writes

@@ -1,6 +1,6 @@
 # Development checkpoint
 
-Updated: 2026-11-21. This file owns current priority, state summary and release
+Updated: 2026-11-23. This file owns current priority, state summary and release
 gates. [Product scope](docs/PRODUCT_SCOPE.md) owns audiences/features; roadmaps own
 task checkboxes. [The map](docs/README.md) routes selected work to its docs/source.
 
@@ -13,6 +13,26 @@ connection interruption, reassignment and the pause-and-verify handoff. S14 and 
 implement local acknowledged HTTP and exact-operation recovery under
 [ADR-031](docs/adr/031-live-scoring-reconnect.md). P6-RECOVERY, P6-UI-LIVE and
 M5 retain their venue and human acceptance gates.
+
+The user directed results to stay private on 2026-11-23.
+[ADR-032](docs/adr/032-private-results.md) and migration 48 complete P7-CALCULATE
+locally and add source-pinned private S16 finalization. The organizer
+reviews category/age/format ranks and outstanding sheets, saves a calculation
+and confirms the selected revision. P7-PUBLISH, P7-EXPORT and the public portion
+of S16 remain open. Resume public work after an agreed release and correction
+policy. The venue rehearsal remains the first actionable operational task.
+
+S16 browser verification covered ET/EN/RU at 320–1920 px, focus return,
+session recovery and exact receipt reconciliation. The full browser run
+passed 483 cases and flagged two. The updated event-setup navigation assertion
+and the performance-register case interrupted by a loopback connection error
+both passed on rerun. Hallmark static and rendered checks found no open issues.
+Migration 48 passed fresh, existing-data upgrade and catalog parity checks.
+The full disposable API baseline passed, including grouped golden results,
+frozen-source reproduction, scope, stale and repeated commands, and audit
+rollback. Workspace tests, typecheck, lint, build, Prisma generation, validation
+and format checks passed. The documentation checker passes with only the
+pre-existing ignored `.hallmark/pr-body.md` broken link excluded.
 
 PR #12 CI repair (2026-11-21): the failed Workspace check was S20's delayed
 preview/document-switch browser case. Private preview results now retain their
@@ -60,7 +80,7 @@ browser checks and the final 20-case S13 recovery/filter rerun pass. START/ADVAN
 LIVE entry and finalization now consume ADR-004 readiness/completeness rather
 than an unimplemented constant gate. A reasoned admin advance override never
 makes missing sheets complete. Event setup now initiates LIVE after explicit
-confirmation and server readiness checks. Its finalization UI belongs to P7.
+confirmation and server readiness checks. S16 now owns private finalization.
 Local M3/M4 prerequisites are available; human/hosted release and M3/M5 remain open.
 
 [Submission evidence](docs/SUBMISSION_VALIDATION.md) records the field-linked
@@ -115,7 +135,7 @@ parent portal or multi-organizer offering. [Scope](docs/PRODUCT_SCOPE.md) owns d
 
 ## Current state
 
-Source, session scheduling and scoring reviewed locally on 2026-11-21. Older reports retain
+Source, session scheduling, scoring and private results reviewed locally on 2026-11-23. Older reports retain
 their dates; no hosted or application-database state is inferred.
 
 - S15 is complete locally. `/app/judge` links to a private own-sheet workspace
@@ -201,7 +221,9 @@ their dates; no hosted or application-database state is inferred.
   Existing event/judge/image authentication remains required. Wix archive
   attribution, placeholder contact and owner/export/rights verification remain
   migration/release gates. Public raster cleanup is independent of private music.
-- The repository contains **47 migrations**. Migration 47 adds immutable exact
+- The repository contains **48 migrations**. Migration 48 adds immutable private
+  result revisions and event-local finalization without reclassifying terminal
+  events. Migration 47 adds immutable exact
   rubric/sheet/operation/calculation history with relational ownership and retained
   calculation inputs. All 47 pass fresh/upgrade/catalog parity and the full
   disposable API baseline. Legacy Float scores are unchanged. Migration 46 adds explicit session
@@ -282,6 +304,8 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
 | 10 | P6-MODERATOR/S14 — complete locally | Scoped queue and frozen-panel counts, acknowledged controls and reasoned exceptions |
 | 11 | P6-RECOVERY — venue work next | Validate venue health, approve any manual continuation record and rehearse both roles using the handoff |
+| 12 | P7-CALCULATE and private S16 finalization — complete locally | ADR-032 consumes frozen submitted sheets and finalizes one reviewed revision with atomic event state. |
+| 13 | P7-PUBLISH / P7-EXPORT — deferred | The user requested private results. Confirm a public projection, correction policy and release scope before resuming. |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

@@ -113,8 +113,9 @@ assigned judges equally, subtract the total-point penalty, floor at zero, and
 round once to three decimal places, half up. BigInt rational intermediates avoid
 binary rounding. No scores are dropped. Disqualification returns a null total
 and no rank. The model's ranking policy uses descending rounded totals with
-shared competition ranks (1,1,3) within category/age/format; full grouped result
-review, final/public revisions and exports remain P7 work.
+shared competition ranks (1,1,3) within category/age/format.
+[Private grouped results](results.md) reuse those calculations and persist
+reviewed revisions. Public publication and exports remain P7 work.
 
 ## Recovery and UI boundary
 
@@ -139,11 +140,10 @@ existing DRAFT/SUBMIT command path. An exact receipt and the latest sheet state
 are distinct, so a historical submission acknowledgement can coexist with a
 newly reopened server sheet.
 
-The backend enforces START/ADVANCE readiness and finalization completeness
-under [the schedule contract](schedule.md). S14 reads frozen-panel completion
+The backend enforces START/ADVANCE readiness under [the schedule contract](schedule.md)
+and completeness under [the private results contract](results.md). S14 reads frozen-panel completion
 without values. An admin uses the scoring REOPEN command from the live console
 for a named sheet in a paused session, including an outstanding historical sheet.
 Event setup initiates LIVE through its existing revisioned stage transition.
-Finalization UI belongs to the results workflow. Venue/manual fallback rehearsal
-remains P6-RECOVERY. Submission, event finalization and CMS publication leave
-public results to the separate results publication workflow.
+The organizer finalizes a reviewed private revision in S16. Venue/manual fallback
+rehearsal remains P6-RECOVERY. Public result publication remains a separate workflow.

@@ -37,6 +37,7 @@ requires that past result or rollout limitation.
 | Scoring / rubric setup | [Scoring contract](api/scoring.md), [ADR-004](adr/004-exact-scoring.md), [decision context](SCORING_MODEL_DECISIONS.md) | ScoringController, exact scoring services/shared schemas, immutable scoring models and organizer rubric/panel editor; S14 and P7 remain downstream |
 | Judge scoring / reconnect | [S15](ui/competition.md#s15--judge-scoring), [F09](flows/F09.md), [ADR-031](adr/031-live-scoring-reconnect.md), [scoring contract](api/scoring.md) | Own judge projection, existing scoring commands, judge event list and frozen rubric editor; venue rehearsal remains downstream |
 | Moderator console / reconnect | [S14](ui/competition.md#s14--moderator-live-console), [F08](flows/F08.md), [ADR-031](adr/031-live-scoring-reconnect.md), [live schedule contract](api/schedule.md#assigned-live-console) | Assigned-session read, existing schedule and scoring commands, organizer and moderator console; venue rehearsal is downstream |
+| Private grouped results / finalization | [Results contract](api/results.md), [ADR-032](adr/032-private-results.md), [S16](ui/competition.md#s16--results-review-and-public-results), [F10](flows/F10.md) | ResultsController, exact scoring calculation, private result revisions and organizer review |
 | Database migration | Owning ADR/model, [testing](TESTING.md#postgresql-checks); dated audits only for their specific findings | schema, migration SQL, scripts/check-*.cjs |
 | Frontend feature | [Web guide](../apps/web/README.md), relevant S/F IDs in [screens](UI_UX.md#screen-specifications) / [flows](USER_FLOWS.md), [design system](DESIGN_SYSTEM.md) | selected page, API helper and shared schema |
 | Product overview | [Product scope](PRODUCT_SCOPE.md), [journey outcomes](USER_JOURNEYS.md) | Checkpoint for actual delivery |
@@ -92,6 +93,7 @@ retains dated source/probe results; planning does not imply implementation fixes
 | [026](adr/026-studio-and-festival-platform.md) | One organization, two public sites and shared CMS; concrete revision/edition/asset/publication/locale/route design; no CRM/student system or runtime implementation |
 | [030](adr/030-session-queues.md) | Event-owned stages/sessions, stable slots, source-bound schedule revisions, moderator authority and scoring readiness gates |
 | [031](adr/031-live-scoring-reconnect.md) | Acknowledged HTTP judge drafts, read-only stale/offline state and exact-operation reconciliation |
+| [032](adr/032-private-results.md) | Grouped results from frozen scores, private revision review and atomic event finalization |
 
 ADR-003/030 accept registration and session-queue lifecycle mappings; actual live
 operation remains gated on scoring and its rehearsal.

@@ -92,11 +92,18 @@ try {
     $expectedSql += "`n" + (($scheduleSql -split '-- SQL-only guards')[1])
     $scoringSql = Get-Content -Raw apps/api/prisma/migrations/20261121010000_exact_scoring/migration.sql
     $expectedSql += "`n" + (($scoringSql -split '-- SQL-only guards')[1])
+    $resultsSql = Get-Content -Raw apps/api/prisma/migrations/20261123000000_private_results/migration.sql
+    $expectedSql += "`n" + (($resultsSql -split '-- SQL-only guards')[1])
     $sql = "CREATE SCHEMA $expectedSchema; SET search_path TO $expectedSchema;`n$expectedSql`n"
     $migrations = Get-ChildItem apps/api/prisma/migrations -Directory | Sort-Object Name
     foreach ($testSchema in @($freshSchema, $upgradeSchema)) {
         $sql += "CREATE SCHEMA $testSchema; SET search_path TO $testSchema;`n"
         foreach ($migration in $migrations) {
+            if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261123000000_private_results') {
+                $sql += @'
+INSERT INTO "Event" (id, name, "startsAt", "endsAt", stage) VALUES ('legacy-terminal-event', 'Historical event', '2026-01-01', '2026-01-02', 'FINALIZED');
+'@
+            }
             if ($testSchema -eq $upgradeSchema -and $migration.Name -eq '20261101000000_image_audit') {
                 $sql += @'
 INSERT INTO "AuditLog" (id, action, "actorKind", "targetType", "targetId", metadata, "createdAt") VALUES ('image-audit-upgrade', 'ACCOUNT_REGISTERED', 'SYSTEM', 'USER', 'user', '{}', '2026-01-01');
@@ -210,6 +217,7 @@ END $$;
             $sql += @'
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM "AuditLog" WHERE id = 'image-audit-upgrade' AND action = 'ACCOUNT_REGISTERED' AND "actorKind" = 'SYSTEM' AND "actorId" IS NULL AND "targetType" = 'USER' AND "targetId" = 'user' AND metadata = '{}'::jsonb AND "createdAt" = '2026-01-01') THEN RAISE EXCEPTION 'Image audit migration changed historical evidence'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM "Event" WHERE id = 'legacy-terminal-event' AND stage = 'FINALIZED') OR EXISTS (SELECT FROM "ResultRevision") OR EXISTS (SELECT FROM "ResultFinalization") THEN RAISE EXCEPTION 'Private results migration changed historical event state'; END IF;
 END $$;
 '@
         }

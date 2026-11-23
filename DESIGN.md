@@ -46,6 +46,13 @@ plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
 ## Adoption
 
+S16 uses the Cobalt system for a private ranking table and completeness review.
+Native URL-selected group and revision controls share one responsive ledger.
+Ties, zero, pending sheets and excluded entries have distinct text and number
+presentation. Finalization opens an inline, keyboard-focused confirmation for
+the saved revision. The exact-operation recovery state stays beside the current
+server read. There are no image slots.
+
 S14 uses the locked Cobalt system for an assigned-session queue ledger.
 Stage and session, current performance and frozen-panel completion are the
 primary operational facts. The next performance is visible on all widths and

@@ -18,6 +18,7 @@ import { entryWorkflowRouter } from "./entry-workflow";
 import { musicRouter } from "./music";
 import { scheduleRouter } from "./schedule";
 import { scoringRouter } from "./scoring";
+import { resultsRouter } from "./results";
 import { contentRouter } from "./content";
 import { publicContentRouter } from "./public-content";
 import type { RecoveryDelivery } from "../services/authRecovery";
@@ -48,6 +49,7 @@ export function apiRouter(prisma: PrismaClient, recoveryDelivery?: RecoveryDeliv
     musicRouter(prisma),
     scheduleRouter(prisma),
     scoringRouter(prisma),
+    resultsRouter(prisma),
   );
   router.use("/studios", authenticate, studiosRouter(prisma), dancersRouter(prisma));
   router.use("/images", authenticate, imagesRouter(prisma));

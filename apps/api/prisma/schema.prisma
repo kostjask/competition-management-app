@@ -253,6 +253,7 @@ model Event {
   scheduleSlots       ScheduleSlot[]
   scoringSetup        ScoringSetup?
   scoringTemplates    ScoringTemplate[]
+  resultRevisions     ResultRevision[]
 }
 
 model DanceCategory {
@@ -848,6 +849,35 @@ model ScoringOperation {
   @@index([actorId])
 }
 
+model ResultRevision {
+  eventId     String
+  revision    Int
+  operationId String              @unique @db.Uuid
+  actorId     String
+  source      String
+  digest      String
+  snapshot    Json
+  createdAt   DateTime            @default(now())
+  event       Event               @relation(fields: [eventId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor       User                @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  finalized   ResultFinalization?
+
+  @@id([eventId, revision])
+}
+
+model ResultFinalization {
+  eventId     String         @id
+  revision    Int
+  operationId String         @unique @db.Uuid
+  actorId     String
+  digest      String
+  createdAt   DateTime       @default(now())
+  result      ResultRevision @relation(fields: [eventId, revision], references: [eventId, revision], onDelete: Restrict, onUpdate: Restrict)
+  actor       User           @relation(fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([eventId, revision])
+}
+
 model Score {
   id            String  @id @default(cuid())
   performanceId String
@@ -894,6 +924,8 @@ model User {
   moderatedSessions     CompetitionSession[]
   scheduleOperations    ScheduleOperation[]
   scoringOperations     ScoringOperation[]
+  resultRevisions       ResultRevision[]
+  resultFinalizations   ResultFinalization[]
   scoringSheetVersions  ScoringSheetVersion[]
   onboardingDraft       OnboardingDraft?
 }

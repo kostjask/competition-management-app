@@ -30,8 +30,9 @@ Missing sheets block normal advance and finalization. A reasoned global-admin
 advance override records the missing-sheet exception and does not supply zeroes
 or make calculations complete. Admin deductions/disqualification require a
 paused queue and reason. Snapshot sources include immutable template, sheet and
-exception versions. New calculations are private; P7 owns finalized/public
-revisions and explicit correction republication. Event stage, CMS publication
+exception versions. [ADR-032](032-private-results.md) owns private grouped
+calculations and revision-bound finalization. P7 still owns public revisions and
+explicit correction republication. Event stage, CMS publication
 and sheet submission never publish a result. Legacy Float Score rows remain
 unchanged and excluded from new calculations.
 

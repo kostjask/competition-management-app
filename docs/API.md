@@ -44,6 +44,7 @@ Use only the methods listed in the linked contract. Shared schemas own exact sha
 | Events | /events; /events/:eventId | [Events](api/events.md) |
 | Schedule | /events/:eventId/schedule; /live, /preview and /commands | [Session queues and live operations](api/schedule.md) |
 | Scoring | /events/:eventId/scoring; /judge, /preview and /commands | [Exact scoring, judge sheets and rubric setup](api/scoring.md) |
+| Private results | /events/:eventId/results; /commands | [Grouped review and finalization](api/results.md) |
 | Registration | /events/:eventId/studio-registrations; /:studioId | [Applications](api/registrations.md) |
 | Application estimates | PATCH /events/:eventId/studio-registrations/:studioId/estimates; history in registration /review | [Planning estimates](api/registrations.md#planning-estimates) |
 | Private music | Revisioned policy/preparation, multipart replacement, current-version private ranges and separate acceptance/correction | [Music](api/music.md) |
@@ -65,8 +66,8 @@ Frontend helpers decode unknown transport output through shared response schemas
 including session metadata. DTOs omit private persistence fields; explicit
 native auth/token operations remain exceptions by contract. Owner onboarding drafts
 exist under auth; entry drafts and opt-in studio data checkpoints are implemented
-through the contracts below. Score-sheet, live and results APIs are not
-implied by UI specifications.
+through their resource contracts. Score sheets, live operation and private results
+are implemented under the resource contracts above. Public results remain deferred.
 
 ## Resource contracts
 

@@ -1,0 +1,34 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: reviewable ranking ledger · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H5 E4 S4 R5 V4 · weakest: E; the ruled ranking table and visible blockers carry the review without decoration. */
+/* Hallmark · finish-review: in-thread · 3 findings resolved in recapture: desktop measure, phone tie wrapping, completeness hierarchy. */
+@import "../../features/events/design/tokens.css";
+@import "../../features/events/design/base.css";
+@import "../events/event-setup.css";
+@import "../entries/entries.css";
+
+.results-workbench { max-width: min(var(--container), 72rem); margin-inline: auto; padding: var(--space-lg); }
+.results-workbench .ui-field { max-width: 32rem; margin-block: var(--space-md); }
+.results-toolbar, .results-version { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-column); align-items: center; }
+.results-toolbar { justify-content: space-between; border-block-end: 1px solid var(--color-rule-2); padding-block-end: var(--space-sm); }
+.results-toolbar p { margin-block: var(--space-2xs); }
+.results-version { padding-block: var(--space-sm); border-block-end: 1px solid var(--color-rule-2); }
+.results-workbench .ui-button { min-height: 44px; }
+.results-checks, .results-actions { margin-block: var(--space-lg); }
+.results-checks ul { padding-inline-start: var(--space-lg); }
+.results-checks li { padding-block: var(--space-xs); overflow-wrap: anywhere; }
+.results-table { width: 100%; border-collapse: collapse; margin-block: var(--space-md) var(--space-lg); font-variant-numeric: tabular-nums; }
+.results-table caption { text-align: start; font-weight: 600; padding-block: var(--space-sm); overflow-wrap: anywhere; }
+.results-table th, .results-table td { padding: var(--space-sm); border-block-end: 1px solid var(--color-rule-2); vertical-align: top; text-align: start; overflow-wrap: anywhere; }
+.results-table thead { background: var(--color-accent-wash); }
+.results-table thead th { font-size: var(--text-sm); }
+.results-table td:first-child, .results-table th:first-child { width: 12%; }
+.results-table td:last-child, .results-table th:last-child { width: 23%; text-align: end; }
+.results-table small { display: block; color: var(--color-ink-2); font-size: var(--text-sm); font-weight: 400; }
+.results-confirm { border: 1px solid var(--color-accent); padding: var(--space-md); margin-block: var(--space-md); background: var(--color-accent-wash); }
+.results-confirm h2 { margin-block-start: 0; }
+@media (max-width: 36rem) {
+  .results-workbench { padding: var(--space-md); }
+  .results-table th, .results-table td { padding-inline: var(--space-xs); }
+  .results-table td:first-child, .results-table th:first-child { width: 21%; }
+  .results-table td:last-child, .results-table th:last-child { width: 26%; }
+}
