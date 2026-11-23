@@ -71,6 +71,9 @@ manual continuation approval and human language/assistive checks follow the
 guidance at 320–1920px. The moderator spec holds a reconnect read to verify that
 guidance persists and writes remain disabled until the read completes, and
 checks guidance and print removal after denied access.
+S14 and S15 also exercise an interrupted write followed by confirmed access
+removal and restoration. Both resume from the authorized read with the old
+command cleared. Same-account session recovery keeps its separate coverage.
 
 P6-JUDGE/S15 and the judge portion of P6-RECOVERY use `judge.spec.ts` for the
 localized touch/keyboard workflow, score precision and zero, draft/submission
@@ -95,9 +98,10 @@ unchanged. Start with `pnpm test:focus api scoring.test.cjs`,
 then run applicable full gates. S14/S15 and venue/human/hosted release stay open.
 
 P6-LIVE-MODEL/P6-SCHEDULE use `schedule.test.cjs` for strict commands and interval
-boundaries, `schedule.spec.ts` for ET/EN/RU S13 keyboard/phone/desktop and retained
-operation/session/navigation recovery, and `check-schedule.cjs` in entry-foundation
-and full baselines. The latter validates real HTTP/PostgreSQL eligibility, preview
+boundaries, `schedule.spec.ts` for ET/EN/RU S13 keyboard/phone/desktop, two-tab
+stale confirmation and retained operation/session/navigation recovery, and
+`check-schedule.cjs` in entry-foundation and full baselines. The latter validates
+real HTTP/PostgreSQL eligibility, preview
 source binding, atomic cross-session moves, races, immutable history, removed/
 replaced moderators, audit rollback and lifecycle gates in its random database.
 Migration 46 is covered by fresh/upgrade/catalog parity. Start with

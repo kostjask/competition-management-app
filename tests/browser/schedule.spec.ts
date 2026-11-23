@@ -15,7 +15,7 @@ async function fixture(page: Page, locale: Locale = "en", width = 390) {
     sessions: [session, session2].map((id, i) => ({ id, stageId: stage, name: i ? "Afternoon" : "Morning", startsAt: i ? "2026-12-05T12:00:00.000Z" : instant, bufferSec: 120, restSec: 120, moderatorId: null, state: "PAUSED", slots: [] })),
     performances: ["First <script>literal</script>", "Second", "Third", "Incomplete"].map((title, i) => ({ id: `p${i + 1}`, title, studioName: "Synthetic studio", revision: 1, durationSec: 60, legacyOrder: null, eligible: i < 3 })) });
   const state = { workspace, deny: false, failed: false, empty: false, expired: false, conflict: false, loseSave: false, saveCount: 0, admin: true, hold: Promise.resolve(), commands: [] as unknown[], receipts: new Map<string, ScheduleReceipt>() };
-  await page.route("**/api/v1/**", async route => {
+  await page.context().route("**/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/auth/login")) { state.expired = false; return route.fulfill({ json: { session: "cookie", expiresAt: "2099-01-01T00:00:00.000Z", user: { id: "admin", name: "Synthetic organizer", email: "organizer@example.invalid" } } }); }
     if (path.endsWith("/auth/profile")) return route.fulfill({ json: { id: "admin", name: "Synthetic organizer", email: "organizer@example.invalid", isAdmin: state.admin, roles: [], permissions: [], preferredLocale: null, createdAt: instant } });
@@ -78,16 +78,50 @@ test("S13 conflicts block save and cancelling a preview preserves the draft", as
   expect(state.saveCount).toBe(0); await expect(page.locator(".schedule-ledger h3")).toHaveCount(3);
 });
 
+test("S13 a second organizer tab invalidates the first tab's confirmed preview", async ({ page, context }) => {
+  const state = await fixture(page);
+  const path = "/app/admin/events/e/schedule";
+  await page.goto(path);
+  await page.getByRole("button", { name: "Generate remaining queue", exact: true }).click();
+  await page.getByRole("button", { name: "Validate preview", exact: true }).click();
+  await page.getByLabel("I confirm this queue and timing").check();
+
+  const other = await context.newPage();
+  await other.goto(path);
+  await other.getByRole("button", { name: "Add to queue: Second", exact: true }).click();
+  await other.getByRole("button", { name: "Validate preview", exact: true }).click();
+  await other.getByLabel("I confirm this queue and timing").check();
+  await other.getByRole("button", { name: "Save schedule", exact: true }).click();
+  await expect(other.getByRole("status").filter({ hasText: "Server acknowledged" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Save schedule", exact: true }).press("Enter");
+  await expect(page.locator(".ui-error-summary")).toBeVisible();
+  await expect(page.getByRole("button", { name: getTranslation("Entry.retry", "en"), exact: true })).toHaveCount(0);
+  await expect(page.getByLabel("I confirm this queue and timing")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Validate preview", exact: true })).toBeDisabled();
+  await expect(page.locator(".schedule-queue .schedule-ledger h3")).toHaveCount(3);
+  await page.getByRole("button", { name: "Compare current server state", exact: true }).click();
+  await expect(page.locator(".schedule-comparison").getByText("Second", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Validate preview", exact: true })).toBeDisabled();
+  page.once("dialog", dialog => dialog.accept());
+  await page.getByRole("button", { name: getTranslation("Schedule.useServer", "en"), exact: true }).click();
+  await expect(page.locator("#schedule-entry-p2")).toHaveText("1. Second");
+  await page.getByRole("button", { name: "Validate preview", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Save schedule", exact: true })).toBeDisabled();
+  expect(state.saveCount).toBe(1);
+  expect(state.commands).toHaveLength(2);
+});
+
 test("S13 uncertain save retains exact UUID and recovers one receipt", async ({ page }) => {
   const state = await fixture(page); state.loseSave = true;
   await page.goto("/app/admin/events/e/schedule"); await page.getByRole("button", { name: "Generate remaining queue", exact: true }).click(); await page.getByRole("button", { name: "Validate preview", exact: true }).click(); await page.getByLabel("I confirm this queue and timing").check(); await page.getByRole("button", { name: "Save schedule", exact: true }).click();
   await expect(page.getByText(/The outcome is unconfirmed/)).toBeVisible(); await page.getByRole("button", { name: "Compare current server state", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Replace local queue with server state", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: getTranslation("Schedule.useServer", "en"), exact: true })).toBeDisabled();
   state.workspace.revision++;
   await page.getByRole("button", { name: getTranslation("Entry.retry", "en"), exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: "Server acknowledged" })).toBeVisible(); expect(state.saveCount).toBe(1); expect(state.commands[0]).toEqual(state.commands[1]);
   await expect(page.getByRole("button", { name: "Validate preview", exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "Replace local queue with server state", exact: true }).click();
+  await page.getByRole("button", { name: getTranslation("Schedule.useServer", "en"), exact: true }).click();
   await expect(page.getByRole("button", { name: "Validate preview", exact: true })).toBeEnabled();
 });
 
@@ -103,9 +137,9 @@ test("S13 organizer creates explicit stage/session with localized validation and
   const state = await fixture(page); state.workspace.stages = []; state.workspace.sessions = [];
   await page.goto("/app/admin/events/e/schedule"); await page.getByText("Add stage", { exact: true }).first().click();
   await page.locator("#stage-name").fill("Annex"); state.workspace.revision++;
-  await page.getByRole("button", { name: "Add stage", exact: true }).click(); await expect(page.getByText(/The outcome is unconfirmed/)).toBeVisible();
-  await page.getByRole("button", { name: "Compare current server state", exact: true }).click(); await page.getByRole("button", { name: "I compared server state; resolve this attempt", exact: true }).click();
-  await page.getByRole("button", { name: "Replace local queue with server state", exact: true }).click(); await expect(page.locator("#stage-name")).toHaveValue("Annex");
+  await page.getByRole("button", { name: "Add stage", exact: true }).click(); await expect(page.locator(".ui-error-summary")).toBeVisible();
+  await page.getByRole("button", { name: "Compare current server state", exact: true }).click();
+  await page.getByRole("button", { name: getTranslation("Schedule.useServer", "en"), exact: true }).click(); await expect(page.locator("#stage-name")).toHaveValue("Annex");
   await page.getByRole("button", { name: "Add stage", exact: true }).click();
   await page.getByText("Add session", { exact: true }).first().click(); await page.locator("#session-new-name").fill("Late session"); await page.locator("#session-new-starts").fill("2026-12-05T15:00:00");
   await page.getByRole("button", { name: "Add session", exact: true }).click(); await expect(page.locator(".ui-error-summary")).toBeVisible(); await expect(page.locator("#session-new-name")).toHaveValue("Late session");

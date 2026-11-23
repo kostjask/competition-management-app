@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ScheduleCommandSchema, type ScheduleCommand, type SchedulePreview, type ScheduleQueues, type ScheduleWorkspace } from "@dance/schemas";
 import { commandSchedule, getSchedule, previewSchedule } from "../../api/schedule";
-import { toUiError, type UiError } from "../../api/error";
-import { Button, ErrorSummary, Field, Input } from "../../components/ui/Foundation";
+import { ApiError, toUiError, type UiError } from "../../api/error";
+import { Alert, Button, ErrorSummary, Field, Input } from "../../components/ui/Foundation";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useAuth } from "../../auth/useAuth";
 import { useUnsaved } from "../entries/useUnsaved";
@@ -19,6 +19,7 @@ function Workspace({ eventId }: { eventId: string }) {
   const { t, locale } = useTranslation(); const [params, setParams] = useSearchParams();
   const [value, setValue] = useState<ScheduleWorkspace | null>(null); const [queues, setQueues] = useState<ScheduleQueues>([]);
   const [comparison, setComparison] = useState<ScheduleWorkspace | null>(null); const [preview, setPreview] = useState<SchedulePreview | null>(null);
+  const [sourceChanged, setSourceChanged] = useState(false);
   const [error, setError] = useState<UiError | null>(null); const [busy, setBusy] = useState(false); const lock = useRef(false);
   const [operation, setOperation] = useState<ScheduleCommand | null>(null); const [dirty, setDirty] = useState(false); const [formDirty, setFormDirty] = useState<string | null>(null); const [formEpoch, setFormEpoch] = useState(0);
   const [confirmed, setConfirmed] = useState(false); const [stageName, setStageName] = useState(""); const [ack, setAck] = useState<number | null>(null);
@@ -34,7 +35,7 @@ function Workspace({ eventId }: { eventId: string }) {
   const assigned = new Set(queues.flatMap(q => q.performanceIds));
   const available = value?.performances.filter(p => !assigned.has(p.id)) ?? [];
   const editable = value?.eventStage === "DATA_REVIEW" || value?.eventStage === "LIVE";
-  const disabled = busy || !!operation || !editable || !!comparison && comparison.revision !== value?.revision;
+  const disabled = busy || !!operation || !editable || sourceChanged || !!comparison && comparison.revision !== value?.revision;
   const queueLocked = disabled || !!formDirty || selected?.state !== "PAUSED";
   const entry = (id: string) => value?.performances.find(p => p.id === id);
   const label = (id: string) => entry(id)?.title ?? t("Performance.untitled");
@@ -47,6 +48,16 @@ function Workspace({ eventId }: { eventId: string }) {
     [next[i], next[target]] = [next[target]!, next[i]!]; editQueue(selected.id, next);
     requestAnimationFrame(() => document.getElementById(`schedule-entry-${id}`)?.focus());
   }
+  function reportError(err: unknown) {
+    setError(toUiError(err));
+    if (err instanceof ApiError && err.statusCode === 409 && err.reason === "concurrentChange") {
+      setOperation(null);
+      setPreview(null);
+      setConfirmed(false);
+      setComparison(null);
+      setSourceChanged(true);
+    }
+  }
   async function execute(body: ScheduleCommand) {
     if (lock.current) return; lock.current = true; setBusy(true); setError(null); setOperation(body);
     try {
@@ -56,7 +67,7 @@ function Workspace({ eventId }: { eventId: string }) {
       // Keep the acknowledgement even when this separate current read fails.
       const current = await getSchedule(eventId);
       if (current.revision !== result.revision) setComparison(current);
-    } catch (err) { setError(toUiError(err)); }
+    } catch (err) { reportError(err); }
     finally { setBusy(false); lock.current = false; }
   }
   function submit(raw: unknown) {
@@ -67,7 +78,7 @@ function Workspace({ eventId }: { eventId: string }) {
   async function validate() {
     if (!value || lock.current) return; lock.current = true; setBusy(true); setError(null); setConfirmed(false);
     try { const result = await previewSchedule(eventId, value.revision, queues); setPreview(result); }
-    catch (err) { setError(toUiError(err)); } finally { setBusy(false); lock.current = false; }
+    catch (err) { reportError(err); } finally { setBusy(false); lock.current = false; }
   }
   async function compare() {
     if (lock.current) return; lock.current = true; setBusy(true); setError(null);
@@ -82,10 +93,11 @@ function Workspace({ eventId }: { eventId: string }) {
       {operation && comparison && <Button variant="quiet" disabled={busy} onClick={() => { setOperation(null); setPreview(null); }}>{t("Schedule.compared")}</Button>}
       {value && <Button variant="quiet" disabled={busy || dirty || !!operation} onClick={() => window.print()}>{t("Schedule.print")}</Button>}
     </div>
+    {sourceChanged && <Alert tone="warning">{t("Schedule.sourceChanged")}</Alert>}
     {operation && !busy && <p role="status">{t("Schedule.uncertain")}</p>}
     {comparison && <section className="schedule-comparison"><h2>{t("Schedule.compare")}</h2><p>{t("Schedule.revision")}: {comparison.revision}</p>
       {comparison.sessions.map(s => <section key={s.id}><h3>{s.name}</h3><p>{s.slots.filter(slot => slot.state !== "REMOVED").sort((a, b) => (a.position ?? 0) - (b.position ?? 0)).map(slot => comparison.performances.find(p => p.id === slot.performanceId)?.title ?? t("Performance.untitled")).join(", ")}</p><dl className="schedule-facts"><div><dt>{t("Schedule.time")}</dt><dd>{new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short", timeZone: comparison.timeZone }).format(new Date(s.startsAt))} ({comparison.timeZone})</dd></div><div><dt>{t("Schedule.buffer")}</dt><dd>{s.bufferSec}</dd></div><div><dt>{t("Schedule.rest")}</dt><dd>{s.restSec}</dd></div><div><dt>{t("Schedule.moderator")}</dt><dd>{s.moderatorId ? comparison.moderators.find(m => m.id === s.moderatorId)?.name ?? s.moderatorId : t("Schedule.none")}</dd></div></dl></section>)}
-      <Button variant="secondary" disabled={busy || !!operation} onClick={() => { if (dirty && !window.confirm(t("Roster.discard"))) return; setValue(comparison); setQueues(queuesFrom(comparison)); setComparison(null); setDirty(false); setPreview(null); setConfirmed(false); }}>{t("Schedule.useServer")}</Button>
+      <Button variant="secondary" disabled={busy || !!operation} onClick={() => { if (dirty && !window.confirm(t("Roster.discard"))) return; setValue(comparison); setQueues(queuesFrom(comparison)); setComparison(null); setSourceChanged(false); setDirty(false); setPreview(null); setConfirmed(false); }}>{t("Schedule.useServer")}</Button>
     </section>}
     {!value ? !error && <EntryLoading /> : <>
       <dl className="schedule-facts"><div><dt>{t("Schedule.revision")}</dt><dd>{value.revision}</dd></div><div><dt>{t("Setup.timeZone")}</dt><dd>{value.timeZone}</dd></div><div><dt>{t("Schedule.state")}</dt><dd>{selected ? t(`Schedule.${selected.state}`) : t("Schedule.none")}</dd></div></dl>

@@ -73,7 +73,13 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
     if (organizer && !result.organizer) throw new ApiError(403, "Organizer access ended", undefined, "FORBIDDEN", "permissionDenied");
     return result;
   }, [eventId, sessionId, operationId, organizer]);
-  const connection = useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
+  const clearProtectedState = useCallback(() => {
+    setPending(null);
+    setProposal(null);
+    setWriteError(null);
+    setLastAck(null);
+  }, []);
+  const connection = useLiveConnection(eventId, sending || sessionExpired, read, reconcile, clearProtectedState);
   const { snapshot, failure, loading, online, connected, interrupted, fresh, invalidate, refresh } = connection;
   const workspace = snapshot?.workspace;
   const session = workspace?.session;
@@ -190,7 +196,7 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
     </>}
 
     {!workspace && (failure ? <>
-      <Alert tone="danger"><ErrorFeedback error={failure.ui} /></Alert>
+      <Alert tone="danger" announce={false}><ErrorFeedback error={failure.ui} /></Alert>
       <div className="moderator-actions">
         <Button disabled={!online || loading} onClick={() => void refresh()}>{t("Moderator.refresh")}</Button>
         {sessionId !== undefined && <Button variant="secondary" onClick={() => selectSession()}>{t("Moderator.chooseSession")}</Button>}

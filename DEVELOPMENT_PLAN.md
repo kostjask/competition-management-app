@@ -14,6 +14,21 @@ devices. S14 and S15 now show localized interruption instructions through the
 next verified server read under [ADR-031](docs/adr/031-live-scoring-reconnect.md).
 P6-RECOVERY, P6-UI-LIVE and M5 retain their venue and human acceptance gates.
 
+The local rehearsal preparation addressed two gaps in S13–S15. A confirmed S13
+source conflict clears the old preview and requires explicit comparison before
+another confirmation. A confirmed S14/S15 access loss clears the pending action
+and protected tab state, even if the role later returns. Same-account sign-in
+recovery retains the exact operation. The [runbook](docs/LIVE_REHEARSAL.md)
+adds those observations to the two-tab and assignment-change exercises.
+All 48 focused Chromium cases passed. The comparison button label was shortened
+after Hallmark found wrapping at 320 px. The affected cases and Hallmark static
+and rendered checks passed on recapture. Workspace tests, typecheck, lint, build,
+Prisma generation/validation/format and the full disposable API baseline passed.
+The full Chromium run passed 486 of 488 cases. Two S13 cases loaded selectors
+for the previous comparison label. All 21 S13 cases passed in a fresh run with
+the final label and selectors. The documentation check passed for 169 Markdown
+files with the pre-existing ignored PR-draft link excluded.
+
 Rehearsal preparation on 2026-11-23 passed all 25 affected moderator and judge
 Chromium cases in ET/EN/RU at 320–1920 px. The finish review elevated the outage
 status with the shared warning treatment. Hallmark static and rendered checks
@@ -315,7 +330,7 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks |
 | 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
 | 10 | P6-MODERATOR/S14 — complete locally | Scoped queue and frozen-panel counts, acknowledged controls and reasoned exceptions |
-| 11 | P6-RECOVERY — local preparation delivered, venue work next | Run the F07–F09 rehearsal, measure venue health and propagation, and record the procedure and human acceptance |
+| 11 | P6-RECOVERY — local preparation delivered, venue work next | Run the F07–F09 rehearsal with the intended staff and devices, measure venue health and propagation, and record the procedure and human acceptance |
 | 12 | P7-CALCULATE and private S16 finalization — complete locally | ADR-032 consumes frozen submitted sheets and finalizes one reviewed revision with atomic event state. |
 | 13 | P7-PUBLISH / P7-EXPORT — deferred | The user requested private results. Confirm a public projection, correction policy and release scope before resuming. |
 

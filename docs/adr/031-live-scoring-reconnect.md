@@ -50,6 +50,11 @@ before offering the same UUID and body for retry. If the session, slot, revision
 or action eligibility changed, the operator explicitly accepts the current state
 before acting again. Access denial removes the cached session projection.
 
+An authoritative 403 or 404 from either live read also clears local drafts,
+pending operations, exception or submission review and previous acknowledgements.
+If access is restored, the operator starts from the new authorized read. A 401
+retains the tab's recovery state for same-account sign-in and fresh reconciliation.
+
 For an interruption, retain the console tab and stop stage operations. If
 connected, use Pause and verify the acknowledged state. If unavailable, tell the
 stage lead the queue state is unverified. The selected-session print handoff shows

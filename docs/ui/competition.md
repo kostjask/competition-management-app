@@ -18,11 +18,12 @@ Target screen contracts, not an implementation claim. Inherit all shared
 
 The implemented Cobalt ledger uses stage/session URL filters, explicit session
 setup, append-generation, keyboard moves, cross-session destinations and projected
-times. Conflicting previews cannot save; confirmation names the proposed revision.
-Current server comparison is separate from the retained local draft and exact
-uncertain command. All acknowledged sessions are printable. ET/EN/RU phone/desktop
-browser checks accompany delivery; human language/assistive and venue acceptance
-remain open under P6-UI-LIVE. S14 and S15 have their own local delivery below.
+times. Conflicting previews cannot save. A confirmed source conflict removes the
+old preview and holds local editing until the organizer compares and accepts the
+current schedule. The draft remains visible during comparison. An uncertain save
+supports exact-operation recovery. All acknowledged sessions are printable.
+ET/EN/RU phone/desktop browser checks accompany delivery. Human language,
+assistive and venue acceptance remain open under P6-UI-LIVE.
 
 Organizer scoring-template setup is implemented at
 `/app/admin/events/:eventId/scoring` under [ADR-004](../adr/004-exact-scoring.md)
@@ -43,7 +44,7 @@ This delivers the setup portion of P6-UI-LIVE.
 - **States:** waiting/no queue, running, paused and finished, skipped/requeued performance and reopened sheet, unavailable judges, stage conflict, offline/reconnecting and removed permission. An uncertain operation is reconciled before retry.
 - **Responsive / accessibility:** tablet touch-first, mobile critical controls/current performance visible, desktop extra queue; confirm significant exceptions, announce queue change without stealing focus.
 - **API:** [Assigned schedule live projection](../api/schedule.md#assigned-live-console), existing schedule commands and admin-only reasoned sheet correction. Receipt reconciliation follows [ADR-031](../adr/031-live-scoring-reconnect.md).
-- **Acceptance:** repeated activation causes one transition; the server rejects the wrong session, slot or revision; completion exposes counts only. Connection status gives the localized stop-and-verify instruction until a new server read. Print identifies its last acknowledged revision and read time. Venue and human acceptance remain in [F08](../flows/F08.md).
+- **Acceptance:** repeated activation causes one transition; the server rejects the wrong session, slot or revision; completion exposes counts only. Connection status gives the localized stop-and-verify instruction until a new server read. Confirmed access removal clears the pending action, exception review and print handoff. Print identifies its last acknowledged revision and read time. Venue and human acceptance remain in [F08](../flows/F08.md).
 
 ## S15 — Judge scoring
 
@@ -54,7 +55,7 @@ This delivers the setup portion of P6-UI-LIVE.
 - **States:** no assignment/waiting, loading rubric, incomplete/invalid, unsaved/saving/saved/failed, submitting/uncertain/submitted/locked, offline/reconnect, correction reopened.
 - **Responsive / accessibility:** touch-first one-column criteria, desktop optional summary; no slider-only scoring or forced orientation; label/range/error per criterion, numeric keypad where appropriate, deliberate focus when performance changes.
 - **API:** [own-sheet reads and acknowledged commands](../api/scoring.md) under [ADR-004](../adr/004-exact-scoring.md). [ADR-031](../adr/031-live-scoring-reconnect.md) owns stale reads, in-tab edits and exact retry decisions.
-- **Acceptance:** zero differs from missing; debounce alone never proves save; reconnect reconciles versions before advance; peers hidden under agreed policy; acknowledgement survives reload. The localized connection status tells the judge to retain the tab and verify the sheet on the server. F09.
+- **Acceptance:** zero differs from missing; debounce alone never proves save; reconnect reconciles versions before advance; peers hidden under agreed policy; acknowledgement survives reload. The localized connection status tells the judge to retain the tab and verify the sheet on the server. Confirmed access removal clears in-tab scores and pending operations. F09.
 
 ## S16 — Results review and public results
 

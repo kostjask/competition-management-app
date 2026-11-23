@@ -26,7 +26,7 @@ async function fixture(page: Page, locale: Locale = "en") {
       instructions: { en: "Evaluate timing.", et: "Hinda ajastust.", ru: "Оцените чувство ритма." }, min: "0", max: "10", step: "0.5", weightBps: 10000 }] },
   }] });
   const state = { workspace, reads: [] as Array<string | null>, commands: [] as JudgeScoringCommand[], acks: new Map<string, JudgeScoringAck>(),
-    lose: "none" as "none" | "before" | "after", denied: false, expired: false, expireOnWrite: false };
+    lose: "none" as "none" | "before" | "after", denied: false, expired: false, expireOnWrite: false, denyAfterWrite: false };
   const user = { id: "judge-user", name: "Event judge", email: "judge@example.invalid" };
   await page.route("**/api/v1/**", async route => {
     const url = new URL(route.request().url());
@@ -41,6 +41,7 @@ async function fixture(page: Page, locale: Locale = "en") {
     }
     if (url.pathname.endsWith("/scoring/commands")) {
       const command = JudgeScoringCommandSchema.parse(route.request().postDataJSON()); state.commands.push(command);
+      if (state.denyAfterWrite) { state.denied = true; return route.abort(); }
       if (state.expireOnWrite) { state.expired = true; state.expireOnWrite = false; return route.fulfill({ status: 401, json: error("authenticationRequired") }); }
       if (state.lose === "before") { state.lose = "none"; return route.abort(); }
       const sheet = workspace.sheets.find(row => row.id === command.sheetId);
@@ -197,6 +198,24 @@ test("shows a reopened correction and clears private data when authority is remo
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(score).toHaveCount(0);
   expect(state.commands).toHaveLength(0);
+});
+
+test("access revocation discards a pending score and its draft even if access later returns", async ({ page }) => {
+  const state = await fixture(page);
+  state.denyAfterWrite = true;
+  await page.goto(scorePath);
+  const score = page.getByRole("textbox", { name: "Technique", exact: true });
+  await score.fill("3");
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(score).toHaveCount(0);
+  state.denied = false;
+  state.denyAfterWrite = false;
+  await page.getByRole("button", { name: "Check server state" }).click();
+  await expect(score).toBeEditable();
+  await expect(score).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Retry the same operation" })).toHaveCount(0);
+  expect(state.reads.at(-1)).toBe(null);
+  expect(state.commands).toHaveLength(1);
 });
 
 test("waiting read can reveal a newly assigned sheet", async ({ page }) => {

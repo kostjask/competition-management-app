@@ -64,10 +64,19 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
     setWriteError(null);
     setComparing(false);
   }, [pending]);
+  const clearProtectedState = useCallback(() => {
+    setDraft(null);
+    setSelection(null);
+    setReviewing(null);
+    setPending(null);
+    setWriteError(null);
+    setLastAck(null);
+    setComparing(false);
+  }, []);
   const operationId = pending?.operationId;
   const read = useCallback((signal: AbortSignal) => getJudgeScoring(eventId, operationId, signal), [eventId, operationId]);
   const { snapshot, failure, loading, online, connected, interrupted, fresh, invalidate, refresh } =
-    useLiveConnection(eventId, sending || sessionExpired, read, reconcile);
+    useLiveConnection(eventId, sending || sessionExpired, read, reconcile, clearProtectedState);
   useUnsaved(!!draft || !!pending, false, t("Judge.discard"));
   useEffect(() => () => { writing.current?.abort(); }, []);
 

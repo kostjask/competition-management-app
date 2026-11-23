@@ -6,7 +6,7 @@ const STALE_MS = 15000;
 export const LIVE_REQUEST_MS = 8000;
 
 export function useLiveConnection<T extends { eventId: string }>(eventId: string, paused: boolean,
-  read: (signal: AbortSignal) => Promise<T>, onRead: (workspace: T) => void) {
+  read: (signal: AbortSignal) => Promise<T>, onRead: (workspace: T) => void, onAccessLost: () => void) {
   const [snapshot, setSnapshot] = useState<{ workspace: T; receivedAt: number } | null>(null);
   const [failure, setFailure] = useState<{ ui: UiError; denied: boolean } | null>(null);
   const [online, setOnline] = useState(navigator.onLine);
@@ -38,6 +38,7 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
       if (request.signal.aborted) return;
       const denied = error instanceof ApiError && [401, 403, 404].includes(error.statusCode);
       if (denied) setSnapshot(null);
+      if (error instanceof ApiError && (error.statusCode === 403 || error.statusCode === 404)) onAccessLost();
       setFailure({ ui: toUiError(error), denied });
       setStale(denied ? "awaiting" : "interrupted");
     } finally {
@@ -46,7 +47,7 @@ export function useLiveConnection<T extends { eventId: string }>(eventId: string
         setLoading(false);
       }
     }
-  }, [eventId, onRead, paused, read]);
+  }, [eventId, onAccessLost, onRead, paused, read]);
 
   useEffect(() => {
     const connectivity = () => {

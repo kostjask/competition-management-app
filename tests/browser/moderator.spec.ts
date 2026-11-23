@@ -53,7 +53,7 @@ async function fixture(page: Page, locale: Locale = "en", organizer = false) {
   const state = {
     workspace, session, commands: [] as LiveScheduleCommand[], operations: new Map<string, LiveScheduleAcknowledgement>(),
     reads: [] as Array<string | null>, lose: "none" as "none" | "before" | "after" | "race", denied: false,
-    expired: false, expireOnWrite: false, readFailure: false, corrections: [] as string[],
+    expired: false, expireOnWrite: false, denyAfterWrite: false, readFailure: false, corrections: [] as string[],
   };
   const user = { id: "operator", name: "Event operator", email: "operator@example.invalid" };
   await page.route("**/api/v1/**", async route => {
@@ -83,6 +83,10 @@ async function fixture(page: Page, locale: Locale = "en", organizer = false) {
       const command = ScheduleCommandSchema.parse(route.request().postDataJSON());
       if (!("sessionId" in command)) throw new Error("Expected a live command");
       state.commands.push(command);
+      if (state.denyAfterWrite) {
+        state.denied = true;
+        return route.abort();
+      }
       if (state.expireOnWrite) {
         state.expireOnWrite = false;
         state.expired = true;
@@ -269,6 +273,25 @@ test("offline and failed reads disable controls, and reassignment clears private
   await expect(page.getByRole("button", { name: "Print handoff" })).toHaveCount(0);
   await expect(help).toHaveCount(0);
   expect(state.commands).toHaveLength(0);
+});
+
+test("access revocation discards an outstanding stage action even if access later returns", async ({ page }) => {
+  const state = await fixture(page, "en", true);
+  state.session.current!.completion!.locked = 2;
+  state.denyAfterWrite = true;
+  await page.goto(adminPath);
+  const advance = page.getByRole("button", { name: "Advance", exact: true });
+  await advance.click();
+  const refresh = page.getByRole("button", { name: getTranslation("Moderator.refresh", "en"), exact: true });
+  await expect(page.locator(".ui-tone-danger").getByRole("alert")).toBeVisible();
+  await expect(page.getByText("First performance", { exact: true })).toHaveCount(0);
+  state.denied = false;
+  state.denyAfterWrite = false;
+  await refresh.click();
+  await expect(advance).toBeEnabled();
+  await expect(page.getByRole("button", { name: getTranslation("Moderator.retrySame", "en"), exact: true })).toHaveCount(0);
+  expect(state.reads.at(-1)).toBe(null);
+  expect(state.commands).toHaveLength(1);
 });
 
 test("session recovery retains the exact outstanding command", async ({ page }) => {
