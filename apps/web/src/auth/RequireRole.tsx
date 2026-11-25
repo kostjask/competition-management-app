@@ -3,7 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import { useRole } from "./useRole";
 import { useTranslation } from "../i18n/useTranslation";
-import { safeReturnPath } from "@dance/schemas";
+import { ReturnPathSchema, safeReturnPath } from "@dance/schemas";
 import { RequireAuth } from "./RequireAuth";
 
 export type RoleKey = "admin" | "judge" | "representative" | "moderator";
@@ -25,7 +25,10 @@ export function RequireRole({ role, eventId, children }: { role: RoleKey; eventI
   const location = useLocation();
   if (loading && !user) return <div className="p-6" role="status">{t("Access.loading")}</div>;
   if (!user && error) return <RequireAuth>{children}</RequireAuth>;
-  if (!user) return <Navigate to={"/auth/login?returnTo=" + encodeURIComponent(safeReturnPath(location.pathname))} replace />;
+  if (!user) {
+    const destination = ReturnPathSchema.safeParse(location.pathname + location.search);
+    return <Navigate to={"/auth/login?returnTo=" + encodeURIComponent(destination.success ? destination.data : safeReturnPath(location.pathname))} replace />;
+  }
   if (!hasRole(role, eventId)) return <AccessDenied />;
   return children;
 }

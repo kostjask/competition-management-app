@@ -92,7 +92,12 @@ test("uncertain configuration reconciles the exact UUID without duplicate writes
 });
 test("session expiry preserves draft and exact operation; navigation protects unsaved work", async ({ page }) => {
   const state = await fixture(page); await page.goto("/app/admin/events/e/scoring"); await fillRubric(page);
-  page.once("dialog", dialog => dialog.dismiss()); await page.getByRole("link", { name: "Event details", exact: true }).click(); await expect(page).toHaveURL(/\/scoring$/);
+  const menu = page.getByRole("button", { name: /Manage event/ });
+  await menu.click();
+  page.once("dialog", dialog => dialog.dismiss());
+  await page.getByRole("navigation", { name: "Manage event" }).getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(page).toHaveURL(/\/scoring$/);
+  await expect(menu).toBeFocused();
   await page.getByRole("button", { name: "Review scoring preview", exact: true }).click(); await page.getByLabel("I confirm these rubrics and panels").check(); state.expired = true;
   await page.getByRole("button", { name: "Save scoring setup", exact: true }).click(); await page.getByRole("dialog").getByLabel("Password", { exact: true }).fill("password123"); await page.getByRole("dialog").getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible(); await expect(page.locator("#rubric-name")).toHaveValue("Synthetic rubric <script>literal</script>");

@@ -25,12 +25,17 @@ test('canonical returns migrate exactly once, retain scoped studio filters and r
   for (const suffix of ['?performance=//evil.invalid','?performance=p&token=secret','?track=bad','?performance=a&performance=b','?performance=p#secret']) assert.equal(ReturnPathSchema.safeParse('/app/events/e/studios/s/music' + suffix).success, false);
   for (const path of ['/judge/events/%2Fe/score', '/judge/events/e/score?operationId=example', '/judge/events/e/score/other']) assert.equal(safeReturnPath(path), '/app');
   assert.equal(safeReturnPath('/admin/events/e/results'), '/app/admin/events/e/results');
+  assert.equal(safeReturnPath('/admin/events/e/live'), '/app/admin/events/e/live');
+  assert.equal(safeReturnPath('/moderator/events/e/live?session=00000000-0000-4000-8000-000000000001'), '/app/moderator/events/e/live?session=00000000-0000-4000-8000-000000000001');
+  for (const path of ['/admin/events/e/live?session=bad', '/moderator/events/e/live?token=secret', '/moderator/events/%2Fe/live', '/admin/events/e/live/other']) assert.equal(safeReturnPath(path), '/app');
   for (const path of ['/admin/events/%2Fe/results', '/admin/events/e/results?returnTo=//evil.invalid', '/admin/events/e/results/public']) assert.equal(safeReturnPath(path), '/app');
 });
 
 test('legacy mapping is bounded, excludes public paths and forwards only typed link parameters', () => {
   assert.equal(legacyWorkspaceRedirect('/verify-email?token=old_queued-token&lang=ru&returnTo=%2Fevents%2Fe%2Fregister&email=PRIVATE'), '/app/verify-email?lang=ru&token=old_queued-token&returnTo=%2Fapp%2Fevents%2Fe%2Fregister');
   assert.equal(legacyWorkspaceRedirect('/admin/events/e/applications?studio=s&preview=true&token=PRIVATE'), '/app/admin/events/e/applications?studio=s');
+  assert.equal(legacyWorkspaceRedirect('/moderator/events/e/live?session=00000000-0000-4000-8000-000000000001&token=PRIVATE'), '/app/moderator/events/e/live?session=00000000-0000-4000-8000-000000000001');
+  assert.equal(legacyWorkspaceRedirect('/admin/events/e/live?session=bad'), '/app/admin/events/e/live');
   assert.equal(legacyWorkspaceRedirect('/auth/reset-password?token=a&token=b&lang=de&returnTo=%2F%2Fevil.invalid'), '/app/auth/reset-password');
   for (const path of ['/','/en','/en/festivals/f/e','/api/v1/auth/profile','/auth/unknown','/app/auth/login','/events/%2e%2e/admin','/events/../admin','//evil.invalid/events','/events/e#secret']) assert.equal(legacyWorkspaceRedirect(path),null,path);
 });
@@ -58,7 +63,7 @@ test('opt-in festival cohost serves only built workspace routes/assets and retai
   const request=(path,method='GET')=>new Promise((resolve,reject)=>{
     const req=require('node:http').request({hostname:'127.0.0.1',port:server.address().port,path,method,headers:{Host:'festival.example.invalid'}},res=>{const chunks=[];res.on('data',chunk=>chunks.push(chunk));res.on('end',()=>resolve(new Response(Buffer.concat(chunks).length?Buffer.concat(chunks):null,{status:res.statusCode,headers:res.headers})));});req.on('error',reject);req.end();
   });
-  for(const path of ['/app','/app/auth/login','/app/content/studio','/app/events/e/studios/s/performances/p/edit','/app/events/e/studios/s/music?performance=p','/app/judge/events/e/score','/app/admin/events/e/results?revision=2','/app/assets/app.js','/app/identity-link.js']) {
+  for(const path of ['/app','/app/auth/login','/app/content/studio','/app/events/e/studios/s/performances/p/edit','/app/events/e/studios/s/music?performance=p','/app/judge/events/e/score','/app/admin/events/e/live','/app/moderator/events/e/live?session=00000000-0000-4000-8000-000000000001','/app/admin/events/e/results?revision=2','/app/assets/app.js','/app/identity-link.js']) {
     const res=await request(path);assert.equal(res.status,200,path);assert.equal(res.headers.get('cache-control'),'no-store');assert.equal(res.headers.get('referrer-policy'),'no-referrer');assert.ok(res.headers.get('content-security-policy').includes("script-src 'self'"));
     assert.ok(res.headers.get('content-security-policy').includes("media-src 'self'"), 'Private playback is restricted to the same-origin authenticated proxy');
   }

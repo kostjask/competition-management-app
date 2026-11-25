@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import type { ResultsCommand, ResultsReceipt, ResultsSnapshot, ResultsWorkspace } from "@dance/schemas";
 import { getResults, saveResults } from "../../api/results";
 import { ApiError, toUiError, type UiError } from "../../api/error";
@@ -152,7 +152,6 @@ function Workspace({ eventId }: { eventId: string }) {
 
   return <div className="event-workbench results-workbench">
     <header className="event-masthead"><div><h1>{t("Results.title")}</h1><p>{snapshot?.eventName ?? value?.eventName}</p></div>
-      <Link to={`/admin/events/${encodeURIComponent(eventId)}/setup`}>{t("Setup.title")}</Link>
     </header>
     <div className="results-toolbar">
       <div><p>{t("Results.privateReview")}</p>{value && <p>{t(stageKey[value.stage])}</p>}</div>

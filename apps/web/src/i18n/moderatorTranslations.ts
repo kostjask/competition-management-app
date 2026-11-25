@@ -1,5 +1,6 @@
 export const moderatorTranslations = {
   title: { et: "Otsejuhtimine", en: "Live console", ru: "Управление выступлениями" },
+  assignments: { et: "Minu sündmused", en: "My events", ru: "Мои мероприятия" },
   noEvents: { et: "Sündmusi pole määratud", en: "No events assigned", ru: "Нет назначенных мероприятий" },
   noSessions: { et: "Sessioone pole määratud", en: "No sessions available", ru: "Нет доступных сессий" },
   contact: { et: "Küsi määrangut sündmuse korraldajalt.", en: "Ask the event organizer about your assignment.", ru: "Обратитесь к организатору по поводу назначения." },
@@ -13,7 +14,9 @@ export const moderatorTranslations = {
   noCurrent: { et: "Praegu ei ole ühtegi esitust.", en: "No performance is current.", ru: "Текущего выступления нет." },
   noNext: { et: "Ootel esitusi pole.", en: "No further performances are waiting.", ru: "Следующих выступлений в очереди нет." },
   slotIdentity: { et: "Koht {position} / {studio}", en: "Position {position} / {studio}", ru: "Позиция {position} / {studio}" },
+  slotPosition: { et: "Koht {position}", en: "Position {position}", ru: "Позиция {position}" },
   completion: { et: "Kinnitatud hindamislehti {locked}/{required}", en: "Locked judge sheets {locked}/{required}", ru: "Подтверждённые листы судей {locked}/{required}" },
+  waitingForSheets: { et: "Edasi saab liikuda, kui kõik hindamislehed on kinnitatud.", en: "Advance is available once all judge sheets are locked.", ru: "Переход станет доступен после подтверждения всех судейских листов." },
   noCompletion: { et: "Kinnitatud hindamispaneeli andmed puuduvad.", en: "Frozen panel details are unavailable.", ru: "Данные зафиксированной судейской панели недоступны." },
   unavailable: { et: "Esitamata lehti ligipääsuta hindajatelt: {count}", en: "Outstanding sheets from judges without access: {count}", ru: "Неподанные листы судей без доступа: {count}" },
   controls: { et: "Juhtimine", en: "Queue controls", ru: "Управление очередью" },

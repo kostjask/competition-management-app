@@ -71,7 +71,7 @@ function Workspace({ eventId }: { eventId: string }) {
     <p className="scoring-id">{t("Scoring.version")}: {template.id}</p><ol>{template.criteria.map(c => <li key={c.id}><strong>{c.label[locale]}</strong><span>{t("Scoring.min")}: {c.min}; {t("Scoring.max")}: {c.max}; {t("Scoring.step")}: {c.step}; {t("Scoring.weight")}: {c.weightBps / 100}</span>{c.instructions[locale] && <p>{c.instructions[locale]}</p>}</li>)}</ol></section>);
   const mapping = (state: ScoringSetupInput) => <><dl>{value?.categories.map(c => <div key={c.id}><dt>{c.name}</dt><dd>{state.templates.find(template => template.id === state.bindings.find(b => b.categoryId === c.id)?.templateId)?.name ?? t("Schedule.none")}</dd></div>)}</dl>
     {value?.sessions.map(session => <p key={session.id}>{session.name}: {state.panels.find(p => p.sessionId === session.id)?.judgeIds.map(id => value.judges.find(j => j.id === id)?.name ?? id).join(", ") || t("Schedule.none")}</p>)}</>;
-  return <div className="event-workbench scoring-workbench"><header className="event-masthead"><div><h1>{t("Scoring.title")}</h1><p>{value?.eventName}</p></div><Link to={`/events/${encodeURIComponent(eventId)}`}>{t("Staff.eventDetails")}</Link></header>
+  return <div className="event-workbench scoring-workbench"><header className="event-masthead"><div><h1>{t("Scoring.title")}</h1><p>{value?.eventName}</p></div></header>
     <p>{t("Scoring.help")}</p><ErrorSummary title={t("Entry.error")} error={error} />
     {invalid && <p role="alert">{t("Scoring.invalid")}</p>}{busy && <p role="status">{t("Access.loading")}</p>}
     <div className="entry-actions"><Button variant="quiet" disabled={busy} onClick={() => { void compare(); }}>{t("Scoring.compare")}</Button>

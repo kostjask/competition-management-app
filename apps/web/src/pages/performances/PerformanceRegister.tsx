@@ -38,7 +38,6 @@ function Register({ eventId, studioId, clear }: { eventId: string; studioId: str
   const studios = data?.event.id === eventId ? data.studios : [];
   return <>
     <header className="event-masthead"><div><h1>{t("Performance.title")}</h1><p>{value?.event.name}</p></div>
-      <Link to={`/events/${encodeURIComponent(eventId)}`}>{t("Staff.eventDetails")}</Link>
     </header>
     <p>{t("Performance.help")}</p>
     <div className="entry-actions"><Button variant="quiet" aria-expanded={params.get("entry") === "rules"} onClick={() => setParams(current => { const next = new URLSearchParams(current); next.set("entry", "rules"); return next; })}>{t("Entry.rules")}</Button>

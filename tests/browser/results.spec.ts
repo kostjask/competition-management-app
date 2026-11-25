@@ -89,7 +89,11 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     const state = await fixture(page, locale, width);
     const tr = (key: Parameters<typeof getTranslation>[0]) => getTranslation(key, locale);
     await page.goto(path);
-    await expect(page.getByRole("link", { name: tr("Setup.title") })).toHaveAttribute("href", "/app/admin/events/e/setup");
+    const manage = page.getByRole("button", { name: new RegExp(tr("Events.manageEvent")) });
+    if (width < 1056) await manage.click();
+    const navigation = page.getByRole("navigation", { name: tr("Events.manageEvent") });
+    await expect(navigation.getByRole("link", { name: tr("Events.sectionSetup") })).toHaveAttribute("href", "/app/admin/events/e/setup");
+    if (width < 1056) await manage.press("Escape");
     const table = page.getByRole("table", { name: "Open / Adults / Solo" });
     await expect(table.getByRole("rowheader", { name: /Paper & Light/ })).toBeVisible();
     await expect(table.getByText(tr("Results.tie"), { exact: true })).toHaveCount(2);

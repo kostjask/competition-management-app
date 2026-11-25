@@ -37,12 +37,12 @@ This delivers the setup portion of P6-UI-LIVE.
 
 ## S14 — Moderator live console
 
-- **Purpose / roles / route:** operate an assigned stage. The `/app/moderator` event list opens `/app/moderator/events/:eventId/live`. The organizer opens `/app/admin/events/:eventId/live` from setup or event details.
+- **Purpose / roles / route:** operate an assigned stage. The `/app/moderator` event list opens `/app/moderator/events/:eventId/live`. The organizer opens `/app/admin/events/:eventId/live` through the event navigation. Sign-in can return either role to its selected session.
 - **Primary action:** authorized advance/pause/skip after checking completion/prerequisites.
 - **Data:** current/next queue, selected stage/session, revision, judge acknowledgement counts, connection and last-sync status.
 - **Sections / components:** persistent stage/current identity, completion blockers, next list, separated main operation controls, connection/recovery panel and audited exception controls.
 - **States:** waiting/no queue, running, paused and finished, skipped/requeued performance and reopened sheet, unavailable judges, stage conflict, offline/reconnecting and removed permission. An uncertain operation is reconciled before retry.
-- **Responsive / accessibility:** tablet touch-first, mobile critical controls/current performance visible, desktop extra queue; confirm significant exceptions, announce queue change without stealing focus.
+- **Responsive / accessibility:** current and next performance and stage controls lead on phones and tablets. A disclosure exposes later queue positions. An explanation accompanies blocked advance. Significant exceptions require confirmation. Queue changes are announced without stealing focus.
 - **API:** [Assigned schedule live projection](../api/schedule.md#assigned-live-console), existing schedule commands and admin-only reasoned sheet correction. Receipt reconciliation follows [ADR-031](../adr/031-live-scoring-reconnect.md).
 - **Acceptance:** repeated activation causes one transition; the server rejects the wrong session, slot or revision; completion exposes counts only. Connection status gives the localized stop-and-verify instruction until a new server read. Confirmed access removal clears the pending action, exception review and print handoff. Print identifies its last acknowledged revision and read time. Venue and human acceptance remain in [F08](../flows/F08.md).
 
@@ -51,7 +51,7 @@ This delivers the setup portion of P6-UI-LIVE.
 - **Purpose / roles / route:** accurately submit own assigned sheet; event judge with matching Judge/assignment; `/app/judge/events/:eventId/score` and `/app/judge` landing.
 - **Primary action:** score criteria and explicitly submit final sheet.
 - **Data:** assigned current performance, versioned rubric/ranges/steps, own draft/revision, save status and lock/correction authority.
-- **Sections / components:** stable performance identity, criterion labels/instructions and exact numeric inputs, progress, acknowledgement time, review/submit, lock and connection banners.
+- **Sections / components:** the current performance, draft status and progress lead into the first exact numeric input. Optional comments use disclosures. Save receipts follow review and submit. Lock and connection warnings appear by the affected controls.
 - **States:** no assignment/waiting, loading rubric, incomplete/invalid, unsaved/saving/saved/failed, submitting/uncertain/submitted/locked, offline/reconnect, correction reopened.
 - **Responsive / accessibility:** touch-first one-column criteria, desktop optional summary; no slider-only scoring or forced orientation; label/range/error per criterion, numeric keypad where appropriate, deliberate focus when performance changes.
 - **API:** [own-sheet reads and acknowledged commands](../api/scoring.md) under [ADR-004](../adr/004-exact-scoring.md). [ADR-031](../adr/031-live-scoring-reconnect.md) owns stale reads, in-tab edits and exact retry decisions.

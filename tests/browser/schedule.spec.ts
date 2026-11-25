@@ -150,7 +150,11 @@ test("S13 organizer creates explicit stage/session with localized validation and
 test("S13 session restoration preserves the command and navigation protects unsaved queue edits", async ({ page }) => {
   const state = await fixture(page);
   await page.goto("/app/admin/events/e/schedule"); await page.getByRole("button", { name: "Generate remaining queue", exact: true }).click();
-  page.once("dialog", dialog => dialog.dismiss()); await page.getByRole("link", { name: "Event details", exact: true }).click();
+  const menu = page.getByRole("button", { name: /Manage event/ });
+  await menu.click();
+  page.once("dialog", dialog => dialog.dismiss());
+  await page.getByRole("navigation", { name: "Manage event" }).getByRole("link", { name: "Overview", exact: true }).click();
+  await expect(menu).toBeFocused();
   await expect(page).toHaveURL(/\/schedule/); await expect(page.locator(".schedule-ledger h3")).toHaveCount(3);
   await page.getByRole("button", { name: "Validate preview", exact: true }).click(); await page.getByLabel("I confirm this queue and timing").check(); state.expired = true;
   await page.getByRole("button", { name: "Save schedule", exact: true }).click();

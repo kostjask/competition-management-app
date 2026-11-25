@@ -10,7 +10,8 @@ const MusicReturnPathSchema = z.string().max(240).regex(/^\/events\/[A-Za-z0-9_-
 const ScheduleReturnPathSchema = z.string().max(240).regex(/^\/admin\/events\/[A-Za-z0-9_-]+\/schedule(?:\?(?:stage=[0-9a-f-]{36}(?:&session=[0-9a-f-]{36})?|session=[0-9a-f-]{36}))?$/);
 const ScoringReturnPathSchema = z.string().max(240).regex(/^\/admin\/events\/[A-Za-z0-9_-]+\/scoring$/);
 const JudgeReturnPathSchema = z.string().max(240).regex(/^\/judge\/events\/[A-Za-z0-9_-]+\/score$/);
-const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema).or(MusicReturnPathSchema).or(ScheduleReturnPathSchema).or(ScoringReturnPathSchema).or(JudgeReturnPathSchema);
+const LiveReturnPathSchema = z.string().max(240).regex(/^\/(?:admin|moderator)\/events\/[A-Za-z0-9_-]+\/live(?:\?session=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})?$/);
+const InternalReturnPathSchema = WorkspaceReturnPathSchema.or(CmsReturnPathSchema).or(EntryReturnPathSchema).or(MusicReturnPathSchema).or(ScheduleReturnPathSchema).or(ScoringReturnPathSchema).or(JudgeReturnPathSchema).or(LiveReturnPathSchema);
 export const WORKSPACE_BASE = "/app";
 /** Absolute browser/mail links. Router destinations use paths relative to its basename. */
 export function workspaceLink(path: string): string { return WORKSPACE_BASE + (path === "/" ? "" : path); }
@@ -41,5 +42,7 @@ export function legacyWorkspaceRedirect(input: string): string | null {
   const eventId = one("eventId"); if (path === "/auth/register" && eventId && /^[A-Za-z0-9_-]+$/.test(eventId)) query.set("eventId", eventId);
   const studio = one("studio");
   if (studio && InternalReturnPathSchema.safeParse(path + "?studio=" + studio).success) query.set("studio", studio);
+  const session = one("session");
+  if (session && LiveReturnPathSchema.safeParse(path + "?session=" + session).success) query.set("session", session);
   return workspaceLink(path) + (query.size ? "?" + query : "");
 }

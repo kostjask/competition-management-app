@@ -85,7 +85,7 @@ function Workspace({ eventId }: { eventId: string }) {
     try { const result = await getSchedule(eventId); if (!value) { setValue(result); setQueues(queuesFrom(result)); } else setComparison(result); }
     catch (err) { setError(toUiError(err)); } finally { setBusy(false); lock.current = false; }
   }
-  return <div className="event-workbench schedule-workbench"><header className="event-masthead"><div><h1>{t("Schedule.title")}</h1><p>{value?.eventName}</p></div><Link to={`/events/${encodedEvent}`}>{t("Staff.eventDetails")}</Link></header>
+  return <div className="event-workbench schedule-workbench"><header className="event-masthead"><div><h1>{t("Schedule.title")}</h1><p>{value?.eventName}</p></div></header>
     <p>{t("Schedule.help")}</p><ErrorSummary title={t("Entry.error")} error={error} />
     {busy && <p role="status">{t("Access.loading")}</p>}
     <div className="entry-actions schedule-tools"><Button variant="quiet" disabled={busy} onClick={() => { void compare(); }}>{t("Schedule.compare")}</Button>
