@@ -1,0 +1,143 @@
+/* Hallmark · shape: app screen · Material Studio / Backstage · modes: light+dark · v2.0.0 */
+/* Hallmark · critique: the event queue, application decision and score sheet lead each task. */
+
+:root {
+  --preview-canvas: #f7f6f2;
+  --preview-paper: #fffdf8;
+  --preview-muted: #eeece4;
+  --preview-ink: #202322;
+  --preview-secondary: #525956;
+  --preview-rule: #d7d6cf;
+  --preview-control: #707871;
+  --preview-action: #254c65;
+  --preview-on-action: #fffdfa;
+  --preview-tonal: #dce8ee;
+  --preview-on-tonal: #23445a;
+  --preview-focus: #175985;
+}
+
+.redesign-preview {
+  --color-canvas: var(--preview-canvas);
+  --color-surface: var(--preview-paper);
+  --color-surface-muted: var(--preview-muted);
+  --color-ink: var(--preview-ink);
+  --color-ink-secondary: var(--preview-secondary);
+  --color-border-subtle: var(--preview-rule);
+  --color-border-control: var(--preview-control);
+  --color-action: var(--preview-action);
+  --color-on-action: var(--preview-on-action);
+  --color-action-tonal: var(--preview-tonal);
+  --color-on-action-tonal: var(--preview-on-tonal);
+  --color-focus: var(--preview-focus);
+  --radius-action: .5rem;
+  --radius-control: .5rem;
+  min-height: 100vh;
+  color-scheme: light;
+  color: var(--color-ink);
+  background: var(--color-canvas);
+}
+
+.redesign-preview[data-mode="night"] {
+  color-scheme: dark;
+  --color-canvas: var(--stage-canvas);
+  --color-surface: var(--stage-surface);
+  --color-surface-muted: var(--stage-surface-muted);
+  --color-ink: var(--stage-ink);
+  --color-ink-secondary: var(--stage-ink-secondary);
+  --color-border-subtle: var(--stage-border-subtle);
+  --color-border-control: var(--stage-border-control);
+  --color-action: var(--stage-action);
+  --color-on-action: var(--stage-on-action);
+  --color-action-tonal: var(--stage-action-tonal);
+  --color-on-action-tonal: var(--stage-on-action-tonal);
+  --color-focus: var(--stage-focus);
+  --color-success-ink: var(--stage-success-ink);
+  --color-success-surface: var(--stage-success-surface);
+  --color-danger: var(--stage-danger);
+}
+
+.redesign-wrap { width: min(100% - 2rem, 70rem); margin-inline: auto; }
+.redesign-top { background: var(--color-surface); border-bottom: 1px solid var(--color-border-subtle); }
+.redesign-toolbar,
+.redesign-switch { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; }
+.redesign-toolbar { padding-block: .75rem; }
+.redesign-toolbar strong,
+.redesign-toolbar small { display: block; }
+.redesign-toolbar small { color: var(--color-ink-secondary); }
+.redesign-controls, .redesign-switch nav { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .5rem; }
+.redesign-preview select {
+  min-height: 2.75rem;
+  max-width: 100%;
+  padding-inline: .5rem;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-control);
+}
+.redesign-switch a,
+.redesign-event-nav a {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: .375rem .625rem;
+  border-radius: var(--radius-control);
+  color: var(--color-action);
+}
+.redesign-switch a[aria-current],
+.redesign-event-nav a[aria-current] { background: var(--color-action-tonal); color: var(--color-on-action-tonal); font-weight: 650; }
+.redesign-switch a:hover, .redesign-event-nav a:hover { background: var(--color-surface-muted); }
+.redesign-switch a:active, .redesign-event-nav a:active { text-decoration: underline; }
+.redesign-preview .ui-button:disabled { background: var(--color-surface-muted); }
+.redesign-switch { padding-bottom: .5rem; }
+.redesign-main { padding-block: clamp(1.25rem, 5vw, 3.5rem); }
+.redesign-main h1 { width: fit-content; min-width: 0; margin-block: 0 .5rem; font-size: clamp(1.875rem, 4.5vw, 3rem); font-weight: 650; line-height: 1.08; letter-spacing: -.028em; overflow-wrap: break-word; }
+.redesign-main h2 { min-width: 0; font-size: clamp(1.2rem, 2.6vw, 1.6rem); line-height: 1.2; font-weight: 700; overflow-wrap: break-word; }
+.redesign-main :is(h1, h2) { text-wrap: balance; }
+.redesign-main p { margin: .25rem 0; }
+.redesign-meta { color: var(--color-ink-secondary); }
+.redesign-back, .redesign-inline { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--color-action); text-decoration: underline; text-underline-offset: .2em; }
+.redesign-back { margin-bottom: .75rem; }
+.redesign-event { display: grid; gap: 1rem; }
+.redesign-context p { font-size: 1rem; font-weight: 700; }
+.redesign-context { display: grid; align-content: start; gap: .5rem; min-width: 0; }
+.redesign-event-nav { display: flex; gap: .25rem; flex-wrap: wrap; }
+.redesign-event-work { min-width: 0; }
+.redesign-ledger {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem 1.25rem;
+  margin-block-start: 1.25rem;
+  padding: .875rem 0;
+  border-block: 1px solid var(--color-border-subtle);
+}
+.redesign-ledger > div { flex: 1 1 15rem; }
+.redesign-ledger p, .redesign-queue p, .redesign-queue small { color: var(--color-ink-secondary); }
+.redesign-queue { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-block-start: 1rem; border-block: 1px solid var(--color-border-subtle); }
+.redesign-queue article { min-width: 0; padding: .75rem .625rem; }
+.redesign-queue article:first-child { border-inline-start: .25rem solid var(--color-action); background: var(--color-surface); }
+.redesign-queue article small { display: block; margin-block-start: .375rem; }
+.redesign-command { padding-block: .75rem; }
+.redesign-actions { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .5rem 0; }
+.redesign-actions button, .redesign-score > button, .redesign-score input { min-height: 3rem; }
+.redesign-application { max-width: 44rem; margin-block-start: 1rem; border-block-start: 1px solid var(--color-border-subtle); padding-block: 1rem; }
+.redesign-application dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .875rem; margin-block: 1rem; }
+.redesign-application dt { color: var(--color-ink-secondary); }
+.redesign-application dd { color: var(--color-success-ink); font-weight: 650; }
+.redesign-next { padding: 1rem; border-inline-start: .25rem solid var(--color-action); background: var(--color-surface); }
+.redesign-next .ui-button { margin-block-start: .75rem; margin-inline-end: .875rem; }
+.redesign-form, .redesign-auth { max-width: 29rem; }
+.redesign-auth { margin-inline: auto; }
+.redesign-form .ui-field, .redesign-score .ui-field { margin-block: 1rem; }
+.redesign-score { max-width: 48rem; }
+.redesign-score-status { display: flex; flex-wrap: wrap; gap: .5rem .75rem; align-items: center; margin-block: .75rem; }
+.redesign-preview .ui-input:focus-visible { outline-width: 2px; outline-offset: 2px; box-shadow: none; }
+.redesign-layout-choice { display: none; }
+
+@media (min-width: 52rem) {
+  .redesign-layout-choice { display: initial; }
+  .redesign-preview[data-layout="rail"] .redesign-event { grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr); gap: clamp(1.5rem, 5vw, 5rem); }
+  .redesign-preview[data-layout="rail"] .redesign-context { border-inline-end: 1px solid var(--color-border-subtle); padding-inline-end: 1rem; }
+  .redesign-preview[data-layout="rail"] .redesign-event-nav { display: grid; }
+  .redesign-preview[data-layout="bar"] .redesign-context { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; border-block-end: 1px solid var(--color-border-subtle); }
+}

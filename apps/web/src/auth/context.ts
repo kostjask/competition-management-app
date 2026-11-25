@@ -6,6 +6,7 @@ import type { UserProfile } from "../api/client";
 
 export interface AuthContextValue {
   user: UserProfile | null;
+  initializing: boolean;
   loading: boolean;
   error: UiError | null;
   sessionExpired: boolean;

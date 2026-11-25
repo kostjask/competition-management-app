@@ -18,6 +18,21 @@ test('server markup escapes authored text, keeps images public-only and ships no
   assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<script'));assert.ok(!html.includes('/api/v1/content'));assert.ok(!html.includes('localStorage'));
   assert.match(html,/<html lang="en"/);assert.match(html,/rel="canonical"/);assert.match(html,/<main id="main"/);
 });
+test('the festival opening features approved artwork and an available registration handoff', () => {
+  const data = fixture('en', 'FESTIVAL_EDITION');
+  const edition = { ...route('home', 'festival'), festivalSlug: 'dance-express', editionSlug: '2026' };
+  const asset = `/api/v1/public/assets/${ids.asset}`;
+  data.images = [{ path: 'brand.artwork', image: { id: ids.asset, url: asset, width: 600, height: 400, alt: null, decorative: true } }];
+  data.action = { kind: 'external', url: 'https://example.invalid/registration' };
+  const render = () => renderPublicPage({ route: edition, data, variants: { en: data }, origins });
+  const html = render();
+  assert.match(html, /class="opening opening--festival"/);
+  assert.match(html, /<figure class="opening-artwork"><img [^>]+loading="eager"/);
+  assert.equal(html.split(`src="${asset}"`).length - 1, 1);
+  assert.match(html, /class="primary" href="\/en\/festivals\/dance-express\/2026\/registration"/);
+  data.policyChanged = true;
+  assert.doesNotMatch(render(), /class="primary" href="[^"]+\/registration"/);
+});
 test('fully fallback pages canonicalize to the source, mixed pages keep their route, authored alternates are reciprocal',()=>{
   const et=fixture('et'),en=fixture('en'),ru=fixture('ru',undefined,true);const variants={et,en,ru};
   let metadata=publicMetadata(ru,{...route(),locale:'ru'},variants,origins);

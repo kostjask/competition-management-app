@@ -10,7 +10,7 @@
 .schedule-facts { display: flex; flex-wrap: wrap; gap: var(--space-lg); padding-block: var(--space-md); border-block: 1px solid var(--color-rule-2); }
 .schedule-facts dt { font-size: var(--text-sm); color: var(--color-ink-2); }
 .schedule-facts dd { margin: 0; font-variant-numeric: tabular-nums; }
-.schedule-settings-column { display: grid; gap: var(--space-md); }
+.schedule-settings-column { display: grid; gap: var(--space-sm); padding: var(--space-md); background: var(--color-surface-muted); border-radius: var(--radius-card); }
 .schedule-settings, .schedule-history { border-top: 1px solid var(--color-rule-2); padding-block: var(--space-md); }
 .schedule-workbench summary { cursor: pointer; padding-block: var(--space-sm); min-height: 44px; }
 .schedule-workbench fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
@@ -24,7 +24,7 @@
 .schedule-row-actions { margin-block-start: var(--space-md); align-items: end; }
 .schedule-row-actions .ui-field { flex: 1 1 12rem; max-width: 20rem; }
 .schedule-unscheduled { margin-block: var(--space-lg); }
-.schedule-preview, .schedule-comparison { border-block: 2px solid var(--color-accent); padding-block: var(--space-lg); margin-block: var(--space-lg); }
+.schedule-preview, .schedule-comparison { border: 1px solid var(--color-rule-2); padding: var(--space-md); margin-block: var(--space-lg); background: var(--color-surface-muted); border-radius: var(--radius-card); }
 .schedule-preview .schedule-ledger li { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); align-items: baseline; }
 .schedule-mobile-label { display: none; }
 .schedule-history code { display: block; overflow-wrap: anywhere; font-family: inherit; font-size: var(--text-sm); }
@@ -32,4 +32,8 @@
 .schedule-print { display: none; }
 @media (max-width: 52rem) { .schedule-layout { grid-template-columns: minmax(0, 1fr); gap: var(--space-lg); } .schedule-workbench { padding: var(--space-md); } }
 @media (max-width: 38rem) { .schedule-preview .schedule-ledger li { grid-template-columns: minmax(0, 1fr); gap: var(--space-xs); } .schedule-mobile-label { display: inline; color: var(--color-ink-2); } }
-@media print { .schedule-workbench > :not(.schedule-print) { display: none; } .schedule-print { display: block; } }
+@media print {
+  .workspace-shell:has(.schedule-print) { display: block; background: var(--color-surface); }
+  .workspace-shell:has(.schedule-print) > header, .schedule-workbench > :not(.schedule-print) { display: none; }
+  .schedule-print { display: block; }
+}

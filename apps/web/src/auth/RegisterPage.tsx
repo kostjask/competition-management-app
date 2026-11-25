@@ -16,7 +16,7 @@ export function RegisterPage() {
   const [details,setDetails]=useState(emptyStudioDetails); const [mailLocale,setMailLocale]=useState(locale);
   const [operationId]=useState(()=>crypto.randomUUID()); const [busy,setBusy]=useState(false); const [success,setSuccess]=useState(false); const [error,setError]=useState<UiError|null>(null);
   const fields = {name:"signup-name",email:"signup-email",password:"signup-password",...Object.fromEntries(studioFields.map(key=>["onboarding.details."+key,"signup-"+key]))};
-  return <section className="mx-auto max-w-xl p-4 sm:p-6"><h1 className="text-2xl font-semibold">{t(success ? "Flow.checkEmail" : "Flow.signup")}</h1>
+  return <section className="workspace-sheet workspace-auth-flow"><h1 className="text-2xl font-semibold">{t(success ? "Flow.checkEmail" : "Flow.signup")}</h1>
     {success ? <><p role="status" className="my-4">{t("Flow.unconfirmed")}</p><Link className="ui-button ui-button-primary" to="/auth/onboarding">{t("Flow.onboarding")}</Link><Link className="ui-button ui-button-secondary" to="/auth/resend-verification">{t("Flow.resend")}</Link></> : <>
       <p className="my-4">{t("Flow.intent")}</p><form noValidate className="grid gap-3" onSubmit={event=>{
         event.preventDefault(); const parsed=RegisterSchema.safeParse({name,email,password,locale:mailLocale,onboarding:{operationId,revision:0,intendedEventId:params.get("eventId"),details}});

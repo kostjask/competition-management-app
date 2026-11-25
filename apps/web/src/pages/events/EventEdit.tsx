@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { OrganizerEvent } from "../../components/layouts/OrganizerEventLayout";
 import { eventSetupBlockers, eventStageTargets, type Event, type EventStage, type UpdateEventInput } from "@dance/schemas";
 import { getEvent, updateEvent } from "../../api/events";
 import { ApiError, toUiError, type UiError } from "../../api/error";
 import { useTranslation } from "../../i18n/useTranslation";
 import { useAuth } from "../../auth/useAuth";
-import { Alert, Button, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
+import { Alert, Button, ErrorSummary, LoadingState, StatusBadge } from "../../components/ui/Foundation";
 import { EventForm } from "./EventForm";
 import { EventImageEditor } from "./EventImage";
 import { EventSnapshot } from "./EventSnapshot";
@@ -70,8 +71,13 @@ function EventSetup({ id }: { id: string }) {
   };
   const disabled = busy || loading || !!pending || sessionExpired;
   const blockers = data ? eventSetupBlockers(data) : [];
+  const stageTargets = data ? eventStageTargets(data.stage).filter(stage => stage !== data.stage && stage !== "FINALIZED") : [];
+  const reviewStage = (stage: EventStage, button: HTMLButtonElement) => {
+    trigger.current = button;
+    setTarget(stage);
+  };
   const blockerLabel = (field: typeof blockers[number]) => t(field === "venue" ? "Events.venue" : field === "city" ? "Common.city" : field === "country" ? "Common.country" : field === "description" ? "Setup.sourceLocale" : "Setup.organizerEmail");
-  return <div className="event-workbench">
+  return <div className="event-workbench setup-workbench">
     <Link to="/admin">{t("Setup.dashboard")}</Link>
     {!data && <>{!loading && <h1>{t("Setup.title")}</h1>}<ErrorSummary error={error} title={t("Events.loadError")} />{!loading && <Button onClick={() => { void load(); }}>{t("Shell.retry")}</Button>}</>}
     {loading && <LoadingState label={t("Access.loading")} />}
@@ -81,38 +87,54 @@ function EventSetup({ id }: { id: string }) {
       <Button variant="secondary" disabled={busy || sessionExpired} onClick={() => { setData(server); setServer(null); setPending(null); setError(null); setDirty(false); setFormVersion(value => value + 1); }}>{t("Setup.useServer")}</Button>
       <Button variant="secondary" disabled={busy || sessionExpired} onClick={() => { setData(server); setServer(null); setPending(null); setError(null); setDirty(true); }}>{t("Setup.keepMine")}</Button>
     </div></section>}
-    {data && <><header className="event-masthead"><div><h1>{t("Setup.title") + ": " + data.name}</h1><p>{t("Setup.hint")}</p></div></header><div className="event-setup-layout"><aside className="setup-rail">
-      <section aria-labelledby="setup-checklist-title"><h2 id="setup-checklist-title">{t("Setup.checklist")}</h2>
-        <p>{t(blockers.length ? "Setup.incomplete" : "Setup.ready")}</p>
-        <ul className="setup-checklist">{blockers.map(field => <li key={field}><a href={"#" + eventFieldIds[field]} onClick={event => { event.preventDefault(); document.getElementById(eventFieldIds[field] ?? "")?.focus(); }}>{blockerLabel(field)}</a></li>)}</ul>
-        <p className="ui-help">{t("Setup.optionalHelp")}</p>
-      </section>
-      <section><h2 ref={stageHeading} id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2><p>{t(stageKey[data.stage])}</p>{["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW"].includes(data.stage) && <p>{t("Setup.preHelp")}</p>}
-        {dirty && <p>{t("Setup.saveFirst")}</p>}
-        <div className="ui-actions">{eventStageTargets(data.stage).filter(stage => stage !== data.stage && stage !== "FINALIZED").map(stage => { const variant = stage === "CANCELLED" ? "danger" : "secondary"; return <Button key={stage} variant={variant}
-          disabled={disabled || dirty || (stage === "REGISTRATION_OPEN" && blockers.length > 0)} onClick={event => { trigger.current = event.currentTarget; setTarget(stage); }}>
-          {t(stageAction(data.stage, stage))}</Button>; })}</div>
-        {data.stage === "LIVE" && <p>{t("Moderator.finalizationPending")}</p>}
-        <Link to={`/admin/events/${encodeURIComponent(id)}/schedule`}>{t("Schedule.title")}</Link>
-        <Link to={`/admin/events/${encodeURIComponent(id)}/scoring`}>{t("Scoring.title")}</Link>
-        <Link to={`/admin/events/${encodeURIComponent(id)}/live`}>{t("Moderator.title")}</Link>
-        <Link to={`/admin/events/${encodeURIComponent(id)}/results`}>{t("Results.title")}</Link>
-      </section>
-      </aside><div className="setup-editor"><EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
-        submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}
-        onSubmit={values => run({ ...values, expectedRevision: data.revision })} onCancel={() => navigate(`/events/${encodeURIComponent(id)}`)} />
-      <EventImageEditor eventId={id} imageUrl={data.imageUrl} disabled={disabled} onSaved={latest => {
-        const previousFields = { ...data, imageUrl: null, revision: 0 };
-        const latestFields = { ...latest, imageUrl: null, revision: 0 };
-        if (JSON.stringify(previousFields) === JSON.stringify(latestFields)) setData(latest);
-        else setServer(latest);
-      }} />
-      <div className="ui-actions"><Link to={`/events/${encodeURIComponent(id)}`}>{t("Events.moreInfo")}</Link><Link to={`/admin/events/${encodeURIComponent(id)}/staff`}>{t("Staff.title")}</Link></div>
-      </div></div>{target && <StageConfirmation event={data} target={target} busy={busy} onCancel={() => { restoreFocus.current = trigger.current; setTarget(null); }} onConfirm={() => { void run({ stage: target, expectedStage: data.stage, expectedRevision: data.revision }); }} />}
+    {data && <>
+      <header className="event-masthead">
+        <div><h1>{t("Setup.title") + ": " + data.name}</h1><p>{t("Setup.hint")}</p></div>
+        <StatusBadge>{t(stageKey[data.stage])}</StatusBadge>
+      </header>
+      <div className="event-setup-layout">
+        <div className="setup-editor">
+          <EventForm key={formVersion} title="" initialValues={eventInput(data)} unclassifiedDescription={data.unclassifiedDescription}
+            submitLabel={t("Events.saveChanges")} submitError={error} isSubmitting={busy} disabled={disabled} onDirty={() => { setDirty(true); setNotice(null); }}
+            onSubmit={values => run({ ...values, expectedRevision: data.revision })} onCancel={() => navigate(`/events/${encodeURIComponent(id)}`)} />
+          <EventImageEditor eventId={id} imageUrl={data.imageUrl} disabled={disabled} onSaved={latest => {
+            const previousFields = { ...data, imageUrl: null, revision: 0 };
+            const latestFields = { ...latest, imageUrl: null, revision: 0 };
+            if (JSON.stringify(previousFields) === JSON.stringify(latestFields)) setData(latest);
+            else setServer(latest);
+          }} />
+        </div>
+        <aside className="setup-rail">
+          <section aria-labelledby="setup-checklist-title"><h2 id="setup-checklist-title">{t("Setup.checklist")}</h2>
+            <p>{t(blockers.length ? "Setup.incomplete" : "Setup.ready")}</p>
+            {blockers.length > 0 && <ul className="setup-checklist">{blockers.map(field => <li key={field}><a href={"#" + eventFieldIds[field]} onClick={event => { event.preventDefault(); document.getElementById(eventFieldIds[field] ?? "")?.focus(); }}>{blockerLabel(field)}</a></li>)}</ul>}
+            <p className="ui-help">{t("Setup.optionalHelp")}</p>
+          </section>
+          <section>
+            <h2 ref={stageHeading} id="event-stage-heading" tabIndex={-1}>{t("Setup.lifecycle")}</h2>
+            <p>{t(stageKey[data.stage])}</p>
+            {["PRE_REGISTRATION", "REGISTRATION_OPEN", "DATA_REVIEW"].includes(data.stage) && <p>{t("Setup.preHelp")}</p>}
+            {dirty && <p>{t("Setup.saveFirst")}</p>}
+            <div className="ui-actions">
+              {stageTargets.filter(stage => stage !== "CANCELLED").map(stage => <Button key={stage} variant="tonal"
+                disabled={disabled || dirty || (stage === "REGISTRATION_OPEN" && blockers.length > 0)}
+                onClick={event => reviewStage(stage, event.currentTarget)}>{t(stageAction(data.stage, stage))}</Button>)}
+            </div>
+            {data.stage === "LIVE" && <p>{t("Moderator.finalizationPending")}</p>}
+            {stageTargets.includes("CANCELLED") && <details className="setup-danger-actions">
+              <summary>{t("Setup.eventActions")}</summary>
+              <Button variant="quiet" disabled={disabled || dirty} onClick={event => reviewStage("CANCELLED", event.currentTarget)}>{t("Setup.cancelEvent")}</Button>
+            </details>}
+          </section>
+        </aside>
+      </div>
+      {target && <StageConfirmation event={data} target={target} busy={busy} onCancel={() => { restoreFocus.current = trigger.current; setTarget(null); }} onConfirm={() => { void run({ stage: target, expectedStage: data.stage, expectedRevision: data.revision }); }} />}
     </>}
   </div>;
 }
 export default function EventEdit() {
   const { id, eventId } = useParams<{ id: string; eventId: string }>(); const selected = id ?? eventId;
-  return selected ? <EventSetup key={selected} id={selected} /> : null;
+  if (!selected) return null;
+  const editor = <EventSetup key={selected} id={selected} />;
+  return id ? <OrganizerEvent key={id} eventId={id}>{editor}</OrganizerEvent> : editor;
 }

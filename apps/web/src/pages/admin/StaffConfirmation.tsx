@@ -14,7 +14,7 @@ export function StaffConfirmation({ kind, target, busy, onCancel, onConfirm }: {
     return () => element?.close();
   }, []);
   return <dialog ref={dialog} aria-labelledby="staff-confirm-title" aria-describedby="staff-confirm-target staff-confirm-effect"
-    className="m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-xl border border-slate-300 p-5 backdrop:bg-slate-900/50"
+    className="m-auto w-[calc(100%_-_2rem)] max-w-lg rounded-xl border border-border-subtle p-5 backdrop:bg-slate-900/50"
     onCancel={event => { event.preventDefault(); if (!busy) onCancel(); }}
     onKeyDown={event => {
       if (event.key !== "Tab") return;

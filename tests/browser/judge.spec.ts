@@ -17,6 +17,31 @@ async function capture(page: Page, file: string) {
   await writeFile(file, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Judge score sheet</title><style>${styles}</style></head><body>${html}</body></html>`, "utf8");
 }
 
+test("a judge can add and clear an optional comment in Day mode", async ({ page }, info) => {
+  const state = await fixture(page);
+  await page.addInitScript(() => localStorage.setItem("workspace-appearance", "day"));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(scorePath);
+  const score = page.getByRole("textbox", { name: "Technique", exact: true });
+  await expect(score).toHaveCSS("color-scheme", "light");
+  await score.fill("2.5");
+  const saved = page.getByText(getTranslation("Judge.saved", "en"), { exact: true });
+  await expect(saved).toBeVisible();
+  await page.screenshot({ path: info.outputPath("judge-day.png"), fullPage: true });
+  const comment = page.getByLabel(getTranslation("Judge.comment", "en", { criterion: "Technique" }), { exact: true });
+  await expect(comment).toBeHidden();
+  await page.getByText("Comment (optional)", { exact: true }).click();
+  await comment.fill("Clear timing.");
+  await expect.poll(() => state.commands.at(-1)?.values[0]?.comment).toBe("Clear timing.");
+  await expect(saved).toBeVisible();
+  await comment.fill("");
+  await expect(comment).toBeFocused();
+  await expect(comment).toBeEditable();
+  await expect.poll(() => state.commands.at(-1)?.values[0]?.comment).toBeFalsy();
+  await expect(saved).toBeVisible();
+  await expect(score).toHaveValue("2.5");
+});
+
 async function fixture(page: Page, locale: Locale = "en") {
   await page.addInitScript(value => localStorage.setItem("app-language", value), locale);
   const workspace = JudgeScoringWorkspaceSchema.parse({ eventId: "e", eventName: "Winter competition", acknowledgement: null, sheets: [{
@@ -65,16 +90,22 @@ async function fixture(page: Page, locale: Locale = "en") {
 }
 
 for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 1440], ["ru", 1920]] as const) {
-  test(`judge scores and locks in ${locale} at ${width}px`, async ({ page }) => {
+  test(`judge scores and locks in ${locale} at ${width}px`, async ({ page }, info) => {
     const state = await fixture(page, locale);
-    await page.setViewportSize({ width, height: 920 });
+    await page.setViewportSize({ width, height: 844 });
     await page.goto("/app/judge");
     await page.getByRole("link", { name: "Winter competition", exact: true }).click();
     const score = page.getByRole("textbox", { name: labels[locale], exact: true });
     const review = page.getByRole("button", { name: getTranslation("Judge.review", locale), exact: true });
     await expect(score).toBeEditable();
+    await expect(score).toHaveCSS("color-scheme", "dark");
     await expect(score).toHaveAttribute("inputmode", "decimal");
     expect((await score.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    if (width <= 390) {
+      const bounds = await score.boundingBox();
+      expect(bounds ? bounds.y + bounds.height : 844).toBeLessThan(560);
+      await expect(page.getByLabel(getTranslation("Judge.comment", locale, { criterion: labels[locale] }), { exact: true })).toBeHidden();
+    }
     await expect(review).toBeDisabled();
     await score.fill("0,1");
     await expect(score).toHaveAttribute("aria-invalid", "true");
@@ -84,6 +115,7 @@ for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 144
     await expect(score).toHaveValue("0");
     expect(state.commands[0]?.values[0]?.value).toBe("0.000");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (locale === "en") await page.screenshot({ path: info.outputPath("judge-sheet.png"), fullPage: true });
     if (process.env.JUDGE_HALLMARK_CAPTURE === "1" && locale === "en" && width === 1440) {
       await capture(page, ".hallmark/judge-render.html");
     }
@@ -172,7 +204,7 @@ test("restored session compares a newer draft and only reapplies after explicit 
   await expect(login).toBeVisible();
   state.workspace.sheets[0].revision = 2;
   state.workspace.sheets[0].values = [{ criterionId: id(3), value: "4.000", comment: "Another tab" }];
-  await login.getByLabel("Password").fill("example-password");
+  await login.getByLabel("Password", { exact: true }).fill("example-password");
   await login.getByRole("button", { name: "Sign in" }).click();
   await expect(login).toBeHidden();
   await page.getByRole("button", { name: "Compare with the server" }).click();

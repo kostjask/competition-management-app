@@ -11,14 +11,14 @@ export function AccountLanguage() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<UiError | null>(null);
-  return <form className="my-6 grid min-w-0 max-w-md gap-3" onSubmit={event => {
+  return <form className="workspace-preference" onSubmit={event => {
     event.preventDefault();
     setBusy(true); setSaved(false); setError(null);
     void savePreference(isLocale(choice) ? choice : null).then(() => setSaved(true)).catch((err: unknown) => setError(toUiError(err))).finally(() => setBusy(false));
   }}>
     <label htmlFor="account-language">{t("Preferences.language")}</label>
-    <p>{t("Preferences.help")}</p>
-    <select id="account-language" className="min-w-0 w-full rounded border p-2" disabled={busy} value={choice} onChange={event => { setChoice(event.target.value); setSaved(false); }}>
+    <p id="account-language-help">{t("Preferences.help")}</p>
+    <select id="account-language" className="ui-input" aria-describedby="account-language-help" disabled={busy} value={choice} onChange={event => { setChoice(event.target.value); setSaved(false); }}>
       <option value="">{t("Preferences.default")}</option>
       {SUPPORTED_LOCALES.map(value => <option key={value} value={value} lang={value}>{languageNames[value]}</option>)}
     </select>

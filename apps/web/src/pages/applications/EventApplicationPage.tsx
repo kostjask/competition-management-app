@@ -32,7 +32,7 @@ function EventApplication({ id }: { id: string }) {
     {!value && !error && <div className="application-skeleton" role="status">{t("Access.loading")}</div>}
     {created && <Alert tone="success">{t("Application.saved")}</Alert>}
     {value && !error && <>
-      <dl className="setup-grid"><div><dt>{t("Setup.timeZone")}</dt><dd>{value.event.timeZone}</dd></div><div><dt>{t("Setup.cutoff")}</dt><dd>{value.event.registrationDeadline ? eventDate(value.event.registrationDeadline, locale, value.event.timeZone) : t("Setup.noCutoff")}</dd></div></dl>
+      <dl className="setup-grid application-event-facts"><div><dt>{t("Setup.timeZone")}</dt><dd>{value.event.timeZone}</dd></div><div><dt>{t("Setup.cutoff")}</dt><dd>{value.event.registrationDeadline ? eventDate(value.event.registrationDeadline, locale, value.event.timeZone) : t("Setup.noCutoff")}</dd></div></dl>
       {value.rows.length > 1 && <ul className="application-queue">{value.rows.map(value => <li key={value.id}><Link to={`?studio=${encodeURIComponent(value.studioId)}`} aria-current={value.id === row?.id || undefined}>{value.studio.name}</Link></li>)}</ul>}
       {selected && !row ? <Alert tone="danger">{t("Shell.notFound")}</Alert> : row ? <ApplicationDetail key={row.studioId} event={value.event} row={row} admin={false} onChanged={changed} /> : user?.isAdmin ? <Link to={`/admin/events/${encodeURIComponent(id)}/applications`}>{t("Application.review")}</Link> : wrongDraft ? <Alert><p>{t("Application.otherDraft")}</p><Link to={`/events/${encodeURIComponent(wrongDraft)}/register`}>{t("Application.open")}</Link></Alert> : <>
         {!applicationOpen(value.event, now) && <Alert>{t("Setup.windowClosed")}</Alert>}

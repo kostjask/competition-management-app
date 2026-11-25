@@ -39,6 +39,7 @@ export const eventSetupTranslations = {
   open: { et: "Ava registreerimine", en: "Open registration", ru: "Открыть регистрацию" },
   close: { et: "Alusta ülevaatust", en: "Start review", ru: "Начать рассмотрение" },
   cancelEvent: { et: "Tühista sündmus", en: "Cancel event", ru: "Отменить событие" },
+  eventActions: { et: "Muud toimingud", en: "More event actions", ru: "Другие действия" },
   confirm: { et: "Kinnita muudatus", en: "Confirm change", ru: "Подтвердить" },
   stageEffect: { et: "Muudatus salvestatakse kohe. Tagasi eelmisse etappi liikuda ei saa. Tühistamine säilitab andmed ja ajaloo.", en: "The change is saved immediately. Returning to the previous stage is unavailable. Cancellation retains records and history.", ru: "Изменение сохраняется сразу. Вернуться к предыдущему этапу нельзя. При отмене данные и история сохраняются." },
   saved: { et: "Sündmuse andmed on salvestatud.", en: "Event details saved.", ru: "Данные события сохранены." },

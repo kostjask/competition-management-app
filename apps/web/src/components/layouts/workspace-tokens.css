@@ -1,0 +1,57 @@
+:root {
+  --stage-canvas: #171513;
+  --stage-surface: #1e1a17;
+  --stage-surface-muted: #29231e;
+  --stage-ink: #f8eee1;
+  --stage-ink-secondary: #c7b9a7;
+  --stage-border-subtle: #51473d;
+  --stage-border-control: #a08e7e;
+  --stage-action: #ffad77;
+  --stage-action-hover: #ffd1b1;
+  --stage-on-action: #2b170c;
+  --stage-action-tonal: #493328;
+  --stage-on-action-tonal: #ffd5b8;
+  --stage-focus: #ffc19b;
+  --stage-success-ink: #b5e7c9;
+  --stage-success-surface: #253c31;
+  --stage-warning-ink: #ffdbab;
+  --stage-warning-surface: #4c321d;
+  --stage-danger: #ffb2bc;
+  --stage-on-danger: #380c10;
+  --stage-danger-surface: #48262a;
+  --stage-info-ink: #b5dbe9;
+  --stage-info-surface: #263a44;
+  --stage-neutral-ink: #ded0c0;
+  --workspace-title: var(--font-workspace);
+  --workspace-measure: 74rem;
+  --workspace-gutter: clamp(1rem, 4vw, 2rem);
+}
+
+@media screen {
+  :root[data-workspace-mode="night"] {
+    color-scheme: dark;
+    --color-canvas: var(--stage-canvas);
+    --color-surface: var(--stage-surface);
+    --color-surface-muted: var(--stage-surface-muted);
+    --color-ink: var(--stage-ink);
+    --color-ink-secondary: var(--stage-ink-secondary);
+    --color-border-subtle: var(--stage-border-subtle);
+    --color-border-control: var(--stage-border-control);
+    --color-action: var(--stage-action);
+    --color-action-hover: var(--stage-action-hover);
+    --color-on-action: var(--stage-on-action);
+    --color-action-tonal: var(--stage-action-tonal);
+    --color-on-action-tonal: var(--stage-on-action-tonal);
+    --color-focus: var(--stage-focus);
+    --color-success-ink: var(--stage-success-ink);
+    --color-success-surface: var(--stage-success-surface);
+    --color-warning-ink: var(--stage-warning-ink);
+    --color-warning-surface: var(--stage-warning-surface);
+    --color-danger: var(--stage-danger);
+    --color-on-danger: var(--stage-on-danger);
+    --color-danger-surface: var(--stage-danger-surface);
+    --color-info-ink: var(--stage-info-ink);
+    --color-info-surface: var(--stage-info-surface);
+    --color-neutral-ink: var(--stage-neutral-ink);
+  }
+}

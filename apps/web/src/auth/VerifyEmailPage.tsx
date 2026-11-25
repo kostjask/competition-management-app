@@ -17,7 +17,7 @@ export function VerifyEmailPage() {
   const { user, loading: sessionLoading, error: sessionError, refreshUser } = useAuth(); const { t } = useTranslation();
   const [status, setStatus] = useState<"ready" | "busy" | "success">("ready"); const [error, setError] = useState<UiError | null>(null);
   useEffect(() => { if (token) window.history.replaceState(window.history.state, "", window.location.pathname + (destination === "/" ? "" : "?returnTo=" + encodeURIComponent(destination))); }, [token, destination]);
-  return <section className="mx-auto max-w-md p-6"><h1 className="text-2xl font-semibold">{t(status === "success" ? "Shell.verifySuccess" : "Shell.verify")}</h1>
+  return <section className="workspace-sheet workspace-auth-flow workspace-auth-flow--compact"><h1 className="text-2xl font-semibold">{t(status === "success" ? "Shell.verifySuccess" : "Shell.verify")}</h1>
     <ErrorFeedback error={error} />
     {sessionLoading && status === "ready" && <p role="status">{t("Access.loading")}</p>}
     {!user && sessionError && <ErrorFeedback error={sessionError} />}

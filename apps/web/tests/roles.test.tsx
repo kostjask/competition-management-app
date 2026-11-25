@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { UserProfile } from "@dance/schemas";
 import { roleAccess } from "../src/auth/access";
+import { signInDestination } from "../src/auth/workspaces";
 import { RoleGate } from "../src/auth/RoleGate";
 import { AuthContext, type AuthContextValue } from "../src/auth/context";
 
@@ -13,7 +14,7 @@ function profile(key: string, eventId: string | null, name = "Unrelated label"):
     permissions: [{ eventId, keys: ["stage.manage"] }] };
 }
 export function context(user: UserProfile | null, loading = false): AuthContextValue {
-  return { user, loading, sessionExpired: false, error: null, login: async () => {}, register: async () => {}, logout: async () => {}, refreshUser: async () => {}, savePreference: async () => {}, clearError: () => {} };
+  return { user, initializing: loading, loading, sessionExpired: false, error: null, login: async () => {}, register: async () => {}, logout: async () => {}, refreshUser: async () => {}, savePreference: async () => {}, clearError: () => {} };
 }
 test("exact stable keys and supported scope select roles independently of labels", () => {
   const access = roleAccess(profile("judge", "a", "Renamed Judge"));
@@ -39,6 +40,24 @@ test("permission gates require exact operation and global or matching event auth
   assert.equal(roleAccess(admin).hasRole("judge", "b"), true);
   assert.equal(roleAccess(admin).hasPermission("stage.manage", "b"), true);
   assert.equal(roleAccess(null).hasRole("judge"), false);
+});
+test("sign-in returns only to compatible workspaces and keeps authorized typed destinations", () => {
+  const representative = profile("representative", null);
+  for (const destination of [null, "/app/admin", "/app/content/studio", "/app/events/new", "/app/events/a/edit"]) {
+    assert.equal(signInDestination(representative, destination), "/applications");
+  }
+  assert.equal(signInDestination(representative, "/app/events/a/studio?studio=b"), "/events/a/studio?studio=b");
+  assert.equal(signInDestination(representative, "https://example.invalid/app/admin"), "/");
+  const judge = profile("judge", "a");
+  assert.equal(signInDestination(judge, "/judge/events/a/score"), "/judge/events/a/score");
+  assert.equal(signInDestination(judge, "/judge/events/b/score"), "/judge");
+  assert.equal(signInDestination(profile("moderator", "b"), null), "/moderator");
+  assert.equal(signInDestination({ ...judge, roles: [] }, null), "/applications");
+  assert.equal(signInDestination({ ...judge, roles: [...judge.roles, ...profile("moderator", "b").roles] }, null), "/");
+  const admin = { ...profile("admin", null), isAdmin: true };
+  assert.equal(signInDestination(admin, null), "/admin");
+  assert.equal(signInDestination(admin, "/app/moderator"), "/admin");
+  assert.equal(signInDestination(admin, "/app/admin/events/a/setup"), "/admin/events/a/setup");
 });
 test("gate requirements combine without auth bypass and hide while loading", () => {
   function render(user: UserProfile | null, loading = false) {

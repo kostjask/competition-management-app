@@ -13,6 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const current = useRef<UserProfile | null>(null);
   const channel = useRef<BroadcastChannel | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [error, setError] = useState<UiError | null>(null);
   const [sessionExpired, setSessionExpired] = useState(false);
   const clearError = useCallback(() => setError(null), []);
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (active) { current.current = profile; setUser(profile); setError(null); }
     }).catch((err: unknown) => {
       if (active && !(err instanceof ApiError && err.statusCode === 401)) setError(toUiError(err));
-    }).finally(() => { if (active) setLoading(false); });
+    }).finally(() => { if (active) { setLoading(false); setInitializing(false); } });
     const expired = () => { if (current.current) setSessionExpired(true); };
     sessionEvents.addEventListener("expired", expired);
     const otherTabs = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("dance-session");
@@ -78,6 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await saveAccountLocale(locale);
     await loadUser();
   }, [loadUser]);
-  const value = useMemo(() => ({ user, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError }), [user, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError]);
+  const value = useMemo(() => ({ user, initializing, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError }), [user, initializing, loading, error, sessionExpired, login, register, logout, refreshUser, savePreference, clearError]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

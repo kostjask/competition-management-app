@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { EventSchema, StudioSchema, StudioRegistrationSchema, NewStudioRegistrationBodySchema, UpdateStudioApprovalBodySchema, UpdateStudioRegistrationBodySchema, UpdateRepresentativeBodySchema, RegisterSchema, SaveApplicationEstimatesSchema, type ApplicationEstimateRevision, type StudioRegistration, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey, type TranslationArgs } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
@@ -267,7 +268,7 @@ test("acknowledged decision survives failed readback without repeating write", a
 
 test("profile input survives language and expired-session recovery", async ({ page }) => {
   const state = await fixture(page); await page.goto("/app/events/e/studio"); await page.locator("#profile-city").fill("Retained city");
-  await page.getByRole("button", { name: "Русский", exact: true }).click(); await expect(page.locator("#profile-city")).toHaveValue("Retained city");
+  await chooseWorkspaceLanguage(page, "ru"); await expect(page.locator("#profile-city")).toHaveValue("Retained city");
   state.valid = false; await page.locator("form").filter({ has: page.locator("#profile-city") }).getByRole("button").click();
   await expect(page.getByRole("dialog")).toBeVisible(); await page.getByRole("dialog").getByLabel(label("Shell.password", "ru"), { exact: true }).fill("fixture-password");
   await page.getByRole("dialog").getByRole("button", { name: label("Shell.login", "ru"), exact: true }).click();

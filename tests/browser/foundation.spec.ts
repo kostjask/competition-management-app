@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { fixtureCopy } from "../../apps/web/src/components/ui/fixtureCopy";
 
 for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390, 768, 1440]) {
@@ -11,7 +12,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await expect(page.getByRole("heading", { name: text.title })).toBeVisible();
     await expect(page.locator("main")).toHaveAttribute("lang", locale);
     await expect(page.locator(".ui-tone-danger").first()).toHaveCSS("color", "rgb(185, 28, 28)");
-    await expect(page.locator(".ui-button-primary").first()).toHaveCSS("background-color", "rgb(29, 78, 216)");
+    await expect(page.locator(".ui-button-primary").first()).toHaveCSS("background-color", "rgb(37, 76, 101)");
     const field = page.getByLabel(text.name);
     await field.focus(); await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: text.save })).toBeFocused();
@@ -23,15 +24,14 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await page.keyboard.press("Tab"); await page.keyboard.press("Enter");
     await expect(field).toBeFocused();
     await expect(field).toHaveCSS("outline-style", "solid");
-    await expect(field).toHaveCSS("outline-width", "3px");
+    await expect(field).toHaveCSS("outline-width", "2px");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath("validation.png"), fullPage: true });
     await field.fill("Synthetic studio / Синтетическая студия");
-    const alternate = locale === "ru" ? "English" : "Русский";
-    await page.getByRole("button", { name: alternate, exact: true }).click();
+    const alternate = locale === "ru" ? "en" : "ru";
+    await chooseWorkspaceLanguage(page, alternate);
     await expect(page.locator("#fixture-name")).toHaveValue("Synthetic studio / Синтетическая студия");
-    const nativeNames = { et: "Eesti", en: "English", ru: "Русский" };
-    await page.getByRole("button", { name: nativeNames[locale], exact: true }).click();
+    await chooseWorkspaceLanguage(page, locale);
     await page.getByRole("button", { name: text.save }).click();
     await expect(page.getByText(text.saved, { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: text.submit })).toBeDisabled();

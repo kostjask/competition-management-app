@@ -64,7 +64,54 @@ alongside the first release workflow and execute external checks when access is
 available; do not wait for judging/results. A concrete security regression or
 required operational prerequisite takes priority over the feature queue.
 
-- [ ] P9-UI-REDESIGN (user-required, 2026-11-10; cross-phase delivery): fully reimagine and redo the entire placeholder UI with the hallmark skill, including existing delivered screens and future workflows. Follow [the canonical redesign brief](../DESIGN_SYSTEM.md#required-full-redesign). Establish a coherent replacement direction before new UI composition, apply it through bounded owning workflow/redesign slices, preserve working contracts/wiring and ET/EN/RU/accessibility, and record rendered visual plus functional regression evidence. Current technical completions do not close this task or approve existing visuals. Its Phase 9 home does not postpone design until other phases finish; the checkpoint implementation order remains unchanged. P4-CORE establishes the [Cobalt implementation baseline](../../DESIGN.md) for organizer/event screens; the shared shell and other workflows plus human visual approval remain open.
+- [ ] P9-UI-REDESIGN (active; cross-phase delivery): rebuild the entire placeholder UI with Hallmark. Follow the [app-wide UX audit](../UX_REDESIGN_PLAN.md), the [redesign brief](../DESIGN_SYSTEM.md#required-full-redesign) and the [delivery order below](#app-redesign-delivery-order). Preserve working contracts, authorization, and ET/EN/RU and accessibility requirements. Record rendered evidence and user acceptance for each slice. The [existing design baseline](../../DESIGN.md) records the previous directions.
+
+  Local rehearsal feedback (2026-11-24): the user found the organizer workspace
+  and event setup flow very unintuitive and called for a full UI rebuild. Rebuild
+  [S05](../ui/organizer.md#s05--admin-dashboard-and-event-setup) so organizers can
+  find their event, open setup and identify the next action without guidance.
+
+  - Offer a searchable country selector and city/venue suggestions while allowing
+    manual entry for locations missing from the suggestions.
+  - Suggest the event time zone from the selected location. Show the inferred
+    zone, allow manual override, and make changes to saved dates explicit.
+  - Remove the generic “Choose...” choices from Registration cutoff and Description
+    source language. Use an explicit no-cutoff choice where applicable. Keep the
+    source language explicit when authors enter a description.
+  - Show the selected language in the source text label or adjacent helper text.
+  - Replace the language and fallback preview with guidance in the optional
+    translation fields that a blank translation uses the source text. Keep this
+    guidance available after a field receives focus or is filled.
+  - Evaluate animated event artwork separately. The current image contract uses
+    single-frame WebP. If animation is supported, define its limits and provide a
+    still image for reduced-motion use.
+  - Redesign the save confirmation so organizers can tell what was saved and
+    see the next action without losing their place in the form.
+  - Reassess the persistent setup sidebar. The user found it of little use
+    during data entry and questioned its value after saving. Test showing
+    setup blockers and available actions where and when they become useful.
+
+  Studio representative sign-in feedback (2026-11-24): the user saw “Access
+  denied” immediately after signing in. The regression reproduces an organizer
+  return carried through sign-in. The local fix sends a representative to their
+  application workspace and keeps the denial on a direct organizer visit.
+
+  Studio representative event discovery feedback (2026-11-24): the user rejected
+  the usability of both the [event list and event detail](../ui/account.md#s01--home-and-event-list)
+  (S01/S02). Rebuild both screens around the representative's decision to attend
+  and their next application action.
+
+  - Lead with the event name, a readable date range, and location. Show the
+    application status and deadline together and make the applicable action
+    clear (start, resume, or view the application).
+  - Remove duplicate event labels, empty optional fields, and the sign-in
+    message for signed-in users. Use plain-language application status in place
+    of internal stage labels. Show limits and contact details where they help
+    the representative act, and show a human-readable time-zone label when needed.
+  - Define a consistent date-format policy for list, detail, and cutoff. Prefer
+    the user's explicit format preference when available, otherwise use the event
+    location's regional format when known. Keep event times and cutoffs in the
+    event's configured time zone. Verify the presentation in ET/EN/RU.
 
 - [ ] P9-UI-REGRESSION: start with P2-UI-FOUNDATION/SHELL and expand per feature: minimal interactive component/user-flow tests and reviewed screenshots for delivered S/F IDs at phone/portrait tablet/desktop in ET/EN/RU. Cover focus/error/empty/denied/locked/reconnect states with deterministic synthetic data; record manual screen-reader/keyboard/contrast/touch and fluent-language evidence. No blanket baseline acceptance. UI exit evidence is milestone-scoped and must exist before release, not after all phases finish. See [TESTING](../TESTING.md).
 
@@ -85,6 +132,46 @@ required operational prerequisite takes priority over the feature queue.
 Exit: automated checks gate the released scope, staging deployment/rollback and
 restore are rehearsed, observability/runbooks cover external operations, and
 keyboard/mobile/ET/EN/RU/privacy requirements pass for each released milestone.
+
+### App redesign delivery order
+
+The 2026-11-25 [audit](../UX_REDESIGN_PLAN.md) supersedes the previous screen
+delivery order after the user rejected the rendered experience. The shared
+styles and passing workflow assertions are baseline evidence. See the audit
+for screen-by-screen decisions, control coverage and Day/Night requirements.
+
+1. [ ] **Role journeys and layouts.** Prototype organizer event-to-Live, applicant
+   to next task, and judge sign-in-to-score. Review phone/desktop and Day/Night
+   composition through recovery. The three sample journeys and desktop navigation
+   comparison are available at `/app/__fixtures/redesign`. Review the complete
+   event destination set and role journeys with users before closing.
+2. [ ] **Shell and account foundation (S01/S03/S04).** Deliver actionable role
+   landings, the focused shell, compact language and appearance controls, smaller
+   Material actions, field focus and inline password visibility. Give temporary
+   access failures a retry path. Decide current-session sign-out in an ADR before
+   changing the contract. The top bar, assignment visibility, applicant landing,
+   appearance, focus, inline visibility and sign-in retry copy are implemented
+   locally. The header preferences use compact disclosures with visibly selected
+   options and descriptions for Venue-aware and Match device. The event-local
+   rail and mobile disclosure cover nine organizer destinations. Personal date
+   format remains open.
+3. [ ] **Venue journeys (S14/S15).** Use the event-scoped organizer route and
+   assignment-driven staff views. Prioritize stage controls, sheet entry, status
+   and reconnect. The local implementation prioritizes current performance and
+   stage commands, keeps later queue positions accessible, and puts score entry
+   ahead of receipts and optional comments. Live sign-in preserves the selected
+   stage. Keep physical venue rehearsal, workflow acceptance and M5 gates open.
+4. [ ] **Organizer and studio journeys (S01/S02/S05–S13/S16/S17).** Deliver
+   event discovery/setup, approvals and staff, applications and studio entries,
+   then schedule, scoring setup and private results. Verify all interactions,
+   localized states and interrupted workflows in each slice. Continue with
+   application review and the studio's next-task journey.
+5. [ ] **Public studio and festival sites and CMS (S18–S20).** Deliver the
+   visitor and editing journeys with published content and linked locale
+   navigation. Keep the separate studio and festival release gates.
+6. [ ] **Cross-role acceptance.** Complete rendered, behavior, localization,
+   keyboard, assistive and real-device reviews in both modes. Record acceptance
+   by workflow owner before closing the redesign.
 
 ## Deferred optional scope
 

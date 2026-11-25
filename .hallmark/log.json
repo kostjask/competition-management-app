@@ -1,5 +1,64 @@
 [
  {
+  "shape": "app screen",
+  "scope": "app",
+  "mode": "redesign",
+  "depth": "full",
+  "theme": "broadside",
+  "axes": [
+   "wordmark and utilities",
+   "role navigation disclosure",
+   "account preferences"
+  ],
+  "hero": "none",
+  "nav": "workspace top bar with grouped authorized destinations",
+  "footer": "none",
+  "imagery": "none",
+  "photos": [],
+  "entry": "apps/web/src/components/layouts/workspace.css",
+  "fingerprint": "workspace-shell-role-landing",
+  "sections": [
+   "Workspace navigation",
+   "Home",
+   "Sign in",
+   "Account profile"
+  ],
+  "signature": "the workspace destinations appropriate to each account",
+  "waived": [],
+  "prompt": "Continue the full app redesign with shared navigation, sign-in, role landings and account profile.",
+  "date": "2026-11-24"
+ },
+ {
+  "shape": "app screen",
+  "scope": "app",
+  "mode": "redesign",
+  "depth": "full",
+  "theme": "broadside",
+  "axes": [
+   "event index",
+   "inline date and venue",
+   "application well"
+  ],
+  "hero": "none",
+  "nav": "workspace top bar",
+  "footer": "none",
+  "imagery": "configured private event artwork",
+  "photos": [],
+  "entry": "apps/web/src/pages/events/event-discovery.css",
+  "fingerprint": "discovery-calendar-notice",
+  "sections": [
+   "Event list",
+   "Event overview",
+   "Application availability",
+   "Event times",
+   "Organizer contact"
+  ],
+  "signature": "event date next to the application action",
+  "waived": [],
+  "prompt": "Rebuild event discovery for studio representatives in the full app redesign.",
+  "date": "2026-11-24"
+ },
+ {
   "scope": "app",
   "shape": "app screen",
   "theme": "cobalt",
@@ -590,5 +649,41 @@
   "sweep": "static 0 FAIL 0 REFLEX 0 WARN; Playwright captures; subagent 2 findings 2 resolved",
   "date": "2026-11-10",
   "mode": "build"
+ },
+ {
+  "shape": "app screen",
+  "scope": "app",
+  "mode": "redesign",
+  "depth": "full",
+  "theme": "Material Studio controls and Backstage Night",
+  "axes": ["event context", "role landing", "day and night"],
+  "hero": "none",
+  "nav": "workspace top bar; comparison of top bar and event-local rail",
+  "footer": "none",
+  "imagery": "sample task and queue data",
+  "photos": [],
+  "entry": "apps/web/src/components/ui/redesign-preview.css",
+  "fingerprint": "organizer-live-applicant-judge-pilot",
+  "sections": ["Organizer live queue", "Applicant next task", "Judge sign-in and scoring"],
+  "signature": "current performance, next action and outcome remain together",
+  "waived": [],
+  "prompt": "Start the app-wide redesign implementation",
+  "sweep": "Playwright phone and desktop captures, including the actual venue sign-in and score sheet; static checks found no floor or reflex failures",
+  "date": "2026-11-25"
+ },
+ {
+  "shape": "app screen",
+  "scope": "app",
+  "mode": "redesign",
+  "theme": "Material Studio event navigation and Backstage venue controls",
+  "axes": ["event scope", "current performance", "day and night"],
+  "nav": "organizer event rail and mobile disclosure",
+  "entry": "apps/web/src/components/layouts/organizer-event.css",
+  "signature": "current and next performance directly above stage commands",
+  "sections": ["Organizer overview", "Moderator live queue", "Judge score sheet"],
+  "waived": [],
+  "prompt": "Continue redesign",
+  "sweep": "Static floor 0 FAIL, reflex 0. Playwright phone and desktop captures. Independent finish review led to quiet exception actions and separate queue position and studio labels. The overview continues to use the Events destination in global navigation.",
+  "date": "2026-11-25"
  }
 ]

@@ -4,7 +4,7 @@ import { ErrorFeedback } from "../ErrorFeedback";
 
 type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 export function Button({ variant = "primary", pending = false, className = "", disabled, ...props }:
-  ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet" | "danger"; pending?: boolean }) {
+  ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "tonal" | "secondary" | "quiet" | "danger"; pending?: boolean }) {
   return <button type="button" {...props} disabled={disabled || pending} aria-busy={pending || undefined}
     className={`ui-button ui-button-${variant} ${className}`} />;
 }
@@ -22,12 +22,12 @@ export function Field({ id, label, hint, error, required = false, children }: {
     {error && <p className="ui-field-error" id={`${id}-error`}>{error}</p>}
   </div>;
 }
-export function ErrorSummary({ error, title, fields }: { error: UiError | null; title: string; fields?: Record<string, string> }) {
+export function ErrorSummary({ error, title, fields, message }: { error: UiError | null; title: string; fields?: Record<string, string>; message?: string }) {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => { if (error) root.current?.focus(); }, [error]);
   if (!error) return null;
   return <div ref={root} tabIndex={-1} className="ui-alert ui-tone-danger ui-error-summary">
-    <h2>{title}</h2><ErrorFeedback error={error} fields={fields} />
+    <h2>{title}</h2><ErrorFeedback error={error} fields={fields} message={message} />
   </div>;
 }
 export function Alert({ tone = "info", announce = true, children }: { tone?: Tone; announce?: boolean; children: ReactNode }) {

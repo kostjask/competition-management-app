@@ -1,35 +1,48 @@
-/* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: frozen rubric and acknowledged sheet · v2.0.0 */
-/* Hallmark · pre-emit critique: prioritize the stage and performance identity without pushing score inputs below connection controls. */
-/* Hallmark · finish review: in-thread. Moved performance identity ahead of connection controls on phones and kept one main landmark. Both recaptured. */
+/* Hallmark · shape: app screen · Backstage · signature: assigned performance and exact score sheet · v2.0.0 */
+/* Hallmark · critique: put the active performance and first score together, with interruptions above the sheet. */
 @import "../../features/events/design/tokens.css";
 @import "../../features/events/design/base.css";
 
-.judge-workbench { max-width: 54rem; margin-inline: auto; padding: var(--space-lg); }
-.judge-header { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--space-md) var(--space-column); }
-.judge-header p, .judge-progress, .judge-fact { margin-block: var(--space-2xs) var(--space-xs); }
+.event-workbench.judge-workbench { max-width: 50rem; margin-inline: auto; padding: var(--space-lg); }
+.judge-header { display: grid; gap: var(--space-xs); }
+.judge-event { display: flex; align-items: center; flex-wrap: wrap; column-gap: var(--space-md); }
+.judge-event h1 { font-size: var(--text-md); color: var(--color-ink-secondary); }
 .judge-fact { color: var(--color-ink-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
 .judge-back { display: inline-flex; min-height: 44px; align-items: center; color: var(--color-accent-deep); text-decoration: underline; }
-.judge-sheet { margin-block: var(--space-md) var(--space-lg); padding-block-start: var(--space-md); border-block-start: 2px solid var(--color-ink); }
-.judge-performance { margin-block-start: var(--space-md); }
-.judge-ledger { list-style: none; padding: 0; margin-block: var(--space-sm); }
-.judge-ledger > * { border-block-start: 1px solid var(--color-rule-2); padding-block: var(--space-md); overflow-wrap: anywhere; }
-.judge-ledger > :last-child { border-block-end: 1px solid var(--color-rule-2); }
-.judge-ledger .ui-field + .ui-field { margin-block-start: var(--space-md); }
-.judge-ledger .ui-input[inputmode="decimal"] { max-width: 12rem; font-variant-numeric: tabular-nums; }
+.judge-performance { padding: var(--space-sm) var(--space-md); border-inline-start: 0.25rem solid var(--color-action); background: var(--color-paper-2); }
+.judge-performance h2 { font-size: var(--text-2xl); text-wrap: balance; }
+.judge-workbench :is(.judge-performance, .judge-connection, .judge-sheet-summary) p { margin: 0; }
+.judge-workbench .judge-performance p { margin-block-start: var(--space-2xs); }
+.judge-connection, .judge-sheet-summary { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0 var(--space-md); }
+.judge-connection .ui-alert { flex: 1 0 100%; margin-block: var(--space-xs); }
+.judge-workbench .judge-connection .ui-alert p + p { margin-block-start: var(--space-2xs); }
+.judge-sheet { margin-block: var(--space-2xs) var(--space-sm); border-block-start: 1px solid var(--color-rule-2); }
+.judge-sheet-summary { padding-block: var(--space-sm); }
+.judge-progress { font-weight: 650; }
+.judge-ledger { list-style: none; padding: 0; margin: 0; }
+.judge-ledger > * { padding-block: var(--space-xs); border-block-end: 1px solid var(--color-rule-2); overflow-wrap: anywhere; }
+.judge-ledger .ui-field { margin-block: var(--space-2xs); }
+.judge-ledger .ui-input[inputmode="decimal"] { max-width: 12rem; min-height: 48px; font-size: var(--text-lg); font-variant-numeric: tabular-nums; }
 .judge-ledger textarea { resize: vertical; }
-.judge-picker, .judge-rubric, .judge-review { margin-block-start: var(--space-lg); }
+.judge-picker .ui-field { margin-block: var(--space-xs); }
+.judge-rubric h3 { color: var(--color-ink-secondary); font-size: var(--text-sm); }
+.judge-review, .judge-receipt { margin-block-start: var(--space-md); }
+.judge-review { min-height: 48px; }
+.judge-checked { margin-block-start: var(--space-xs); }
+.judge-comment { margin-block-start: var(--space-2xs); }
+.judge-comment summary { display: list-item; width: fit-content; min-height: 44px; padding-block: var(--space-sm); color: var(--color-action); cursor: pointer; font-size: var(--text-sm); }
+.judge-comment summary:hover { text-decoration: underline; }
+.judge-comment summary:active { color: var(--color-action-hover); }
 .judge-rubric .ui-help { overflow-wrap: anywhere; }
-.judge-compare, .judge-confirm { margin-block: var(--space-lg); padding: var(--space-md); background: var(--color-paper-2); border-inline-start: 2px solid var(--color-accent); }
+.judge-compare, .judge-confirm { margin-block: var(--space-lg); padding: var(--space-md); background: var(--color-paper-2); border: 1px solid var(--color-border-control); border-radius: var(--radius-card); }
 .judge-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block-start: var(--space-sm); }
 .judge-workbench :is(button, input, select, textarea, a) { min-height: 44px; }
-.judge-workbench :focus-visible, .judge-workbench [tabindex="-1"]:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-.judge-workbench .ui-button:active:not(:disabled) { transform: translateY(1px); }
+.judge-workbench :focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
 .judge-workbench :is(button, select):disabled { color: var(--color-ink-2); background: var(--color-paper-2); cursor: not-allowed; }
 @media (pointer: coarse) {
   .judge-workbench :is(button, input, select, textarea, a) { min-height: 48px; }
 }
 @media (max-width: 40rem) {
-  .judge-workbench { padding: var(--space-md); }
-  .judge-header { grid-template-columns: minmax(0, 1fr); }
+  .event-workbench.judge-workbench { padding: var(--space-md); }
   .judge-ledger .ui-input[inputmode="decimal"] { max-width: none; }
 }

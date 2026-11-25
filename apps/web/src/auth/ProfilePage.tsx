@@ -7,20 +7,23 @@ import { roleLabel } from "./roleLabel";
 export function ProfilePage() {
   const { user } = useAuth(); const { t, locale } = useTranslation();
   if (!user) return null;
-  return <section className="mx-auto max-w-4xl p-4 sm:p-6">
-    <h1 className="text-2xl font-semibold">{t("Shell.profile")}</h1>
-    <p className="my-2">{t("Shell.joined", { date: formatInstant(user.createdAt, locale) })}</p><p>{t("Shell.readOnly")}</p>
-    <dl className="my-6 grid gap-4 break-words rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
-      <div><dt>{t("Shell.name")}</dt><dd className="font-semibold">{user.name}</dd></div>
-      <div className="min-w-0"><dt>{t("Shell.email")}</dt><dd className="font-semibold [overflow-wrap:anywhere]">{user.email}</dd></div>
+  return <section className="workspace-sheet workspace-profile">
+    <h1>{t("Shell.profile")}</h1>
+    <p className="workspace-joined">{t("Shell.joined", { date: formatInstant(user.createdAt, locale) })}</p>
+    <dl className="workspace-profile-identity">
+      <div><dt>{t("Shell.name")}</dt><dd>{user.name}</dd></div>
+      <div><dt>{t("Shell.email")}</dt><dd>{user.email}</dd></div>
     </dl>
-    <AccountLanguage />
-    <h2 className="text-xl font-semibold">{t("Shell.roles")}</h2>
-    {!user.roles.length && <p className="mt-3">{t("Shell.noRoles")}</p>}
-    <ul className="mt-3 grid gap-3">{user.roles.map(assignment => <li key={assignment.id} className="rounded-xl border border-slate-200 bg-white p-4 break-words">
-      <p className="font-semibold">{roleLabel(assignment.role.key, assignment.role.name, locale)}</p>
-      <p>{assignment.event?.name ?? t("Shell.global")}</p>
-      {((assignment.role.key === "admin" && assignment.eventId !== null) || (["judge", "moderator"].includes(assignment.role.key) && assignment.eventId === null)) && <p>{t("Shell.unsupportedScope")}</p>}
-    </li>)}</ul>
+    <div className="workspace-profile-body">
+      <section>
+        <h2>{t("Shell.roles")}</h2>
+        {user.roles.length ? <ul className="workspace-profile-roles">{user.roles.map(assignment => <li key={assignment.id}>
+          <p>{roleLabel(assignment.role.key, assignment.role.name, locale)}</p>
+          <p>{assignment.event?.name ?? t("Shell.global")}</p>
+          {((assignment.role.key === "admin" && assignment.eventId !== null) || (["judge", "moderator"].includes(assignment.role.key) && assignment.eventId === null)) && <p>{t("Shell.unsupportedScope")}</p>}
+        </li>)}</ul> : <p>{t("Shell.noRoles")}</p>}
+      </section>
+      <AccountLanguage />
+    </div>
   </section>;
 }

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import type { StaffOverview, UserProfile, Invitation } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey, type TranslationArgs } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
@@ -40,7 +41,7 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     expect(removals).toBe(0); await expect(page.getByLabel(label("Shell.email", locale), { exact: true })).toHaveValue("preserved@example.invalid");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: info.outputPath("staff.png"), fullPage: true });
-    await page.getByRole("button", { name: locale === "en" ? "Eesti" : "English", exact: true }).click();
+    await chooseWorkspaceLanguage(page, locale === "en" ? "et" : "en");
     await expect(page.getByLabel(label("Shell.email", locale === "en" ? "et" : "en"), { exact: true })).toHaveValue("preserved@example.invalid");
   });
 }

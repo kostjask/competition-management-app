@@ -116,10 +116,18 @@ notifications and recheck or pause; server revision checks are authoritative on 
 device. Browsers without BroadcastChannel reconcile on their next protected request.
 Passwords/private work are not persisted. Reload recovers only already saved work.
 
-Return destinations use the shared implemented-route allowlist. Only canonical
-relative paths without query/hash/escapes/credentials are accepted; unsupported or
-external values fall back to /. Login uses a validated returnTo query rather than
-unchecked router state. Verification removes its secret from the visible URL before
+Return destinations use the shared implemented-route allowlist. Only supported
+workspace paths and their explicitly typed query parameters are accepted.
+The organizer and moderator Live routes may carry a single `session` UUID so
+sign-in can restore the selected stage session.
+Unsupported or external return destinations fall back to the workspace home.
+After a fresh profile read, sign-in uses a compatible requested destination. If
+the requested organizer or staff route is outside the user's profile scope, it
+uses the default landing. Global organizers open the organizer workspace, users
+with one supported role open that workspace, and users with multiple or no
+supported roles land on Home. Sign-in without a requested destination uses the
+same default landing. Direct route guards and backend authorization still apply.
+Verification removes its secret from the visible URL before
 an explicit Verify action and offers a deliberate Continue; missing device context
 falls back to /. Signed-in users must explicitly sign out before verifying a different
 account. Full recovery/signup/invitation UI and real email remain their existing gates.

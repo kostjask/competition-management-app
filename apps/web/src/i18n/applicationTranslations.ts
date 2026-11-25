@@ -17,6 +17,7 @@ export const applicationTranslations = {
   review: { et: "Taotluste ülevaatus", en: "Application review", ru: "Рассмотрение заявок" },
   apply: { et: "Esita taotlus", en: "Apply", ru: "Подать заявку" },
   open: { et: "Ava taotlus", en: "Open application", ru: "Открыть заявку" },
+  view: { et: "Vaata taotlust", en: "View application", ru: "Посмотреть заявку" },
   organization: { et: "Organisatsiooni kinnitus", en: "Organization verification", ru: "Проверка организации" },
   event: { et: "Sündmusele vastuvõtmine", en: "Event acceptance", ru: "Допуск к событию" },
   independent: { et: "Osalemise ligipääs eeldab mõlemat kinnitust.", en: "Participation access requires both approvals.", ru: "Для доступа к участию нужны оба одобрения." },

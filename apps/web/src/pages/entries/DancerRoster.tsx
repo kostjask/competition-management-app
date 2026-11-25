@@ -38,7 +38,7 @@ function Roster({ studioId }: { studioId: string }) {
     <ErrorSummary error={error} title={t("Events.loadError")} />
     {error && <Button onClick={() => { setError(null); setAttempt(value => value + 1); }}>{t("Shell.retry")}</Button>}
     {!value ? !error && <EntryLoading /> : <>
-      <p>{value.context.eventName}</p><p>{t("Roster.ageDate")}: <time dateTime={value.context.ageDate}>{formatCalendarDate(value.context.ageDate, locale)}</time></p>
+      <div className="entry-context"><p>{value.context.eventName}</p><p>{t("Roster.ageDate")}: <time dateTime={value.context.ageDate}>{formatCalendarDate(value.context.ageDate, locale)}</time></p></div>
       {!value.context.writableFields.includes("roster") && <p>{t("Roster.locked")}</p>}
       <div className="entry-actions"><Button id="roster-add" disabled={!value.context.writableFields.includes("roster")} onClick={() => select("new")}>{t("Roster.add")}</Button>
         <Button variant="quiet" onClick={() => setAttempt(value => value + 1)}>{t("Roster.refresh")}</Button></div>

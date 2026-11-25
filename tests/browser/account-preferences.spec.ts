@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { getTranslation } from "../../apps/web/src/i18n/translations";
 import type { UserProfile } from "../../packages/schemas/src/auth.schema";
 
@@ -59,7 +60,7 @@ for (const locale of ["et", "en", "ru"] as const) {
     });
     await page.goto("/app/auth/profile");
     await expect(page.locator("html")).toHaveAttribute("lang", locale);
-    await page.getByRole("button", { name: "English", exact: true }).click();
+    await chooseWorkspaceLanguage(page, "en");
     const field = page.getByLabel(getTranslation("Preferences.language", "en"));
     await field.selectOption("ru");
     const save = page.getByRole("button", { name: getTranslation("Preferences.save", "en") });

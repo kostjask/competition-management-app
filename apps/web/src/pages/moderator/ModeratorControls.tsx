@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import type { LiveScheduleAcknowledgement, LiveScheduleWorkspace } from "@dance/schemas";
 import { commandSchedule, getLiveSchedule } from "../../api/schedule";
 import { commandScoring } from "../../api/scoring";
@@ -37,6 +37,7 @@ export default function ModeratorControls({ organizer = false }: { organizer?: b
     }} />;
   const events = new Map((user?.roles ?? []).flatMap(assignment =>
     assignment.role.key === "moderator" && assignment.event ? [[assignment.event.id, assignment.event] as const] : []));
+  if (!events.size && user?.isAdmin) return <Navigate to="/admin" replace />;
   return <div className="event-workbench moderator-workbench">
     <h1>{t("Moderator.title")}</h1>
     {events.size ? <ul className="moderator-event-list">{[...events.values()].map(event => <li key={event.id}>
@@ -124,6 +125,9 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
   const actions = workspace ? liveActions(workspace) : null;
   const disabled = !sessionId || !connected || !!pending || !!proposal;
   const nextAction = session?.state === "RUNNING" ? "ADVANCE" : "START";
+  const completion = session?.current?.completion;
+  const waitingForSheets = !disabled && nextAction === "ADVANCE" && workspace?.eventStage === "LIVE"
+    && workspace.scoringReady && completion && completion.locked < completion.required;
   const startLabel = session?.current ? "Moderator.resume" : session?.hasQueue && !session.next ? "Moderator.finish" : "Moderator.START";
   const retryable = pending && connected && workspace?.acknowledgement === null && canRun(workspace, pending);
   const changed = pending && connected && (workspace?.acknowledgement !== null || !canRun(workspace, pending));
@@ -137,49 +141,52 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
     dateStyle: "short", timeStyle: "medium", timeZone: zone,
   }).format(date);
   const revision = (value: number) => formatNumber(value, locale);
-  const back = organizer ? "/admin/events/" + encodeURIComponent(eventId) + "/setup" : "/moderator";
 
-  return <div className="event-workbench moderator-workbench">
+  return <div className="event-workbench moderator-workbench" data-live-surface>
     <header className="moderator-header">
-      <Link className="moderator-link" to={back}>{t(organizer ? "Setup.title" : "Moderator.title")}</Link>
+      <div className="moderator-identity">
+        {!organizer && <Link className="moderator-link" to="/moderator">{t("Moderator.assignments")}</Link>}
+        {workspace && <p>{t(stageKey[workspace.eventStage])}</p>}
+      </div>
       <h1>{workspace?.eventName ?? t("Moderator.title")}</h1>
-      {workspace && <p>{t(stageKey[workspace.eventStage])}</p>}
       {workspace && session && <div className="moderator-selector">
         <Field id="live-session" label={t("Moderator.session")}>{attributes => <select {...attributes} ref={selector} className="ui-input" value={session.id} disabled={!!pending || !!proposal}
           onChange={event => selectSession(event.target.value)}>
           {workspace.sessions.map(row => <option key={row.id} value={row.id}>{row.stageName + " / " + row.name}</option>)}
         </select>}</Field>
-        <p className="ui-help">{t("Moderator.scheduledAt", { time: time(new Date(session.startsAt)), zone: workspace.timeZone })}</p>
       </div>}
     </header>
 
     {workspace && session && <>
       <div className="moderator-ledger" aria-live="polite">
-        <section aria-labelledby="live-current"><h2 id="live-current">{t("Moderator.current")}</h2>
+        <section className="moderator-current" aria-labelledby="live-current"><h2 id="live-current">{t("Moderator.current")}</h2>
           <Performance slot={session.current} empty={t("Moderator.noCurrent")} />
           {session.current && <Completion completion={session.current.completion} />}
         </section>
-        <section aria-labelledby="live-next"><h2 id="live-next">{t("Moderator.next")}</h2>
+        <section className="moderator-next" aria-labelledby="live-next"><h2 id="live-next">{t("Moderator.next")}</h2>
           <Performance slot={session.next} empty={t("Moderator.noNext")} />
         </section>
       </div>
       <div className="moderator-operating">
         <section className="moderator-command-area" aria-labelledby="live-actions"><h2 id="live-actions">{t("Moderator.controls")}</h2>
           <p><StatusBadge tone={session.state === "RUNNING" ? "info" : "neutral"}>{t(queueLabel[session.state])}</StatusBadge></p>
+          {showInterruption && <div role="status" className="ui-alert ui-tone-warning">
+            <p><strong>{connectionStatus}</strong></p>
+            {interruptionHelp}
+          </div>}
           {workspace.eventStage !== "LIVE" ? <p>{t("Moderator.notLive")}</p> : <>
             {!session.hasQueue && <p>{t("Moderator.emptyQueue")}</p>}
             {session.hasQueue && !workspace.scoringReady && <p>{t("Moderator.notReady")}</p>}
+            {waitingForSheets && <p id="live-advance-help">{t("Moderator.waitingForSheets")}</p>}
             <div className="moderator-actions">
-              <Button disabled={disabled || !actions?.[nextAction]} onClick={() => run(nextAction)}>{t(nextAction === "START" ? startLabel : "Moderator.ADVANCE")}</Button>
+              <Button disabled={disabled || !actions?.[nextAction]} aria-describedby={waitingForSheets ? "live-advance-help" : undefined} onClick={() => run(nextAction)}>{t(nextAction === "START" ? startLabel : "Moderator.ADVANCE")}</Button>
               <Button variant="secondary" disabled={disabled || !actions?.PAUSE} onClick={() => run("PAUSE")}>{t("Moderator.PAUSE")}</Button>
             </div>
           </>}
         </section>
         <section aria-labelledby="live-connection"><h2 id="live-connection">{t("Moderator.connection")}</h2>
-          <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : undefined}>
-            <p>{showInterruption ? <strong>{connectionStatus}</strong> : connectionStatus}</p>
-            {interruptionHelp}
-          </div>
+          {!showInterruption && <p role="status">{connectionStatus}</p>}
+          <p className="ui-help">{t("Moderator.scheduledAt", { time: time(new Date(session.startsAt)), zone: workspace.timeZone })}</p>
           {snapshot && <p className="ui-help">{t("Moderator.sync", { revision: revision(workspace.revision), time: time(new Date(snapshot.receivedAt)) })}</p>}
           <div className="moderator-actions">
             <Button variant="secondary" disabled={!online || loading || sending} onClick={() => void refresh()}>{t("Moderator.refresh")}</Button>
@@ -187,12 +194,12 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
           </div>
         </section>
       </div>
-      {session.following.length > 0 && <section className="moderator-upcoming" aria-labelledby="live-upcoming">
-        <h2 id="live-upcoming">{t("Moderator.upcoming")}</h2>
+      {session.following.length > 0 && <details className="moderator-upcoming">
+        <summary>{t("Moderator.upcoming")}</summary>
         <ol>{session.following.map(slot => <li key={slot.slotId} value={slot.position}>
           <span>{slot.title ?? t("Judge.untitled")}</span><span className="ui-help">{slot.studioName}</span>
         </li>)}</ol>
-      </section>}
+      </details>}
     </>}
 
     {!workspace && (failure ? <>
@@ -231,7 +238,7 @@ function LiveConsole({ eventId, sessionId, organizer, focusSelector, selectSessi
       <h2 id="live-exceptions" ref={exceptionsHeading} tabIndex={-1}>{t("Moderator.exceptions")}</h2>
       <div className="moderator-actions" hidden={!!proposal}>
         {exceptionActions.filter(action => workspace.organizer || action === "SKIP").map(action => <Button key={action}
-          variant="secondary" disabled={disabled || !actions?.[action]} onClick={event => {
+          variant="quiet" disabled={disabled || !actions?.[action]} onClick={event => {
             exceptionTrigger.current = event.currentTarget;
             setProposal({ action, workspace, session });
           }}>{t(`Moderator.${action}`)}</Button>)}
@@ -266,7 +273,11 @@ function Performance({ slot, empty }: { slot: LiveSession["next"]; empty: string
   const { t, locale } = useTranslation();
   if (!slot) return <p>{empty}</p>;
   return <div className="moderator-performance"><p className="moderator-performance-title">{slot.title ?? t("Judge.untitled")}</p>
-    <p className="ui-help">{t("Moderator.slotIdentity", { position: formatNumber(slot.position, locale), studio: slot.studioName })}</p></div>;
+    <p className="moderator-performance-meta ui-help">
+      <span>{t("Moderator.slotPosition", { position: formatNumber(slot.position, locale) })}</span>
+      <span>{slot.studioName}</span>
+    </p>
+  </div>;
 }
 
 function Completion({ completion }: { completion: NonNullable<LiveSession["current"]>["completion"] }) {

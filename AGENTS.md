@@ -125,6 +125,16 @@ them. Do not load every skill for every task.
 - hallmark: use for new UI design, preserving docs/DESIGN_SYSTEM.md,
   accessibility and ET/EN/RU requirements. For existing designs, use only
   when the user explicitly requests Hallmark auditing or redesign.
+- impeccable: use `critique` for a usability review of an existing flow, `shape`
+  when the task or information hierarchy needs rethinking, and `harden` for
+  responsive, localization and error-state gaps. Ground the review in a rendered
+  screen or flow and use the existing DESIGN.md and relevant product docs.
+- ui-ux-pro-max: use for targeted research when comparing interaction patterns,
+  layouts or visual options. Follow the project design brief when selecting an
+  option and keep exploratory recommendations out of the design system until agreed.
+- web-design-guidelines: use for a focused review of implemented web UI. Check
+  semantic controls, labels, keyboard focus, touch targets, and form behavior
+  in the affected files. Pair findings with the relevant rendered interaction checks.
 - security-best-practices: use for explicitly requested security reviews,
   security guidance or secure-by-default implementation.
 

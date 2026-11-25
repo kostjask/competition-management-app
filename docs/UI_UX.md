@@ -82,7 +82,10 @@ birth-date, contact, billing and unpublished scoring data.
 
 ## Audit of the current experience
 
-Source review: 2026-11-10. Updated event setup/list/detail behavior is validated in [P4-CORE evidence](EVENT_SETUP_VALIDATION.md); other observations below remain source review. The original mixed-date
+Current redesign findings and decisions are in the [app-wide UX audit](UX_REDESIGN_PLAN.md).
+The following implementation notes began with the 2026-11-10 source review.
+Updated event setup/list/detail behavior is validated in [P4-CORE evidence](EVENT_SETUP_VALIDATION.md).
+The original mixed-date
 [audit table is archived](DEVELOPMENT_HISTORY.md#ui-source-audit-archived-2026-11-10).
 Use the checkpoint/roadmaps for delivery and release status; this specification
 owns target behavior, not a second implementation checklist.
@@ -94,9 +97,9 @@ owns target behavior, not a second implementation checklist.
   expose event-zone/DST/deadline/contact/checklist and authored-content controls under P4-CORE/ADR-020.
 - The organizer dashboard prioritizes setup blockers and independent application
   queues. P4-REVIEW/P5-APPLICATION implement review, apply/status/profile/contact
-  and event apply/resume links; [evidence](APPLICATION_REVIEW_VALIDATION.md) owns
-  their validation limits. Other role dashboards, entry/music and live/scoring/
-  results remain their owning roadmap scopes.
+  and event apply/resume links. [Application review evidence](APPLICATION_REVIEW_VALIDATION.md)
+  owns that scope. Entry, music, live and private scoring/results have local
+  implementation in their owning roadmap scopes and retain redesign and release gates.
 - Automated Chromium coverage exists for delivered slices; real inbox/hosted,
   full-journey human language and assistive review remain release evidence.
 
@@ -112,17 +115,18 @@ settles route mapping, rendering, locale URLs and auth/mail-link transition test
 the local `/app` transition is now implemented without changing hosted routes,
 cookie/origin policy or release gates.
 
-Required global shell: skip link, home/events, language, authenticated workspace
-entry, account/profile/logout, main landmark and consistent help/contact location.
-Auth shell retains home, language and selected-event context without unrelated
-management navigation. One page H1, meaningful translated document title, then
-context/status, primary action, work content and secondary/history content.
+Required global shell elements are a skip link, contextual landing via wordmark,
+language and appearance preferences, authorized workspace entry, account/profile
+actions, main landmark and consistent help/contact location. The auth shell
+keeps locale, appearance and any verified return context. Each page has one
+H1, a translated document title, immediate context/status, the primary action,
+and secondary/history content after the work.
 
-Proposed workspaces use an event selector and role navigation; representative
-views also show studio. Admin: Overview → Setup → Applications → Entries/review →
-Staff → Schedule → Results. Representative: Applications → Studio → Dancers →
-Performances/music → Review/receipt. Judge: assignment/current sheet and own
-submission status. Moderator: selected stage queue/completion/recovery.
+Proposed workspaces use an event selector and task navigation. Organizer event
+work includes Overview, Setup, Applications, Entries, Staff, Schedule, Scoring,
+Live and private Results. Representative views also show studio and group
+Application, Dancers, Entries, Music and Review. Judge and moderator landings
+follow actual assignments. Their workspaces lead with the current sheet or stage.
 Only show delivered, authorized destinations. Do not render dead navigation for
 future features. On a direct forbidden URL show an actionable denied page rather
 than quietly returning home; inaccessible/missing IDs retain API privacy behavior.
@@ -147,14 +151,14 @@ parameters must be encoded. Keep canonical existing auth URLs and `/login` alias
 | S04 | `/auth/profile` | Identity read-only; explicit account/email language save/clear |
 | S05 | `/admin`, `/events/new`, `/events/:id/edit`, `/admin/events/:eventId/setup` | Setup/checklist/lifecycle/editor plus separate pending review counts/queue links delivered locally |
 | S06 | `/admin/events/:eventId/applications` | Independent decisions/history/notification states plus day-count estimate review and reasoned correction |
-| S07 | `/applications`; `/representative` | Role-independent application home delivered; representative entry console remains placeholder |
+| S07 | `/applications`; `/representative` | Both routes use the application landing. Consolidate the entry points in the redesign. |
 | S08 | `/events/:id/register`, `/events/:id/studio?studio=:studioId`; P `/studios/:studioId` | Application/status/profile/contact and revisioned event-day estimates delivered; standalone studio route remains proposed |
 | S09 | `/studios/:studioId/dancers` | Local roster/editor/archive, P5-ENTRIES |
 | S10 | `/events/:eventId/studios/:studioId/performances`, nested `/new`, `/:performanceId/edit` | Local nullable unscheduled draft/participant editor, P5-ENTRIES |
 | S11 | `/app/events/:eventId/studios/:studioId/music` | P5-MUSIC; S08 preparation and S10 `?performance=` child |
-| S12 | I `/admin/events/:eventId/performances`; P `/events/:id/studios/:studioId/review` | Organizer ownership/history/draft/details/configuration/checkpoint review/withdraw/restore delivered locally; representative checklist remains P5-SUBMISSION |
-| S13 | `/admin/events/:eventId/schedule` | Local P6-SCHEDULE ledger at the `/app` base; venue/human release gates remain open |
-| S14 | `/moderator`; P `/moderator/events/:id/live` | Placeholder; P6-MODERATOR |
+| S12 | `/admin/events/:eventId/performances`; `/events/:eventId/studios/:studioId/performances` | Organizer register and representative checkpoints are delivered locally, each within its workbench. |
+| S13 | `/admin/events/:eventId/schedule`, `/admin/events/:eventId/scoring` | Schedule and scoring setup at the `/app` base. Venue and human review remain open. |
+| S14 | `/moderator`, `/moderator/events/:eventId/live`, `/admin/events/:eventId/live` | Moderator and organizer live consoles are delivered locally. The redesign distinguishes assignment landing from organizer event access. |
 | S15 | `/app/judge`, `/app/judge/events/:eventId/score` | P6-JUDGE with local ADR-031 judge reconnect; venue rehearsal remains open |
 | S16 | `/app/admin/events/:eventId/results` organizer review; public route pending | P7-CALCULATE and private finalization; P7-PUBLISH retains the public gate |
 | S17 | I `/auth/accept-invitation`, `/admin/invitations`, `/admin/events/:eventId/staff`; P `/studios/:studioId/representatives` | P2-INVITE/P4-STAFF/P5-MEMBERS |

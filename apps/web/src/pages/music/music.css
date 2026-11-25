@@ -11,7 +11,7 @@
 .music-policy summary:hover { color: var(--color-accent); }
 .music-policy summary:active { color: var(--color-ink); }
 .music-policy fieldset { min-width: 0; }
-.music-track { margin-block: var(--space-xl); }
+.music-track { margin-block: var(--space-xl); padding: var(--space-md); border: 1px solid var(--color-rule-2); border-radius: var(--radius-card); background: var(--color-surface-muted); }
 .music-ledger { margin-block: var(--space-lg); }
 .music-ledger > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-md); padding-block: var(--space-sm); border-bottom: 1px solid var(--color-rule-2); }
 .music-ledger dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }

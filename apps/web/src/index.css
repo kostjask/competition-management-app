@@ -1,52 +1,70 @@
+/* Hallmark · Material Studio workspace foundation · v2.0.0 */
+/* Hallmark · critique: one action hierarchy across the workspace, with focus following input modality. */
 @import "tailwindcss";
 
 @theme {
-  --color-canvas: #f8fafc;
-  --color-surface: #fff;
-  --color-surface-muted: #f1f5f9;
-  --color-ink: #0f172a;
-  --color-ink-secondary: #475569;
-  --color-border-subtle: #cbd5e1;
-  --color-border-control: #64748b;
-  --color-action: #1d4ed8;
-  --color-action-hover: #1e40af;
-  --color-focus: #1d4ed8;
+  --font-workspace: system-ui, "Segoe UI", sans-serif;
+  --color-canvas: #f7f6f2;
+  --color-surface: #fffdf8;
+  --color-surface-muted: #eeece4;
+  --color-ink: #202322;
+  --color-ink-secondary: #525956;
+  --color-border-subtle: #d7d6cf;
+  --color-border-control: #707871;
+  --color-action: #254c65;
+  --color-action-hover: #193c53;
+  --color-on-action: #fffdfa;
+  --color-action-tonal: #dce8ee;
+  --color-on-action-tonal: #23445a;
+  --color-focus: #175985;
   --color-success-ink: #166534;
   --color-success-surface: #f0fdf4;
   --color-warning-ink: #92400e;
   --color-warning-surface: #fffbeb;
   --color-danger: #b91c1c;
+  --color-on-danger: #fffafa;
   --color-danger-surface: #fef2f2;
   --color-info-ink: #075985;
   --color-info-surface: #f0f9ff;
   --color-neutral-ink: #334155;
-  --color-overlay: rgba(15, 23, 42, .45);
+  --color-overlay: rgba(25, 25, 42, .52);
+  --radius-control: .5rem;
+  --radius-panel: .75rem;
+  --radius-action: .5rem;
 }
 
 @layer components {
-  .ui-fixture { max-width: 75rem; margin: auto; padding: clamp(1rem, 3vw, 2.5rem); font: 1rem/1.5 system-ui, "Segoe UI", sans-serif; color: var(--color-ink); overflow-wrap: anywhere; }
+  .ui-fixture { max-width: 75rem; margin: auto; padding: clamp(1rem, 3vw, 2.5rem); font: 1rem/1.5 var(--font-workspace); color: var(--color-ink); overflow-wrap: anywhere; }
   .ui-fixture h1 { font-size: clamp(1.5rem, 4vw, 2rem); font-weight: 700; margin-block: 1rem; }
   .ui-fixture h2 { font-size: 1.25rem; font-weight: 600; }
+  .ui-fixture :is(h1, h2) { text-wrap: balance; }
   .ui-fixture p { margin-block: .75rem; }
   .ui-fixture [role="group"] button { min-height: 2.75rem; min-width: 2.75rem; font-size: .875rem; }
   .ui-fixture-grid { display: grid; gap: 1.5rem; margin-top: 1.5rem; }
-  .ui-panel { min-width: 0; padding: clamp(1rem, 2vw, 1.5rem); border: 1px solid var(--color-border-subtle); border-radius: .75rem; background: var(--color-surface); }
+  .ui-panel { min-width: 0; padding: clamp(1rem, 2vw, 1.5rem); border: 1px solid var(--color-border-subtle); border-radius: var(--radius-panel); background: var(--color-surface); }
   .ui-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; margin-block: 1rem; }
-  .ui-button { display: inline-flex; justify-content: center; align-items: center; min-height: 2.75rem; max-width: 100%; padding: .625rem 1rem; border: 1px solid transparent; border-radius: .375rem; font: inherit; font-weight: 600; line-height: 1.5; white-space: normal; cursor: pointer; }
-  .ui-button-primary { background: var(--color-action); color: var(--color-surface); }
-  .ui-button-primary:hover:not(:disabled) { background: var(--color-action-hover); }
-  .ui-button-secondary { background: var(--color-surface); color: var(--color-action); border-color: var(--color-border-control); }
-  .ui-button-quiet { background: transparent; color: var(--color-action); text-decoration: underline; }
-  .ui-button-danger { background: var(--color-danger); color: var(--color-surface); }
+  .ui-button { display: inline-flex; justify-content: center; align-items: center; min-height: 2.75rem; max-width: 100%; padding: .5rem 1rem; border: 1px solid transparent; border-radius: var(--radius-action); font: inherit; font-weight: 650; line-height: 1.4; white-space: normal; text-align: center; text-decoration: none; cursor: pointer; }
+  .ui-button-primary { background: var(--color-action); color: var(--color-on-action); }
+  .ui-button-tonal { background: var(--color-action-tonal); color: var(--color-on-action-tonal); }
+  .ui-button-secondary { background: transparent; color: var(--color-action); border-color: var(--color-border-control); }
+  .ui-button-quiet { background: transparent; color: var(--color-action); }
+  .ui-button-danger { background: var(--color-danger); color: var(--color-on-danger); }
+  .ui-button:hover:not(:disabled) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 8%, transparent); }
+  .ui-button:active:not(:disabled) { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 15%, transparent); }
   .ui-button:disabled { background: var(--color-surface-muted); color: var(--color-ink-secondary); border-color: var(--color-border-control); cursor: not-allowed; }
   .ui-button:focus-visible, .ui-input:focus-visible, .ui-error-summary:focus, .ui-fixture a:focus-visible, .ui-fixture button:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; box-shadow: 0 0 0 3px var(--color-surface); }
   .ui-field { margin-block: 1rem; }
-  .ui-field label { display: block; font-weight: 600; }
-  .ui-input { display: block; min-height: 2.75rem; width: 100%; min-width: 0; padding: .625rem .75rem; border: 1px solid var(--color-border-control); border-radius: .375rem; color: var(--color-ink); background: var(--color-surface); font: inherit; }
+  .ui-field label { display: block; margin-block-end: .375rem; font-weight: 600; }
+  .ui-field .ui-help { margin-block-end: .375rem; }
+  .ui-input { display: block; min-height: 2.75rem; width: 100%; min-width: 0; padding: .625rem .75rem; border: 1px solid var(--color-border-control); border-radius: var(--radius-control); color: var(--color-ink); background: var(--color-surface); font: inherit; }
   .ui-input[aria-invalid="true"] { border: 2px solid var(--color-danger); }
+  .ui-password { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+  .ui-password .ui-input { grid-area: 1 / 1 / 2 / 3; min-height: 3.25rem; padding-inline-end: 7rem; }
+  .ui-password-toggle { grid-area: 1 / 2; align-self: stretch; z-index: 1; margin: .25rem; padding-inline: .75rem; border-radius: var(--radius-control); color: var(--color-action); cursor: pointer; }
+  .ui-password-toggle:hover { background: var(--color-action-tonal); color: var(--color-on-action-tonal); }
   .ui-help { color: var(--color-ink-secondary); font-size: .875rem; }
   .ui-field-error { color: var(--color-danger); }
-  .ui-alert { border: 1px solid currentColor; padding: .875rem 1rem; border-radius: .375rem; margin-block: 1rem; }
+  .ui-alert { border: 1px solid currentColor; padding: .875rem 1rem; border-radius: var(--radius-control); margin-block: 1rem; }
   .ui-alert a { text-decoration: underline; }
   .ui-badge { display: inline-block; padding: .25rem .625rem; border: 1px solid currentColor; border-radius: 1rem; font-size: .875rem; font-weight: 600; }
   .ui-tone-neutral { color: var(--color-neutral-ink); background: var(--color-surface-muted); }
@@ -54,7 +72,7 @@
   .ui-tone-success { color: var(--color-success-ink); background: var(--color-success-surface); }
   .ui-tone-warning { color: var(--color-warning-ink); background: var(--color-warning-surface); }
   .ui-tone-danger { color: var(--color-danger); background: var(--color-danger-surface); }
-  .ui-state { padding: 1rem; margin-block: 1rem; background: var(--color-surface-muted); border-radius: .375rem; }
+  .ui-state { padding: 1rem; margin-block: 1rem; background: var(--color-surface-muted); border-radius: var(--radius-panel); }
   .ui-loading-mark { display: inline-block; width: .75rem; height: .75rem; border-radius: 50%; background: var(--color-action); margin-inline-end: .75rem; }
   @media (min-width: 64rem) { .ui-fixture-grid { grid-template-columns: 1fr 1fr; } }
 }
@@ -67,14 +85,16 @@ html, body { overflow-x: clip; }
 
 body {
   margin: 0;
-  font-family: "Sora", "Segoe UI", sans-serif;
-  background: #f9fafb;
-  color: #111827;
+  font-family: var(--font-workspace);
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
-a:focus-visible, button:focus-visible, h1:focus, main:focus { outline: 3px solid var(--color-focus); outline-offset: 3px; }
-dialog { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; }
+:where(a, button, input, select, textarea, summary, h1, main):focus-visible { outline: 3px solid var(--color-focus); outline-offset: 3px; }
+.ui-field :is(input, select, textarea).ui-input:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; box-shadow: none; }
+dialog { margin: auto; max-height: calc(100dvh - 2rem); overflow-y: auto; color: var(--color-ink); background: var(--color-surface); }
+@media print { :root { color-scheme: light !important; } }
 
 .font-display {
-  font-family: "Fraunces", "Times New Roman", serif;
+  font-family: var(--font-workspace);
 }

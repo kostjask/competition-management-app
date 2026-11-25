@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { getTranslation } from "../../apps/web/src/i18n/translations";
 import type { UserProfile } from "../../packages/schemas/src/auth.schema";
 type TextKey = "Flow.signup" | "Flow.checkEmail" | "Flow.unconfirmed" | "Flow.onboarding" | "Flow.resume" | "Flow.save" | "Flow.saved" | "Flow.cancel" | "Flow.cancelled" | "Flow.wrongAccount" | "Shell.logout" | "Shell.email" | "Shell.password" | "Shell.login" | "Flow.invitation" | "Flow.accepted" | "Flow.send" | "Flow.reset" | "Flow.terminal";
@@ -22,7 +23,7 @@ for(const locale of ["et","en","ru"] as const) for(const width of [320,390,768,1
     });
     await page.goto("/app/auth/register?eventId=e");
     await page.getByRole("button",{name:t("Flow.signup"),exact:true}).click();await expect(page.getByRole("alert")).toBeVisible();
-    await page.locator("#signup-name").fill(owner.name!);await page.getByRole("button",{name:"English",exact:true}).click();await expect(page.locator("#signup-name")).toHaveValue(owner.name!);await page.locator("button[lang=\""+locale+"\"]").click();await page.locator("#signup-email").fill(owner.email);await page.locator("#signup-password").fill("password123");
+    await page.locator("#signup-name").fill(owner.name!);await chooseWorkspaceLanguage(page,"en");await expect(page.locator("#signup-name")).toHaveValue(owner.name!);await chooseWorkspaceLanguage(page,locale);await page.locator("#signup-email").fill(owner.email);await page.locator("#signup-password").fill("password123");
     for(const [key,value] of Object.entries(details))await page.locator("#signup-"+key).fill(value);
     await page.getByRole("button",{name:t("Flow.signup"),exact:true}).click();await expect(page.getByRole("heading",{name:t("Flow.checkEmail")})).toBeVisible();
     await expect(page.getByRole("status")).toContainText(t("Flow.unconfirmed"));

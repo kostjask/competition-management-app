@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { randomUUID } from "node:crypto";
 import { CmsPayloadSchema, CmsIndexSchema, CmsEditionCreateSchema, emptyCmsPayload, cmsReadiness, cmsText, type CmsDocument, type CmsPayload, type CmsPublic, type UserProfile } from "../../packages/schemas/src/index";
 import { contentTranslations, type ContentKey } from "../../apps/web/src/i18n/contentTranslations";
@@ -89,7 +90,7 @@ test("S20 mounted session recovery requires receipt check and explicit same-oper
 });
 test("S20 collections use stable identities and language changes retain edits", async ({page}) => {
   const state = await install(page); await page.goto("/app/content/studio?section=teachers"); await page.getByRole("button",{name:label("add")+" "+label("teachers"),exact:true}).click(); await page.locator('[id="cms-teachers.0.name"]').fill("Synthetic teacher");
-  await page.getByRole("button",{name:"Русский",exact:true}).click(); await expect(page.locator('[id="cms-teachers.0.name"]')).toHaveValue("Synthetic teacher");
+  await chooseWorkspaceLanguage(page, "ru"); await expect(page.locator('[id="cms-teachers.0.name"]')).toHaveValue("Synthetic teacher");
   await page.getByRole("button",{name:label("save","ru"),exact:true}).click(); await expect(page.getByText(label("saved","ru"),{exact:true})).toBeVisible(); const payload = CmsPayloadSchema.parse(state.writes[0]?.payload); expect(payload.kind).toBe("STUDIO_SITE"); if (payload.kind === "STUDIO_SITE") expect(payload.teachers[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
 });
 
@@ -145,6 +146,7 @@ for (const outcome of ["success", "failure"] as const) test(`S20 delayed preview
   await expect(page.locator("#cms-title-sourceText")).toHaveValue("Stuudio");
   await page.getByRole("button", { name: label("preview"), exact: true }).click();
   await requested;
+  await page.getByRole("button", { name: getTranslation("Shell.menu", "en"), exact: true }).click();
   await page.getByRole("navigation", { name: getTranslation("Shell.navigation", "en") }).getByRole("link", { name: label("festivals"), exact: true }).click();
   await expect(page).toHaveURL(/\/content\/festivals$/);
   await expect(page.locator("#cms-title-sourceText")).toHaveValue("Festival portal");
@@ -197,7 +199,13 @@ test("S20 festival copy selection and canonical edition facts stay separate", as
   await page.screenshot({ path: info.outputPath("content-edition-canonical-768.png"), fullPage: true });
 });
 test("S20 ordinary users receive denied navigation and no CMS requests", async ({page}) => {
-  const state = await install(page); state.admin = false; await page.goto("/app/content/studio"); await expect(page.getByRole("heading",{name:getTranslation("Access.denied","en"),exact:true})).toBeVisible(); await expect(page.getByRole("link",{name:label("studio"),exact:true})).toHaveCount(0); expect(state.writes).toHaveLength(0);
+  const state = await install(page);
+  state.admin = false;
+  await page.goto("/app/content/studio");
+  await expect(page.getByRole("heading", { name: getTranslation("Access.denied", "en"), exact: true })).toBeVisible();
+  await page.getByRole("button", { name: getTranslation("Shell.menu", "en"), exact: true }).click();
+  await expect(page.getByRole("navigation", { name: getTranslation("Shell.navigation", "en") }).getByRole("link", { name: label("studio"), exact: true })).toHaveCount(0);
+  expect(state.writes).toHaveLength(0);
 });
 test("S20 validation summary focuses the exact field and leaves it in keyboard order",async({page})=>{
   const state=await install(page); await page.goto('/app/content/studio?section=teachers'); await page.getByRole('button',{name:label('add')+' '+label('teachers'),exact:true}).click();

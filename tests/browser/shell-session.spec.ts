@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import type { UserProfile } from "../../packages/schemas/src/auth.schema";
 import { getTranslation } from "../../apps/web/src/i18n/translations";
 
@@ -29,12 +30,34 @@ for (const locale of ["et","en","ru"] as const) for (const width of [320,390,768
     await expect(page.locator("#account-disclosure")).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({path:info.outputPath("profile.png"),fullPage:true});
-    await page.getByRole("link",{name:text("Shell.events"),exact:true}).click();
-    await expect(page.getByRole("heading",{name:getTranslation("Events.listTitle",locale),exact:true})).toBeVisible();
+    const nav = page.getByRole("navigation", { name: getTranslation("Shell.navigation", locale), exact: true });
+    const events = nav.getByRole("link", { name: text("Shell.events"), exact: true });
+    const menu = page.getByRole("button", { name: getTranslation("Shell.menu", locale), exact: true });
+    if (width < 704) {
+      await expect(nav).toBeHidden();
+      await menu.click();
+      await expect(menu).toHaveAttribute("aria-expanded", "true");
+      await events.focus();
+      await page.keyboard.press("Escape");
+      await expect(menu).toBeFocused();
+      await expect(nav).toBeHidden();
+      await menu.click();
+      await page.screenshot({path:info.outputPath("navigation.png"),fullPage:true});
+    }
+    await events.click();
+    const eventsHeading = page.getByRole("heading",{name:getTranslation("Events.listTitle",locale),exact:true});
+    await expect(eventsHeading).toBeFocused();
+    await expect(eventsHeading).toHaveCSS("outline-style", "none");
+    if (width < 704) {
+      await expect(nav).toBeHidden();
+      await menu.click();
+    }
+    await expect(events).toHaveAttribute("aria-current", "page");
     await expect(page.getByText(getTranslation("Events.createFirstEvent",locale),{exact:true})).toHaveCount(0);
     await page.goto("/app/events/new"); await expect(page.getByRole("heading",{name:text("Access.denied")})).toBeVisible();
     await page.goto("/app/not-a-page"); await expect(page.getByRole("heading",{name:text("Shell.notFound")})).toBeFocused();
     await page.getByRole("link",{name:text("Shell.skip"),exact:true}).focus(); await page.keyboard.press("Enter"); await expect(page.locator("main")).toBeFocused();
+    await expect(page.locator("main")).toHaveCSS("outline-style", "solid");
     user = {...user,roles:[],permissions:[]}; await page.goto("/app"); await expect(page.getByText(text("Shell.noRoles"),{exact:true})).toBeVisible();
     await expect(page.getByRole("link",{name:text("Shell.judge"),exact:true})).toHaveCount(0);
   });
@@ -82,6 +105,56 @@ test("guest events explain sign-in and unsafe return paths fall back to home", a
   await page.getByLabel("Email",{exact:true}).fill(user.email); await page.getByLabel("Password",{exact:true}).fill("password123");
   await page.getByRole("button",{name:"Sign in",exact:true}).click(); await expect(page).toHaveURL("/app");
 });
+
+test("representative sign-in falls back from an organizer return without granting organizer access", async ({page}) => {
+  let authenticated = false;
+  const user: UserProfile = {
+    ...profile(),
+    roles: [{ id: "rep", eventId: null, role: { id: "role", key: "representative", name: "Studio representative" }, event: null }],
+    permissions: [],
+  };
+  await page.addInitScript(() => localStorage.setItem("app-language", "en"));
+  await page.route("**/api/v1/**", route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/auth/login")) {
+      authenticated = true;
+      return route.fulfill({ json: { session: "cookie", expiresAt: "2027-06-01T00:00:00.000Z", user: { id: user.id, email: user.email, name: user.name } } });
+    }
+    if (!authenticated) return route.fulfill({ status: 401, json: denial });
+    return route.fulfill({ json: path.endsWith("/auth/profile") ? user : [] });
+  });
+  await page.goto("/app/admin");
+  await expect(page).toHaveURL(/\/auth\/login\?returnTo=/);
+  await page.getByLabel("Email", { exact: true }).fill(user.email);
+  await page.getByLabel("Password", { exact: true }).fill("password123");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL("/app/applications");
+  await expect(page.getByRole("heading", { name: "My applications", exact: true })).toBeFocused();
+
+  await page.goto("/app/auth/login");
+  await expect(page).toHaveURL("/app/applications");
+  await page.goto("/app/admin");
+  await expect(page.getByRole("heading", { name: "Access denied", exact: true })).toBeVisible();
+});
+
+test("a failed sign-in leaves the form mounted and explains the failure", async ({page}, info) => {
+  await page.setViewportSize({ width: 390, height: 850 });
+  await page.addInitScript(() => localStorage.setItem("app-language", "en"));
+  await page.route("**/api/v1/**", route => route.fulfill({
+    status: 401,
+    json: route.request().url().endsWith("/auth/login") ? { ...denial, reason: "invalidCredentials" } : denial,
+  }));
+  await page.goto("/app/auth/login");
+  const email = page.getByLabel("Email", { exact: true });
+  await email.fill("representative@example.invalid");
+  await page.getByLabel("Password", { exact: true }).fill("synthetic-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page.getByText("Could not sign in", { exact: true })).toBeVisible();
+  await expect(email).toHaveValue("representative@example.invalid");
+  await expect(page.getByRole("button", { name: "Sign in", exact: true })).toBeEnabled();
+  await page.screenshot({ path: info.outputPath("sign-in-retry.png"), fullPage: true });
+});
+
 test("verification strips secrets and continues explicitly with safe cross-tab fallback", async ({page,context}) => {
   let authenticated = false; let verifications=0; const user=profile();
   let release = () => {}; const bootstrap = new Promise<void>(resolve => { release = resolve; });
@@ -106,13 +179,26 @@ test("verification strips secrets and continues explicitly with safe cross-tab f
   await expect(other.getByRole("button",{name:"Account",exact:true})).toBeVisible(); await other.close();
 });
 
-test("event context links to the delivered application and keeps missing/denied reads explicit", async ({page}) => {
+test("event discovery leads to the application and keeps missing/denied reads explicit", async ({page}) => {
   const user = profile(); let status = 200;
   await page.addInitScript(() => localStorage.setItem("app-language","en"));
-  const event = { id:"a",name:"Synthetic selected event",startsAt:"2026-11-05T10:00:00.000Z",endsAt:"2026-11-05T12:00:00.000Z",timeZone:"UTC",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:null,country:null,city:null,description:null,unclassifiedDescription:null,organizerEmail:null,organizerPhone:null,revision:1,maxStudios:null,maxPerformances:null,imageUrl:null };
-  await page.route("**/api/v1/**", route => route.fulfill(route.request().url().endsWith("/auth/profile") ? {json:user} : status === 200 ? {json:event} : {status,json:{...denial,reason:status===404?"recordNotFound":"permissionDenied"}}));
-  await page.goto("/app/events/a"); await expect(page.getByRole("heading",{name:event.name,exact:true})).toBeFocused();
-  await expect(page.getByText("Selected event: "+event.name,{exact:true})).toBeVisible();
+  const event = { id:"a",name:"Synthetic selected event",startsAt:"2026-11-05T22:30:00.000Z",endsAt:"2026-11-07T12:00:00.000Z",timeZone:"Europe/Tallinn",registrationDeadline:null,createdAt:"2026-01-01T00:00:00.000Z",stage:"REGISTRATION_OPEN",venue:"Test hall",country:"Estonia",city:"Tallinn",description:null,unclassifiedDescription:null,organizerEmail:null,organizerPhone:null,revision:1,maxStudios:null,maxPerformances:null,imageUrl:null };
+  await page.route("**/api/v1/**", route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/auth/profile")) return route.fulfill({json:user});
+    if (path.endsWith("/events")) return route.fulfill({json:[event]});
+    return route.fulfill(status === 200 ? {json:event} : {status,json:{...denial,reason:status===404?"recordNotFound":"permissionDenied"}});
+  });
+  await page.goto("/app/events");
+  await expect(page.getByText(/6[\s–-]+7 November 2026/)).toBeVisible();
+  await expect(page.getByText("Test hall", {exact:true})).toBeVisible();
+  await expect(page.getByText(getTranslation("Setup.authenticated", "en"), {exact:true})).toHaveCount(0);
+  await page.getByRole("link", {name:`More info: ${event.name}`, exact:true}).click();
+  await expect(page.getByRole("heading",{name:event.name,exact:true})).toBeFocused();
+  await expect(page.getByText(/6[\s–-]+7 November 2026/)).toBeVisible();
+  await expect(page.getByText("Selected event: "+event.name,{exact:true})).toHaveCount(0);
+  await expect(page.getByText(getTranslation("Setup.timeZone", "en"), {exact:true})).toHaveCount(0);
+  await expect(page.getByText("Organizer contact", {exact:true})).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Open application", exact: true })).toHaveAttribute("href", "/app/events/a/register");
   status=404; await page.reload(); await expect(page.getByRole("heading",{name:"Page not found",exact:true})).toBeVisible();
   status=403; await page.reload(); await expect(page.getByRole("heading",{name:"Access denied",exact:true})).toBeVisible();
@@ -143,7 +229,7 @@ test("login retains input through locale changes and follows a safe event return
   });
   await page.goto("/app/auth/login?returnTo="+encodeURIComponent("/events"));
   await page.getByLabel("Email",{exact:true}).fill(user.email); await page.getByLabel("Password",{exact:true}).fill("password123");
-  await page.getByRole("button",{name:"Eesti",exact:true}).click();
+  await chooseWorkspaceLanguage(page, "et");
   await expect(page.getByLabel(getTranslation("Shell.email","et"),{exact:true})).toHaveValue(user.email);
   await expect(page.getByLabel(getTranslation("Shell.password","et"),{exact:true})).toHaveValue("password123");
   await page.getByRole("button",{name:getTranslation("Shell.login","et"),exact:true}).click(); await expect(page).toHaveURL("/app/events");

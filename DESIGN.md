@@ -1,11 +1,78 @@
 ﻿# Design: Dance competition operations
 
+## Selected direction
+
+### Implementation pilot
+
+The private workspace now uses a compact top bar with assignment-based
+navigation, quiet language and appearance disclosures, warm neutral Day
+surfaces, and 8px Material action corners. Night darkens the document and
+workspace surfaces with warm stage colors. The sign-in form places password
+visibility in the field and keeps recovery adjacent to the form.
+
+The header shows the current language by name. Appearance explains
+**Venue-aware** and **Match device** in the disclosure, with a check for the
+selected preference. Language, Appearance and Account use the same quiet
+trigger style.
+
+The working organizer routes use a shared rail for all nine event destinations.
+At narrow widths it becomes a Manage event disclosure with the current section
+visible. The top bar handles app-wide navigation. The organizer overview
+promotes the next action for the event stage and keeps the applicant form available.
+
+The live console pairs current and next performance with the queue controls.
+Later performances are available in a disclosure. The judge sheet keeps the
+current performance, save status and first score together and gives optional
+comments their own disclosure. Recovery instructions stay near the affected
+controls and the live handoff prints on a light surface.
+
+### Previous implementation
+
+On 2026-11-25 the user chose Material Studio as the base with parts of
+Backstage, then rejected the rendered implementation. The
+[app-wide UX audit](docs/UX_REDESIGN_PLAN.md) sets the proposed corrections.
+The local baseline uses light indigo surfaces, a desktop organizer rail,
+and filled, tonal, outlined and text actions. Mobile navigation keeps the
+compact disclosure. A system sans-serif stack covers Latin and Cyrillic.
+
+The live console and judge sheet use charcoal surfaces, amber actions and a
+prominent current-performance identity. Queue, completion and connection
+states keep separate text labels. The printable stage handoff uses light
+paper styles. The public studio site uses the light palette. Festival
+homepages use a dark opening when the edition has published artwork.
+
+The [web foundation](apps/web/src/index.css) defines the shared controls.
+The [workspace CSS](apps/web/src/components/layouts/workspace.css) owns layout.
+The [stage colors](apps/web/src/components/layouts/workspace-tokens.css) now
+map to the workspace Night setting. [Public styles](packages/public-site/src/site.css)
+carry the earlier action hierarchy into the server-rendered pages.
+
+## Prior implementation baseline
+
 Implementation baseline for the P4-CORE organizer/event slice, selected with
 Hallmark on 2026-11-10. This establishes a reusable direction; it is not human
 visual approval or completion of P9-UI-REDESIGN. The required scope and functional
 constraints remain in [the design system](docs/DESIGN_SYSTEM.md).
 
-## System
+### Initial event discovery and shell pass
+
+The first P9-UI-REDESIGN slice (2026-11-24) uses Hallmark's Broadside direction
+for S01/S02. A warm paper surface, ink rules and a restrained vermilion action
+frame an event notice with its name, dates and location together. Serif titles
+use the local Georgia stack. Controls and body text use the application stack.
+The detail page puts application availability, deadline and action together.
+Exact times and organizer contact can be opened when needed. Event artwork uses
+the image configured by the organizer when present.
+
+The shared shell, Home, sign-in and account profile now use the same paper, ink
+and action tokens. The wordmark and account tools occupy the top row, with
+authorized destinations grouped below. The phone menu collapses into a keyboard
+operable disclosure. Sign-in puts account help beside the form on desktop and
+below it on phones. The profile groups identity, access and language settings.
+Other workflows still use the Cobalt layouts described below while their
+replacement screens are developed.
+
+### Cobalt system
 
 - Genre: modern-minimal. Shape: app screens, no marketing hero.
 - Theme: Cobalt, selected from the three-theme Hallmark deal after inspecting its
@@ -18,7 +85,7 @@ constraints remain in [the design system](docs/DESIGN_SYSTEM.md).
   regions on phones. Event discovery uses a date/name/action index; event details
   use a fact sheet with a real image only when available.
 
-## Tokens and controls
+### Tokens and controls
 
 P6-TEMPLATES extends this system to an ordered rubric ledger with immutable
 versions, exact range/step/weight inputs, native locale disclosures, category
@@ -37,14 +104,14 @@ Controls have a 44px minimum hit area, 6px fallback corners, a restrained key ed
 instant focus rings, native disabled states and acknowledged inline outcomes.
 Required boundaries maintain 3:1 contrast and text maintains 4.5:1.
 
-## Motion and content
+### Motion and content
 
 Motion is limited to short control feedback and is removed for reduced motion.
 No decorative animation, invented statistics, logo, stock photo or proof is used.
 Authored descriptions use explicit source language and labeled fallback, with
 plain-text rendering and actual HTML lang. UI copy remains ET/EN/RU.
 
-## Adoption
+### Adoption
 
 S16 uses the Cobalt system for a private ranking table and completeness review.
 Native URL-selected group and revision controls share one responsive ledger.

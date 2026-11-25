@@ -1,12 +1,86 @@
 # Development checkpoint
 
-Updated: 2026-11-23. This file owns current priority, state summary and release
+Updated: 2026-11-25. This file owns current priority, state summary and release
 gates. [Product scope](docs/PRODUCT_SCOPE.md) owns audiences/features; roadmaps own
 task checkboxes. [The map](docs/README.md) routes selected work to its docs/source.
 
 ## Next action
 
-**Next task: P6-RECOVERY venue rehearsal.** Use the [live rehearsal runbook](docs/LIVE_REHEARSAL.md)
+**Active task: full app redesign (P9-UI-REDESIGN).** The user rejected the
+rendered Material Studio and Backstage implementation. The
+[app-wide UX audit and redesign plan](docs/UX_REDESIGN_PLAN.md) records
+source and rendered findings, control decisions and acceptance by role.
+Keep the Material action hierarchy and reduce the corner radius. The redesign
+must address role and event navigation, task hierarchy and complete Day and Night modes.
+
+The first implementation pass is locally available. The development-only
+`/app/__fixtures/redesign` exercises organizer event-to-Live, applicant-to-next-task,
+and judge sign-in-to-score with sample data. The working app has a compact header,
+assignment-based staff destinations, application landing, shared control and
+sign-in improvements, and persisted Day/Night/System with a venue-aware default.
+The two final focused Chromium runs passed 100 scenarios. They include the
+appearance check before React mounts, localized screen checks from 320 to
+1920px, and retained scoring, queue and submission recovery. Day and Night
+contrast tests, workspace tests, typecheck, lint and build passed. The local
+API accepted an organizer sign-in and the organizer-only navigation showed
+no Moderator destination. Hallmark's static sweep reported no floor or reflex
+failures. Its renderer lacked Puppeteer, so rendered review used Playwright.
+
+Header feedback replaced the native language and appearance controls with
+compact disclosures and gave Account the same trigger style. The current
+language stays visible, and Venue-aware and Match device explain their
+behavior. Keyboard focus stays in the header when delayed page content loads.
+The focused Chromium checks passed in ET, EN and RU at 320, 390 and 1440 px
+with Day and Night captures. The follow-up run passed 34 shell, form and
+language regression scenarios.
+
+The working app now has the full organizer event rail, a stage-specific overview
+action, and more compact moderator and judge screens. Live links return signed-out
+operators to the selected stage after sign-in. The 255-case Chromium run passed
+248 initially. All 21 focused cases passed after the final changes, including the
+seven initial failures and the new stage-specific overview check. The checks cover
+ET/EN/RU, Day and Night, keyboard navigation, exact sign-in return and discarded
+navigation with drafts intact. Workspace tests, typecheck, lint and build passed.
+User acceptance and physical venue rehearsal remain open.
+
+**Next action.** Redesign application review and the studio's next-task journey,
+including approval, correction and return to drafts. Compare the organizer and
+studio flows at phone and desktop widths in Day and Night. Current-session sign-out
+remains an ADR decision. Use the [redesign queue](docs/roadmap/operations.md#app-redesign-delivery-order)
+for acceptance.
+
+Local sign-in returned HTTP 500 while the development PostgreSQL service was
+down. Starting Docker Desktop restored the existing database. Verified API
+health and real organizer sign-in through the local Vite preview. Two focused
+UX runs passed 50 and 63 Chromium scenarios across the current workflows.
+The redesign remains open. Target main matches local main at `8635ad4`, and
+the GitHub open-PR query returned none.
+
+Earlier Material Studio and Backstage rollout evidence covered all 490 Chromium scenarios
+across the broad run and a focused rerun. The broad run passed 475 cases. The
+one-worker rerun passed all 16 foundation and discovery cases after updating
+the old button-color assertion. It included the three timed-out discovery cases
+and the closed-application label check. Rendered festival artwork checks passed
+in ET/EN/RU at 320–1920 px. Workspace tests, typecheck, lint, build and Prisma
+generation, validation and format checks passed. Documentation checks pass
+with ignored Hallmark scratch files excluded. Cached main and origin/main match
+at `8635ad4`. Remote freshness and open PRs could not be verified from this
+environment.
+
+The sign-in regression reproduced the organizer landing before the fix and now
+passes. The broader Chromium run passed 107 of 109 cases. Two CMS tests still
+used the old always-visible phone navigation. After updating them to open the
+menu, all 20 focused checks passed, including both CMS cases, sign-in, and
+ET/EN/RU views at 320–1440 px. Workspace tests, typecheck, lint, build and the
+Hallmark source sweep passed. Rendered review used Playwright captures.
+
+The discovery and shell/setup Chromium suites passed all 49 cases. The five
+discovery cases passed again after the focus and locality display changes, with
+ET/EN/RU captures at 320–1440 px. Workspace tests, typecheck, lint and build pass.
+Hallmark's source sweep passes. Its browser launch timed out, so the rendered
+review used Chromium captures from the repository tests.
+
+**Upcoming operational task: P6-RECOVERY venue rehearsal.** Use the [live rehearsal runbook](docs/LIVE_REHEARSAL.md)
 to name the stage lead and devices, confirm the rehearsal environment and contact
 method, and decide whether to approve a manual continuation procedure. Measure
 venue health and score/queue propagation, then rehearse F07–F09 with the intended
@@ -260,12 +334,24 @@ their dates; no hosted or application-database state is inferred.
   relations and immutable version/operation history. Migration 45 adds explicit
   music policy, correction windows, staging and immutable audit extensions. Migration 42's dancer
   receipts and earlier CMS/audit corrections remain intact.
-  The full API baseline passes with all 47. Last application-database evidence remains
-  2026-11-14 (1–39 applied, 40 pending); that database was not inspected or migrated
-  here. No current hosted success is inferred.
+  During the 2026-11-24 local walkthrough, an event setup save returned an
+  unconfirmed result and the database still held the previous details. The local
+  development database was at migration 39. Applied migrations 40–48 with
+  `pnpm db:migrate` and verified all 48 with `prisma migrate status`. The retry
+  succeeded. The saved event details advanced the revision once and recorded one
+  update audit entry.
 - The full Hallmark redesign direction remains active. Bounded Cobalt organizer
   work is recorded in [DESIGN](DESIGN.md); technical test completion is not human
   visual approval of either public site or the complete workspace.
+- During the 2026-11-24 local rehearsal walkthrough, the user found the organizer
+  workspace and event setup flow (S05) very unintuitive and called for a full UI
+  rebuild. [P9-UI-REDESIGN](docs/roadmap/operations.md#phase-9--expanded-quality-and-production-operations)
+  tracks the rebuild and the feedback on location, time zone, registration and
+  description controls, event artwork, save confirmation and the setup sidebar.
+  It also records that the studio representative saw “Access denied” immediately
+  after signing in and found the event list and detail pages unintuitive. The
+  discovery rebuild covers the application action, visible fields and local date
+  presentation. P9-UI-REDESIGN is the active implementation task.
 - External blockers remain intended-target assignment provenance, real staging
   inbox delivery, hosted CI/ingress/shared limits, deploy/rollback/restore,
   observability and delivered-scope human ET/EN/RU/assistive review. Public launches
@@ -330,9 +416,10 @@ complete by the replan. Select the first actionable unchecked task by default.
 | 8 | P6-LIVE-MODEL/P6-SCHEDULE with S13 and P6-SCORING-MODEL/TEMPLATES — complete locally | ADR-030/004 queues, exact scoring and organizer rubric/panel setup pass full local checks |
 | 9 | P6-JUDGE/S15 and judge-side P6-RECOVERY — complete locally | Own exact rubric and acknowledged scoring; ADR-031 owns read-first recovery |
 | 10 | P6-MODERATOR/S14 — complete locally | Scoped queue and frozen-panel counts, acknowledged controls and reasoned exceptions |
-| 11 | P6-RECOVERY — local preparation delivered, venue work next | Run the F07–F09 rehearsal with the intended staff and devices, measure venue health and propagation, and record the procedure and human acceptance |
+| 11 | P9-UI-REDESIGN — active | App shell, organizer event navigation and venue layouts are implemented locally. Continue with organizer application review and the studio's next task through the [redesign queue](docs/roadmap/operations.md#app-redesign-delivery-order). |
 | 12 | P7-CALCULATE and private S16 finalization — complete locally | ADR-032 consumes frozen submitted sheets and finalizes one reviewed revision with atomic event state. |
-| 13 | P7-PUBLISH / P7-EXPORT — deferred | The user requested private results. Confirm a public projection, correction policy and release scope before resuming. |
+| 13 | P6-RECOVERY — local preparation delivered, venue acceptance open | Rehearse F07–F09 on the intended devices and network before M5 acceptance. |
+| 14 | P7-PUBLISH / P7-EXPORT — deferred | The user requested private results. Confirm a public projection, correction policy and release scope before resuming. |
 
 When external domain/hosting/content access blocks cutover, keep that gate open
 and continue the first actionable local participant task; do not wait on accounts

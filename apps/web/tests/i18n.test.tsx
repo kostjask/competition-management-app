@@ -80,7 +80,9 @@ test("shared validation preserves nested/root/date/range/duplicate rules and saf
 
 test("language selector uses native names and an accessible selected state", () => {
   const output = renderToStaticMarkup(<LanguageContext.Provider value={{ locale: "ru", setLocale: () => {}, reconcileAccountLocale: () => {} }}><LanguageSelector /></LanguageContext.Provider>);
-  assert.ok(output.includes("Eesti")); assert.ok(output.includes("English")); assert.ok(output.includes("Русский")); assert.equal((output.match(/aria-pressed="true"/g) ?? []).length, 1);
+  assert.ok(output.includes("Eesti")); assert.ok(output.includes("English")); assert.ok(output.includes("Русский"));
+  assert.match(output, /<summary[^>]+aria-label="Язык: Русский">Русский<\/summary>/);
+  assert.match(output, /<button[^>]+lang="ru"[^>]+aria-pressed="true"><span>Русский<\/span><\/button>/);
 });
 
 

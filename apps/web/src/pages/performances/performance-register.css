@@ -4,7 +4,7 @@
 @import "../events/event-setup.css";
 .entry-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-block: var(--space-md); }
 .entry-actions [aria-pressed="true"] { background: var(--color-accent-wash); border-color: var(--color-accent); color: var(--color-accent-deep); }
-.entry-review, .entry-configuration, .entry-editor { border-block: 2px solid var(--color-ink); margin-block: var(--space-lg); padding-block: var(--space-lg); }
+.entry-review, .entry-configuration, .entry-editor { border: 1px solid var(--color-rule-2); margin-block: var(--space-lg); padding: var(--space-md); border-radius: var(--radius-card); }
 .entry-checkpoint { padding-block: var(--space-lg); border-bottom: 1px solid var(--color-rule-2); overflow-wrap: anywhere; }
 .entry-check { display: flex; align-items: center; gap: var(--space-sm); min-height: 2.75rem; }
 .entry-check input { width: 1.25rem; height: 1.25rem; flex-shrink: 0; accent-color: var(--color-accent); }
@@ -22,7 +22,7 @@
 .entry-loading span + span { min-height: var(--space-xl); }
 .entry-nomination { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-md); margin-block: var(--space-md); }
 @media (max-width: 48rem) { .entry-nomination { grid-template-columns: minmax(0, 1fr); } }
-.entry-submission-receipt { border-block: 2px solid var(--color-accent); padding-block: var(--space-md); margin-block: var(--space-lg); }
+.entry-submission-receipt { border: 1px solid var(--color-rule-2); padding: var(--space-md); margin-block: var(--space-lg); background: var(--color-surface-muted); border-radius: var(--radius-control); }
 .entry-submission-receipt h4, .entry-checkpoint h3, .entry-music-review h3 { min-width: 0; overflow-wrap: break-word; }
 .entry-submission-receipt h4:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .entry-music-review a, .entry-checkpoint li a { min-height: 2.75rem; display: inline-flex; align-items: center; }
@@ -32,6 +32,7 @@
 .performance-register { border-collapse: collapse; width: 100%; table-layout: fixed; }
 .performance-register th, .performance-register td { padding: var(--space-md); text-align: start; border-bottom: 1px solid var(--color-rule-2); overflow-wrap: anywhere; }
 .performance-register thead th { font-size: var(--text-sm); font-weight: 600; white-space: nowrap; border-bottom-color: var(--color-ink); }
+.performance-register thead { background: var(--color-surface-muted); }
 .performance-register tbody th { font-weight: 600; }
 .performance-register a { display: inline-flex; align-items: center; min-height: 2.75rem; }
 .performance-register td:last-child { font-variant-numeric: tabular-nums; }

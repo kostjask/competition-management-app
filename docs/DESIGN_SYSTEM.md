@@ -22,7 +22,12 @@ responsive layouts. A cosmetic reskin or preservation of the current look does
 not satisfy this direction. Read the installed hallmark SKILL.md and its redesign
 and app-screen guidance from the active skill catalog; follow its design and
 rendered-review workflow rather than copying skill instructions into this repo.
-No replacement theme, palette, font or brand has been chosen by this decision.
+On 2026-11-25 the user chose Material Studio as the base and Backstage for
+the live and festival treatments, then rejected the rendered implementation.
+The [app-wide UX audit](UX_REDESIGN_PLAN.md) defines the proposed corrections and
+delivery order. Retain the Material action hierarchy with smaller corners.
+Review workspace navigation and complete Day and Night modes in the role
+journeys before expanding the visual foundation.
 
 Preserve implemented functionality, contracts, authorization, routes, form wiring,
 recovery states, ET/EN/RU and accessibility requirements. The screen/flow IDs and
@@ -55,11 +60,10 @@ open. Static alert previews suppress live announcements; validation announces on
 error summary and links focus the relevant field.
 
 Required direction: calm, legible, predictable administration and live operation;
-clear action hierarchy and data identity across devices/languages. There is no
-approved brand identity, logo, artwork, dark theme or final palette. Do not invent
-brand assets. The current app uses light slate surfaces, blue/amber accents,
-rounded cards, Sora body and Fraunces display fonts, with one-off gradients/shadows.
-Treat that as existing styling, not a validated system.
+clear action hierarchy and data identity across devices/languages. Use the
+selected light palette for ordinary work and the dark Backstage palette for
+the assigned live console and scoring sheet. Use published artwork for public
+festival openings. The sample imagery illustrates the direction only.
 
 Foundation token/basic-control defaults are verified for the synthetic states
 above; other numeric/type/layout defaults remain **proposed** until their owning
@@ -197,7 +201,7 @@ actual approved media contract before showing accepted music types or sizes.
 | Component / variants | Behavior and states | Accessibility contract |
 | --- | --- | --- |
 | Global/section navigation: expanded/collapsed | Context and authorized destinations stable; collapse on phone; no dead future-feature links. Role/event/studio switch rechecks permissions and unsaved work. | Labeled nav landmarks, skip link, aria-current; disclosure button with expanded/control association; close and restore trigger focus. |
-| Account/language selector | Keep language visible on auth and workspaces; native names Eesti/English/Русский; account disclosure includes profile/logout. | Prefer disclosure with ordinary links/buttons; if menu roles used implement full arrows/Escape/focus behavior. Language buttons expose selected state and lang. |
+| Header preferences and account | Keep the current language visible on auth and workspaces. Use Eesti, English and Русский. Use a labeled Appearance trigger and explain Venue-aware and Match device next to those choices. | Use compact disclosure triggers and ordinary buttons. Expose the selected choice and language. Escape returns focus to the trigger. |
 | Tabs: local panels or route navigation | Local tabs only when one task has parallel sections; route tabs are links with actual URLs. Invalid required fields remain discoverable from summary across panels. | Real tablist pattern with selected state, arrows and focus management for panels, or nav links for route tabs; do not mix the semantics. |
 | Breadcrumbs | Event → section/studio → record; omit redundant root on simple auth pages. | Labeled breadcrumb nav, ordered list, current text/link marked; separators decorative. |
 | Card / summary list | Identity/status/action clear; no decorative card for every label. Empty and failed summaries distinct. | Headings and lists semantic; meaningful link text; no nested interactive controls in a whole-card link. |

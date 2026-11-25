@@ -20,7 +20,7 @@ export function InvitationPage(){
   useEffect(()=>{let active=true;if(token)void getInvitation(token).then(value=>{if(active){setPreview(value);setError(null);}}).catch((err:unknown)=>{if(active)setError(toUiError(err));});return()=>{active=false;};},[token,attempt]);
   const intended=!!user&&user.email===preview?.email;
   const accept=()=>{if(!token)return;const parsed=AcceptInvitationSchema.safeParse(preview?.accountExists||user?{token}:{token,name,password});if(!parsed.success){setError(toUiError(parsed.error));return;}setBusy(true);setError(null);void acceptInvitation(parsed.data).then(async()=>{setAccepted(true);setPassword("");await refreshUser();}).catch((err:unknown)=>setError(toUiError(err))).finally(()=>setBusy(false));};
-  return <section className="mx-auto max-w-xl p-4 sm:p-6"><h1 className="text-2xl font-semibold">{t("Flow.invitation")}</h1>
+  return <section className="workspace-sheet workspace-auth-flow"><h1 className="text-2xl font-semibold">{t("Flow.invitation")}</h1>
     <ErrorSummary error={error} title={t("Feedback.validation")} fields={{name:"invite-name",password:"invite-password"}}/>
     {!token?<Alert tone="warning">{t("Flow.missingLink")}</Alert>:!preview&&!error?<LoadingState label={t("Access.loading")}/>:null}
     {accepted?<Alert tone="success">{t("Flow.accepted")}</Alert>:preview&&<>

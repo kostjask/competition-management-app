@@ -146,29 +146,37 @@ async function fixture(page: Page, locale: Locale = "en", organizer = false) {
 }
 
 for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 1440], ["ru", 1920]] as const) {
-  test("assigned moderator operates the queue in " + locale + " at " + width + "px", async ({ page }) => {
+  test("assigned moderator operates the queue in " + locale + " at " + width + "px", async ({ page }, info) => {
     const state = await fixture(page, locale);
-    await page.setViewportSize({ width, height: 900 });
+    await page.setViewportSize({ width, height: 844 });
     await page.goto("/app/moderator");
     await page.getByRole("link", { name: "Winter competition", exact: true }).click();
     await expect(page).toHaveURL(livePath);
     const current = page.getByRole("region", { name: getTranslation("Moderator.current", locale) });
     await expect(current.getByText("First performance")).toBeVisible();
+    await expect(current).toHaveCSS("color-scheme", "dark");
     await expect(current.getByText(getTranslation("Moderator.completion", locale, { locked: "1", required: "2" }))).toBeVisible();
-    await expect(page.getByRole("button", { name: getTranslation("Moderator.ADVANCE", locale), exact: true })).toBeDisabled();
+    const advance = page.getByRole("button", { name: getTranslation("Moderator.ADVANCE", locale), exact: true });
+    await expect(advance).toBeDisabled();
+    await expect(advance).toHaveAccessibleDescription(getTranslation("Moderator.waitingForSheets", locale));
     await expect(page.getByRole("button", { name: getTranslation("Moderator.ADVANCE_OVERRIDE", locale), exact: true })).toHaveCount(0);
     const pause = page.getByRole("button", { name: getTranslation("Moderator.PAUSE", locale), exact: true });
     await expect(pause).toBeEnabled();
     const pauseBounds = await pause.boundingBox();
     expect(pauseBounds?.height).toBeGreaterThanOrEqual(48);
-    if (width === 390 && pauseBounds) expect(pauseBounds.y + pauseBounds.height).toBeLessThanOrEqual(800);
+    if (width <= 390) expect(pauseBounds ? pauseBounds.y + pauseBounds.height : 844).toBeLessThan(690);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-    const later = page.getByRole("region", { name: getTranslation("Moderator.upcoming", locale) });
-    if (width >= 768) await expect(later.getByText("Third performance")).toBeVisible();
-    else await expect(later).toHaveCount(0);
+    const later = page.getByText(getTranslation("Moderator.upcoming", locale), { exact: true });
+    const third = page.getByText("Third performance", { exact: true });
+    await expect(third).toBeHidden();
+    if (locale === "en") await page.screenshot({ path: info.outputPath("live-console.png"), fullPage: true });
     if (process.env.MODERATOR_HALLMARK_CAPTURE === "1" && locale === "en" && width === 1440) {
       await capture(page, ".hallmark/moderator-render.html");
     }
+    await later.press("Enter");
+    await expect(third).toBeVisible();
+    await later.press("Enter");
+    await expect(third).toBeHidden();
     await pause.focus(); await page.keyboard.press("Enter");
     const resume = page.getByRole("button", { name: getTranslation("Moderator.resume", locale), exact: true });
     await expect(resume).toBeEnabled();
@@ -188,6 +196,35 @@ for (const [locale, width] of [["et", 320], ["en", 390], ["ru", 768], ["en", 144
     }
   });
 }
+
+test("organizer sign-in returns to the selected stage in Night mode", async ({ page }) => {
+  await fixture(page, "en", true);
+  await page.setViewportSize({ width: 390, height: 844 });
+  let signedIn = false;
+  await page.route("**/api/v1/auth/profile", route => signedIn
+    ? route.fallback()
+    : route.fulfill({ status: 401, json: error("authenticationRequired") }));
+  await page.route("**/api/v1/auth/login", route => {
+    signedIn = true;
+    return route.fallback();
+  });
+  const target = "/app/admin/events/e/live?session=" + id(2);
+  await page.goto(target);
+  await expect(page).toHaveURL(url => url.pathname === "/app/auth/login" && url.searchParams.get("returnTo") === target);
+  await expect(page.locator("html")).toHaveAttribute("data-workspace-mode", "night");
+  await page.getByLabel("Email", { exact: true }).fill("operator@example.invalid");
+  await page.getByLabel("Password", { exact: true }).fill("synthetic-password");
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await expect(page).toHaveURL(target);
+  await expect(page.getByLabel(getTranslation("Moderator.session", "en"), { exact: true })).toHaveValue(id(2));
+  const menu = page.getByRole("button", { name: /Manage event/ });
+  await menu.click();
+  const live = page.getByRole("navigation", { name: "Manage event" }).getByRole("link", { name: "Live console" });
+  await expect(live).toHaveAttribute("aria-current", "page");
+  await live.click();
+  await expect(menu).toBeFocused();
+  await expect(page).toHaveURL(target);
+});
 
 test("a lost committed advance is acknowledged with the original operation and double activation sends once", async ({ page }) => {
   const state = await fixture(page);
@@ -246,6 +283,8 @@ test("offline and failed reads disable controls, and reassignment clears private
   await expect(pause).toBeDisabled();
   await page.emulateMedia({ media: "print" });
   await expect(page.getByRole("heading", { name: "Stage handoff" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeHidden();
+  await expect(page.locator(".moderator-workbench")).toHaveCSS("color-scheme", "light");
   await expect(page.getByText(/^Last read of revision 4/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Skip performance" })).toHaveCount(0);
   await page.emulateMedia({ media: "screen" });
@@ -301,7 +340,7 @@ test("session recovery retains the exact outstanding command", async ({ page }) 
   await page.getByRole("button", { name: "Pause", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Password").fill("synthetic-password");
+  await dialog.getByLabel("Password", { exact: true }).fill("synthetic-password");
   await dialog.getByRole("button", { name: "Sign in" }).click();
   await page.getByRole("button", { name: "Retry the same action" }).click();
   await expect(page.getByText(/^Server acknowledged Pause/)).toBeVisible();

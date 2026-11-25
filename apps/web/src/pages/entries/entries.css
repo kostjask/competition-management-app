@@ -1,7 +1,9 @@
 /* Hallmark · shape: app screen · genre: modern-minimal · theme: Cobalt (DESIGN.md) · signature: studio roster and unscheduled entry ledger · v2.0.0 */
 /* Hallmark · pre-emit critique: P4 H4 E4 S4 R4 V3 · weakest: V; locked operations language retained, searchable participant controls give this slice its own working density. */
 @import "../performances/performance-register.css";
-.entry-context { display: flex; flex-wrap: wrap; gap: var(--space-md); margin-block: var(--space-md); }
+.entry-context { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-xs) var(--space-lg); margin-block: var(--space-md); padding: var(--space-sm) var(--space-md); background: var(--color-surface-muted); border-radius: var(--radius-control); }
+.entry-context p { margin: 0; }
+.entry-context p:first-child { font-weight: 650; }
 .entry-editor fieldset { min-width: 0; }
 .entry-editor h2, .entry-editor h3 { overflow-wrap: break-word; min-width: 0; }
 .entry-editor .entry-participants { border: 0; padding: 0; }

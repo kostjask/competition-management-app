@@ -18,6 +18,7 @@ import { Home } from "../pages/Home";
 import { AppLayout } from "../components/layouts/AppLayout";
 import { AuthLayout } from "../components/layouts/AuthLayout";
 import { SectionLayout } from "../components/layouts/SectionLayout.tsx";
+import { OrganizerEventLayout } from "../components/layouts/OrganizerEventLayout.tsx";
 import { FullPageLoading } from "../components/LoadingSpinner.tsx";
 
 // Lazy load role-specific sections
@@ -43,6 +44,7 @@ const EventsCreate = lazy(() => import("../pages/events/EventsCreate.tsx"));
 const EventEdit = lazy(() => import("../pages/events/EventEdit.tsx"));
 const EventInfo = lazy(() => import("../pages/events/EventInfo.tsx"));
 const FoundationFixture = import.meta.env.DEV ? lazy(() => import("../components/ui/FoundationFixture.tsx")) : null;
+const RedesignPreview = import.meta.env.DEV ? lazy(() => import("../components/ui/RedesignPreview.tsx")) : null;
 const AccessFixture = import.meta.env.DEV ? lazy(() => import("../auth/AccessFixture.tsx")) : null;
 
 function LazyWrapper({ children }: { children: React.ReactNode }) {
@@ -60,12 +62,13 @@ export function AppRoutes() {
       <Route path="/auth/accept-invitation" element={<AuthLayout><InvitationPage /></AuthLayout>} />
       {AccessFixture && <Route path="/__fixtures/access/:eventId" element={<LazyWrapper><AccessFixture /></LazyWrapper>} />}
       {FoundationFixture && <Route path="/__fixtures/foundation" element={<LazyWrapper><FoundationFixture /></LazyWrapper>} />}
+      {RedesignPreview && <Route path="/__fixtures/redesign" element={<LazyWrapper><RedesignPreview /></LazyWrapper>} />}
       {/* Auth routes - isolated layout without navigation */}
       <Route
         path="/auth/login"
         element={
           <AuthLayout>
-            <RequireGuest>
+            <RequireGuest signIn>
               <LoginPage />
             </RequireGuest>
           </AuthLayout>
@@ -135,14 +138,16 @@ export function AppRoutes() {
                 }
               >
                 <Route path="invitations" element={<LazyWrapper><InvitationsPage /></LazyWrapper>} />
-                <Route path="events/:eventId/staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
-                <Route path="events/:eventId/applications" element={<LazyWrapper><ReviewPage /></LazyWrapper>} />
-                <Route path="events/:eventId/performances" element={<LazyWrapper><PerformanceRegister /></LazyWrapper>} />
-                <Route path="events/:eventId/schedule" element={<LazyWrapper><SchedulePage /></LazyWrapper>} />
-                <Route path="events/:eventId/scoring" element={<LazyWrapper><ScoringPage /></LazyWrapper>} />
-                <Route path="events/:eventId/results" element={<LazyWrapper><ResultsPage /></LazyWrapper>} />
-                <Route path="events/:eventId/live" element={<LazyWrapper><ModeratorControls organizer /></LazyWrapper>} />
-                <Route path="events/:eventId/setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
+                <Route path="events/:eventId" element={<OrganizerEventLayout />}>
+                  <Route path="staff" element={<LazyWrapper><StaffPage /></LazyWrapper>} />
+                  <Route path="applications" element={<LazyWrapper><ReviewPage /></LazyWrapper>} />
+                  <Route path="performances" element={<LazyWrapper><PerformanceRegister /></LazyWrapper>} />
+                  <Route path="schedule" element={<LazyWrapper><SchedulePage /></LazyWrapper>} />
+                  <Route path="scoring" element={<LazyWrapper><ScoringPage /></LazyWrapper>} />
+                  <Route path="results" element={<LazyWrapper><ResultsPage /></LazyWrapper>} />
+                  <Route path="live" element={<LazyWrapper><ModeratorControls organizer /></LazyWrapper>} />
+                  <Route path="setup" element={<LazyWrapper><EventEdit /></LazyWrapper>} />
+                </Route>
                 <Route
                   index
                   element={

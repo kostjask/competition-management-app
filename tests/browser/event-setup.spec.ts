@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { EventSchema, type Event, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey, type TranslationArgs } from "../../apps/web/src/i18n/translations";
 import type { Locale } from "../../apps/web/src/i18n/locale";
@@ -60,8 +61,8 @@ for (const locale of ["et", "en", "ru"] as const) for (const width of [320, 390,
     await expect(cancel).toBeFocused(); await page.keyboard.press("Escape"); await expect(open).toBeFocused(); expect(state.writes).toHaveLength(1);
     await open.click(); await dialog.getByRole("button", { name: label("Setup.confirm", locale), exact: true }).click();
     await expect(page.getByText(label("Setup.stageSaved", locale), { exact: true })).toBeVisible(); expect(state.current.stage).toBe("REGISTRATION_OPEN");
-    // Action labels must fit the graphite rail in all delivered locales/widths.
-    const actionsFit = await page.locator(".setup-rail button").evaluateAll(buttons => buttons.every(button => {
+    // Visible action labels must fit the readiness panel in all delivered locales/widths.
+    const actionsFit = await page.locator(".setup-rail button:visible").evaluateAll(buttons => buttons.every(button => {
       const range = document.createRange(); range.selectNodeContents(button);
       return range.getClientRects().length === 1;
     }));
@@ -131,7 +132,7 @@ test("S05 lost saved response and failed compare preserve draft and prohibit sil
 });
 test("S05 language and session recovery retain mounted form and disable writes until explicit action", async ({ page }) => {
   const state = await install(page); await page.goto("/app/admin/events/e/setup"); await page.locator("#event-city").fill("Retained local city");
-  await page.getByRole("button", { name: "Русский", exact: true }).click(); await expect(page.locator("#event-city")).toHaveValue("Retained local city");
+  await chooseWorkspaceLanguage(page, "ru"); await expect(page.locator("#event-city")).toHaveValue("Retained local city");
   state.valid = false; await save(page, "ru"); await expect(page.getByRole("dialog")).toBeVisible();
   const dialog = page.getByRole("dialog"); await dialog.getByLabel(label("Shell.password", "ru"), { exact: true }).fill("password123");
   await dialog.getByRole("button", { name: label("Shell.login", "ru"), exact: true }).click();
@@ -156,6 +157,7 @@ test("S05 confirmed close and cancellation retain history and restore logical ke
   await dialog.getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
   await expect(page.locator("#event-stage-heading")).toBeFocused(); expect(state.current.stage).toBe("DATA_REVIEW");
   await expect(page.getByRole("button", { name: label("Setup.open"), exact: true })).toHaveCount(0);
+  await page.getByText(label("Setup.eventActions"), { exact: true }).click();
   await page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true }).click(); await dialog.getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
   await expect(page.getByText(label("Setup.stageSaved"), { exact: true })).toBeVisible(); expect(state.current.stage).toBe("CANCELLED");
   await expect(page.locator("#event-stage-heading")).toBeFocused();
@@ -165,7 +167,7 @@ test("S05 confirmed close and cancellation retain history and restore logical ke
 test("S05 confirms schedule and live transitions and links to the moderator console and results", async ({ page }) => {
   const state = await install(page); state.current.stage = "DATA_REVIEW";
   await page.goto("/app/admin/events/e/setup");
-  await expect(page.getByRole("button", { name: label("Setup.cancelEvent"), exact: true })).toHaveCount(1);
+  await expect(page.getByText(label("Setup.eventActions"), { exact: true })).toBeVisible();
   await page.getByRole("button", { name: label("Schedule.confirmSchedule"), exact: true }).click();
   await expect(page.getByText(label("Schedule.scheduleEffect"), { exact: true })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
@@ -178,9 +180,12 @@ test("S05 confirms schedule and live transitions and links to the moderator cons
   await page.getByRole("button", { name: label("Schedule.startLive"), exact: true }).click();
   await expect(page.getByText(label("Moderator.liveEffect"), { exact: true })).toBeVisible();
   await page.getByRole("dialog").getByRole("button", { name: label("Setup.confirm"), exact: true }).click();
-  await expect(page.getByRole("link", { name: label("Results.title"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/results");
+  const navigationToggle = page.getByRole("button", { name: new RegExp(label("Events.manageEvent")) });
+  if (await navigationToggle.isVisible()) await navigationToggle.click();
+  const navigation = page.getByRole("navigation", { name: label("Events.manageEvent") });
+  await expect(navigation.getByRole("link", { name: label("Events.sectionResults"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/results");
   await expect(page.getByRole("button", { name: label("Schedule.finalize"), exact: true })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: label("Moderator.title"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/live");
+  await expect(navigation.getByRole("link", { name: label("Events.sectionLive"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/live");
   expect(state.writes.at(-1)).toMatchObject({ stage: "LIVE", expectedStage: "SCHEDULED" });
 });
 
@@ -240,6 +245,18 @@ test("S05 unrelated edits retain exact stored instants, including a repeated DST
   expect(state.writes[1]).toMatchObject({ ...dates, startsAt: "2026-10-25T00:30:00.000Z" });
 });
 
+test("organizer overview offers the task for the current event stage", async ({ page }) => {
+  const state = await install(page);
+  const actions = page.locator(".discovery-application-actions");
+  state.current.stage = "REGISTRATION_OPEN";
+  await page.goto("/app/events/e");
+  await expect(actions.getByRole("link", { name: label("Application.review"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/applications");
+  await expect(actions.getByRole("link", { name: label("Application.open"), exact: true })).toHaveAttribute("href", "/app/events/e/register");
+  state.current.stage = "LIVE";
+  await page.reload();
+  await expect(actions.getByRole("link", { name: label("Events.sectionLive"), exact: true })).toHaveAttribute("href", "/app/admin/events/e/live");
+});
+
 for (const [locale, width] of [["en", 320], ["ru", 390], ["et", 768], ["en", 1440]] as const) {
   test(`${locale} S01/S02/S05 organizer screens and discovery states at ${width}px`, async ({ page }, info) => {
     const state = await install(page, locale, width);
@@ -256,6 +273,25 @@ for (const [locale, width] of [["en", 320], ["ru", 390], ["et", 768], ["en", 144
         await expect(details).toBeVisible();
         expect(await details.evaluate(element => { const range = document.createRange(); range.selectNodeContents(element); return range.getClientRects().length; })).toBe(1);
       }
+      if (path === "/events/e") {
+        const eventNavigation = page.getByRole("navigation", { name: label("Events.manageEvent", locale) });
+        const toggle = page.getByRole("button", { name: new RegExp(label("Events.manageEvent", locale)) });
+        if (width < 1056) {
+          await expect(eventNavigation).toBeHidden();
+          await toggle.click();
+        }
+        await expect(eventNavigation.getByRole("link")).toHaveCount(9);
+        await expect(eventNavigation.getByRole("link", { name: label("Events.sectionOverview", locale) })).toHaveAttribute("aria-current", "page");
+        await expect(eventNavigation.getByRole("link", { name: label("Events.sectionLive", locale) })).toHaveAttribute("href", "/app/admin/events/e/live");
+        await expect(page.getByRole("link", { name: label("Setup.title", locale), exact: true })).toHaveAttribute("href", "/app/admin/events/e/setup");
+        await page.screenshot({ path: info.outputPath("event-navigation.png") });
+        if (width < 1056) {
+          await eventNavigation.getByRole("link", { name: label("Events.sectionSetup", locale) }).focus();
+          await page.keyboard.press("Escape");
+          await expect(toggle).toBeFocused();
+          await expect(eventNavigation).toBeHidden();
+        }
+      }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       await page.screenshot({ path: info.outputPath(file + ".png"), fullPage: true });
     }
@@ -267,7 +303,8 @@ for (const [locale, width] of [["en", 320], ["ru", 390], ["et", 768], ["en", 144
     await expect(page.getByRole("link", { name: label("Events.createTitle", locale), exact: true })).toHaveCount(0);
     state.empty = false; state.current.stage = "DATA_REVIEW";
     await page.goto("/app/events/e"); await expect(page.getByText(label("Setup.windowClosed", locale), { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: label("Setup.title", locale), exact: true })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: label("Application.view", locale), exact: true })).toHaveAttribute("href", "/app/events/e/register");
+    await expect(page.getByRole("navigation", { name: label("Events.manageEvent", locale) })).toHaveCount(0);
     await page.screenshot({ path: info.outputPath("event-closed.png"), fullPage: true });
     state.readFail = true;
     await page.goto("/app/events"); await expect(page.locator(".ui-error-summary")).toBeVisible();

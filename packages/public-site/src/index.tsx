@@ -50,11 +50,15 @@ function Text({ value, locale, heading = false }: { value: Resolved | undefined;
   const text = heading ? <h2 lang={value.lang}>{value.text}</h2> : <p lang={value.lang} className="prose">{value.text}</p>;
   return <>{value.fallback && <small className="fallback">{publicCopy[locale].fallback} <span lang={value.lang}>{languageNames[value.lang]}</span></small>}{text}</>;
 }
-function Image({ content, path, eager = false }: { content: CmsPublic; path: string; eager?: boolean }) {
+function publicImage(content: CmsPublic, path: string) {
   const image = content.images.find(row => row.path === path)?.image;
   // Preview paths and arbitrary URL schemes cannot reach a public HTML sink.
-  if (!image || image.url !== `/api/v1/public/assets/${image.id}`) return null;
-  return <figure><img src={image.url} width={image.width} height={image.height} alt={image.decorative ? "" : image.alt?.text ?? ""} lang={image.alt?.lang} loading={eager ? "eager" : "lazy"} />{image.alt?.fallback && <figcaption className="fallback">{publicCopy[content.requestedLocale].fallback} {languageNames[image.alt.lang]}</figcaption>}</figure>;
+  if (image && image.url === `/api/v1/public/assets/${image.id}`) return image;
+}
+function Image({ content, path, eager = false, className }: { content: CmsPublic; path: string; eager?: boolean; className?: string }) {
+  const image = publicImage(content, path);
+  if (!image) return null;
+  return <figure className={className}><img src={image.url} width={image.width} height={image.height} alt={image.decorative ? "" : image.alt?.text ?? ""} lang={image.alt?.lang} loading={eager ? "eager" : "lazy"} />{image.alt?.fallback && <figcaption className="fallback">{publicCopy[content.requestedLocale].fallback} {languageNames[image.alt.lang]}</figcaption>}</figure>;
 }
 function Contact({ content, locale }: { content: CmsPublic; locale: CmsLocale }) {
   const copy = publicCopy[locale];
@@ -89,7 +93,7 @@ function Studio({ content, route }: { content: CmsPublic; route: PublicRoute }) 
 function Edition({ content, route }: { content: CmsPublic; route: PublicRoute }) {
   const locale = route.locale; const copy = publicCopy[locale];
   switch (route.section) {
-    case "home": return <><Dates content={content} locale={locale} /><Text value={field(content, "location")} locale={locale} /><Image content={content} path="brand.artwork" eager /><div className="directory">{editionSections.filter(value => value !== "contact").map(section => <a key={section} href={publicPath(route,locale,section)}>{copy[section]}</a>)}</div></>;
+    case "home": return <><Dates content={content} locale={locale} /><Text value={field(content, "location")} locale={locale} /><div className="directory">{editionSections.filter(value => value !== "contact").map(section => <a key={section} href={publicPath(route,locale,section)}>{copy[section]}</a>)}</div></>;
     case "rules": { const headings = content.fields.filter(row => /^rules\.[^.]+\.heading$/.test(row.path)); return headings.length ? headings.map(row => { const prefix = row.path.replace(/heading$/, ""); return <section key={row.path}><Text value={row.value} locale={locale} heading />{content.fields.filter(paragraph => paragraph.path.startsWith(prefix) && paragraph.path !== row.path).map(paragraph => <Text key={paragraph.path} value={paragraph.value} locale={locale} />)}</section>; }) : <p>{copy.empty}</p>; }
     case "judges": return <Profiles content={content} locale={locale} kind="judges" />;
     case "registration": return <><Dates content={content} locale={locale} />{content.action.kind === "external" ? <a className="primary" href={content.action.url} rel="noopener noreferrer">{copy.externalAction}</a> : <p>{copy.contactRegistration}</p>}<Contact content={content} locale={locale} /></>;
@@ -100,7 +104,7 @@ function Edition({ content, route }: { content: CmsPublic; route: PublicRoute })
 }
 function Portal({ data, route }: { data: CmsPublicPortal; route: PublicRoute }) {
   const copy = publicCopy[route.locale]; const editions = data.editions.filter(row => !route.festivalSlug || row.festivalSlug === route.festivalSlug);
-  return <><Image content={data.content} path="brand.artwork" />{route.festivalSlug ? <Text value={data.festivals.find(row=>row.slug===route.festivalSlug)?.summary ?? undefined} locale={route.locale} /> : data.festivals.length > 0 && <ul className="festival-list">{data.festivals.map(row => <li key={row.slug}><h2><a href={`/${route.locale}/festivals/${row.slug}`}>{row.name}</a></h2><Text value={row.summary ?? undefined} locale={route.locale} /></li>)}</ul>}{editions.length ? (["upcoming", "past", "undated"] as const).map(period => {
+  return <>{route.festivalSlug ? <Text value={data.festivals.find(row=>row.slug===route.festivalSlug)?.summary ?? undefined} locale={route.locale} /> : data.festivals.length > 0 && <ul className="festival-list">{data.festivals.map(row => <li key={row.slug}><h2><a href={`/${route.locale}/festivals/${row.slug}`}>{row.name}</a></h2><Text value={row.summary ?? undefined} locale={route.locale} /></li>)}</ul>}{editions.length ? (["upcoming", "past", "undated"] as const).map(period => {
     const group = editions.filter(row => row.period === period).sort((a,b)=>period==="upcoming" ? (a.startsOn??"").localeCompare(b.startsOn??"") : (b.startsOn??"").localeCompare(a.startsOn??"")); if (!group.length) return null;
     return <section key={period}><h2>{copy[period]}</h2><ol className="edition-list">{group.map(row => <li key={`${row.festivalSlug}/${row.editionSlug}`}><a href={`/${route.locale}/festivals/${row.festivalSlug}/${row.editionSlug}`} lang={row.title?.lang}>{row.title?.text ?? row.editionSlug}</a>{row.title?.fallback && <small className="fallback">{copy.fallback} {languageNames[row.title.lang]}</small>}{row.startsOn && <time dateTime={row.startsOn}>{date(row.startsOn,route.locale)}</time>}</li>)}</ol></section>;
   }) : <p>{copy.empty}</p>}<section id="contact"><h2>{copy.contact}</h2><Contact content={data.content} locale={route.locale} /></section></>;
@@ -137,6 +141,9 @@ export function renderPublicPage(input: { route: PublicRoute; data: PublicData; 
   const title = metadata.title; const subtitle = route.section === "home" ? undefined : copy[route.section];
   const festivalName = "editions" in data && route.festivalSlug ? data.festivals.find(row=>row.slug===route.festivalSlug)?.name : undefined;
   const titleText = [subtitle ? publicCopy[title?.lang ?? route.locale][route.section] : undefined, festivalName, title?.text].filter(Boolean).join(" | ");
+  const festivalHome = route.surface === "festival" && route.section === "home";
+  const hasArtwork = festivalHome && !!publicImage(content, "brand.artwork");
+  const showRegistration = festivalHome && !!route.editionSlug && !content.policyChanged && content.action.kind === "external";
   return "<!doctype html>" + renderToStaticMarkup(
     <html lang={route.locale}>
       <head>
@@ -156,16 +163,19 @@ export function renderPublicPage(input: { route: PublicRoute; data: PublicData; 
       <body data-brand={route.surface === "festival" ? content.brand ?? "cobalt" : "cobalt"}>
         <Shell route={route} origins={origins}>
           <main id="main" tabIndex={-1} className="container">
-            <div className={route.section === "home" ? "opening" : "page-heading"}>
+            <div className={route.section === "home" ? (festivalHome ? "opening opening--festival" : "opening") : "page-heading"}>
               <div className="opening-copy">
               {subtitle ? <><p className="document-title" lang={title?.lang}>{title?.text}</p><h1>{subtitle}</h1></>
                 : festivalName ? <h1>{festivalName}</h1> : <h1 lang={title?.lang}>{title?.text}</h1>}
               {title?.fallback && <p className="fallback">{copy.fallback} {languageNames[title.lang]}</p>}
               <Text value={field(content,"introduction")} locale={route.locale} />
               {route.section === "home" && route.surface === "studio" && <a className="primary" href={publicPath(route,route.locale,"join")}>{copy.join}</a>}
+              {showRegistration && <a className="primary" href={publicPath(route,route.locale,"registration")}>{copy.registration}</a>}
               </div>
-              {route.section === "home" && <OpeningLedger data={data} route={route} />}
+              {hasArtwork ? <Image content={content} path="brand.artwork" eager className="opening-artwork" /> :
+                route.section === "home" && <OpeningLedger data={data} route={route} />}
             </div>
+            {hasArtwork && <OpeningLedger data={data} route={route} />}
             {content.policyChanged && <p className="notice" role="note">{copy.policy}</p>}
             {"editions" in data ? <Portal data={data} route={route} /> : content.kind === "STUDIO_SITE" ? <Studio content={content} route={route} /> : <Edition content={content} route={route} />}
           </main>

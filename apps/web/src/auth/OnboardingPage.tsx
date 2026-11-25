@@ -45,7 +45,7 @@ function DraftEditor({ proof, close }: { proof: Proof; close?: () => void }) {
 }
 export function OnboardingPage(){
   const {user,loading}=useAuth();const {t}=useTranslation();const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [proof,setProof]=useState<Proof|null>(null);const [error,setError]=useState<UiError|null>(null);
-  return <section className="mx-auto max-w-xl p-4 sm:p-6"><h1 className="text-2xl font-semibold">{t("Flow.onboarding")}</h1>
+  return <section className="workspace-sheet workspace-auth-flow"><h1 className="text-2xl font-semibold">{t("Flow.onboarding")}</h1>
     {loading&&!user?<LoadingState label={t("Access.loading")}/>:user?<DraftEditor key={user.id} proof={sessionProof}/>:proof?<DraftEditor proof={proof} close={()=>setProof(null)}/>:<>
       <p className="my-4">{t("Flow.prove")}</p><form noValidate onSubmit={event=>{event.preventDefault();const parsed=OnboardingProofSchema.safeParse({email,password});if(!parsed.success){setError(toUiError(parsed.error));return;}setProof(parsed.data);setPassword("");}}>
         <ErrorSummary error={error} title={t("Feedback.validation")} fields={{email:"owner-email",password:"owner-password"}}/>

@@ -4,11 +4,25 @@ import type { Event } from "@dance/schemas";
 import { getEvent } from "../../api/events";
 import { toUiError, type UiError } from "../../api/error";
 import { useTranslation } from "../../i18n/useTranslation";
-import { RoleGate } from "../../auth";
+import { useRole } from "../../auth/useRole";
+import { OrganizerEvent } from "../../components/layouts/OrganizerEventLayout";
 import { Button, ErrorSummary, LoadingState } from "../../components/ui/Foundation";
-import { EventSnapshot } from "./EventSnapshot";
+import { discoveryTime, eventDateRange, eventLocality } from "../../features/events/discovery";
+import { stageKey } from "../../features/events/setup";
+import { EventContent } from "./EventContent";
 import { PrivateEventImage } from "./EventImage";
-import "./event-setup.css";
+import "./event-discovery.css";
+
+const organizerActions = {
+  PRE_REGISTRATION: { path: "setup", label: "Setup.title" },
+  REGISTRATION_OPEN: { path: "applications", label: "Application.review" },
+  DATA_REVIEW: { path: "applications", label: "Application.review" },
+  SCHEDULED: { path: "schedule", label: "Schedule.title" },
+  LIVE: { path: "live", label: "Events.sectionLive" },
+  FINALIZED: { path: "results", label: "Results.title" },
+  ENDED: { path: "results", label: "Results.title" },
+  CANCELLED: { path: "setup", label: "Setup.title" },
+} as const satisfies Record<Event["stage"], { path: string; label: string }>;
 
 export default function EventInfo() {
   const [now, setNow] = useState(() => Date.now());
@@ -16,7 +30,8 @@ export default function EventInfo() {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
+  const { isAdmin } = useRole();
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Event | null>(null);
   const [error, setError] = useState<UiError | null>(null);
@@ -35,14 +50,15 @@ export default function EventInfo() {
   }, [id, attempt]);
 
   const open = data && ["PRE_REGISTRATION", "REGISTRATION_OPEN"].includes(data.stage) && (!data.registrationDeadline || now < Date.parse(data.registrationDeadline));
+  const organizerAction = isAdmin && data ? organizerActions[data.stage] : null;
 
-  return (
-    <div className="event-workbench">
-      <Link to="/events">{t("Events.backToList")}</Link>
+  const content = (
+    <div className="event-discovery">
+      <Link className="discovery-back" to="/events">{t("Events.backToList")}</Link>
       {loading ? (
         <LoadingState label={t("Access.loading")} />
       ) : error ? (
-        <section className="event-load-error">
+        <section>
           <h1>{t(error.reason === "recordNotFound" ? "Shell.notFound" : error.reason === "permissionDenied" ? "Access.denied" : "Shell.unavailable")}</h1>
           <ErrorSummary error={error} title={t("Events.loadError")} />
           <Button onClick={() => {
@@ -53,46 +69,63 @@ export default function EventInfo() {
         </section>
       ) : data && (
         <>
-          <header className="event-masthead">
-            <div>
+          <div className="discovery-overview">
+            <header className="discovery-event-heading">
               <h1>{data.name}</h1>
-              <p className="ui-help">{t("Setup.authenticated")}</p>
-              <p className="event-status">{t(open ? "Setup.windowOpen" : "Setup.windowClosed")}</p>
-              <Link to={`/events/${encodeURIComponent(data.id)}/register`}>{t("Application.open")}</Link>
-            </div>
-            <RoleGate adminOnly>
-              <div className="event-heading-actions">
-                <Link className="ui-button ui-button-primary" to={`/admin/events/${encodeURIComponent(data.id)}/setup`}>
-                  {t("Setup.title")}
+              <p className="discovery-date">{eventDateRange(data, locale)}</p>
+              {data.venue && <p>{data.venue}</p>}
+              {(data.city || data.country) && <p>{eventLocality(data, locale)}</p>}
+            </header>
+            <div className="discovery-application">
+              {organizerAction && <p className="discovery-window">{t(stageKey[data.stage])}</p>}
+              <p className="discovery-window" aria-live="polite">{t(open ? "Setup.windowOpen" : "Setup.windowClosed")}</p>
+              {data.registrationDeadline && (
+                <p>
+                  {t("Setup.cutoff")}{": "}
+                  <time dateTime={data.registrationDeadline}>{discoveryTime(data.registrationDeadline, locale, data.timeZone)}</time>
+                </p>
+              )}
+              <div className="discovery-application-actions">
+                {organizerAction && <Link className="ui-button ui-button-primary" to={`/admin/events/${encodeURIComponent(data.id)}/${organizerAction.path}`}>
+                  {t(organizerAction.label)}
+                </Link>}
+                <Link className={`ui-button ${organizerAction ? "ui-button-quiet" : open ? "ui-button-primary" : "ui-button-secondary"}`} to={`/events/${encodeURIComponent(data.id)}/register`}>
+                  {t(open ? "Application.open" : "Application.view")}
                 </Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/staff`}>{t("Staff.title")}</Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/applications`}>{t("Application.review")}</Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/performances`}>{t("Performance.title")}</Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/schedule`}>{t("Schedule.title")}</Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/scoring`}>{t("Scoring.title")}</Link>
-                <Link to={`/admin/events/${encodeURIComponent(data.id)}/live`}>{t("Moderator.title")}</Link>
               </div>
-            </RoleGate>
-          </header>
-          <div className={`event-detail-layout${data.imageUrl ? " event-detail-layout--with-media" : ""}`}>
-            <div className="event-detail-data">
-              <EventSnapshot event={data} allLanguages={false} />
+            </div>
+          </div>
+          <div className={`discovery-information${data.imageUrl ? " discovery-information--with-image" : ""}`}>
+            <div className="discovery-particulars">
+              {(data.description || data.unclassifiedDescription) && <EventContent event={data} />}
+              <details>
+                <summary>{t("Events.eventTimes")}</summary>
+                <dl>
+                  <dt>{t("Events.startsAtLabel")}</dt>
+                  <dd><time dateTime={data.startsAt}>{discoveryTime(data.startsAt, locale, data.timeZone)}</time></dd>
+                  <dt>{t("Events.endsAtLabel")}</dt>
+                  <dd><time dateTime={data.endsAt}>{discoveryTime(data.endsAt, locale, data.timeZone)}</time></dd>
+                </dl>
+              </details>
+              {(data.organizerEmail || data.organizerPhone) && (
+                <details>
+                  <summary>{t("Events.organizerContact")}</summary>
+                  {data.organizerEmail && <p><a href={`mailto:${data.organizerEmail}`}>{data.organizerEmail}</a></p>}
+                  {data.organizerPhone && <p><a href={`tel:${data.organizerPhone}`}>{data.organizerPhone}</a></p>}
+                </details>
+              )}
             </div>
             {data.imageUrl && (
-              <section className="event-detail-media">
-                <h2>{t("Common.eventPhoto")}</h2>
+              <div className="discovery-image">
                 <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
-              </section>
+              </div>
             )}
           </div>
-          {!data.imageUrl && (
-            <section className="event-detail-media event-detail-media--empty">
-              <h2>{t("Common.eventPhoto")}</h2>
-              <PrivateEventImage key={data.imageUrl} url={data.imageUrl} />
-            </section>
-          )}
         </>
       )}
     </div>
   );
+  return isAdmin && data && data.id === id && !error && !loading
+    ? <OrganizerEvent key={id} eventId={data.id}>{content}</OrganizerEvent>
+    : content;
 }

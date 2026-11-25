@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import type { JudgeScoringAck, JudgeScoringCommand, JudgeScoringSheet, JudgeScoringWorkspace } from "@dance/schemas";
 import { commandScoring, getJudgeScoring } from "../../api/scoring";
 import { ApiError, toUiError, type UiError } from "../../api/error";
@@ -24,6 +24,7 @@ export default function JudgeInterface() {
   const { t } = useTranslation();
   if (eventId) return <ScoreWorkspace key={JSON.stringify([eventId, user?.id])} eventId={eventId} />;
   const events = (user?.roles ?? []).flatMap(assignment => assignment.role.key === "judge" && assignment.event ? [assignment.event] : []);
+  if (!events.length && user?.isAdmin) return <Navigate to="/admin" replace />;
   return <div className="event-workbench judge-workbench">
     <h1>{t("Judge.title")}</h1>
     {events.length ? <ul className="judge-ledger">{events.map(event => <li key={event.id}>
@@ -153,24 +154,23 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
   const showInterruption = interrupted && !sessionExpired;
   const connectionStatus = t(!online ? "Judge.offline" : connected ? "Judge.connected" : "Judge.checking");
 
-  return <div className="event-workbench judge-workbench">
+  return <div className="event-workbench judge-workbench" data-live-surface>
     <header className="judge-header">
-      <div>
+      <div className="judge-event">
         <Link className="judge-back" to="/judge">{t("Judge.title")}</Link><h1>{workspace?.eventName ?? t("Judge.scoring")}</h1>
-        {sheet && <div className="judge-performance">
-          <h2 ref={heading} tabIndex={-1} id="judge-performance">{title(sheet)}</h2>
-          <p className="judge-fact">{t("Judge.stage", { stage: sheet.stageName, session: sheet.sessionName })}</p>
-        </div>}
       </div>
-      <div>
-        <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : undefined}>
-          <p>{showInterruption ? <strong>{connectionStatus}</strong> : connectionStatus}</p>
-          {showInterruption && <p>{t("Judge.interruptionHelp")}</p>}
-        </div>
-        {snapshot && <p className="judge-fact">{t("Judge.lastCheck", { time: formatTime(new Date(snapshot.receivedAt).toISOString()) })}</p>}
-        <Button variant="secondary" disabled={!online || loading || sending} onClick={() => void refresh()}>{t("Judge.refresh")}</Button>
-      </div>
+      {sheet && <div className="judge-performance">
+        <h2 ref={heading} tabIndex={-1} id="judge-performance">{title(sheet)}</h2>
+        <p className="judge-fact">{t("Judge.stage", { stage: sheet.stageName, session: sheet.sessionName })}</p>
+      </div>}
     </header>
+    <div className="judge-connection">
+      <div role="status" className={showInterruption ? "ui-alert ui-tone-warning" : "judge-fact"}>
+        <p>{showInterruption ? <strong>{connectionStatus}</strong> : connectionStatus}</p>
+        {showInterruption && <p>{t("Judge.interruptionHelp")}</p>}
+      </div>
+      <Button variant="quiet" disabled={!online || loading || sending} onClick={() => void refresh()}>{t("Judge.refresh")}</Button>
+    </div>
     {failure && <ErrorFeedback error={failure.ui} />}
     {!failure && !workspace && online && <LoadingState label={t("Judge.loading")} />}
     {workspace && !sheet && <EmptyState title={t("Judge.waiting")} description={t("Judge.waitingHelp")} />}
@@ -183,17 +183,14 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
     </Field></div>}
     {sheet && parsed && <section aria-labelledby="judge-performance" className="judge-sheet">
       {serverSheet?.reopenReason && <Alert tone="warning">{t("Judge.reopened", { reason: serverSheet.reopenReason })}</Alert>}
-      <div className="judge-progress" role="status">
-        {sending ? t(pending?.action === "SUBMIT" ? "Judge.submitting" : "Judge.saving") : pending ? t("Judge.uncertain") :
-          draft ? t("Judge.unsaved") : sheet.state === "LOCKED" ? t("Judge.locked") : !sheet.writable ? t("Judge.readOnly") : sheet.revision === 1 ? t("Judge.blank") : t("Judge.saved")}
+      <div className="judge-sheet-summary">
+        <p className="judge-progress" role="status">
+          {sending ? t(pending?.action === "SUBMIT" ? "Judge.submitting" : "Judge.saving") : pending ? t("Judge.uncertain") :
+            draft ? t("Judge.unsaved") : sheet.state === "LOCKED" ? t("Judge.locked") : !sheet.writable ? t("Judge.readOnly") : sheet.revision === 1 ? t("Judge.blank") : t("Judge.saved")}
+        </p>
+        <p className="judge-fact">{t("Judge.progress", { filled: parsed.values.length, total: sheet.rubric.criteria.length })}</p>
       </div>
       {writeError && <ErrorFeedback error={writeError} />}
-      {serverSheet && serverSheet.revision > 1 && <p className="judge-fact">{t(serverSheet.state === "LOCKED" ? "Judge.submittedAt" : "Judge.savedAt", {
-        revision: serverSheet.revision, time: formatTime(serverSheet.submittedAt ?? serverSheet.savedAt),
-      })}</p>}
-      {shownAck && shownAck.revision !== serverSheet?.revision && <p className="judge-fact">{t(shownAck.action === "SUBMIT" ? "Judge.submittedAt" : "Judge.savedAt", {
-        revision: shownAck.revision, time: formatTime(shownAck.createdAt),
-      })}</p>}
       {retryable && <Button variant="secondary" onClick={() => void send(pending)}>{t("Judge.retry")}</Button>}
       {compare && <div className="judge-compare">
         <Alert tone="warning">{t("Judge.changed")}</Alert>
@@ -215,7 +212,6 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
       </div>}
       <div className="judge-rubric">
         <h3>{sheet.rubric.name}</h3>
-        <p className="judge-fact">{t("Judge.progress", { filled: parsed.values.length, total: sheet.rubric.criteria.length })}</p>
         <ol className="judge-ledger">{sheet.rubric.criteria.map(criterion => {
           const id = `criterion-${criterion.id}`;
           const field = fields[criterion.id] ?? emptyField;
@@ -225,9 +221,11 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
             <Field id={id} label={criterion.label[locale]} hint={hint} error={parsed.invalid[criterion.id] ? t(parsed.invalid[criterion.id] === "range" ? "Judge.invalid" : "Judge.commentNeedsScore") : undefined}>
               {attributes => <Input {...attributes} name={id} type="text" inputMode="decimal" autoComplete="off" maxLength={16} readOnly={!editable} value={field.value} onChange={event => edit(criterion.id, "value", event.target.value)} />}
             </Field>
-            {(sheet.state === "DRAFT" || field.comment) && <Field id={`${id}-comment`} label={t("Judge.comment", { criterion: criterion.label[locale] })}>
-              {attributes => <textarea {...attributes} name={`${id}-comment`} className="ui-input" rows={2} maxLength={1000} readOnly={!editable} value={field.comment} onChange={event => edit(criterion.id, "comment", event.target.value)} />}
-            </Field>}
+            {(sheet.state === "DRAFT" || field.comment) && <details className="judge-comment">
+              <summary>{t(field.comment ? "Judge.viewComment" : "Judge.optionalComment")}</summary>
+              <textarea id={`${id}-comment`} name={`${id}-comment`} aria-label={t("Judge.comment", { criterion: criterion.label[locale] })}
+                className="ui-input" rows={2} maxLength={1000} readOnly={!editable} value={field.comment} onChange={event => edit(criterion.id, "comment", event.target.value)} />
+            </details>}
           </li>;
         })}</ol>
       </div>
@@ -240,6 +238,15 @@ function ScoreWorkspace({ eventId }: { eventId: string }) {
       </section> : <button type="button" ref={reviewTrigger} className="ui-button ui-button-primary judge-review" disabled={!editable || !parsed.complete || !parsed.valid} onClick={() => {
         if (fresh()) setReviewing({ id: sheet.id, revision: sheet.revision });
       }}>{t("Judge.review")}</button>}
+      {(serverSheet && serverSheet.revision > 1 || shownAck && shownAck.revision !== serverSheet?.revision) && <div className="judge-receipt">
+        {serverSheet && serverSheet.revision > 1 && <p className="judge-fact">{t(serverSheet.state === "LOCKED" ? "Judge.submittedAt" : "Judge.savedAt", {
+          revision: serverSheet.revision, time: formatTime(serverSheet.submittedAt ?? serverSheet.savedAt),
+        })}</p>}
+        {shownAck && shownAck.revision !== serverSheet?.revision && <p className="judge-fact">{t(shownAck.action === "SUBMIT" ? "Judge.submittedAt" : "Judge.savedAt", {
+          revision: shownAck.revision, time: formatTime(shownAck.createdAt),
+        })}</p>}
+      </div>}
     </section>}
+    {snapshot && <p className="judge-fact judge-checked">{t("Judge.lastCheck", { time: formatTime(new Date(snapshot.receivedAt).toISOString()) })}</p>}
   </div>;
 }

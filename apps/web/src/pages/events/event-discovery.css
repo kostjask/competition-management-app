@@ -1,0 +1,109 @@
+/* Hallmark · shape: app screen · genre: modern-minimal · Material Studio · v2.0.0 */
+/* Hallmark · critique: hold the date and venue with the event name and put the application decision on a tonal surface. */
+@import "../../components/layouts/workspace-tokens.css";
+:root {
+  --discovery-gutter: clamp(1rem, 5vw, 3.5rem);
+}
+
+.event-discovery {
+  box-sizing: border-box;
+  max-width: 74rem;
+  min-width: 0;
+  margin: clamp(1rem, 4vw, 3rem) auto;
+  width: calc(100% - 2 * var(--workspace-gutter));
+  padding: var(--discovery-gutter);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-panel);
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.event-discovery h1,
+.event-discovery h2 {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--workspace-title);
+  font-weight: 700;
+  line-height: 1.12;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+
+.event-discovery h1 { width: fit-content; max-width: 100%; font-size: 2.5rem; }
+.event-discovery h2 { font-size: 1.625rem; }
+.event-discovery a:not(.ui-button) { color: var(--color-action); text-decoration: underline; text-underline-offset: 0.2em; }
+.event-discovery :is(a, summary):focus-visible { outline: 2px solid var(--color-focus); outline-offset: 3px; }
+.event-discovery a:not(.ui-button):active, .event-discovery summary:active { color: var(--color-action-hover); }
+
+.discovery-heading,
+.discovery-list-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+}
+
+.discovery-heading { justify-content: space-between; margin-bottom: 2rem; }
+.discovery-list { padding: 0; margin: 0; list-style: none; border-top: 1px solid var(--color-border-subtle); }
+
+.discovery-list-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.discovery-list-event { flex: 1 1 20rem; min-width: 0; }
+.discovery-list-item p,
+.discovery-event-heading p { margin: 0; }
+.discovery-list-item .discovery-date,
+.discovery-event-heading .discovery-date { margin: 0.5rem 0; }
+.discovery-date { color: var(--color-action); font-weight: 700; }
+.discovery-event-heading .discovery-date { font-size: 1.25rem; }
+.discovery-back { display: inline-flex; min-height: 2.75rem; align-items: center; margin-bottom: 1rem; }
+
+.discovery-overview,
+.discovery-information--with-image {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.5rem 2.5rem;
+}
+
+.discovery-application { padding: 1.25rem; background: var(--color-surface-muted); border-radius: var(--radius-panel); }
+.discovery-application p { margin: 0 0 0.75rem; }
+.discovery-application .ui-button { margin-top: 0.25rem; }
+.discovery-application-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.75rem; }
+.discovery-window { font-weight: 700; }
+
+.discovery-information {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.discovery-particulars > p { max-width: 65ch; margin: 0 0 1rem; }
+.discovery-particulars details { border-top: 1px solid var(--color-border-subtle); max-width: 36rem; }
+.discovery-particulars summary { min-height: 2.75rem; padding: 0.625rem 0; cursor: pointer; }
+.discovery-particulars dl,
+.discovery-particulars details p { margin: 0 0 0.75rem; }
+.discovery-particulars dt { color: var(--color-ink-secondary); }
+.discovery-particulars dd { margin: 0 0 0.5rem; }
+.discovery-image { min-width: 0; }
+.discovery-image img { display: block; max-width: 100%; height: auto; border-radius: var(--radius-panel); }
+
+@media (max-width: 50rem) {
+  .discovery-overview,
+  .discovery-information--with-image { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 36rem) {
+  .event-discovery h1 { font-size: 1.875rem; }
+}

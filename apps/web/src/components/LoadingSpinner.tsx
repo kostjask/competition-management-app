@@ -16,7 +16,7 @@ export function LoadingSpinner({ size = "md", className = "" }: LoadingSpinnerPr
   return (
     <div className={`inline-block ${className}`} role="status" aria-label={t("Access.loading")}>
       <div
-        className={`${sizeClasses[size]} animate-spin rounded-full border-slate-200 border-t-amber-500`}
+        className={`${sizeClasses[size]} motion-safe:animate-spin rounded-full border-border-subtle border-t-action`}
       />
     </div>
   );
@@ -31,9 +31,9 @@ type FullPageLoadingProps = {
  */
 export function FullPageLoading({ message }: FullPageLoadingProps) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50">
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-canvas">
       <LoadingSpinner size="xl" />
-      {message && <p className="text-sm text-slate-600">{message}</p>}
+      {message && <p className="text-sm text-ink-secondary">{message}</p>}
     </div>
   );
 }

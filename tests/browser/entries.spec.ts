@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { chooseWorkspaceLanguage } from "./workspace-language";
 import { CreateDancerBodySchema, UpdateDancerBodySchema, DancerArchiveBodySchema, CreatePerformanceBodySchema, UpdatePerformanceBodySchema,
   DancerSchema, PerformanceSchema, StudioSchema, EntryContextSchema, EntryFieldSchema, EntryReviewSchema, EntryCommandSchema, EntryReceiptSchema, type Dancer, type Performance, type UserProfile } from "../../packages/schemas/src/index";
 import { getTranslation, type TranslationKey } from "../../apps/web/src/i18n/translations";
@@ -271,13 +272,13 @@ test("submission language changes retain confirmation and the uncertain operatio
   const state = await submissionFixture(page, "en", 320); state.lose = true;
   await page.goto(base + "?entry=review&checkpoint=FINAL");
   await page.getByLabel(getTranslation("Entry.confirm", "en"), { exact: true }).check();
-  await page.getByRole("button", { name: "Русский", exact: true }).click();
+  await chooseWorkspaceLanguage(page, "ru");
   await expect(page.getByLabel(getTranslation("Entry.confirm", "ru"), { exact: true })).toBeChecked();
   await page.getByRole("button", { name: getTranslation("Entry.submit", "ru"), exact: true }).click();
   await expect(page.locator(".entry-checkpoint .ui-error-summary")).toBeFocused();
   await page.screenshot({ path: info.outputPath("submission-retry-ru-320.png"), fullPage: true });
   expect(await page.locator(".entry-review button:visible").evaluateAll(buttons => buttons.every(button => button.scrollWidth <= button.clientWidth))).toBe(true);
-  await page.getByRole("button", { name: "English", exact: true }).click(); state.lose = false;
+  await chooseWorkspaceLanguage(page, "en"); state.lose = false;
   await page.getByRole("button", { name: getTranslation("Entry.retrySubmission", "en"), exact: true }).click();
   await expect(page.locator(".entry-submission-receipt h4")).toBeFocused();
   expect(state.receipts.size).toBe(1); expect(state.commands[1]).toEqual(state.commands[0]);

@@ -1,13 +1,27 @@
-import { Link, useSearchParams, useNavigate } from "react-router-dom";
-import { routerReturnPath } from "@dance/schemas";
+import { Link, useSearchParams } from "react-router-dom";
+import { ReturnPathSchema, routerReturnPath } from "@dance/schemas";
 import { LoginForm } from "./LoginForm";
 import { useTranslation } from "../i18n/useTranslation";
 
 export function LoginPage() {
-  const [params] = useSearchParams(); const navigate = useNavigate(); const { t } = useTranslation();
-  const eventId = /^\/events\/([A-Za-z0-9_-]+)(?:\/(?:register|studio))?(?:\?studio=[A-Za-z0-9_-]+)?$/.exec(routerReturnPath(params.get("returnTo")))?.[1];
-  return <section className="mx-auto max-w-md p-6"><h1 className="mb-6 text-2xl font-semibold">{t("Shell.login")}</h1>
-    <LoginForm onSuccess={() => navigate(routerReturnPath(params.get("returnTo")), { replace: true })} />
-    <div className="my-4 flex flex-wrap gap-3"><Link to={"/auth/register" + (eventId ? "?eventId=" + encodeURIComponent(eventId) : "")}>{t("Flow.signup")}</Link><Link to="/auth/forgot-password">{t("Flow.forgot")}</Link><Link to="/auth/resend-verification">{t("Flow.resend")}</Link><Link to="/auth/onboarding">{t("Flow.resume")}</Link></div>
+  const [params] = useSearchParams(); const { t } = useTranslation();
+  const returnTo = params.get("returnTo");
+  const checkedReturn = ReturnPathSchema.safeParse(returnTo);
+  const recoveryQuery = checkedReturn.success ? "?" + new URLSearchParams({ returnTo: checkedReturn.data }) : "";
+  const eventId = /^\/events\/([A-Za-z0-9_-]+)(?:\/(?:register|studio))?(?:\?studio=[A-Za-z0-9_-]+)?$/.exec(routerReturnPath(returnTo))?.[1];
+  return <section className="workspace-sheet workspace-login">
+    <h1>{t("Shell.login")}</h1>
+    <div className="workspace-login-layout">
+      <LoginForm recoveryLink={"/auth/forgot-password" + recoveryQuery} />
+      <div className="workspace-login-help">
+        <Link className="ui-button ui-button-secondary" to={"/auth/register" + (eventId ? "?eventId=" + encodeURIComponent(eventId) : "")}>{t("Flow.signup")}</Link>
+        <details><summary>{t("Shell.accountHelp")}</summary>
+          <ul>
+            <li><Link to={"/auth/resend-verification" + recoveryQuery}>{t("Flow.resend")}</Link></li>
+            <li><Link to="/auth/onboarding">{t("Flow.resume")}</Link></li>
+          </ul>
+        </details>
+      </div>
+    </div>
   </section>;
 }

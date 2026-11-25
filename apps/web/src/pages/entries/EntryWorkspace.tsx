@@ -57,7 +57,7 @@ function Workspace({ eventId, studioId, performanceId, creating }: { eventId: st
     {!creating && !performanceId && <Link to={`/studios/${studioId}/dancers`}>{t("Roster.title")}</Link>}</header>
     <ErrorSummary error={error} title={t("Events.loadError")} />
     {error ? <Button onClick={() => { setError(null); setAttempt(value => value + 1); }}>{t("Shell.retry")}</Button> : !value ? <EntryLoading /> : <>
-      <p>{value.context.eventName}</p><p>{t("Roster.ageDate")}: <time dateTime={value.context.ageDate}>{formatCalendarDate(value.context.ageDate, locale)}</time> ({value.context.timeZone})</p>
+      <div className="entry-context"><p>{value.context.eventName}</p><p>{t("Roster.ageDate")}: <time dateTime={value.context.ageDate}>{formatCalendarDate(value.context.ageDate, locale)}</time> ({value.context.timeZone})</p></div>
       {!review && <p>{t("Roster.draftsOnly")}</p>}
       {!performanceId && value.context.writableFields.length < EntryFieldSchema.options.length && <p>{t("Roster.locked")}</p>}
       {Object.values(value.context.options).some(rows => !rows.length) && <p>{t("Roster.optionsMissing")}</p>}
@@ -68,7 +68,7 @@ function Workspace({ eventId, studioId, performanceId, creating }: { eventId: st
             {review ? <><Link to={base}>{t("Roster.entries")}</Link><EntryReviewPanel ownWorkspace eventId={eventId} studioId={studioId} zone={value.context.timeZone} entries={value.rows} changed={async () => {
               const [context, rows] = await Promise.all([getEntryContext(eventId, studioId), getPerformances(eventId, studioId)]); setValue({ context, rows });
             }} /></> : <>
-            <div className="entry-actions"><Link className="ui-button ui-button-primary" to={`${base}/new`}>{t("Roster.newEntry")}</Link><Link to={`${base}?entry=review`}>{t("Entry.review")}</Link><Button variant="quiet" onClick={() => setAttempt(value => value + 1)}>{t("Roster.refresh")}</Button></div>
+            <div className="entry-actions"><Link className="ui-button ui-button-primary" to={`${base}/new`}>{t("Roster.newEntry")}</Link><Link className="ui-button ui-button-tonal" to={`${base}?entry=review`}>{t("Entry.review")}</Link><Button variant="quiet" onClick={() => setAttempt(value => value + 1)}>{t("Roster.refresh")}</Button></div>
             <Field id="entry-state" label={t("Entry.entryState")}>{attrs => <select {...attrs} className="ui-input" value={state} onChange={event => { setValue(null); setParams({ state: event.target.value }); }}><option value="active">{t("Entry.activeState")}</option><option value="withdrawn">{t("Entry.withdrawnState")}</option></select>}</Field>
             {!value.rows.length ? <EmptyState title={t(state === "withdrawn" ? "Entry.noWithdrawn" : "Performance.none")} description={t(state === "withdrawn" ? "Entry.noWithdrawnHelp" : "Performance.empty")} /> : <table className="performance-register"><caption className="sr-only">{t("Roster.entries")}</caption>
               <thead><tr><th scope="col">{t("Performance.performance")}</th><th scope="col">{t("Performance.participants")}</th><th scope="col">{t("Entry.edit")}</th></tr></thead><tbody>{value.rows.map(row => <tr key={row.id}><th scope="row">{row.title ?? t("Performance.untitled")}<span className="performance-completeness">{t(row.orderOnStage === null ? "Performance.unscheduled" : "Performance.scheduled")}</span>
